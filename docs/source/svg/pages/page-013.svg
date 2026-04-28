@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="2198" viewBox="0 0 1440 2198" role="img" aria-labelledby="title desc">
+<title id="title">NikhartaRoop System Documentation Page 013</title>
+<desc id="desc">Text-preserving SVG conversion of NikhartaRoop System Documentation - Page 013 from NikhartaRoop_SystemDoc.docx.</desc>
+<rect width="100%" height="100%" fill="#fffaf6"/>
+<text x="64" y="40" font-family="Inter, Noto Sans Devanagari, Arial, sans-serif" font-size="18" font-weight="700" fill="#880E4F">NikhartaRoop System Documentation - Page 013</text>
+<g font-family="Noto Sans Devanagari, Inter, Arial, sans-serif" font-size="16" fill="#212121">
+<text x="64" y="78"> </text>
+<text x="64" y="102">12. Scalability &amp; Future Design</text>
+<text x="64" y="126">12.1 Multi-Branch Architecture</text>
+<text x="64" y="150">From Day 1, the database is designed with a branch_id on every major table. This allows</text>
+<text x="64" y="174">Nikharta Roop to expand to multiple cities without any schema changes.</text>
+<text x="64" y="198">Component</text>
+<text x="64" y="222">Single Branch Today</text>
+<text x="64" y="246">Multi-Branch Tomorrow</text>
+<text x="64" y="270">Database</text>
+<text x="64" y="294">All records have branch_id='branch_001'</text>
+<text x="64" y="318">Each city/location has its own branch_id; all in same DB</text>
+<text x="64" y="342">Admin Access</text>
+<text x="64" y="366">Admin sees all data (one branch)</text>
+<text x="64" y="390">City admin sees only their branch; Super Admin sees all</text>
+<text x="64" y="414">Services</text>
+<text x="64" y="438">All services are for one branch</text>
+<text x="64" y="462">Each branch can have different services and prices</text>
+<text x="64" y="486">Staff</text>
+<text x="64" y="510">All staff belong to one branch</text>
+<text x="64" y="534">Staff assigned to specific branches; transfers possible</text>
+<text x="64" y="558">URL Structure</text>
+<text x="64" y="582">nikhartaroop.in/booking</text>
+<text x="64" y="606">nikhartaroop.in/delhi/booking or via branch selector</text>
+<text x="64" y="630"> </text>
+<text x="64" y="654">12.2 Payment Integration (Razorpay)</text>
+<text x="64" y="678">Feature</text>
+<text x="64" y="702">Implementation Plan</text>
+<text x="64" y="726">UPI Payment</text>
+<text x="64" y="750">Razorpay UPI — most popular in India; zero transaction fee for users</text>
+<text x="64" y="774">Card Payment</text>
+<text x="64" y="798">Razorpay Cards — credit/debit cards for higher-value bookings</text>
+<text x="64" y="822">Net Banking</text>
+<text x="64" y="846">Razorpay Net Banking — for customers without UPI</text>
+<text x="64" y="870">Advance Capture</text>
+<text x="64" y="894">Razorpay captures 20% advance at booking; balance collected at parlour</text>
+<text x="64" y="918">Refund Handling</text>
+<text x="64" y="942">Razorpay Refund API — triggered automatically on cancellation by admin</text>
+<text x="64" y="966">Payment Webhook</text>
+<text x="64" y="990">Razorpay sends webhook on payment success → backend updates booking to CONFIRMED</text>
+<text x="64" y="1014"> </text>
+<text x="64" y="1038">12.3 Performance Optimization Strategy</text>
+<text x="64" y="1062">Problem</text>
+<text x="64" y="1086">Solution</text>
+<text x="64" y="1110">Expected Improvement</text>
+<text x="64" y="1134">Slow page load on 3G</text>
+<text x="64" y="1158">Next.js SSR + static generation for services page</text>
+<text x="64" y="1182">First load: 3G speed &lt; 3 seconds</text>
+<text x="64" y="1206">Repeated DB queries for services</text>
+<text x="64" y="1230">Redis cache services list — TTL 1 hour</text>
+<text x="64" y="1254">90% reduction in DB load for service queries</text>
+<text x="64" y="1278">Image loading lag</text>
+<text x="64" y="1302">Cloudinary CDN + WebP format + lazy loading</text>
+<text x="64" y="1326">50-70% smaller image sizes</text>
+<text x="64" y="1350">Slot calculation speed</text>
+<text x="64" y="1374">Pre-compute slot availability on booking write (not read)</text>
+<text x="64" y="1398">Slot load time &lt; 200ms</text>
+<text x="64" y="1422">Database slow on large datasets</text>
+<text x="64" y="1446">Proper indexes on booking_date, user_id, status</text>
+<text x="64" y="1470">Query time &lt; 50ms even at 100K bookings</text>
+<text x="64" y="1494">API server overload</text>
+<text x="64" y="1518">Horizontal scaling: add more API server instances behind load balancer</text>
+<text x="64" y="1542">Handle 10x traffic during peak festivals</text>
+<text x="64" y="1566">12.4 Future Feature Roadmap</text>
+<text x="64" y="1590">Phase</text>
+<text x="64" y="1614">Feature</text>
+<text x="64" y="1638">Business Value</text>
+<text x="64" y="1662">Phase 2</text>
+<text x="64" y="1686">In-App Chat (User ↔ Admin)</text>
+<text x="64" y="1710">Reduce phone call burden by 60%</text>
+<text x="64" y="1734">Phase 2</text>
+<text x="64" y="1758">Before/After Photo Portfolio</text>
+<text x="64" y="1782">Builds trust and drives bookings from new users</text>
+<text x="64" y="1806">Phase 3</text>
+<text x="64" y="1830">Loyalty Program — Nikharta Points</text>
+<text x="64" y="1854">Increases repeat visit frequency by 35%</text>
+<text x="64" y="1878">Phase 3</text>
+<text x="64" y="1902">Group Booking (Bride + Friends)</text>
+<text x="64" y="1926">Higher ticket value — bridal party packages</text>
+<text x="64" y="1950">Phase 4</text>
+<text x="64" y="1974">Franchise Portal</text>
+<text x="64" y="1998">Each franchisee gets their own admin panel</text>
+<text x="64" y="2022">Phase 4</text>
+<text x="64" y="2046">AI-Powered Style Recommendations</text>
+<text x="64" y="2070">Users upload selfie, get service recommendations</text>
+<text x="64" y="2094"> </text>
+</g>
+</svg>
