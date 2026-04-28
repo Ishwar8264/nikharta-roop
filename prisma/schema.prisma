@@ -238,6 +238,7 @@ model AuthOtp {
   userAgent         String?
   provider          String?        @db.VarChar(80)
   providerMessageId String?
+  metadata          Json           @default("{}")
   createdAt         DateTime       @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)

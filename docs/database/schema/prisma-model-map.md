@@ -6,6 +6,7 @@ This schema is designed for a Hindi-first beauty parlour platform with web, mobi
 
 - `User`: customer, staff, admin, and super admin accounts.
 - `AuthOtp`: OTP lifecycle for login, signup, and phone verification.
+- `AuthOtp.metadata`: temporary signup draft details such as optional name/email before OTP verification creates the user.
 - `AuthSession`: JWT/session tracking and token revocation.
 - `AuthEvent`: audit trail for signup, login, logout, OTP, and suspension events.
 
