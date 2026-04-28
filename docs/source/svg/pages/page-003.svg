@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="3374" viewBox="0 0 1440 3374" role="img" aria-labelledby="title desc">
+<title id="title">NikhartaRoop System Documentation Page 003</title>
+<desc id="desc">Text-preserving SVG conversion of NikhartaRoop System Documentation - Page 003 from NikhartaRoop_SystemDoc.docx.</desc>
+<rect width="100%" height="100%" fill="#fffaf6"/>
+<text x="64" y="40" font-family="Inter, Noto Sans Devanagari, Arial, sans-serif" font-size="18" font-weight="700" fill="#880E4F">NikhartaRoop System Documentation - Page 003</text>
+<g font-family="Noto Sans Devanagari, Inter, Arial, sans-serif" font-size="16" fill="#212121">
+<text x="64" y="78"> </text>
+<text x="64" y="102">2. System Architecture</text>
+<text x="64" y="126">2.1 High-Level Architecture Overview</text>
+<text x="64" y="150">The Nikharta Roop platform is built on a three-tier architecture: Presentation Layer (UI),</text>
+<text x="64" y="174">Application Layer (API &amp; Business Logic), and Data Layer (Database &amp; Storage). All layers</text>
+<text x="64" y="198">are separated to allow independent scaling.</text>
+<text x="64" y="222"> </text>
+<text x="64" y="246">Layer</text>
+<text x="64" y="270">Technology Choice</text>
+<text x="64" y="294">Purpose</text>
+<text x="64" y="318">Deployment</text>
+<text x="64" y="342">Web Frontend</text>
+<text x="64" y="366">Next.js (React)</text>
+<text x="64" y="390">Server-side rendered website, SEO optimized</text>
+<text x="64" y="414">Vercel / AWS CloudFront</text>
+<text x="64" y="438">Mobile App</text>
+<text x="64" y="462">React Native</text>
+<text x="64" y="486">Android + iOS app from single codebase</text>
+<text x="64" y="510">Google Play + App Store</text>
+<text x="64" y="534">Backend API</text>
+<text x="64" y="558">Node.js + Express (or NestJS)</text>
+<text x="64" y="582">REST API server, business logic</text>
+<text x="64" y="606">AWS EC2 / Railway / Render</text>
+<text x="64" y="630">Database</text>
+<text x="64" y="654">PostgreSQL (primary)</text>
+<text x="64" y="678">Relational data — users, bookings, services</text>
+<text x="64" y="702">AWS RDS / Supabase</text>
+<text x="64" y="726">Cache Layer</text>
+<text x="64" y="750">Redis</text>
+<text x="64" y="774">OTP storage, session tokens, slot availability cache</text>
+<text x="64" y="798">AWS ElastiCache</text>
+<text x="64" y="822">File Storage</text>
+<text x="64" y="846">AWS S3 / Cloudinary</text>
+<text x="64" y="870">Service images, staff photos, portfolio images</text>
+<text x="64" y="894">CDN delivery</text>
+<text x="64" y="918">SMS Service</text>
+<text x="64" y="942">MSG91 / Twilio India</text>
+<text x="64" y="966">OTP delivery, booking confirmations</text>
+<text x="64" y="990">Third-party API</text>
+<text x="64" y="1014">WhatsApp</text>
+<text x="64" y="1038">WhatsApp Business API (via Interakt/Wati)</text>
+<text x="64" y="1062">Rich notifications, booking reminders</text>
+<text x="64" y="1086">Third-party API</text>
+<text x="64" y="1110">Payment Gateway</text>
+<text x="64" y="1134">Razorpay</text>
+<text x="64" y="1158">UPI, cards, net banking for advance payment</text>
+<text x="64" y="1182">Third-party API</text>
+<text x="64" y="1206">Email Service</text>
+<text x="64" y="1230">SendGrid / Mailgun</text>
+<text x="64" y="1254">Booking receipts, admin reports</text>
+<text x="64" y="1278">Third-party API</text>
+<text x="64" y="1302"> </text>
+<text x="64" y="1326">2.2 Data Flow — Click to Response</text>
+<text x="64" y="1350">Below is the exact sequence of events from when a user taps 'Book Now' to when the booking</text>
+<text x="64" y="1374">confirmation appears on screen.</text>
+<text x="64" y="1398"> </text>
+<text x="64" y="1422">Step</text>
+<text x="64" y="1446">Who/What</text>
+<text x="64" y="1470">Action</text>
+<text x="64" y="1494">Time</text>
+<text x="64" y="1518">1</text>
+<text x="64" y="1542">User (Phone)</text>
+<text x="64" y="1566">Taps 'Book Now' on service page</text>
+<text x="64" y="1590">0ms</text>
+<text x="64" y="1614">2</text>
+<text x="64" y="1638">React Native App</text>
+<text x="64" y="1662">Validates form inputs locally (date, slot selected)</text>
+<text x="64" y="1686">10ms</text>
+<text x="64" y="1710">3</text>
+<text x="64" y="1734">App → API Server</text>
+<text x="64" y="1758">Sends POST /api/bookings with auth token + booking data</text>
+<text x="64" y="1782">50–200ms</text>
+<text x="64" y="1806">4</text>
+<text x="64" y="1830">API Middleware</text>
+<text x="64" y="1854">Validates JWT token, checks user permissions</text>
+<text x="64" y="1878">5ms</text>
+<text x="64" y="1902">5</text>
+<text x="64" y="1926">Business Logic</text>
+<text x="64" y="1950">Checks slot availability in DB, prevents double-booking</text>
+<text x="64" y="1974">20–50ms</text>
+<text x="64" y="1998">6</text>
+<text x="64" y="2022">Database (PostgreSQL)</text>
+<text x="64" y="2046">Creates booking record with status = PENDING</text>
+<text x="64" y="2070">10–30ms</text>
+<text x="64" y="2094">7</text>
+<text x="64" y="2118">Payment Service</text>
+<text x="64" y="2142">Initiates Razorpay payment order if advance required</text>
+<text x="64" y="2166">100–300ms</text>
+<text x="64" y="2190">8</text>
+<text x="64" y="2214">API → App</text>
+<text x="64" y="2238">Returns booking ID + payment URL to app</text>
+<text x="64" y="2262">10ms</text>
+<text x="64" y="2286">9</text>
+<text x="64" y="2310">User</text>
+<text x="64" y="2334">Completes UPI payment inside Razorpay checkout</text>
+<text x="64" y="2358">User-dependent</text>
+<text x="64" y="2382">10</text>
+<text x="64" y="2406">Razorpay Webhook</text>
+<text x="64" y="2430">Notifies backend of successful payment</text>
+<text x="64" y="2454">1–3 seconds</text>
+<text x="64" y="2478">11</text>
+<text x="64" y="2502">Backend</text>
+<text x="64" y="2526">Updates booking status to CONFIRMED</text>
+<text x="64" y="2550">10ms</text>
+<text x="64" y="2574">12</text>
+<text x="64" y="2598">Notification Service</text>
+<text x="64" y="2622">Sends WhatsApp + SMS confirmation to user</text>
+<text x="64" y="2646">1–5 seconds</text>
+<text x="64" y="2670">13</text>
+<text x="64" y="2694">App</text>
+<text x="64" y="2718">Polling or WebSocket detects confirmation → shows success screen</text>
+<text x="64" y="2742">2–5 seconds</text>
+<text x="64" y="2766"> </text>
+<text x="64" y="2790">2.3 Layer Separation — Responsibilities</text>
+<text x="64" y="2814">Layer</text>
+<text x="64" y="2838">What It Does</text>
+<text x="64" y="2862">What It Does NOT Do</text>
+<text x="64" y="2886">UI Layer (Frontend)</text>
+<text x="64" y="2910">Renders pages, collects user input, calls APIs, shows results</text>
+<text x="64" y="2934">Never directly queries the database</text>
+<text x="64" y="2958">Business Logic Layer (API)</text>
+<text x="64" y="2982">Validates data, applies rules (slot conflict, RBAC), orchestrates DB calls</text>
+<text x="64" y="3006">Never stores files or serves static assets directly</text>
+<text x="64" y="3030">Data Layer (DB + Storage)</text>
+<text x="64" y="3054">Persists data, handles relationships, indexes for fast queries</text>
+<text x="64" y="3078">Never applies business rules or talks to external APIs</text>
+<text x="64" y="3102">2.4 Low-Internet Optimization (India-Specific)</text>
+<text x="64" y="3126">	•	Images lazy-loaded with next-gen formats (WebP) — saves 30–50% bandwidth.</text>
+<text x="64" y="3150">	•	API responses paginated — never load more than 20 records at once.</text>
+<text x="64" y="3174">	•	App caches service list locally (refreshed every 24 hours) for offline browsing.</text>
+<text x="64" y="3198">	•	OTP retry logic with 30-second cool-down to avoid SMS cost waste.</text>
+<text x="64" y="3222">	•	React Native uses FlatList (virtualized) for long booking history lists.</text>
+<text x="64" y="3246">	•	WhatsApp preferred over email — 90% of users already have it installed.</text>
+<text x="64" y="3270"> </text>
+</g>
+</svg>

@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="5222" viewBox="0 0 1440 5222" role="img" aria-labelledby="title desc">
+<title id="title">NikhartaRoop System Documentation Page 007</title>
+<desc id="desc">Text-preserving SVG conversion of NikhartaRoop System Documentation - Page 007 from NikhartaRoop_SystemDoc.docx.</desc>
+<rect width="100%" height="100%" fill="#fffaf6"/>
+<text x="64" y="40" font-family="Inter, Noto Sans Devanagari, Arial, sans-serif" font-size="18" font-weight="700" fill="#880E4F">NikhartaRoop System Documentation - Page 007</text>
+<g font-family="Noto Sans Devanagari, Inter, Arial, sans-serif" font-size="16" fill="#212121">
+<text x="64" y="78"> </text>
+<text x="64" y="102">6. API Design</text>
+<text x="64" y="126">6.1 API Architecture Principles</text>
+<text x="64" y="150">	•	All APIs follow REST conventions with JSON request/response bodies.</text>
+<text x="64" y="174">	•	Base URL pattern: https://api.nikhartaroop.in/v1/</text>
+<text x="64" y="198">	•	Authentication: JWT Bearer token in Authorization header for protected routes.</text>
+<text x="64" y="222">	•	All timestamps returned in IST (Indian Standard Time, UTC+5:30).</text>
+<text x="64" y="246">	•	All amounts in INR (Indian Rupee), as decimal strings to avoid float errors.</text>
+<text x="64" y="270">	•	Error responses always include a machine-readable error code and Hindi user message.</text>
+<text x="64" y="294"> </text>
+<text x="64" y="318">6.2 Auth APIs</text>
+<text x="64" y="342">Endpoint</text>
+<text x="64" y="366">Method</text>
+<text x="64" y="390">Input</text>
+<text x="64" y="414">Output</text>
+<text x="64" y="438">Purpose</text>
+<text x="64" y="462">POST /auth/send-otp</text>
+<text x="64" y="486">POST</text>
+<text x="64" y="510">{ mobile: '9876543210' }</text>
+<text x="64" y="534">{ success: true, retryAfter: 30 }</text>
+<text x="64" y="558">Send OTP via SMS to user's mobile</text>
+<text x="64" y="582">POST /auth/verify-otp</text>
+<text x="64" y="606">POST</text>
+<text x="64" y="630">{ mobile, otp: '839201' }</text>
+<text x="64" y="654">{ token: 'jwt...', user: {...} }</text>
+<text x="64" y="678">Verify OTP, return JWT + user profile</text>
+<text x="64" y="702">POST /auth/logout</text>
+<text x="64" y="726">POST</text>
+<text x="64" y="750">JWT in header</text>
+<text x="64" y="774">{ success: true }</text>
+<text x="64" y="798">Invalidate token (adds to blacklist)</text>
+<text x="64" y="822">GET /auth/me</text>
+<text x="64" y="846">GET</text>
+<text x="64" y="870">JWT in header</text>
+<text x="64" y="894">{ user: {id, name, mobile, role} }</text>
+<text x="64" y="918">Get currently logged-in user details</text>
+<text x="64" y="942"> </text>
+<text x="64" y="966">6.3 Service APIs</text>
+<text x="64" y="990">Endpoint</text>
+<text x="64" y="1014">Method</text>
+<text x="64" y="1038">Input</text>
+<text x="64" y="1062">Output</text>
+<text x="64" y="1086">Purpose</text>
+<text x="64" y="1110">GET /services</text>
+<text x="64" y="1134">GET</text>
+<text x="64" y="1158">?branch_id=, ?category=, ?search=</text>
+<text x="64" y="1182">{ services: [...] }</text>
+<text x="64" y="1206">List all active services with filtering</text>
+<text x="64" y="1230">GET /services/:id</text>
+<text x="64" y="1254">GET</text>
+<text x="64" y="1278">Service ID in URL</text>
+<text x="64" y="1302">{ service: {...details} }</text>
+<text x="64" y="1326">Full details of one service</text>
+<text x="64" y="1350">GET /services/categories</text>
+<text x="64" y="1374">GET</text>
+<text x="64" y="1398">None</text>
+<text x="64" y="1422">{ categories: [...] }</text>
+<text x="64" y="1446">All service categories</text>
+<text x="64" y="1470">POST /services</text>
+<text x="64" y="1494">POST (Admin)</text>
+<text x="64" y="1518">{ name_hi, name_en, price, duration, category_id }</text>
+<text x="64" y="1542">{ service: {id,...} }</text>
+<text x="64" y="1566">Admin creates new service</text>
+<text x="64" y="1590">PUT /services/:id</text>
+<text x="64" y="1614">PUT (Admin)</text>
+<text x="64" y="1638">Any updatable fields</text>
+<text x="64" y="1662">{ service: updated }</text>
+<text x="64" y="1686">Admin updates service details</text>
+<text x="64" y="1710">DELETE /services/:id</text>
+<text x="64" y="1734">DELETE (Admin)</text>
+<text x="64" y="1758">Service ID</text>
+<text x="64" y="1782">{ success: true }</text>
+<text x="64" y="1806">Admin deactivates a service (soft delete)</text>
+<text x="64" y="1830"> </text>
+<text x="64" y="1854">6.4 Booking APIs</text>
+<text x="64" y="1878">Endpoint</text>
+<text x="64" y="1902">Method</text>
+<text x="64" y="1926">Input</text>
+<text x="64" y="1950">Output</text>
+<text x="64" y="1974">Purpose</text>
+<text x="64" y="1998">GET /bookings/slots</text>
+<text x="64" y="2022">GET</text>
+<text x="64" y="2046">?service_id=, ?date=, ?branch_id=</text>
+<text x="64" y="2070">{ slots: [{start, end, available}] }</text>
+<text x="64" y="2094">Get available time slots for a service on a date</text>
+<text x="64" y="2118">POST /bookings</text>
+<text x="64" y="2142">POST (User)</text>
+<text x="64" y="2166">{ service_id, date, slot_start, staff_id?, branch_id }</text>
+<text x="64" y="2190">{ booking: {id, status:'PENDING', paymentUrl} }</text>
+<text x="64" y="2214">Create a new booking</text>
+<text x="64" y="2238">GET /bookings/my</text>
+<text x="64" y="2262">GET (User)</text>
+<text x="64" y="2286">JWT, ?status=, ?page=</text>
+<text x="64" y="2310">{ bookings: [...], total }</text>
+<text x="64" y="2334">User's own booking history</text>
+<text x="64" y="2358">GET /bookings/:id</text>
+<text x="64" y="2382">GET (User/Admin)</text>
+<text x="64" y="2406">Booking ID</text>
+<text x="64" y="2430">{ booking: {...full details} }</text>
+<text x="64" y="2454">Single booking details</text>
+<text x="64" y="2478">PUT /bookings/:id/cancel</text>
+<text x="64" y="2502">PUT (User/Admin)</text>
+<text x="64" y="2526">{ reason: 'string' }</text>
+<text x="64" y="2550">{ booking: {status:'CANCELLED'} }</text>
+<text x="64" y="2574">Cancel a booking</text>
+<text x="64" y="2598">PUT /bookings/:id/status</text>
+<text x="64" y="2622">PUT (Admin)</text>
+<text x="64" y="2646">{ status: 'CONFIRMED' / 'COMPLETED' }</text>
+<text x="64" y="2670">{ booking: updated }</text>
+<text x="64" y="2694">Admin updates booking status</text>
+<text x="64" y="2718">GET /bookings/admin/all</text>
+<text x="64" y="2742">GET (Admin)</text>
+<text x="64" y="2766">?date=, ?branch_id=, ?status=</text>
+<text x="64" y="2790">{ bookings: [...] }</text>
+<text x="64" y="2814">Admin view of all bookings with filters</text>
+<text x="64" y="2838"> </text>
+<text x="64" y="2862">6.5 Review APIs</text>
+<text x="64" y="2886">Endpoint</text>
+<text x="64" y="2910">Method</text>
+<text x="64" y="2934">Input</text>
+<text x="64" y="2958">Output</text>
+<text x="64" y="2982">Purpose</text>
+<text x="64" y="3006">POST /reviews</text>
+<text x="64" y="3030">POST (User)</text>
+<text x="64" y="3054">{ booking_id, rating: 4, comment_hi: '...' }</text>
+<text x="64" y="3078">{ review: {id, ...} }</text>
+<text x="64" y="3102">Submit a review after service completion</text>
+<text x="64" y="3126">GET /reviews</text>
+<text x="64" y="3150">GET</text>
+<text x="64" y="3174">?service_id=, ?staff_id=, ?page=</text>
+<text x="64" y="3198">{ reviews: [...], avgRating }</text>
+<text x="64" y="3222">Get reviews for a service or staff member</text>
+<text x="64" y="3246">DELETE /reviews/:id</text>
+<text x="64" y="3270">DELETE (Admin)</text>
+<text x="64" y="3294">Review ID</text>
+<text x="64" y="3318">{ success: true }</text>
+<text x="64" y="3342">Admin hides inappropriate review</text>
+<text x="64" y="3366"> </text>
+<text x="64" y="3390">6.6 Admin APIs</text>
+<text x="64" y="3414">Endpoint</text>
+<text x="64" y="3438">Method</text>
+<text x="64" y="3462">Purpose</text>
+<text x="64" y="3486">GET /admin/dashboard</text>
+<text x="64" y="3510">GET (Admin)</text>
+<text x="64" y="3534">Summary: today's bookings count, revenue, pending actions</text>
+<text x="64" y="3558">GET /admin/users</text>
+<text x="64" y="3582">GET (Admin)</text>
+<text x="64" y="3606">List all registered users with filters</text>
+<text x="64" y="3630">PUT /admin/users/:id/suspend</text>
+<text x="64" y="3654">PUT (Admin)</text>
+<text x="64" y="3678">Suspend a user account</text>
+<text x="64" y="3702">POST /admin/staff</text>
+<text x="64" y="3726">POST (Admin)</text>
+<text x="64" y="3750">Add new staff member</text>
+<text x="64" y="3774">PUT /admin/staff/:id</text>
+<text x="64" y="3798">PUT (Admin)</text>
+<text x="64" y="3822">Update staff info or schedule</text>
+<text x="64" y="3846">POST /admin/offers</text>
+<text x="64" y="3870">POST (Admin)</text>
+<text x="64" y="3894">Create new promo code / offer</text>
+<text x="64" y="3918">GET /admin/reports/revenue</text>
+<text x="64" y="3942">GET (Admin)</text>
+<text x="64" y="3966">Revenue report by date range and branch</text>
+<text x="64" y="3990">POST /admin/notifications/send</text>
+<text x="64" y="4014">POST (Admin)</text>
+<text x="64" y="4038">Send WhatsApp blast to user segment</text>
+<text x="64" y="4062">GET /admin/branches</text>
+<text x="64" y="4086">GET (Admin)</text>
+<text x="64" y="4110">List all branches</text>
+<text x="64" y="4134">POST /admin/branches</text>
+<text x="64" y="4158">POST (Admin)</text>
+<text x="64" y="4182">Add new branch</text>
+<text x="64" y="4206"> </text>
+<text x="64" y="4230">6.7 Error Handling &amp; Status Codes</text>
+<text x="64" y="4254">HTTP Code</text>
+<text x="64" y="4278">Meaning</text>
+<text x="64" y="4302">When Used</text>
+<text x="64" y="4326">Example Response</text>
+<text x="64" y="4350">200 OK</text>
+<text x="64" y="4374">Success</text>
+<text x="64" y="4398">Successful GET, PUT, DELETE</text>
+<text x="64" y="4422">{ data: {...} }</text>
+<text x="64" y="4446">201 Created</text>
+<text x="64" y="4470">New resource created</text>
+<text x="64" y="4494">Successful POST (booking, review created)</text>
+<text x="64" y="4518">{ booking: {id: 'BK-001'} }</text>
+<text x="64" y="4542">400 Bad Request</text>
+<text x="64" y="4566">Invalid input</text>
+<text x="64" y="4590">Missing required fields, invalid date format</text>
+<text x="64" y="4614">{ error: 'INVALID_DATE', message: 'कृपया सही तारीख चुनें।' }</text>
+<text x="64" y="4638">401 Unauthorized</text>
+<text x="64" y="4662">Token missing/invalid</text>
+<text x="64" y="4686">No token, expired token, revoked token</text>
+<text x="64" y="4710">{ error: 'TOKEN_EXPIRED', message: 'कृपया दोबारा लॉगिन करें।' }</text>
+<text x="64" y="4734">403 Forbidden</text>
+<text x="64" y="4758">Insufficient role</text>
+<text x="64" y="4782">USER tries to call ADMIN endpoint</text>
+<text x="64" y="4806">{ error: 'ACCESS_DENIED', message: 'आपके पास अनुमति नहीं है।' }</text>
+<text x="64" y="4830">404 Not Found</text>
+<text x="64" y="4854">Resource missing</text>
+<text x="64" y="4878">Booking ID doesn't exist</text>
+<text x="64" y="4902">{ error: 'BOOKING_NOT_FOUND', message: 'बुकिंग नहीं मिली।' }</text>
+<text x="64" y="4926">409 Conflict</text>
+<text x="64" y="4950">Business rule violation</text>
+<text x="64" y="4974">Slot already booked, double booking</text>
+<text x="64" y="4998">{ error: 'SLOT_TAKEN', message: 'यह समय स्लॉट उपलब्ध नहीं है।' }</text>
+<text x="64" y="5022">500 Internal Server Error</text>
+<text x="64" y="5046">Unexpected crash</text>
+<text x="64" y="5070">DB down, unhandled exception</text>
+<text x="64" y="5094">{ error: 'SERVER_ERROR', message: 'कुछ गलत हुआ। थोड़ी देर बाद प्रयास करें।' }</text>
+<text x="64" y="5118"> </text>
+</g>
+</svg>

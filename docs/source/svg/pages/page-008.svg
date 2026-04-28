@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="2630" viewBox="0 0 1440 2630" role="img" aria-labelledby="title desc">
+<title id="title">NikhartaRoop System Documentation Page 008</title>
+<desc id="desc">Text-preserving SVG conversion of NikhartaRoop System Documentation - Page 008 from NikhartaRoop_SystemDoc.docx.</desc>
+<rect width="100%" height="100%" fill="#fffaf6"/>
+<text x="64" y="40" font-family="Inter, Noto Sans Devanagari, Arial, sans-serif" font-size="18" font-weight="700" fill="#880E4F">NikhartaRoop System Documentation - Page 008</text>
+<g font-family="Noto Sans Devanagari, Inter, Arial, sans-serif" font-size="16" fill="#212121">
+<text x="64" y="78"> </text>
+<text x="64" y="102">7. Application Pages</text>
+<text x="64" y="126">7.1 User App Pages (Web + Mobile)</text>
+<text x="64" y="150"> </text>
+<text x="64" y="174">Page</text>
+<text x="64" y="198">Purpose</text>
+<text x="64" y="222">Key Components</text>
+<text x="64" y="246">API Used</text>
+<text x="64" y="270">Home Page</text>
+<text x="64" y="294">First impression — shows brand, featured services, offers</text>
+<text x="64" y="318">Hero banner, service category grid, offer strip, testimonials, 'Book Now' CTA</text>
+<text x="64" y="342">GET /services, GET /offers</text>
+<text x="64" y="366">Services Page</text>
+<text x="64" y="390">Browse all services by category</text>
+<text x="64" y="414">Category filter tabs (Hindi), service cards (name, price, duration, photo)</text>
+<text x="64" y="438">GET /services, GET /services/categories</text>
+<text x="64" y="462">Service Detail</text>
+<text x="64" y="486">Full info on one service</text>
+<text x="64" y="510">Service photo gallery, description (Hindi), price, duration, staff who offer it, reviews,</text>
+<text x="64" y="534">Book button</text>
+<text x="64" y="558">GET /services/:id, GET /reviews?service_id=</text>
+<text x="64" y="582">Booking Page</text>
+<text x="64" y="606">Select date, slot, staff, confirm</text>
+<text x="64" y="630">Date picker (Hindi calendar), time slot grid (green=available, red=booked), staff selector,</text>
+<text x="64" y="654">order summary, pay button</text>
+<text x="64" y="678">GET /bookings/slots, POST /bookings</text>
+<text x="64" y="702">My Appointments</text>
+<text x="64" y="726">User's booking history</text>
+<text x="64" y="750">Tabbed view: Upcoming / Past / Cancelled. Each card shows date, service, staff, status</text>
+<text x="64" y="774">badge, cancel/reschedule option</text>
+<text x="64" y="798">GET /bookings/my</text>
+<text x="64" y="822">Booking Confirmation</text>
+<text x="64" y="846">Post-booking success screen</text>
+<text x="64" y="870">Booking ID, service name, date-time, QR code (for in-parlour check-in), WhatsApp share</text>
+<text x="64" y="894">button</text>
+<text x="64" y="918">GET /bookings/:id</text>
+<text x="64" y="942">Profile Page</text>
+<text x="64" y="966">Manage personal info</text>
+<text x="64" y="990">Edit name, email, view loyalty points balance, notification preferences toggle</text>
+<text x="64" y="1014">GET /auth/me, PUT /users/profile</text>
+<text x="64" y="1038">Reviews Page</text>
+<text x="64" y="1062">View and submit reviews</text>
+<text x="64" y="1086">Star rating widget, Hindi text input, photo upload optional, past reviews list</text>
+<text x="64" y="1110">POST /reviews, GET /reviews</text>
+<text x="64" y="1134">Blog Page</text>
+<text x="64" y="1158">Hindi content for SEO</text>
+<text x="64" y="1182">Category filters, article cards, search box, related articles sidebar</text>
+<text x="64" y="1206">GET /blog/posts (separate CMS API)</text>
+<text x="64" y="1230">Branch Locator</text>
+<text x="64" y="1254">Find nearest parlour</text>
+<text x="64" y="1278">Google Maps embed, branch cards with address + hours + phone + directions button</text>
+<text x="64" y="1302">GET /branches</text>
+<text x="64" y="1326"> </text>
+<text x="64" y="1350">7.2 Admin Panel Pages</text>
+<text x="64" y="1374">Page</text>
+<text x="64" y="1398">Purpose</text>
+<text x="64" y="1422">Key Components</text>
+<text x="64" y="1446">API Used</text>
+<text x="64" y="1470">Dashboard</text>
+<text x="64" y="1494">Daily operations overview</text>
+<text x="64" y="1518">Today's booking count, revenue, pending confirmations, staff availability grid, quick action</text>
+<text x="64" y="1542">buttons</text>
+<text x="64" y="1566">GET /admin/dashboard</text>
+<text x="64" y="1590">Manage Bookings</text>
+<text x="64" y="1614">View and update all bookings</text>
+<text x="64" y="1638">Calendar view + list view, filter by date/staff/status, click booking to see details, update</text>
+<text x="64" y="1662">status dropdown</text>
+<text x="64" y="1686">GET /admin/bookings, PUT /bookings/:id/status</text>
+<text x="64" y="1710">Manage Services</text>
+<text x="64" y="1734">Add, edit, deactivate services</text>
+<text x="64" y="1758">Service list with inline edit, toggle switch for is_active, form to add new service (Hindi +</text>
+<text x="64" y="1782">English name, price, photo upload)</text>
+<text x="64" y="1806">GET/POST/PUT /services</text>
+<text x="64" y="1830">Manage Staff</text>
+<text x="64" y="1854">Staff profiles and scheduling</text>
+<text x="64" y="1878">Staff list with photo, specializations, rating. Click to edit schedule, toggle availability,</text>
+<text x="64" y="1902">view their booking history</text>
+<text x="64" y="1926">GET/POST/PUT /admin/staff</text>
+<text x="64" y="1950">Manage Users</text>
+<text x="64" y="1974">Customer database</text>
+<text x="64" y="1998">Searchable user list, view booking history per user, loyalty points balance, suspend account</text>
+<text x="64" y="2022">button</text>
+<text x="64" y="2046">GET /admin/users</text>
+<text x="64" y="2070">Offers &amp; Discounts</text>
+<text x="64" y="2094">Create and manage promo codes</text>
+<text x="64" y="2118">Offer creation form, active offers list, usage count vs limit, expiry countdown, deactivate</text>
+<text x="64" y="2142">toggle</text>
+<text x="64" y="2166">GET/POST/PUT /admin/offers</text>
+<text x="64" y="2190">Revenue Reports</text>
+<text x="64" y="2214">Financial analytics</text>
+<text x="64" y="2238">Daily/Weekly/Monthly revenue chart, top services by revenue, branch comparison (if</text>
+<text x="64" y="2262">multi-branch)</text>
+<text x="64" y="2286">GET /admin/reports/revenue</text>
+<text x="64" y="2310">Notifications</text>
+<text x="64" y="2334">Send bulk messages</text>
+<text x="64" y="2358">Segment selector (all users / by last visit), compose WhatsApp/SMS message, schedule send</text>
+<text x="64" y="2382">option</text>
+<text x="64" y="2406">POST /admin/notifications/send</text>
+<text x="64" y="2430">Branch Settings</text>
+<text x="64" y="2454">Manage parlour info</text>
+<text x="64" y="2478">Edit address, opening hours, contact number, holiday/closure dates, Google Maps link</text>
+<text x="64" y="2502">GET/PUT /admin/branches</text>
+<text x="64" y="2526"> </text>
+</g>
+</svg>

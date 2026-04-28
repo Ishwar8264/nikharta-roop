@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="2222" viewBox="0 0 1440 2222" role="img" aria-labelledby="title desc">
+<title id="title">NikhartaRoop System Documentation Page 011</title>
+<desc id="desc">Text-preserving SVG conversion of NikhartaRoop System Documentation - Page 011 from NikhartaRoop_SystemDoc.docx.</desc>
+<rect width="100%" height="100%" fill="#fffaf6"/>
+<text x="64" y="40" font-family="Inter, Noto Sans Devanagari, Arial, sans-serif" font-size="18" font-weight="700" fill="#880E4F">NikhartaRoop System Documentation - Page 011</text>
+<g font-family="Noto Sans Devanagari, Inter, Arial, sans-serif" font-size="16" fill="#212121">
+<text x="64" y="78"> </text>
+<text x="64" y="102">10. Notifications System</text>
+<text x="64" y="126">10.1 Notification Channels</text>
+<text x="64" y="150">Nikharta Roop uses three channels for notifications. WhatsApp is the primary channel as it</text>
+<text x="64" y="174">has the highest open rate in India (95%+). SMS is the fallback. Email is used only for</text>
+<text x="64" y="198">receipts and admin reports.</text>
+<text x="64" y="222"> </text>
+<text x="64" y="246">Channel</text>
+<text x="64" y="270">Provider</text>
+<text x="64" y="294">Primary Use</text>
+<text x="64" y="318">Fallback For</text>
+<text x="64" y="342">WhatsApp</text>
+<text x="64" y="366">Interakt / Wati (WhatsApp Business API)</text>
+<text x="64" y="390">Booking confirmations, reminders, offers</text>
+<text x="64" y="414">Email</text>
+<text x="64" y="438">SMS</text>
+<text x="64" y="462">MSG91 / Kaleyra</text>
+<text x="64" y="486">OTP delivery, booking alerts when no WhatsApp</text>
+<text x="64" y="510">WhatsApp (in rural areas)</text>
+<text x="64" y="534">Email</text>
+<text x="64" y="558">SendGrid</text>
+<text x="64" y="582">Payment receipts, monthly summary, admin reports</text>
+<text x="64" y="606">None — supplementary only</text>
+<text x="64" y="630">In-App Push</text>
+<text x="64" y="654">Firebase Cloud Messaging (FCM)</text>
+<text x="64" y="678">Real-time booking updates when app is installed</text>
+<text x="64" y="702">WhatsApp</text>
+<text x="64" y="726"> </text>
+<text x="64" y="750">10.2 Notification Trigger Events</text>
+<text x="64" y="774">Trigger Event</text>
+<text x="64" y="798">Channel</text>
+<text x="64" y="822">Recipient</text>
+<text x="64" y="846">Hindi Message Template</text>
+<text x="64" y="870">User books appointment</text>
+<text x="64" y="894">WhatsApp + SMS</text>
+<text x="64" y="918">Customer</text>
+<text x="64" y="942">'नमस्ते [Name]! आपकी बुकिंग [Service] के लिए [Date] [Time] पर confirmed है। ID: [BookingID]'</text>
+<text x="64" y="966">Admin confirms booking</text>
+<text x="64" y="990">WhatsApp</text>
+<text x="64" y="1014">Customer</text>
+<text x="64" y="1038">'आपकी बुकिंग confirm हो गई है। हम आपका इंतज़ार कर रहे हैं! 🌸'</text>
+<text x="64" y="1062">2 hours before appointment</text>
+<text x="64" y="1086">WhatsApp + SMS</text>
+<text x="64" y="1110">Customer</text>
+<text x="64" y="1134">'याद दिलाना: आपकी [Service] की अपॉइंटमेंट आज [Time] बजे है। निखरता रूप, [Address]'</text>
+<text x="64" y="1158">Booking cancelled by user</text>
+<text x="64" y="1182">WhatsApp</text>
+<text x="64" y="1206">Customer + Admin</text>
+<text x="64" y="1230">'आपकी बुकिंग cancel हो गई। Refund 5-7 business days में आएगा।'</text>
+<text x="64" y="1254">Booking cancelled by admin</text>
+<text x="64" y="1278">WhatsApp + SMS</text>
+<text x="64" y="1302">Customer</text>
+<text x="64" y="1326">'खेद है! आपकी [Date] की बुकिंग cancel हो गई। कारण: [Reason]. दोबारा book करें।'</text>
+<text x="64" y="1350">Service completed</text>
+<text x="64" y="1374">WhatsApp</text>
+<text x="64" y="1398">Customer</text>
+<text x="64" y="1422">'सेवा पूरी हुई! आपका अनुभव कैसा रहा? Review करें: [link]'</text>
+<text x="64" y="1446">New offer launched</text>
+<text x="64" y="1470">WhatsApp Blast</text>
+<text x="64" y="1494">All users or segment</text>
+<text x="64" y="1518">'🎉 खुशखबरी! दिवाली पर 20% छूट। Code: DIWALI20. [Book Now Link]'</text>
+<text x="64" y="1542">OTP request</text>
+<text x="64" y="1566">SMS (always)</text>
+<text x="64" y="1590">Customer</text>
+<text x="64" y="1614">'[OTP] - यह आपका Nikharta Roop verification code है। किसी के साथ share न करें।'</text>
+<text x="64" y="1638">Loyalty milestone</text>
+<text x="64" y="1662">WhatsApp</text>
+<text x="64" y="1686">Customer</text>
+<text x="64" y="1710">'बधाई हो! आपने 500 loyalty points कमाए। अगली बुकिंग पर ₹100 की छूट मिलेगी।'</text>
+<text x="64" y="1734">No-show detected</text>
+<text x="64" y="1758">WhatsApp</text>
+<text x="64" y="1782">Customer</text>
+<text x="64" y="1806">'हम आपको miss कर रहे थे! आपकी [Date] की appointment missed हो गई। दोबारा book करें।'</text>
+<text x="64" y="1830"> </text>
+<text x="64" y="1854">10.3 Notification Service Architecture</text>
+<text x="64" y="1878">	•	A dedicated Notification Service (microservice or module) handles all outgoing messages.</text>
+<text x="64" y="1902">	•	The main API never directly calls SMS/WhatsApp — it enqueues a job in a message queue</text>
+<text x="64" y="1926">(Redis Queue / BullMQ).</text>
+<text x="64" y="1950">	•	The Notification Service processes jobs from the queue — retries up to 3 times on</text>
+<text x="64" y="1974">failure.</text>
+<text x="64" y="1998">	•	All notifications are logged in a Notifications table with status (SENT / FAILED) for</text>
+<text x="64" y="2022">audit.</text>
+<text x="64" y="2046">	•	Admin dashboard shows delivery stats: 95% WhatsApp delivery rate expected.</text>
+<text x="64" y="2070">⚠️ Edge Case: If WhatsApp delivery fails (user hasn't opted in or number invalid), the</text>
+<text x="64" y="2094">system automatically falls back to SMS for the same message within 30 seconds.</text>
+<text x="64" y="2118"> </text>
+</g>
+</svg>

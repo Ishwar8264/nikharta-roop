@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="2438" viewBox="0 0 1440 2438" role="img" aria-labelledby="title desc">
+<title id="title">NikhartaRoop System Documentation Page 015</title>
+<desc id="desc">Text-preserving SVG conversion of NikhartaRoop System Documentation - Page 015 from NikhartaRoop_SystemDoc.docx.</desc>
+<rect width="100%" height="100%" fill="#fffaf6"/>
+<text x="64" y="40" font-family="Inter, Noto Sans Devanagari, Arial, sans-serif" font-size="18" font-weight="700" fill="#880E4F">NikhartaRoop System Documentation - Page 015</text>
+<g font-family="Noto Sans Devanagari, Inter, Arial, sans-serif" font-size="16" fill="#212121">
+<text x="64" y="78"> </text>
+<text x="64" y="102">14. SEO &amp; Growth Strategy</text>
+<text x="64" y="126">14.1 Hindi Blog Content Strategy</text>
+<text x="64" y="150">Hindi-language content is severely underserved on the internet. A consistent Hindi beauty</text>
+<text x="64" y="174">blog gives Nikharta Roop a massive organic traffic advantage over competitors who only</text>
+<text x="64" y="198">publish in English.</text>
+<text x="64" y="222">Content Category</text>
+<text x="64" y="246">Example Topics</text>
+<text x="64" y="270">Target Search Intent</text>
+<text x="64" y="294">Publishing Frequency</text>
+<text x="64" y="318">Skincare Tips in Hindi</text>
+<text x="64" y="342">'गर्मियों में चेहरे की देखभाल कैसे करें', 'घर पर फेशियल कैसे करें'</text>
+<text x="64" y="366">How-to, DIY tips seekers</text>
+<text x="64" y="390">2 posts/week</text>
+<text x="64" y="414">Bridal Beauty</text>
+<text x="64" y="438">'शादी से पहले कौन से treatments लें', 'दुल्हन का makeup कैसे होता है'</text>
+<text x="64" y="462">Bride-to-be research queries</text>
+<text x="64" y="486">1 post/week</text>
+<text x="64" y="510">Hair Care</text>
+<text x="64" y="534">'बालों को घना कैसे बनाएं', 'Hair spa के फायदे'</text>
+<text x="64" y="558">Hair problem solution seekers</text>
+<text x="64" y="582">1 post/week</text>
+<text x="64" y="606">Festival Looks</text>
+<text x="64" y="630">'दिवाली के लिए makeup ideas', 'ईद पर simple mehndi designs'</text>
+<text x="64" y="654">Seasonal — high traffic spikes</text>
+<text x="64" y="678">Before each festival</text>
+<text x="64" y="702">Service Explainers</text>
+<text x="64" y="726">'Threading vs Waxing में क्या फर्क है', 'O3+ Facial क्या होता है'</text>
+<text x="64" y="750">Users researching services before booking</text>
+<text x="64" y="774">On-demand</text>
+<text x="64" y="798"> </text>
+<text x="64" y="822">14.2 Local SEO Strategy</text>
+<text x="64" y="846">Action</text>
+<text x="64" y="870">How To Implement</text>
+<text x="64" y="894">Expected Result</text>
+<text x="64" y="918">Google Business Profile</text>
+<text x="64" y="942">Create verified listing for each branch with photos, hours, and services</text>
+<text x="64" y="966">Appear in 'beauty parlour near me' searches</text>
+<text x="64" y="990">Location Pages</text>
+<text x="64" y="1014">Create dedicated pages: nikhartaroop.in/delhi, nikhartaroop.in/lucknow with local content</text>
+<text x="64" y="1038">Rank for city-specific searches</text>
+<text x="64" y="1062">Customer Reviews on Google</text>
+<text x="64" y="1086">After each completed service, ask customer to leave Google Review via WhatsApp link</text>
+<text x="64" y="1110">Higher ranking in local pack; social proof</text>
+<text x="64" y="1134">Hindi Meta Tags</text>
+<text x="64" y="1158">Every page has title, description in Hindi: '&lt;title&gt;दिल्ली में बेस्ट ब्यूटी पार्लर - निखरता</text>
+<text x="64" y="1182">रूप&lt;/title&gt;'</text>
+<text x="64" y="1206">Better CTR from Hindi-language searchers</text>
+<text x="64" y="1230">Schema Markup</text>
+<text x="64" y="1254">Add LocalBusiness + BeautySalon schema JSON-LD to all location pages</text>
+<text x="64" y="1278">Rich snippets in Google: show hours, rating, price range</text>
+<text x="64" y="1302">Google Maps Embed</text>
+<text x="64" y="1326">Embed live Google Maps on branch/contact page</text>
+<text x="64" y="1350">Easier for users to navigate; signals local relevance</text>
+<text x="64" y="1374"> </text>
+<text x="64" y="1398">14.3 Core Web Vitals Targets</text>
+<text x="64" y="1422">Metric</text>
+<text x="64" y="1446">Target</text>
+<text x="64" y="1470">Strategy to Achieve</text>
+<text x="64" y="1494">LCP (Largest Contentful Paint)</text>
+<text x="64" y="1518">&lt; 2.5 seconds</text>
+<text x="64" y="1542">Preload hero image, use CDN (Cloudinary), Next.js Image optimization</text>
+<text x="64" y="1566">FID / INP (Interaction to Next Paint)</text>
+<text x="64" y="1590">&lt; 200ms</text>
+<text x="64" y="1614">Minimize JavaScript bundle, code-split by page, avoid heavy libraries</text>
+<text x="64" y="1638">CLS (Cumulative Layout Shift)</text>
+<text x="64" y="1662">&lt; 0.1</text>
+<text x="64" y="1686">Always define image dimensions, avoid dynamically inserted content above fold</text>
+<text x="64" y="1710">TTFB (Time to First Byte)</text>
+<text x="64" y="1734">&lt; 600ms</text>
+<text x="64" y="1758">Next.js ISR (Incremental Static Regeneration) for services page, Redis caching</text>
+<text x="64" y="1782">Mobile PageSpeed Score</text>
+<text x="64" y="1806">&gt; 85</text>
+<text x="64" y="1830">Combine all above + compress images to WebP, use lazy loading throughout</text>
+<text x="64" y="1854"> </text>
+<text x="64" y="1878">14.4 Growth Channels Summary</text>
+<text x="64" y="1902">Channel</text>
+<text x="64" y="1926">Strategy</text>
+<text x="64" y="1950">Expected Monthly Reach (Year 1)</text>
+<text x="64" y="1974">Google Search (SEO)</text>
+<text x="64" y="1998">Hindi blog + local SEO + service pages</text>
+<text x="64" y="2022">500–2,000 organic visits</text>
+<text x="64" y="2046">WhatsApp Marketing</text>
+<text x="64" y="2070">Opt-in broadcast to past customers with offers</text>
+<text x="64" y="2094">500–1,000 messages delivered at near-zero cost</text>
+<text x="64" y="2118">Instagram</text>
+<text x="64" y="2142">Before/after photos, reels, Hindi captions, local hashtags</text>
+<text x="64" y="2166">2,000–5,000 followers</text>
+<text x="64" y="2190">Referral Program</text>
+<text x="64" y="2214">'Friend ko refer करें, दोनों को ₹100 की छूट'</text>
+<text x="64" y="2238">15–25% of new users from referral</text>
+<text x="64" y="2262">Google Ads (Paid)</text>
+<text x="64" y="2286">Location-targeted ads for 'parlour near me' searches</text>
+<text x="64" y="2310">Budget-dependent — ₹5,000/month recommended to start</text>
+<text x="64" y="2334"> </text>
+</g>
+</svg>
