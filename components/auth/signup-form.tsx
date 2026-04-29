@@ -60,7 +60,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         } else {
           toast.error(data.message || "रजिस्ट्रेशन असफल। फिर कोशिश करें।");
         }
-      } catch (error) {
+      } catch {
         toast.error("नेटवर्क त्रुटि। कृपया फिर से प्रयास करें।");
       }
     });
