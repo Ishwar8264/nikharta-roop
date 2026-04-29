@@ -15,18 +15,22 @@ type OpenApiRecord = Record<string, unknown>;
 /**
  * Wraps a successful endpoint payload in the shared API response shape.
  */
-function successResponse(dataSchema: OpenApiRecord): OpenApiRecord {
+function successResponse(input: {
+  codeExample: string;
+  dataSchema: OpenApiRecord;
+  messageExample: string;
+}): OpenApiRecord {
   return {
     type: "object",
     required: ["success", "code", "message", "data"],
     properties: {
       success: { type: "boolean", example: true },
-      code: { type: "string", example: AUTH_CODES.SIGNUP_OTP_SENT },
+      code: { type: "string", example: input.codeExample },
       message: {
         type: "string",
-        example: AUTH_MESSAGES.SIGNUP_OTP_SENT,
+        example: input.messageExample,
       },
-      data: dataSchema,
+      data: input.dataSchema,
     },
   };
 }
@@ -71,13 +75,55 @@ const signupOtpDataSchema: OpenApiRecord = {
   },
 };
 
+const signupVerifyDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["user", "session", "sessionToken", "refreshToken"],
+  properties: {
+    user: {
+      type: "object",
+      required: ["id", "mobile", "role", "mobileVerifiedAt"],
+      properties: {
+        id: { type: "string", example: "cmokabtp40001fjw9ghgo2zv7" },
+        mobile: { type: "string", example: "9876543210" },
+        name: { type: "string", nullable: true, example: "Priya" },
+        email: {
+          type: "string",
+          nullable: true,
+          example: "priya@example.com",
+        },
+        role: { type: "string", example: "USER" },
+        mobileVerifiedAt: { type: "string", format: "date-time" },
+      },
+    },
+    session: {
+      type: "object",
+      required: ["id", "expiresAt"],
+      properties: {
+        id: { type: "string", example: "cmokabtp40002fjw9v6ehw21x" },
+        expiresAt: { type: "string", format: "date-time" },
+      },
+    },
+    sessionToken: {
+      type: "string",
+      description: "Opaque bearer token. Store securely on the client.",
+    },
+    refreshToken: {
+      type: "string",
+      description: "Opaque refresh token. Store securely on the client.",
+    },
+  },
+};
+
 /**
  * Creates an OpenAPI JSON endpoint definition.
  */
 function jsonEndpoint(input: {
   description: string;
+  failureDescription?: string;
   requestSchema?: OpenApiRecord;
   responseSchema: OpenApiRecord;
+  successCode: string;
+  successMessage: string;
   summary: string;
 }): OpenApiRecord {
   return {
@@ -102,7 +148,11 @@ function jsonEndpoint(input: {
           description: "OTP challenge created.",
           content: {
             "application/json": {
-              schema: successResponse(input.responseSchema),
+              schema: successResponse({
+                codeExample: input.successCode,
+                dataSchema: input.responseSchema,
+                messageExample: input.successMessage,
+              }),
             },
           },
         },
@@ -122,6 +172,30 @@ function jsonEndpoint(input: {
             },
           },
         },
+        [HTTP_STATUS.GONE]: {
+          description: "OTP is missing or expired.",
+          content: {
+            "application/json": {
+              schema: errorResponse(),
+            },
+          },
+        },
+        [HTTP_STATUS.LOCKED]: {
+          description: "OTP attempts are locked.",
+          content: {
+            "application/json": {
+              schema: errorResponse(),
+            },
+          },
+        },
+        [HTTP_STATUS.UNAUTHORIZED]: {
+          description: "OTP is invalid.",
+          content: {
+            "application/json": {
+              schema: errorResponse(),
+            },
+          },
+        },
         [HTTP_STATUS.UNPROCESSABLE_ENTITY]: {
           description: "Request validation failed.",
           content: {
@@ -131,7 +205,7 @@ function jsonEndpoint(input: {
           },
         },
         [HTTP_STATUS.INTERNAL_SERVER_ERROR]: {
-          description: "Registration failed.",
+          description: input.failureDescription ?? "Registration failed.",
           content: {
             "application/json": {
               schema: errorResponse(),
@@ -189,6 +263,34 @@ export function GET(request: Request) {
             },
           },
           responseSchema: signupOtpDataSchema,
+          successCode: AUTH_CODES.SIGNUP_OTP_SENT,
+          successMessage: AUTH_MESSAGES.SIGNUP_OTP_SENT,
+        }),
+        "/api/v1/auth/register/verify": jsonEndpoint({
+          summary: "Verify registration OTP",
+          description:
+            "Verify the signup OTP, create the user account, mark the mobile number as verified, and start an auth session.",
+          failureDescription: "Signup OTP verification failed.",
+          requestSchema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["mobile", "otp"],
+            properties: {
+              mobile: {
+                type: "string",
+                pattern: "^[6-9]\\d{9}$",
+                example: "9876543210",
+              },
+              otp: {
+                type: "string",
+                pattern: "^\\d{6}$",
+                example: "123456",
+              },
+            },
+          },
+          responseSchema: signupVerifyDataSchema,
+          successCode: AUTH_CODES.SIGNUP_COMPLETED,
+          successMessage: AUTH_MESSAGES.SIGNUP_COMPLETED,
         }),
       },
     },
