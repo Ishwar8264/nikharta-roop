@@ -1,0 +1,66 @@
+<svg width="1200" height="860" viewBox="0 0 1200 860" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Auth Architecture Decision Records</title>
+  <desc id="desc">Visual ADR for the Nikharta Roop authentication architecture decisions.</desc>
+  <defs>
+    <style>
+      .bg { fill: #fffaf6; }
+      .card { fill: #ffffff; stroke: #f1d2ca; stroke-width: 2; }
+      .code { fill: #fff7ed; stroke: #fed7aa; stroke-width: 2; }
+      .title { fill: #1c1917; font-family: Arial, sans-serif; font-size: 34px; font-weight: 800; }
+      .subtitle { fill: #57534e; font-family: Arial, sans-serif; font-size: 15px; }
+      .adr { fill: #be123c; font-family: Arial, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 1px; }
+      .heading { fill: #1c1917; font-family: Arial, sans-serif; font-size: 20px; font-weight: 800; }
+      .body { fill: #57534e; font-family: Arial, sans-serif; font-size: 14px; }
+      .small { fill: #78716c; font-family: Arial, sans-serif; font-size: 12px; }
+      .line { stroke: #d6d3d1; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="860" rx="24" />
+  <text x="52" y="64" class="title">Auth Architecture Decisions</text>
+  <text x="52" y="94" class="subtitle">A visual ADR: what we chose, why it exists, and what future engineers should preserve.</text>
+
+  <rect x="52" y="132" width="520" height="150" rx="18" class="card" />
+  <text x="82" y="168" class="adr">ADR-001</text>
+  <text x="82" y="198" class="heading">OTP-first auth, no password</text>
+  <text x="82" y="230" class="body">Mobile number is the primary identity. Signup and login use OTP challenges.</text>
+  <text x="82" y="255" class="small">Reason: simpler Hindi/mobile-first UX and less password-management risk.</text>
+
+  <rect x="628" y="132" width="520" height="150" rx="18" class="card" />
+  <text x="658" y="168" class="adr">ADR-002</text>
+  <text x="658" y="198" class="heading">Signup does not create user immediately</text>
+  <text x="658" y="230" class="body">/register only creates AuthOtp. /register/verify creates User after OTP success.</text>
+  <text x="658" y="255" class="small">Reason: avoid unverified account rows and fake signup clutter.</text>
+
+  <rect x="52" y="322" width="520" height="150" rx="18" class="card" />
+  <text x="82" y="358" class="adr">ADR-003</text>
+  <text x="82" y="388" class="heading">Tokens are opaque and hashed in DB</text>
+  <text x="82" y="420" class="body">Session and refresh tokens are random strings; PostgreSQL stores only hashes.</text>
+  <text x="82" y="445" class="small">Reason: a database leak should not expose usable auth tokens.</text>
+
+  <rect x="628" y="322" width="520" height="150" rx="18" class="card" />
+  <text x="658" y="358" class="adr">ADR-004</text>
+  <text x="658" y="388" class="heading">HttpOnly cookies plus bearer fallback</text>
+  <text x="658" y="420" class="body">Browser clients use cookies; API/mobile clients can use Authorization Bearer.</text>
+  <text x="658" y="445" class="small">Reason: reduce XSS token exposure without breaking non-browser clients.</text>
+
+  <rect x="52" y="512" width="520" height="150" rx="18" class="card" />
+  <text x="82" y="548" class="adr">ADR-005</text>
+  <text x="82" y="578" class="heading">Refresh token rotation</text>
+  <text x="82" y="610" class="body">Every refresh issues a new session token and a new refresh token.</text>
+  <text x="82" y="635" class="small">Reason: old refresh tokens become useless after successful rotation.</text>
+
+  <rect x="628" y="512" width="520" height="150" rx="18" class="card" />
+  <text x="658" y="548" class="adr">ADR-006</text>
+  <text x="658" y="578" class="heading">Explicit session management</text>
+  <text x="658" y="610" class="body">Users can list sessions, logout current session, and revoke one session.</text>
+  <text x="658" y="635" class="small">Reason: supports multi-device control and clear audit trails.</text>
+
+  <rect x="52" y="702" width="1096" height="96" rx="18" class="code" />
+  <text x="82" y="738" class="heading">Token entropy policy</text>
+  <text x="82" y="768" class="body">sessionToken = 32 bytes / 256-bit entropy. refreshToken = 64 bytes / 512-bit entropy.</text>
+  <text x="82" y="792" class="small">Avoid 300+ char tokens unless there is a specific protocol reason. Entropy matters more than raw string length.</text>
+
+  <line x1="52" y1="824" x2="1148" y2="824" class="line" />
+  <text x="52" y="846" class="small">Future note: add DB/Redis rate limiting and CSRF header validation before production launch.</text>
+</svg>
