@@ -55,3 +55,31 @@ export const verifyRegisterSchema = z.object({
 });
 
 export type VerifyRegisterInput = z.infer<typeof verifyRegisterSchema>;
+
+/**
+ * Request schema for POST /api/v1/auth/login.
+ */
+export const loginSchema = z.object({
+  mobile: mobileSchema,
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
+
+/**
+ * Request schema for POST /api/v1/auth/login/verify.
+ */
+export const verifyLoginSchema = z.object({
+  mobile: mobileSchema,
+  otp: otpSchema,
+});
+
+export type VerifyLoginInput = z.infer<typeof verifyLoginSchema>;
+
+/**
+ * Request schema for POST /api/v1/auth/refresh.
+ */
+export const refreshSessionSchema = z.object({
+  refreshToken: z.string().trim().min(20),
+});
+
+export type RefreshSessionInput = z.infer<typeof refreshSessionSchema>;

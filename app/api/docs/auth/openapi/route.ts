@@ -75,26 +75,28 @@ const signupOtpDataSchema: OpenApiRecord = {
   },
 };
 
+const authUserDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "mobile", "role", "mobileVerifiedAt"],
+  properties: {
+    id: { type: "string", example: "cmokabtp40001fjw9ghgo2zv7" },
+    mobile: { type: "string", example: "9876543210" },
+    name: { type: "string", nullable: true, example: "Priya" },
+    email: {
+      type: "string",
+      nullable: true,
+      example: "priya@example.com",
+    },
+    role: { type: "string", example: "USER" },
+    mobileVerifiedAt: { type: "string", format: "date-time" },
+  },
+};
+
 const signupVerifyDataSchema: OpenApiRecord = {
   type: "object",
   required: ["user", "session", "sessionToken", "refreshToken"],
   properties: {
-    user: {
-      type: "object",
-      required: ["id", "mobile", "role", "mobileVerifiedAt"],
-      properties: {
-        id: { type: "string", example: "cmokabtp40001fjw9ghgo2zv7" },
-        mobile: { type: "string", example: "9876543210" },
-        name: { type: "string", nullable: true, example: "Priya" },
-        email: {
-          type: "string",
-          nullable: true,
-          example: "priya@example.com",
-        },
-        role: { type: "string", example: "USER" },
-        mobileVerifiedAt: { type: "string", format: "date-time" },
-      },
-    },
+    user: authUserDataSchema,
     session: {
       type: "object",
       required: ["id", "expiresAt"],
@@ -114,23 +116,106 @@ const signupVerifyDataSchema: OpenApiRecord = {
   },
 };
 
+const mobileRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["mobile"],
+  properties: {
+    mobile: {
+      type: "string",
+      pattern: "^[6-9]\\d{9}$",
+      example: "9876543210",
+    },
+  },
+};
+
+const otpRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["mobile", "otp"],
+  properties: {
+    mobile: {
+      type: "string",
+      pattern: "^[6-9]\\d{9}$",
+      example: "9876543210",
+    },
+    otp: {
+      type: "string",
+      pattern: "^\\d{6}$",
+      example: "123456",
+    },
+  },
+};
+
+const refreshRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["refreshToken"],
+  properties: {
+    refreshToken: {
+      type: "string",
+      example: "opaque-refresh-token",
+    },
+  },
+};
+
+const sessionsDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["currentSessionId", "sessions"],
+  properties: {
+    currentSessionId: { type: "string" },
+    sessions: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["id", "expiresAt", "createdAt"],
+        properties: {
+          id: { type: "string" },
+          deviceName: { type: "string", nullable: true },
+          ipAddress: { type: "string", nullable: true },
+          userAgent: { type: "string", nullable: true },
+          lastUsedAt: { type: "string", format: "date-time", nullable: true },
+          expiresAt: { type: "string", format: "date-time" },
+          createdAt: { type: "string", format: "date-time" },
+        },
+      },
+    },
+  },
+};
+
+const sessionIdDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["sessionId"],
+  properties: {
+    sessionId: { type: "string" },
+  },
+};
+
 /**
  * Creates an OpenAPI JSON endpoint definition.
  */
 function jsonEndpoint(input: {
   description: string;
   failureDescription?: string;
+  method?: "delete" | "get" | "post";
   requestSchema?: OpenApiRecord;
+  requiresAuth?: boolean;
   responseSchema: OpenApiRecord;
   successCode: string;
+  successDescription?: string;
   successMessage: string;
+  successStatus?: number;
   summary: string;
 }): OpenApiRecord {
+  const method = input.method ?? "post";
+  const successStatus = input.successStatus ?? HTTP_STATUS.CREATED;
+
   return {
-    post: {
+    [method]: {
       tags: ["Auth"],
       summary: input.summary,
       description: input.description,
+      ...(input.requiresAuth ? { security: [{ bearerAuth: [] }] } : {}),
       ...(input.requestSchema
         ? {
             requestBody: {
@@ -144,8 +229,8 @@ function jsonEndpoint(input: {
           }
         : {}),
       responses: {
-        [HTTP_STATUS.CREATED]: {
-          description: "OTP challenge created.",
+        [successStatus]: {
+          description: input.successDescription ?? "Success.",
           content: {
             "application/json": {
               schema: successResponse({
@@ -232,6 +317,14 @@ export function GET(request: Request) {
         description:
           "Mobile-first auth API for Nikharta Roop. Register starts signup OTP; verification creates the account and session later.",
       },
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+          },
+        },
+      },
       servers: [{ url: origin }],
       paths: {
         "/api/v1/auth/register": jsonEndpoint({
@@ -264,6 +357,7 @@ export function GET(request: Request) {
           },
           responseSchema: signupOtpDataSchema,
           successCode: AUTH_CODES.SIGNUP_OTP_SENT,
+          successDescription: "Signup OTP challenge created.",
           successMessage: AUTH_MESSAGES.SIGNUP_OTP_SENT,
         }),
         "/api/v1/auth/register/verify": jsonEndpoint({
@@ -290,7 +384,91 @@ export function GET(request: Request) {
           },
           responseSchema: signupVerifyDataSchema,
           successCode: AUTH_CODES.SIGNUP_COMPLETED,
+          successDescription: "Account created and session started.",
           successMessage: AUTH_MESSAGES.SIGNUP_COMPLETED,
+        }),
+        "/api/v1/auth/login": jsonEndpoint({
+          summary: "Login",
+          description:
+            "Send a login OTP to an existing active user. This endpoint never creates a user.",
+          failureDescription: "Login OTP request failed.",
+          requestSchema: mobileRequestSchema,
+          responseSchema: signupOtpDataSchema,
+          successCode: AUTH_CODES.LOGIN_OTP_SENT,
+          successDescription: "Login OTP challenge created.",
+          successMessage: AUTH_MESSAGES.LOGIN_OTP_SENT,
+        }),
+        "/api/v1/auth/login/verify": jsonEndpoint({
+          summary: "Verify login OTP",
+          description:
+            "Verify the login OTP and create a new auth session for the existing user.",
+          failureDescription: "Login OTP verification failed.",
+          requestSchema: otpRequestSchema,
+          responseSchema: signupVerifyDataSchema,
+          successCode: AUTH_CODES.LOGIN_COMPLETED,
+          successDescription: "Login session created.",
+          successMessage: AUTH_MESSAGES.LOGIN_COMPLETED,
+        }),
+        "/api/v1/auth/refresh": jsonEndpoint({
+          summary: "Refresh session",
+          description:
+            "Rotate the refresh token and issue a fresh session token.",
+          failureDescription: "Session refresh failed.",
+          requestSchema: refreshRequestSchema,
+          responseSchema: signupVerifyDataSchema,
+          successCode: AUTH_CODES.SESSION_REFRESHED,
+          successDescription: "Session refreshed.",
+          successMessage: AUTH_MESSAGES.SESSION_REFRESHED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/auth/me": jsonEndpoint({
+          method: "get",
+          summary: "Current user",
+          description: "Return the current authenticated user.",
+          requiresAuth: true,
+          responseSchema: {
+            type: "object",
+            required: ["user"],
+            properties: {
+              user: authUserDataSchema,
+            },
+          },
+          successCode: AUTH_CODES.ME_LOADED,
+          successDescription: "Current user loaded.",
+          successMessage: AUTH_MESSAGES.ME_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/auth/logout": jsonEndpoint({
+          summary: "Logout",
+          description: "Revoke the current auth session.",
+          requiresAuth: true,
+          responseSchema: sessionIdDataSchema,
+          successCode: AUTH_CODES.LOGOUT_COMPLETED,
+          successDescription: "Current session revoked.",
+          successMessage: AUTH_MESSAGES.LOGOUT_COMPLETED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/auth/sessions": jsonEndpoint({
+          method: "get",
+          summary: "List sessions",
+          description: "List active sessions for the current authenticated user.",
+          requiresAuth: true,
+          responseSchema: sessionsDataSchema,
+          successCode: AUTH_CODES.SESSIONS_LOADED,
+          successDescription: "Active sessions loaded.",
+          successMessage: AUTH_MESSAGES.SESSIONS_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/auth/sessions/{sessionId}": jsonEndpoint({
+          method: "delete",
+          summary: "Revoke session",
+          description: "Revoke one active session owned by the current user.",
+          requiresAuth: true,
+          responseSchema: sessionIdDataSchema,
+          successCode: AUTH_CODES.SESSION_REVOKED,
+          successDescription: "Session revoked.",
+          successMessage: AUTH_MESSAGES.SESSION_REVOKED,
+          successStatus: HTTP_STATUS.OK,
         }),
       },
     },
