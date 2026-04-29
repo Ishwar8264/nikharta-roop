@@ -17,6 +17,7 @@ export function authJson(input: ApiJsonInput) {
       success: input.success,
     },
     {
+      headers: input.headers,
       status:
         input.status ?? (input.success ? HTTP_STATUS.OK : HTTP_STATUS.BAD_REQUEST),
     },

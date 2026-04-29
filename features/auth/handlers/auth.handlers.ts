@@ -12,6 +12,13 @@ import {
   hashAuthToken,
   hashOtp,
 } from "@/features/auth/helpers/auth.crypto";
+import {
+  AUTH_COOKIE_NAMES,
+  createAuthCookieHeaders,
+  createClearAuthCookieHeaders,
+  getCookieValue,
+  headersWithSetCookies,
+} from "@/features/auth/helpers/auth.cookies";
 import { parseJsonBody } from "@/features/auth/helpers/auth.route-helpers";
 import { authError, authJson } from "@/features/auth/responses/auth.responses";
 import { HTTP_STATUS } from "@/lib/constants/http-status";
@@ -30,6 +37,7 @@ import {
 
 type RequestContext = {
   ipAddress: string | null;
+  refreshTokenCookie: string | null;
   userAgent: string | null;
 };
 
@@ -41,6 +49,11 @@ type PublicUserRow = {
   mobileVerifiedAt: Date | null;
   name: string | null;
   role: string;
+};
+
+type AuthTokenPair = {
+  refreshToken: string;
+  sessionToken: string;
 };
 
 /**
@@ -186,6 +199,7 @@ export async function handleLogout(request: Request) {
     data: {
       sessionId: auth.session.id,
     },
+    headers: headersWithSetCookies(createClearAuthCookieHeaders()),
     message: AUTH_MESSAGES.LOGOUT_COMPLETED,
     status: HTTP_STATUS.OK,
     success: true,
@@ -416,6 +430,12 @@ async function startSignupOtp(
   }
 }
 
+/**
+ * Completes signup after OTP verification.
+ *
+ * The user, verified OTP, session, and audit events are written in one
+ * transaction so a partially-created account cannot leak out.
+ */
 async function verifySignupOtp(
   input: VerifyRegisterInput,
   context: RequestContext,
@@ -423,11 +443,8 @@ async function verifySignupOtp(
   const db = getDb();
   const now = new Date();
   const otpSecret = getAuthSecret();
-  const sessionToken = generateAuthToken();
-  const refreshToken = generateAuthToken();
-  const sessionExpiresAt = new Date(
-    now.getTime() + AUTH_SESSION_CONFIG.EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const tokens = generateAuthTokens();
+  const sessionExpiresAt = getSessionExpiry(now);
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -547,8 +564,8 @@ async function verifySignupOtp(
           expiresAt: sessionExpiresAt,
           ipAddress: context.ipAddress,
           lastUsedAt: now,
-          refreshTokenId: hashAuthToken(refreshToken, otpSecret),
-          tokenId: hashAuthToken(sessionToken, otpSecret),
+          refreshTokenId: hashAuthToken(tokens.refreshToken, otpSecret),
+          tokenId: hashAuthToken(tokens.sessionToken, otpSecret),
           userAgent: context.userAgent,
           userId: user.id,
         },
@@ -643,14 +660,15 @@ async function verifySignupOtp(
     return authJson({
       code: AUTH_CODES.SIGNUP_COMPLETED,
       data: {
-        refreshToken,
+        refreshToken: tokens.refreshToken,
         session: {
           expiresAt: result.session.expiresAt,
           id: result.session.id,
         },
-        sessionToken,
+        sessionToken: tokens.sessionToken,
         user: result.user,
       },
+      headers: createAuthHeaders(tokens, result.session.expiresAt),
       message: AUTH_MESSAGES.SIGNUP_COMPLETED,
       status: HTTP_STATUS.CREATED,
       success: true,
@@ -670,6 +688,12 @@ async function verifySignupOtp(
   }
 }
 
+/**
+ * Starts login by issuing an OTP for an existing active user.
+ *
+ * It intentionally rejects unknown mobiles instead of creating accounts,
+ * keeping signup and login semantics separate.
+ */
 async function startLoginOtp(input: LoginInput, context: RequestContext) {
   const db = getDb();
   const otp = generateOtp();
@@ -846,6 +870,12 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
   }
 }
 
+/**
+ * Completes login after OTP verification.
+ *
+ * Successful verification marks the OTP used, updates last login time, creates
+ * a fresh session, and records audit events inside a single transaction.
+ */
 async function verifyLoginOtp(
   input: VerifyLoginInput,
   context: RequestContext,
@@ -853,8 +883,7 @@ async function verifyLoginOtp(
   const db = getDb();
   const now = new Date();
   const otpSecret = getAuthSecret();
-  const sessionToken = generateAuthToken();
-  const refreshToken = generateAuthToken();
+  const tokens = generateAuthTokens();
   const sessionExpiresAt = getSessionExpiry(now);
 
   try {
@@ -978,8 +1007,8 @@ async function verifyLoginOtp(
           expiresAt: sessionExpiresAt,
           ipAddress: context.ipAddress,
           lastUsedAt: now,
-          refreshTokenId: hashAuthToken(refreshToken, otpSecret),
-          tokenId: hashAuthToken(sessionToken, otpSecret),
+          refreshTokenId: hashAuthToken(tokens.refreshToken, otpSecret),
+          tokenId: hashAuthToken(tokens.sessionToken, otpSecret),
           userAgent: context.userAgent,
           userId: user.id,
         },
@@ -1040,11 +1069,12 @@ async function verifyLoginOtp(
     return authJson({
       code: AUTH_CODES.LOGIN_COMPLETED,
       data: {
-        refreshToken,
+        refreshToken: tokens.refreshToken,
         session: result.session,
-        sessionToken,
+        sessionToken: tokens.sessionToken,
         user: result.user,
       },
+      headers: createAuthHeaders(tokens, result.session.expiresAt),
       message: AUTH_MESSAGES.LOGIN_COMPLETED,
       status: HTTP_STATUS.CREATED,
       success: true,
@@ -1064,6 +1094,12 @@ async function verifyLoginOtp(
   }
 }
 
+/**
+ * Rotates a refresh token and session token.
+ *
+ * Browser clients can use the HttpOnly refresh cookie, while API/mobile
+ * clients can continue sending the refresh token in the request body.
+ */
 async function refreshSession(
   input: RefreshSessionInput,
   context: RequestContext,
@@ -1071,9 +1107,19 @@ async function refreshSession(
   const db = getDb();
   const now = new Date();
   const secret = getAuthSecret();
-  const refreshTokenHash = hashAuthToken(input.refreshToken, secret);
-  const sessionToken = generateAuthToken();
-  const refreshToken = generateAuthToken();
+  const submittedRefreshToken =
+    input.refreshToken ?? context.refreshTokenCookie;
+
+  if (!submittedRefreshToken) {
+    return authError({
+      code: AUTH_CODES.AUTH_REQUIRED,
+      message: AUTH_MESSAGES.INVALID_REFRESH_TOKEN,
+      status: HTTP_STATUS.UNAUTHORIZED,
+    });
+  }
+
+  const refreshTokenHash = hashAuthToken(submittedRefreshToken, secret);
+  const tokens = generateAuthTokens();
   const expiresAt = getSessionExpiry(now);
 
   const session = await db.authSession.findUnique({
@@ -1105,8 +1151,8 @@ async function refreshSession(
       expiresAt,
       ipAddress: context.ipAddress,
       lastUsedAt: now,
-      refreshTokenId: hashAuthToken(refreshToken, secret),
-      tokenId: hashAuthToken(sessionToken, secret),
+      refreshTokenId: hashAuthToken(tokens.refreshToken, secret),
+      tokenId: hashAuthToken(tokens.sessionToken, secret),
       userAgent: context.userAgent,
     },
     select: {
@@ -1121,17 +1167,21 @@ async function refreshSession(
   return authJson({
     code: AUTH_CODES.SESSION_REFRESHED,
     data: {
-      refreshToken,
+      refreshToken: tokens.refreshToken,
       session: updatedSession,
-      sessionToken,
+      sessionToken: tokens.sessionToken,
       user: toPublicUser(session.user),
     },
+    headers: createAuthHeaders(tokens, updatedSession.expiresAt),
     message: AUTH_MESSAGES.SESSION_REFRESHED,
     status: HTTP_STATUS.OK,
     success: true,
   });
 }
 
+/**
+ * Converts shared OTP verification statuses into public API errors.
+ */
 function otpFailureResponse(status: string) {
   if (status === "account_not_found") {
     return authError({
@@ -1184,8 +1234,13 @@ function otpFailureResponse(status: string) {
   return null;
 }
 
+/**
+ * Resolves the current session from either a bearer token or HttpOnly cookie.
+ */
 async function getAuthenticatedSession(request: Request) {
-  const token = getBearerToken(request);
+  const token =
+    getBearerToken(request) ??
+    getCookieValue(request, AUTH_COOKIE_NAMES.SESSION);
 
   if (!token) {
     return {
@@ -1243,6 +1298,9 @@ async function getAuthenticatedSession(request: Request) {
   };
 }
 
+/**
+ * Updates session activity after successful authenticated reads.
+ */
 async function touchSession(sessionId: string) {
   await getDb().authSession.update({
     data: {
@@ -1254,6 +1312,9 @@ async function touchSession(sessionId: string) {
   });
 }
 
+/**
+ * Revokes a session and records the matching audit event.
+ */
 async function revokeSession(sessionId: string, source: string) {
   const now = new Date();
   const db = getDb();
@@ -1292,6 +1353,9 @@ async function revokeSession(sessionId: string, source: string) {
   });
 }
 
+/**
+ * Extracts bearer tokens without accepting malformed Authorization headers.
+ */
 function getBearerToken(request: Request) {
   const authorization = request.headers.get("authorization");
 
@@ -1302,12 +1366,18 @@ function getBearerToken(request: Request) {
   return authorization.slice("Bearer ".length).trim() || null;
 }
 
+/**
+ * Calculates the absolute session expiry from the shared session policy.
+ */
 function getSessionExpiry(now: Date) {
   return new Date(
     now.getTime() + AUTH_SESSION_CONFIG.EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
   );
 }
 
+/**
+ * Keeps auth responses from accidentally exposing private User columns.
+ */
 function publicUserSelect() {
   return {
     email: true,
@@ -1320,6 +1390,9 @@ function publicUserSelect() {
   } as const;
 }
 
+/**
+ * Normalizes selected User rows into the public API user shape.
+ */
 function toPublicUser(user: PublicUserRow) {
   return {
     email: user.email,
@@ -1331,9 +1404,42 @@ function toPublicUser(user: PublicUserRow) {
   };
 }
 
+/**
+ * Generates tokens with explicit entropy targets.
+ *
+ * sessionToken uses 256-bit entropy; refreshToken uses 512-bit entropy.
+ */
+function generateAuthTokens(): AuthTokenPair {
+  return {
+    refreshToken: generateAuthToken(64),
+    sessionToken: generateAuthToken(32),
+  };
+}
+
+/**
+ * Mirrors response-body tokens into HttpOnly cookies for browser clients.
+ */
+function createAuthHeaders(tokens: AuthTokenPair, expiresAt: Date) {
+  return headersWithSetCookies(
+    createAuthCookieHeaders({
+      refreshToken: tokens.refreshToken,
+      refreshTokenExpiresAt: expiresAt,
+      sessionToken: tokens.sessionToken,
+      sessionTokenExpiresAt: expiresAt,
+    }),
+  );
+}
+
+/**
+ * Captures request metadata used for audit logs, cookies, and device sessions.
+ */
 function getRequestContext(request: Request) {
   return {
     ipAddress: getClientIp(request),
+    refreshTokenCookie: getCookieValue(
+      request,
+      AUTH_COOKIE_NAMES.REFRESH,
+    ),
     userAgent:
       request.headers
         .get("user-agent")
@@ -1341,6 +1447,9 @@ function getRequestContext(request: Request) {
   };
 }
 
+/**
+ * Reads the best available client IP from common proxy headers.
+ */
 function getClientIp(request: Request) {
   const directIp =
     request.headers.get("cf-connecting-ip") ??
@@ -1360,6 +1469,9 @@ function getClientIp(request: Request) {
   return null;
 }
 
+/**
+ * Computes remaining OTP cooldown in seconds for client retry UX.
+ */
 function getRetryAfterSeconds(createdAt: Date, now: Date) {
   return Math.max(
     1,
@@ -1372,6 +1484,9 @@ function getRetryAfterSeconds(createdAt: Date, now: Date) {
   );
 }
 
+/**
+ * Loads the server-side auth secret used for hashing OTPs and tokens.
+ */
 function getAuthSecret() {
   const secret = process.env.AUTH_OTP_SECRET ?? process.env.BETTER_AUTH_SECRET;
 
@@ -1382,6 +1497,9 @@ function getAuthSecret() {
   return secret;
 }
 
+/**
+ * Safely extracts optional profile fields from OTP metadata.
+ */
 function getSignupOtpMetadata(metadata: unknown) {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return {

@@ -107,11 +107,13 @@ const signupVerifyDataSchema: OpenApiRecord = {
     },
     sessionToken: {
       type: "string",
-      description: "Opaque bearer token. Store securely on the client.",
+      description:
+        "Opaque bearer token. Also set as an HttpOnly cookie for browser clients.",
     },
     refreshToken: {
       type: "string",
-      description: "Opaque refresh token. Store securely on the client.",
+      description:
+        "Opaque refresh token. Also set as an HttpOnly cookie for browser clients.",
     },
   },
 };
@@ -199,6 +201,7 @@ function jsonEndpoint(input: {
   failureDescription?: string;
   method?: "delete" | "get" | "post";
   requestSchema?: OpenApiRecord;
+  requestBodyRequired?: boolean;
   requiresAuth?: boolean;
   responseSchema: OpenApiRecord;
   successCode: string;
@@ -219,7 +222,7 @@ function jsonEndpoint(input: {
       ...(input.requestSchema
         ? {
             requestBody: {
-              required: true,
+              required: input.requestBodyRequired ?? true,
               content: {
                 "application/json": {
                   schema: input.requestSchema,
@@ -412,9 +415,10 @@ export function GET(request: Request) {
         "/api/v1/auth/refresh": jsonEndpoint({
           summary: "Refresh session",
           description:
-            "Rotate the refresh token and issue a fresh session token.",
+            "Rotate the refresh token and issue a fresh session token. Browser clients can rely on the HttpOnly refresh cookie; API clients can send refreshToken in the JSON body.",
           failureDescription: "Session refresh failed.",
           requestSchema: refreshRequestSchema,
+          requestBodyRequired: false,
           responseSchema: signupVerifyDataSchema,
           successCode: AUTH_CODES.SESSION_REFRESHED,
           successDescription: "Session refreshed.",
