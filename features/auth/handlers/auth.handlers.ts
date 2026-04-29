@@ -19,6 +19,7 @@ import {
   getCookieValue,
   headersWithSetCookies,
 } from "@/features/auth/helpers/auth.cookies";
+import { getDeviceName } from "@/features/auth/helpers/auth.device";
 import { parseJsonBody } from "@/features/auth/helpers/auth.route-helpers";
 import { authError, authJson } from "@/features/auth/responses/auth.responses";
 import { HTTP_STATUS } from "@/lib/constants/http-status";
@@ -561,6 +562,7 @@ async function verifySignupOtp(
 
       const session = await tx.authSession.create({
         data: {
+          deviceName: getDeviceName(context.userAgent),
           expiresAt: sessionExpiresAt,
           ipAddress: context.ipAddress,
           lastUsedAt: now,
@@ -1004,6 +1006,7 @@ async function verifyLoginOtp(
 
       const session = await tx.authSession.create({
         data: {
+          deviceName: getDeviceName(context.userAgent),
           expiresAt: sessionExpiresAt,
           ipAddress: context.ipAddress,
           lastUsedAt: now,
@@ -1148,6 +1151,7 @@ async function refreshSession(
 
   const updatedSession = await db.authSession.update({
     data: {
+      deviceName: getDeviceName(context.userAgent),
       expiresAt,
       ipAddress: context.ipAddress,
       lastUsedAt: now,
