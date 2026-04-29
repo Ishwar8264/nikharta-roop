@@ -78,8 +78,11 @@ export type VerifyLoginInput = z.infer<typeof verifyLoginSchema>;
 /**
  * Request schema for POST /api/v1/auth/refresh.
  */
-export const refreshSessionSchema = z.object({
-  refreshToken: z.string().trim().min(20),
-});
+export const refreshSessionSchema = z.preprocess(
+  (value) => value ?? {},
+  z.object({
+    refreshToken: z.string().trim().min(20).optional(),
+  }),
+);
 
 export type RefreshSessionInput = z.infer<typeof refreshSessionSchema>;

@@ -31,3 +31,10 @@ test("session tokens are opaque and stored as hashes", () => {
   assert.equal(hash, hashAuthToken(token, "test-secret"));
   assert.match(hash, /^[a-f0-9]{64}$/);
 });
+
+test("refresh tokens can use 512-bit entropy without huge strings", () => {
+  const token = generateAuthToken(64);
+
+  assert.ok(token.length >= 80);
+  assert.ok(token.length <= 90);
+});

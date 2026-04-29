@@ -10,8 +10,8 @@ export function generateOtp() {
 /**
  * Creates an opaque bearer token for API sessions.
  */
-export function generateAuthToken() {
-  return randomBytes(32).toString("base64url");
+export function generateAuthToken(byteLength = 32) {
+  return randomBytes(byteLength).toString("base64url");
 }
 
 /**
