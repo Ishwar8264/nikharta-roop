@@ -503,45 +503,66 @@ export function GET(request: Request) {
           successMessage: AUTH_MESSAGES.SESSION_REVOKED,
           successStatus: HTTP_STATUS.OK,
         }),
-        "/api/v1/users/me/profile": jsonEndpoint({
-          method: "patch",
-          summary: "Update profile",
-          description:
-            "Update editable profile fields for the current authenticated user. This endpoint does not change mobile number, role, branch, avatar upload, or session tokens.",
-          failureDescription: "Profile update failed.",
-          requiresAuth: true,
-          requestSchema: {
-            type: "object",
-            additionalProperties: false,
-            minProperties: 1,
-            properties: {
-              name: {
-                type: "string",
-                minLength: 2,
-                maxLength: 100,
-                example: "Priya",
-              },
-              email: {
-                type: "string",
-                format: "email",
-                nullable: true,
-                maxLength: 150,
-                example: "priya@example.com",
+        "/api/v1/users/me/profile": {
+          ...jsonEndpoint({
+            method: "get",
+            summary: "Get profile",
+            description:
+              "Return profile-safe fields for the current authenticated user.",
+            failureDescription: "Profile load failed.",
+            requiresAuth: true,
+            responseSchema: {
+              type: "object",
+              required: ["user"],
+              properties: {
+                user: profileUserDataSchema,
               },
             },
-          },
-          responseSchema: {
-            type: "object",
-            required: ["user"],
-            properties: {
-              user: profileUserDataSchema,
+            successCode: USER_CODES.PROFILE_LOADED,
+            successDescription: "Profile loaded.",
+            successMessage: USER_MESSAGES.PROFILE_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "patch",
+            summary: "Update profile",
+            description:
+              "Update editable profile fields for the current authenticated user. This endpoint does not change mobile number, role, branch, avatar upload, or session tokens.",
+            failureDescription: "Profile update failed.",
+            requiresAuth: true,
+            requestSchema: {
+              type: "object",
+              additionalProperties: false,
+              minProperties: 1,
+              properties: {
+                name: {
+                  type: "string",
+                  minLength: 2,
+                  maxLength: 100,
+                  example: "Priya",
+                },
+                email: {
+                  type: "string",
+                  format: "email",
+                  nullable: true,
+                  maxLength: 150,
+                  example: "priya@example.com",
+                },
+              },
             },
-          },
-          successCode: USER_CODES.PROFILE_UPDATED,
-          successDescription: "Profile updated.",
-          successMessage: USER_MESSAGES.PROFILE_UPDATED,
-          successStatus: HTTP_STATUS.OK,
-        }),
+            responseSchema: {
+              type: "object",
+              required: ["user"],
+              properties: {
+                user: profileUserDataSchema,
+              },
+            },
+            successCode: USER_CODES.PROFILE_UPDATED,
+            successDescription: "Profile updated.",
+            successMessage: USER_MESSAGES.PROFILE_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
       },
     },
     {

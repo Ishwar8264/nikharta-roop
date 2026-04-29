@@ -17,6 +17,19 @@ import {
 } from "@/schema/users/schema.user";
 
 /**
+ * Handles profile loading for the authenticated user.
+ */
+export async function handleGetProfile(request: Request) {
+  const auth = await getAuthenticatedSession(request);
+
+  if (!auth.success) {
+    return auth.error;
+  }
+
+  return getProfile(auth.session.id, auth.session.userId);
+}
+
+/**
  * Handles profile updates for the authenticated user.
  */
 export async function handleUpdateProfile(request: Request) {
@@ -33,6 +46,44 @@ export async function handleUpdateProfile(request: Request) {
   }
 
   return updateProfile(auth.session.id, auth.session.userId, parsedBody.data);
+}
+
+/**
+ * Loads the current user's profile-safe fields.
+ */
+async function getProfile(sessionId: string, userId: string) {
+  try {
+    const user = await getDb().user.findUniqueOrThrow({
+      select: profileUserSelect(),
+      where: {
+        id: userId,
+      },
+    });
+
+    await touchSession(sessionId);
+
+    return userJson({
+      code: USER_CODES.PROFILE_LOADED,
+      data: {
+        user: toProfileUser(user),
+      },
+      message: USER_MESSAGES.PROFILE_LOADED,
+      status: HTTP_STATUS.OK,
+      success: true,
+    });
+  } catch (error) {
+    console.error(USER_CODES.PROFILE_LOAD_FAILED, {
+      error,
+      handler: "getProfile",
+      userId,
+    });
+
+    return userError({
+      code: USER_CODES.PROFILE_LOAD_FAILED,
+      message: USER_MESSAGES.PROFILE_LOAD_FAILED,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
+  }
 }
 
 /**
