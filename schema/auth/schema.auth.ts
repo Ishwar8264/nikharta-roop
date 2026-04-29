@@ -28,6 +28,8 @@ const optionalEmailSchema = z
   .optional()
   .or(z.literal(""));
 
+const otpSchema = z.string().trim().regex(/^\d{6}$/, AUTH_MESSAGES.INVALID_OTP);
+
 /**
  * Request schema for POST /api/v1/auth/register.
  *
@@ -41,3 +43,43 @@ export const registerSchema = z.object({
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+/**
+ * Request schema for POST /api/v1/auth/register/verify.
+ *
+ * Verification is the point where the account is created and a session starts.
+ */
+export const verifyRegisterSchema = z.object({
+  mobile: mobileSchema,
+  otp: otpSchema,
+});
+
+export type VerifyRegisterInput = z.infer<typeof verifyRegisterSchema>;
+
+/**
+ * Request schema for POST /api/v1/auth/login.
+ */
+export const loginSchema = z.object({
+  mobile: mobileSchema,
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
+
+/**
+ * Request schema for POST /api/v1/auth/login/verify.
+ */
+export const verifyLoginSchema = z.object({
+  mobile: mobileSchema,
+  otp: otpSchema,
+});
+
+export type VerifyLoginInput = z.infer<typeof verifyLoginSchema>;
+
+/**
+ * Request schema for POST /api/v1/auth/refresh.
+ */
+export const refreshSessionSchema = z.object({
+  refreshToken: z.string().trim().min(20),
+});
+
+export type RefreshSessionInput = z.infer<typeof refreshSessionSchema>;
