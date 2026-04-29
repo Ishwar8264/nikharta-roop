@@ -1,6 +1,11 @@
 import { ZodError, type ZodType } from "zod";
 
+import {
+  AUTH_CODES,
+  AUTH_MESSAGES,
+} from "@/features/auth/constants/auth.constants";
 import { authError } from "@/features/auth/responses/auth.responses";
+import { HTTP_STATUS } from "@/lib/constants/http-status";
 
 /**
  * Reads a request JSON body safely.
@@ -30,9 +35,9 @@ export async function parseJsonBody<T>(request: Request, schema: ZodType<T>) {
     return {
       data: null,
       error: authError({
-        code: "VALIDATION_ERROR",
+        code: AUTH_CODES.VALIDATION_ERROR,
         message: getValidationMessage(parsed.error),
-        status: 422,
+        status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
       }),
     };
   }
@@ -50,5 +55,5 @@ export async function parseJsonBody<T>(request: Request, schema: ZodType<T>) {
  * correction at a time.
  */
 function getValidationMessage(error: ZodError) {
-  return error.issues[0]?.message ?? "Request body is invalid.";
+  return error.issues[0]?.message ?? AUTH_MESSAGES.INVALID_REQUEST_BODY;
 }

@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 
+import {
+  AUTH_CODES,
+  AUTH_MESSAGES,
+  AUTH_OTP_CONFIG,
+} from "@/features/auth/constants/auth.constants";
+import { HTTP_STATUS } from "@/lib/constants/http-status";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -14,10 +21,10 @@ function successResponse(dataSchema: OpenApiRecord): OpenApiRecord {
     required: ["success", "code", "message", "data"],
     properties: {
       success: { type: "boolean", example: true },
-      code: { type: "string", example: "AUTH_REGISTER_SUCCESS" },
+      code: { type: "string", example: AUTH_CODES.SIGNUP_OTP_SENT },
       message: {
         type: "string",
-        example: "OTP भेज दिया गया है। OTP verify करने के बाद account बनेगा।",
+        example: AUTH_MESSAGES.SIGNUP_OTP_SENT,
       },
       data: dataSchema,
     },
@@ -33,10 +40,10 @@ function errorResponse(): OpenApiRecord {
     required: ["success", "code", "message", "data"],
     properties: {
       success: { type: "boolean", example: false },
-      code: { type: "string", example: "VALIDATION_ERROR" },
+      code: { type: "string", example: AUTH_CODES.VALIDATION_ERROR },
       message: {
         type: "string",
-        example: "कृपया सही 10-अंकीय मोबाइल नंबर डालें।",
+        example: AUTH_MESSAGES.INVALID_MOBILE,
       },
       data: { nullable: true, example: null },
     },
@@ -50,7 +57,7 @@ const signupOtpDataSchema: OpenApiRecord = {
     mobile: { type: "string", example: "9876543210" },
     retryAfter: {
       type: "integer",
-      example: 30,
+      example: AUTH_OTP_CONFIG.RETRY_AFTER_SECONDS,
       description: "Seconds before OTP resend should be allowed.",
     },
     expiresAt: { type: "string", format: "date-time" },
@@ -91,15 +98,23 @@ function jsonEndpoint(input: {
           }
         : {}),
       responses: {
-        "201": {
-          description: "Created.",
+        [HTTP_STATUS.CREATED]: {
+          description: "OTP challenge created.",
           content: {
             "application/json": {
               schema: successResponse(input.responseSchema),
             },
           },
         },
-        "409": {
+        [HTTP_STATUS.TOO_MANY_REQUESTS]: {
+          description: "OTP resend cooldown is active.",
+          content: {
+            "application/json": {
+              schema: errorResponse(),
+            },
+          },
+        },
+        [HTTP_STATUS.CONFLICT]: {
           description: "Account already exists.",
           content: {
             "application/json": {
@@ -107,7 +122,7 @@ function jsonEndpoint(input: {
             },
           },
         },
-        "422": {
+        [HTTP_STATUS.UNPROCESSABLE_ENTITY]: {
           description: "Request validation failed.",
           content: {
             "application/json": {
@@ -115,7 +130,7 @@ function jsonEndpoint(input: {
             },
           },
         },
-        "500": {
+        [HTTP_STATUS.INTERNAL_SERVER_ERROR]: {
           description: "Registration failed.",
           content: {
             "application/json": {

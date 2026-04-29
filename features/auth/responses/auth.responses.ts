@@ -1,5 +1,7 @@
 import type { ApiJsonInput } from "@/types/auth/auth.types";
 
+import { HTTP_STATUS, type HttpStatus } from "@/lib/constants/http-status";
+
 /**
  * Creates the standard API JSON response.
  *
@@ -15,7 +17,8 @@ export function authJson(input: ApiJsonInput) {
       success: input.success,
     },
     {
-      status: input.status ?? (input.success ? 200 : 400),
+      status:
+        input.status ?? (input.success ? HTTP_STATUS.OK : HTTP_STATUS.BAD_REQUEST),
     },
   );
 }
@@ -29,7 +32,7 @@ export function authJson(input: ApiJsonInput) {
 export function authError(input: {
   code: string;
   message: string;
-  status?: number;
+  status?: HttpStatus;
 }) {
   return authJson({
     code: input.code,

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { AUTH_MESSAGES } from "@/features/auth/constants/auth.constants";
+
 /**
  * Validates Indian mobile numbers used for OTP-first auth.
  *
@@ -9,7 +11,7 @@ import { z } from "zod";
 const mobileSchema = z
   .string()
   .trim()
-  .regex(/^[6-9]\d{9}$/, "कृपया सही 10-अंकीय मोबाइल नंबर डालें।");
+  .regex(/^[6-9]\d{9}$/, AUTH_MESSAGES.INVALID_MOBILE);
 
 /**
  * Allows email to be omitted or submitted as an empty string.
@@ -21,7 +23,7 @@ const optionalEmailSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .email("कृपया सही email डालें।")
+  .email(AUTH_MESSAGES.INVALID_EMAIL)
   .max(150)
   .optional()
   .or(z.literal(""));
