@@ -238,6 +238,7 @@ model AuthOtp {
   userAgent         String?
   provider          String?        @db.VarChar(80)
   providerMessageId String?
+  metadata          Json           @default("{}")
   createdAt         DateTime       @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -570,7 +571,7 @@ model Booking {
   staff               Staff?                 @relation(fields: [staffId], references: [id], onDelete: SetNull)
   branch              Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
   createdBy           User?                  @relation("CreatedBookings", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  payment             Payment?
+  payments            Payment[]
   review              Review?
   offerRedemptions    OfferRedemption[]
   addOns              BookingAddOn[]
@@ -623,12 +624,11 @@ model BookingStatusHistory {
 
 model Payment {
   id                String          @id @default(cuid())
-  bookingId         String          @unique
+  bookingId         String
   userId            String
   provider          PaymentProvider @default(RAZORPAY)
   providerOrderId   String?         @unique
   providerPaymentId String?         @unique
-  providerRefundId  String?
   status            PaymentStatus   @default(CREATED)
   currency          String          @default("INR") @db.VarChar(3)
   amount            Decimal         @db.Decimal(10, 2)
@@ -641,10 +641,11 @@ model Payment {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
   user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
   refunds Refund[]
 
+  @@index([bookingId])
   @@index([userId, status])
   @@index([status, createdAt])
 }
@@ -665,8 +666,8 @@ model Refund {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
 
   @@index([paymentId, status])
   @@index([bookingId])
@@ -890,7 +891,7 @@ model LoyaltyTransaction {
   expiresAt DateTime?
   createdAt DateTime               @default(now())
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
   booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
