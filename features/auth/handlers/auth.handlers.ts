@@ -1241,7 +1241,7 @@ function otpFailureResponse(status: string) {
 /**
  * Resolves the current session from either a bearer token or HttpOnly cookie.
  */
-async function getAuthenticatedSession(request: Request) {
+export async function getAuthenticatedSession(request: Request) {
   const token =
     getBearerToken(request) ??
     getCookieValue(request, AUTH_COOKIE_NAMES.SESSION);
@@ -1305,7 +1305,7 @@ async function getAuthenticatedSession(request: Request) {
 /**
  * Updates session activity after successful authenticated reads.
  */
-async function touchSession(sessionId: string) {
+export async function touchSession(sessionId: string) {
   await getDb().authSession.update({
     data: {
       lastUsedAt: new Date(),

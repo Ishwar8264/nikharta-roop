@@ -5,6 +5,10 @@ import {
   AUTH_MESSAGES,
   AUTH_OTP_CONFIG,
 } from "@/features/auth/constants/auth.constants";
+import {
+  USER_CODES,
+  USER_MESSAGES,
+} from "@/features/users/constants/user.constants";
 import { HTTP_STATUS } from "@/lib/constants/http-status";
 
 export const runtime = "nodejs";
@@ -75,10 +79,7 @@ const signupOtpDataSchema: OpenApiRecord = {
   },
 };
 
-const authUserDataSchema: OpenApiRecord = {
-  type: "object",
-  required: ["id", "mobile", "role", "mobileVerifiedAt"],
-  properties: {
+const authUserProperties: OpenApiRecord = {
     id: { type: "string", example: "cmokabtp40001fjw9ghgo2zv7" },
     mobile: { type: "string", example: "9876543210" },
     name: { type: "string", nullable: true, example: "Priya" },
@@ -89,6 +90,34 @@ const authUserDataSchema: OpenApiRecord = {
     },
     role: { type: "string", example: "USER" },
     mobileVerifiedAt: { type: "string", format: "date-time" },
+};
+
+const authUserDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "mobile", "role", "mobileVerifiedAt"],
+  properties: authUserProperties,
+};
+
+const profileUserDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "mobile", "role", "mobileVerifiedAt"],
+  properties: {
+    ...authUserProperties,
+    avatarUrl: {
+      type: "string",
+      nullable: true,
+      example: "https://cdn.example.com/avatar.jpg",
+    },
+    branchId: {
+      type: "string",
+      nullable: true,
+      example: "cmokbranch0001",
+    },
+    profileCompletedAt: {
+      type: "string",
+      format: "date-time",
+      nullable: true,
+    },
   },
 };
 
@@ -199,7 +228,7 @@ const sessionIdDataSchema: OpenApiRecord = {
 function jsonEndpoint(input: {
   description: string;
   failureDescription?: string;
-  method?: "delete" | "get" | "post";
+  method?: "delete" | "get" | "patch" | "post";
   requestSchema?: OpenApiRecord;
   requestBodyRequired?: boolean;
   requiresAuth?: boolean;
@@ -472,6 +501,45 @@ export function GET(request: Request) {
           successCode: AUTH_CODES.SESSION_REVOKED,
           successDescription: "Session revoked.",
           successMessage: AUTH_MESSAGES.SESSION_REVOKED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/users/me/profile": jsonEndpoint({
+          method: "patch",
+          summary: "Update profile",
+          description:
+            "Update editable profile fields for the current authenticated user. This endpoint does not change mobile number, role, branch, avatar upload, or session tokens.",
+          failureDescription: "Profile update failed.",
+          requiresAuth: true,
+          requestSchema: {
+            type: "object",
+            additionalProperties: false,
+            minProperties: 1,
+            properties: {
+              name: {
+                type: "string",
+                minLength: 2,
+                maxLength: 100,
+                example: "Priya",
+              },
+              email: {
+                type: "string",
+                format: "email",
+                nullable: true,
+                maxLength: 150,
+                example: "priya@example.com",
+              },
+            },
+          },
+          responseSchema: {
+            type: "object",
+            required: ["user"],
+            properties: {
+              user: profileUserDataSchema,
+            },
+          },
+          successCode: USER_CODES.PROFILE_UPDATED,
+          successDescription: "Profile updated.",
+          successMessage: USER_MESSAGES.PROFILE_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
       },
