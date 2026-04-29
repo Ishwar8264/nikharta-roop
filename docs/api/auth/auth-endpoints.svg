@@ -1,0 +1,71 @@
+<svg width="1200" height="760" viewBox="0 0 1200 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Nikharta Roop Auth Endpoints</title>
+  <desc id="desc">Simple endpoint map for signup, login, refresh, current user, logout, session list, and session revoke auth APIs.</desc>
+  <defs>
+    <style>
+      .bg { fill: #fffaf6; }
+      .card { fill: #ffffff; stroke: #f1d2ca; stroke-width: 2; }
+      .card-auth { fill: #fff7ed; stroke: #fed7aa; stroke-width: 2; }
+      .title { fill: #1c1917; font-family: Arial, sans-serif; font-size: 34px; font-weight: 800; }
+      .sub { fill: #57534e; font-family: Arial, sans-serif; font-size: 15px; }
+      .method { fill: #be123c; font-family: Arial, sans-serif; font-size: 14px; font-weight: 800; }
+      .path { fill: #1c1917; font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; }
+      .purpose { fill: #57534e; font-family: Arial, sans-serif; font-size: 14px; }
+      .tag { fill: #166534; font-family: Arial, sans-serif; font-size: 12px; font-weight: 700; }
+      .line { stroke: #d6d3d1; stroke-width: 2; }
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="760" rx="24" />
+  <text x="48" y="64" class="title">Auth API Endpoint Map</text>
+  <text x="48" y="94" class="sub">OTP-first auth with HttpOnly cookies, bearer fallback, refresh rotation, and session management.</text>
+
+  <line x1="80" y1="150" x2="1120" y2="150" class="line" />
+  <text x="80" y="132" class="tag">PUBLIC OTP</text>
+  <rect x="80" y="180" width="480" height="110" rx="16" class="card" />
+  <text x="110" y="218" class="method">POST</text>
+  <text x="110" y="250" class="path">/api/v1/auth/register</text>
+  <text x="110" y="276" class="purpose">Start signup OTP. No user is created here.</text>
+
+  <rect x="640" y="180" width="480" height="110" rx="16" class="card" />
+  <text x="670" y="218" class="method">POST</text>
+  <text x="670" y="250" class="path">/api/v1/auth/register/verify</text>
+  <text x="670" y="276" class="purpose">Verify signup OTP, create user, create session.</text>
+
+  <rect x="80" y="320" width="480" height="110" rx="16" class="card" />
+  <text x="110" y="358" class="method">POST</text>
+  <text x="110" y="390" class="path">/api/v1/auth/login</text>
+  <text x="110" y="416" class="purpose">Start login OTP for an existing active user.</text>
+
+  <rect x="640" y="320" width="480" height="110" rx="16" class="card" />
+  <text x="670" y="358" class="method">POST</text>
+  <text x="670" y="390" class="path">/api/v1/auth/login/verify</text>
+  <text x="670" y="416" class="purpose">Verify login OTP and create a new session.</text>
+
+  <line x1="80" y1="485" x2="1120" y2="485" class="line" />
+  <text x="80" y="467" class="tag">AUTHENTICATED SESSION</text>
+
+  <rect x="80" y="515" width="320" height="92" rx="16" class="card-auth" />
+  <text x="105" y="548" class="method">POST</text>
+  <text x="105" y="576" class="path">/auth/refresh</text>
+  <text x="105" y="600" class="purpose">Rotate session + refresh tokens.</text>
+
+  <rect x="440" y="515" width="320" height="92" rx="16" class="card-auth" />
+  <text x="465" y="548" class="method">GET</text>
+  <text x="465" y="576" class="path">/auth/me</text>
+  <text x="465" y="600" class="purpose">Return authenticated user.</text>
+
+  <rect x="800" y="515" width="320" height="92" rx="16" class="card-auth" />
+  <text x="825" y="548" class="method">POST</text>
+  <text x="825" y="576" class="path">/auth/logout</text>
+  <text x="825" y="600" class="purpose">Revoke current session.</text>
+
+  <rect x="250" y="635" width="320" height="92" rx="16" class="card-auth" />
+  <text x="275" y="668" class="method">GET</text>
+  <text x="275" y="696" class="path">/auth/sessions</text>
+  <text x="275" y="720" class="purpose">List devices and active sessions.</text>
+
+  <rect x="620" y="635" width="330" height="92" rx="16" class="card-auth" />
+  <text x="645" y="668" class="method">DELETE</text>
+  <text x="645" y="696" class="path">/auth/sessions/{id}</text>
+  <text x="645" y="720" class="purpose">Revoke one owned session.</text>
+</svg>
