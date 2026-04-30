@@ -709,7 +709,7 @@ export function GET(request: Request) {
             tag: "User",
             summary: "Update profile",
             description:
-              "Update editable profile fields for the current authenticated user. This endpoint does not change mobile number, role, or auth tokens.",
+              "Update one or more editable profile fields for the current authenticated user. Omitted fields stay unchanged. This endpoint does not change mobile number, role, or auth tokens.",
             failureDescription: "Profile update failed.",
             requiresAuth: true,
             requestSchema: {
@@ -719,6 +719,7 @@ export function GET(request: Request) {
               properties: {
                 name: {
                   type: "string",
+                  nullable: true,
                   minLength: 2,
                   maxLength: 100,
                   example: "Priya",

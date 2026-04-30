@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { USER_MESSAGES } from "../../features/users/constants/user.constants";
+import { USER_MESSAGES } from "../../features/users/constants/user.constants.ts";
 
 /**
  * Normalizes optional email input for profile updates.
@@ -13,6 +13,20 @@ const optionalEmailSchema = z.preprocess(
     .toLowerCase()
     .email(USER_MESSAGES.INVALID_EMAIL)
     .max(150)
+    .nullable()
+    .optional(),
+);
+
+/**
+ * Allows profile names to be cleared with null or an empty string.
+ */
+const optionalNameSchema = z.preprocess(
+  (value) => (value === "" ? null : value),
+  z
+    .string()
+    .trim()
+    .min(2, USER_MESSAGES.INVALID_NAME)
+    .max(100, USER_MESSAGES.INVALID_NAME)
     .nullable()
     .optional(),
 );
@@ -52,12 +66,7 @@ export const updateProfileSchema = z
     avatarUrl: optionalUrlSchema,
     branchId: optionalIdSchema,
     email: optionalEmailSchema,
-    name: z
-      .string()
-      .trim()
-      .min(2, USER_MESSAGES.INVALID_NAME)
-      .max(100, USER_MESSAGES.INVALID_NAME)
-      .optional(),
+    name: optionalNameSchema,
     notificationPreferences: notificationPreferencesSchema.optional(),
   })
   .refine(
