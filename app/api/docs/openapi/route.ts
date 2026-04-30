@@ -6,6 +6,10 @@ import {
   AUTH_OTP_CONFIG,
 } from "@/features/auth/constants/auth.constants";
 import {
+  BRANCH_CODES,
+  BRANCH_MESSAGES,
+} from "@/features/branches/constants/branch.constants";
+import {
   USER_CODES,
   USER_MESSAGES,
 } from "@/features/users/constants/user.constants";
@@ -127,6 +131,52 @@ const profileUserDataSchema: OpenApiRecord = {
         whatsapp: true,
       },
     },
+  },
+};
+
+const branchDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "nameHi",
+    "city",
+    "address",
+    "phone",
+    "openTime",
+    "closeTime",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokbranch0001" },
+    nameHi: { type: "string", example: "निखरता रूप जयपुर" },
+    nameEn: {
+      type: "string",
+      nullable: true,
+      example: "Nikharta Roop Jaipur",
+    },
+    city: { type: "string", example: "Jaipur" },
+    address: { type: "string", example: "Main Road, Jaipur" },
+    googleMapsUrl: {
+      type: "string",
+      nullable: true,
+      example: "https://maps.google.com/?q=nikharta+roop+jaipur",
+    },
+    phone: {
+      type: "string",
+      pattern: "^[6-9]\\d{9}$",
+      example: "9876543210",
+    },
+    openTime: {
+      type: "string",
+      example: "10:00:00",
+      description: "Branch opening time in HH:mm:ss format.",
+    },
+    closeTime: {
+      type: "string",
+      example: "19:30:00",
+      description: "Branch closing time in HH:mm:ss format.",
+    },
+    updatedAt: { type: "string", format: "date-time" },
   },
 };
 
@@ -527,6 +577,10 @@ export function GET(request: Request) {
         {
           name: "User",
           description: "Current user profile, avatar, addresses, and history.",
+        },
+        {
+          name: "Branches",
+          description: "Public branch discovery and branch selection.",
         },
       ],
       components: {
@@ -965,6 +1019,68 @@ export function GET(request: Request) {
           successCode: USER_CODES.BOOKING_HISTORY_LOADED,
           successDescription: "Booking history loaded.",
           successMessage: USER_MESSAGES.BOOKING_HISTORY_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/branches": jsonEndpoint({
+          method: "get",
+          tag: "Branches",
+          summary: "List branches",
+          description:
+            "List active branches for public discovery. Supports an optional city filter.",
+          failureDescription: "Branch list load failed.",
+          parameters: [
+            {
+              name: "city",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "Jaipur",
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["branches"],
+            properties: {
+              branches: {
+                type: "array",
+                items: branchDataSchema,
+              },
+            },
+          },
+          successCode: BRANCH_CODES.BRANCHES_LISTED,
+          successDescription: "Branches loaded.",
+          successMessage: BRANCH_MESSAGES.BRANCHES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/branches/{branchId}": jsonEndpoint({
+          method: "get",
+          tag: "Branches",
+          summary: "Get branch",
+          description: "Load one active branch by id.",
+          failureDescription: "Branch load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "path",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["branch"],
+            properties: {
+              branch: branchDataSchema,
+            },
+          },
+          successCode: BRANCH_CODES.BRANCH_LOADED,
+          successDescription: "Branch loaded.",
+          successMessage: BRANCH_MESSAGES.BRANCH_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
       },
