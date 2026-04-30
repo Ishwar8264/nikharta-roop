@@ -144,6 +144,8 @@ const branchDataSchema: OpenApiRecord = {
     "phone",
     "openTime",
     "closeTime",
+    "isActive",
+    "createdAt",
     "updatedAt",
   ],
   properties: {
@@ -161,6 +163,23 @@ const branchDataSchema: OpenApiRecord = {
       nullable: true,
       example: "https://maps.google.com/?q=nikharta+roop+jaipur",
     },
+    latitude: {
+      type: "string",
+      nullable: true,
+      example: "26.9124000",
+      description: "Stored as Decimal and serialized as string.",
+    },
+    longitude: {
+      type: "string",
+      nullable: true,
+      example: "75.7873000",
+      description: "Stored as Decimal and serialized as string.",
+    },
+    placeId: {
+      type: "string",
+      nullable: true,
+      example: "ChIJ1234567890",
+    },
     phone: {
       type: "string",
       pattern: "^[6-9]\\d{9}$",
@@ -176,8 +195,88 @@ const branchDataSchema: OpenApiRecord = {
       example: "19:30:00",
       description: "Branch closing time in HH:mm:ss format.",
     },
+    isActive: { type: "boolean", example: true },
+    createdAt: { type: "string", format: "date-time" },
     updatedAt: { type: "string", format: "date-time" },
   },
+};
+
+const branchRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["nameHi", "city", "address", "phone", "openTime", "closeTime"],
+  properties: {
+    nameHi: {
+      type: "string",
+      minLength: 2,
+      maxLength: 200,
+      example: "निखरता रूप जयपुर",
+    },
+    nameEn: {
+      type: "string",
+      nullable: true,
+      maxLength: 200,
+      example: "Nikharta Roop Jaipur",
+    },
+    city: { type: "string", minLength: 2, maxLength: 100, example: "Jaipur" },
+    address: {
+      type: "string",
+      minLength: 3,
+      maxLength: 1000,
+      example: "Main Road, Jaipur",
+    },
+    googleMapsUrl: {
+      type: "string",
+      nullable: true,
+      format: "uri",
+      example: "https://maps.google.com/?q=nikharta+roop+jaipur",
+    },
+    latitude: {
+      type: "number",
+      nullable: true,
+      minimum: -90,
+      maximum: 90,
+      example: 26.9124,
+      description: "Must be sent together with longitude.",
+    },
+    longitude: {
+      type: "number",
+      nullable: true,
+      minimum: -180,
+      maximum: 180,
+      example: 75.7873,
+      description: "Must be sent together with latitude.",
+    },
+    placeId: {
+      type: "string",
+      nullable: true,
+      maxLength: 200,
+      example: "ChIJ1234567890",
+    },
+    phone: {
+      type: "string",
+      pattern: "^[6-9]\\d{9}$",
+      example: "9876543210",
+    },
+    openTime: {
+      type: "string",
+      pattern: "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
+      example: "10:00",
+    },
+    closeTime: {
+      type: "string",
+      pattern: "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
+      example: "19:30",
+    },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const branchPatchRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: branchRequestSchema.properties,
 };
 
 const avatarDataSchema: OpenApiRecord = {
@@ -581,6 +680,10 @@ export function GET(request: Request) {
         {
           name: "Branches",
           description: "Public branch discovery and branch selection.",
+        },
+        {
+          name: "Admin",
+          description: "Admin-only operations for managing business data.",
         },
       ],
       components: {
@@ -1081,6 +1184,59 @@ export function GET(request: Request) {
           successCode: BRANCH_CODES.BRANCH_LOADED,
           successDescription: "Branch loaded.",
           successMessage: BRANCH_MESSAGES.BRANCH_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/branches": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create branch",
+          description:
+            "Create a branch and return the generated branch id. Supports map-ready coordinates, Google Maps URL, and Google place id. Requires ADMIN or SUPER_ADMIN.",
+          failureDescription: "Branch creation failed.",
+          requiresAuth: true,
+          requestSchema: branchRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["branchId", "branch"],
+            properties: {
+              branchId: { type: "string", example: "cmokbranch0001" },
+              branch: branchDataSchema,
+            },
+          },
+          successCode: BRANCH_CODES.BRANCH_CREATED,
+          successDescription: "Branch created.",
+          successMessage: BRANCH_MESSAGES.BRANCH_CREATED,
+        }),
+        "/api/v1/admin/branches/{branchId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update branch",
+          description:
+            "Update one or more branch fields. Omitted fields stay unchanged. Requires ADMIN or SUPER_ADMIN.",
+          failureDescription: "Branch update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "branchId",
+              in: "path",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+          ],
+          requestSchema: branchPatchRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["branch"],
+            properties: {
+              branch: branchDataSchema,
+            },
+          },
+          successCode: BRANCH_CODES.BRANCH_UPDATED,
+          successDescription: "Branch updated.",
+          successMessage: BRANCH_MESSAGES.BRANCH_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
       },
