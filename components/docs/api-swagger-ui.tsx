@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-type AuthSwaggerUiProps = {
+type ApiSwaggerUiProps = {
   specUrl: string;
 };
 
@@ -55,7 +55,7 @@ function syncTryOutResetButtons(container: ParentNode) {
       ".try-out__btn.cancel",
     );
     const existingResetButton = tryOutGroup.querySelector<HTMLButtonElement>(
-      ".auth-swagger-reset-btn",
+      ".api-swagger-reset-btn",
     );
 
     if (!cancelButton) {
@@ -69,7 +69,7 @@ function syncTryOutResetButtons(container: ParentNode) {
 
     const resetButton = document.createElement("button");
     resetButton.type = "button";
-    resetButton.className = "btn auth-swagger-reset-btn";
+    resetButton.className = "btn api-swagger-reset-btn";
     resetButton.textContent = "Reset";
     resetButton.addEventListener("click", (event) => {
       event.preventDefault();
@@ -88,9 +88,9 @@ function syncTryOutResetButtons(container: ParentNode) {
 }
 
 /**
- * Renders Swagger UI for the auth OpenAPI spec.
+ * Renders Swagger UI for the OpenAPI spec.
  */
-export function AuthSwaggerUi({ specUrl }: AuthSwaggerUiProps) {
+export function ApiSwaggerUi({ specUrl }: ApiSwaggerUiProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -176,14 +176,14 @@ export function AuthSwaggerUi({ specUrl }: AuthSwaggerUiProps) {
           margin-left: 0;
         }
 
-        .swagger-ui .auth-swagger-reset-btn {
+        .swagger-ui .api-swagger-reset-btn {
           background-color: transparent;
           border-color: #881337;
           color: #881337;
           font-family: sans-serif;
         }
 
-        .swagger-ui .auth-swagger-reset-btn:hover {
+        .swagger-ui .api-swagger-reset-btn:hover {
           border-color: #4c0519;
           color: #4c0519;
         }

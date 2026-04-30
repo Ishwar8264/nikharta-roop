@@ -15,6 +15,7 @@ test("toProfileUser exposes only profile-safe fields", () => {
     mobile: "9876543210",
     mobileVerifiedAt,
     name: "Priya",
+    notificationPreferences: { whatsapp: true },
     profileCompletedAt,
     role: "USER",
   });
@@ -27,6 +28,7 @@ test("toProfileUser exposes only profile-safe fields", () => {
     mobile: "9876543210",
     mobileVerifiedAt,
     name: "Priya",
+    notificationPreferences: { whatsapp: true },
     profileCompletedAt,
     role: "USER",
   });
