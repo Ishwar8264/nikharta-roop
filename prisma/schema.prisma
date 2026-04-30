@@ -273,6 +273,9 @@ model Branch {
   city          String   @db.VarChar(100)
   address       String
   googleMapsUrl String?
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
+  placeId       String?  @db.VarChar(200)
   phone         String   @db.VarChar(10)
   openTime      DateTime @db.Time(0)
   closeTime     DateTime @db.Time(0)

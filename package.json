@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:auth": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test features/auth/helpers/*.test.mjs"
+    "test:auth": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test features/auth/helpers/*.test.mjs",
+    "test:branches": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test features/branches/helpers/*.test.mjs",
+    "test:users": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test features/users/helpers/*.test.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
