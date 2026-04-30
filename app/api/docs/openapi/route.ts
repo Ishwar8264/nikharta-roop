@@ -278,23 +278,32 @@ const bookingHistoryItemSchema: OpenApiRecord = {
   },
 };
 
+const authSessionDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "expiresAt", "user"],
+  properties: {
+    id: { type: "string", example: "cmokabtp40002fjw9v6ehw21x" },
+    expiresAt: { type: "string", format: "date-time" },
+    user: authUserDataSchema,
+  },
+};
+
 const signupVerifyDataSchema: OpenApiRecord = {
   type: "object",
-  required: ["user", "session", "sessionToken", "refreshToken"],
+  required: ["user", "session", "accessToken", "refreshToken"],
   properties: {
-    user: authUserDataSchema,
-    session: {
-      type: "object",
-      required: ["id", "expiresAt"],
-      properties: {
-        id: { type: "string", example: "cmokabtp40002fjw9v6ehw21x" },
-        expiresAt: { type: "string", format: "date-time" },
-      },
-    },
-    sessionToken: {
+    accessToken: {
       type: "string",
       description:
-        "Opaque bearer token. Also set as an HttpOnly cookie for browser clients.",
+        "Opaque bearer token for protected APIs. Also set as an HttpOnly cookie for browser clients.",
+    },
+    user: authUserDataSchema,
+    session: authSessionDataSchema,
+    sessionToken: {
+      type: "string",
+      deprecated: true,
+      description:
+        "Legacy alias for accessToken. New clients should use accessToken.",
     },
     refreshToken: {
       type: "string",
@@ -349,9 +358,10 @@ const refreshRequestSchema: OpenApiRecord = {
 
 const sessionsDataSchema: OpenApiRecord = {
   type: "object",
-  required: ["currentSessionId", "sessions"],
+  required: ["currentSessionId", "sessions", "user"],
   properties: {
     currentSessionId: { type: "string" },
+    user: authUserDataSchema,
     sessions: {
       type: "array",
       items: {
@@ -614,7 +624,7 @@ export function GET(request: Request) {
         "/api/v1/auth/refresh": jsonEndpoint({
           summary: "Refresh session",
           description:
-            "Rotate the refresh token and issue a fresh session token. Browser clients can rely on the HttpOnly refresh cookie; API clients can send refreshToken in the JSON body.",
+            "Rotate the refresh token and issue a fresh access token. Browser clients can rely on the HttpOnly refresh cookie; API clients can send refreshToken in the JSON body.",
           failureDescription: "Session refresh failed.",
           requestSchema: refreshRequestSchema,
           requestBodyRequired: false,
@@ -699,7 +709,7 @@ export function GET(request: Request) {
             tag: "User",
             summary: "Update profile",
             description:
-              "Update editable profile fields for the current authenticated user. This endpoint does not change mobile number, role, or session tokens.",
+              "Update editable profile fields for the current authenticated user. This endpoint does not change mobile number, role, or auth tokens.",
             failureDescription: "Profile update failed.",
             requiresAuth: true,
             requestSchema: {

@@ -53,8 +53,13 @@ type PublicUserRow = {
 };
 
 type AuthTokenPair = {
+  accessToken: string;
   refreshToken: string;
-  sessionToken: string;
+};
+
+type PublicSessionRow = {
+  expiresAt: Date;
+  id: string;
 };
 
 /**
@@ -175,6 +180,7 @@ export async function handleListSessions(request: Request) {
     code: AUTH_CODES.SESSIONS_LOADED,
     data: {
       currentSessionId: auth.session.id,
+      user: auth.session.user,
       sessions,
     },
     message: AUTH_MESSAGES.SESSIONS_LOADED,
@@ -543,6 +549,7 @@ async function verifySignupOtp(
         select: {
           email: true,
           id: true,
+          isActive: true,
           mobile: true,
           mobileVerifiedAt: true,
           name: true,
@@ -567,7 +574,7 @@ async function verifySignupOtp(
           ipAddress: context.ipAddress,
           lastUsedAt: now,
           refreshTokenId: hashAuthToken(tokens.refreshToken, otpSecret),
-          tokenId: hashAuthToken(tokens.sessionToken, otpSecret),
+          tokenId: hashAuthToken(tokens.accessToken, otpSecret),
           userAgent: context.userAgent,
           userId: user.id,
         },
@@ -607,7 +614,7 @@ async function verifySignupOtp(
       return {
         session,
         status: "signup_completed" as const,
-        user,
+        user: toPublicUser(user),
       };
     });
 
@@ -662,12 +669,11 @@ async function verifySignupOtp(
     return authJson({
       code: AUTH_CODES.SIGNUP_COMPLETED,
       data: {
+        accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        session: {
-          expiresAt: result.session.expiresAt,
-          id: result.session.id,
-        },
-        sessionToken: tokens.sessionToken,
+        session: toPublicSession(result.session, result.user),
+        // sessionToken is kept as a legacy alias for existing clients.
+        sessionToken: tokens.accessToken,
         user: result.user,
       },
       headers: createAuthHeaders(tokens, result.session.expiresAt),
@@ -1011,7 +1017,7 @@ async function verifyLoginOtp(
           ipAddress: context.ipAddress,
           lastUsedAt: now,
           refreshTokenId: hashAuthToken(tokens.refreshToken, otpSecret),
-          tokenId: hashAuthToken(tokens.sessionToken, otpSecret),
+          tokenId: hashAuthToken(tokens.accessToken, otpSecret),
           userAgent: context.userAgent,
           userId: user.id,
         },
@@ -1072,9 +1078,11 @@ async function verifyLoginOtp(
     return authJson({
       code: AUTH_CODES.LOGIN_COMPLETED,
       data: {
+        accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        session: result.session,
-        sessionToken: tokens.sessionToken,
+        session: toPublicSession(result.session, result.user),
+        // sessionToken is kept as a legacy alias for existing clients.
+        sessionToken: tokens.accessToken,
         user: result.user,
       },
       headers: createAuthHeaders(tokens, result.session.expiresAt),
@@ -1098,7 +1106,7 @@ async function verifyLoginOtp(
 }
 
 /**
- * Rotates a refresh token and session token.
+ * Rotates refresh and access tokens.
  *
  * Browser clients can use the HttpOnly refresh cookie, while API/mobile
  * clients can continue sending the refresh token in the request body.
@@ -1156,7 +1164,7 @@ async function refreshSession(
       ipAddress: context.ipAddress,
       lastUsedAt: now,
       refreshTokenId: hashAuthToken(tokens.refreshToken, secret),
-      tokenId: hashAuthToken(tokens.sessionToken, secret),
+      tokenId: hashAuthToken(tokens.accessToken, secret),
       userAgent: context.userAgent,
     },
     select: {
@@ -1171,9 +1179,11 @@ async function refreshSession(
   return authJson({
     code: AUTH_CODES.SESSION_REFRESHED,
     data: {
+      accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      session: updatedSession,
-      sessionToken: tokens.sessionToken,
+      session: toPublicSession(updatedSession, toPublicUser(session.user)),
+      // sessionToken is kept as a legacy alias for existing clients.
+      sessionToken: tokens.accessToken,
       user: toPublicUser(session.user),
     },
     headers: createAuthHeaders(tokens, updatedSession.expiresAt),
@@ -1409,14 +1419,25 @@ function toPublicUser(user: PublicUserRow) {
 }
 
 /**
+ * Adds current user details to session payloads returned after auth changes.
+ */
+function toPublicSession(session: PublicSessionRow, user: ReturnType<typeof toPublicUser>) {
+  return {
+    expiresAt: session.expiresAt,
+    id: session.id,
+    user,
+  };
+}
+
+/**
  * Generates tokens with explicit entropy targets.
  *
- * sessionToken uses 256-bit entropy; refreshToken uses 512-bit entropy.
+ * accessToken uses 256-bit entropy; refreshToken uses 512-bit entropy.
  */
 function generateAuthTokens(): AuthTokenPair {
   return {
+    accessToken: generateAuthToken(32),
     refreshToken: generateAuthToken(64),
-    sessionToken: generateAuthToken(32),
   };
 }
 
@@ -1428,7 +1449,7 @@ function createAuthHeaders(tokens: AuthTokenPair, expiresAt: Date) {
     createAuthCookieHeaders({
       refreshToken: tokens.refreshToken,
       refreshTokenExpiresAt: expiresAt,
-      sessionToken: tokens.sessionToken,
+      sessionToken: tokens.accessToken,
       sessionTokenExpiresAt: expiresAt,
     }),
   );
