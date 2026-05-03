@@ -22,6 +22,10 @@ import {
   SERVICE_MESSAGES,
 } from "@/features/services/constants/service.constants";
 import {
+  REVIEW_CODES,
+  REVIEW_MESSAGES,
+} from "@/features/reviews/constants/review.constants";
+import {
   STAFF_CODES,
   STAFF_MESSAGES,
 } from "@/features/staff/constants/staff.constants";
@@ -618,6 +622,48 @@ const staffLeaveRequestSchema: OpenApiRecord = {
     startsAt: { type: "string", format: "date-time" },
     endsAt: { type: "string", format: "date-time" },
     reason: { type: "string", nullable: true, maxLength: 300 },
+  },
+};
+
+const reviewDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "bookingId", "rating", "isApproved", "createdAt", "updatedAt"],
+  properties: {
+    id: { type: "string", example: "cmokreview0001" },
+    bookingId: { type: "string", example: "cmokbooking0001" },
+    rating: { type: "integer", minimum: 1, maximum: 5, example: 5 },
+    commentHi: { type: "string", nullable: true },
+    photoUrls: { type: "array", items: { type: "string", format: "uri" } },
+    isApproved: { type: "boolean", example: true },
+    user: { type: "object", nullable: true },
+    service: { type: "object", nullable: true },
+    staff: { type: "object", nullable: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const createReviewRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["rating"],
+  properties: {
+    rating: { type: "integer", minimum: 1, maximum: 5, example: 5 },
+    commentHi: { type: "string", nullable: true, maxLength: 1000 },
+    photoUrls: {
+      type: "array",
+      maxItems: 6,
+      items: { type: "string", format: "uri" },
+    },
+  },
+};
+
+const updateReviewModerationRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["isApproved"],
+  properties: {
+    isApproved: { type: "boolean", example: false },
   },
 };
 
@@ -1327,6 +1373,10 @@ export function GET(request: Request) {
           description: "Booking payments, verification, and refund requests.",
         },
         {
+          name: "Reviews",
+          description: "Booking reviews and public rating feeds.",
+        },
+        {
           name: "Admin",
           description: "Admin-only operations for managing business data.",
         },
@@ -1994,6 +2044,33 @@ export function GET(request: Request) {
           successMessage: BOOKING_MESSAGES.BOOKING_RESCHEDULED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/bookings/{bookingId}/review": jsonEndpoint({
+          method: "post",
+          tag: "Reviews",
+          summary: "Create booking review",
+          description:
+            "Create one review for a completed booking owned by the current user.",
+          failureDescription: "Review creation failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "bookingId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokbooking0001" },
+            },
+          ],
+          requestSchema: createReviewRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["review"],
+            properties: { review: reviewDataSchema },
+          },
+          successCode: REVIEW_CODES.REVIEW_CREATED,
+          successDescription: "Review created.",
+          successMessage: REVIEW_MESSAGES.REVIEW_CREATED,
+          successStatus: HTTP_STATUS.CREATED,
+        }),
         "/api/v1/bookings/slots": jsonEndpoint({
           method: "get",
           tag: "Bookings",
@@ -2347,6 +2424,46 @@ export function GET(request: Request) {
           successMessage: SERVICE_MESSAGES.SERVICE_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/services/{serviceId}/reviews": jsonEndpoint({
+          method: "get",
+          tag: "Reviews",
+          summary: "List service reviews",
+          description:
+            "List approved public reviews for one service, optionally scoped to a branch.",
+          failureDescription: "Review list load failed.",
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["reviews", "limit"],
+            properties: {
+              reviews: { type: "array", items: reviewDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: REVIEW_CODES.REVIEW_LISTED,
+          successDescription: "Reviews loaded.",
+          successMessage: REVIEW_MESSAGES.REVIEW_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/staff": jsonEndpoint({
           method: "get",
           tag: "Staff",
@@ -2406,6 +2523,46 @@ export function GET(request: Request) {
           successCode: STAFF_CODES.STAFF_LOADED,
           successDescription: "Staff details loaded.",
           successMessage: STAFF_MESSAGES.STAFF_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/staff/{staffId}/reviews": jsonEndpoint({
+          method: "get",
+          tag: "Reviews",
+          summary: "List staff reviews",
+          description:
+            "List approved public reviews for one staff member, optionally scoped to a branch.",
+          failureDescription: "Review list load failed.",
+          parameters: [
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokstaff0001" },
+            },
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["reviews", "limit"],
+            properties: {
+              reviews: { type: "array", items: reviewDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: REVIEW_CODES.REVIEW_LISTED,
+          successDescription: "Reviews loaded.",
+          successMessage: REVIEW_MESSAGES.REVIEW_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/branches": jsonEndpoint({
@@ -2919,6 +3076,33 @@ export function GET(request: Request) {
           "Mark no-show",
           "Mark a confirmed booking as no-show.",
         ),
+        "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Moderate review",
+          description:
+            "Approve or hide one review. Branch admins can moderate reviews for their branch; super admins can moderate all reviews.",
+          failureDescription: "Review moderation failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "reviewId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokreview0001" },
+            },
+          ],
+          requestSchema: updateReviewModerationRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["review"],
+            properties: { review: reviewDataSchema },
+          },
+          successCode: REVIEW_CODES.REVIEW_UPDATED,
+          successDescription: "Review updated.",
+          successMessage: REVIEW_MESSAGES.REVIEW_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
       },
     },
     {
