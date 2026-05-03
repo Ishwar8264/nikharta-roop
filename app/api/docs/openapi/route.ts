@@ -615,6 +615,121 @@ const bookingSlotDataSchema: OpenApiRecord = {
   },
 };
 
+const bookingDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "displayId",
+    "bookingDate",
+    "slotStart",
+    "slotEnd",
+    "status",
+    "totalAmount",
+    "branch",
+    "createdAt",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokbooking0001" },
+    displayId: { type: "string", example: "NR20260503A1B2C3" },
+    bookingDate: { type: "string", format: "date-time" },
+    slotStart: { type: "string", format: "date-time" },
+    slotEnd: { type: "string", format: "date-time" },
+    status: {
+      type: "string",
+      enum: [
+        "PENDING",
+        "CONFIRMED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELLED",
+        "NO_SHOW",
+      ],
+      example: "PENDING",
+    },
+    totalAmount: { type: "string", example: "799.00" },
+    advanceAmount: { type: "string", nullable: true, example: "100.00" },
+    discountAmount: { type: "string", example: "0.00" },
+    notes: { type: "string", nullable: true, example: "Prefer quiet room." },
+    pendingExpiresAt: { type: "string", format: "date-time", nullable: true },
+    cancelledAt: { type: "string", format: "date-time", nullable: true },
+    cancellationReason: { type: "string", nullable: true },
+    checkedInAt: { type: "string", format: "date-time", nullable: true },
+    completedAt: { type: "string", format: "date-time", nullable: true },
+    branch: {
+      type: "object",
+      required: ["id", "nameHi", "city"],
+      properties: {
+        id: { type: "string", example: "cmokbranch0001" },
+        nameHi: { type: "string", example: "निखरता रूप जयपुर" },
+        nameEn: { type: "string", nullable: true, example: "Nikharta Roop Jaipur" },
+        city: { type: "string", example: "Jaipur" },
+      },
+    },
+    service: { type: "object", nullable: true },
+    serviceVariant: { type: "object", nullable: true },
+    staff: { type: "object", nullable: true },
+    addOns: { type: "array", items: { type: "object" } },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const createBookingRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["branchId", "serviceId", "bookingDate", "slotStart"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    serviceId: { type: "string", example: "cmokservice0001" },
+    serviceVariantId: {
+      type: "string",
+      nullable: true,
+      example: "cmokvariant0001",
+    },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+    bookingDate: { type: "string", format: "date", example: "2026-05-10" },
+    slotStart: { type: "string", example: "10:00:00" },
+    notes: { type: "string", nullable: true, maxLength: 500 },
+    addOns: {
+      type: "array",
+      maxItems: 10,
+      items: {
+        type: "object",
+        required: ["addOnId"],
+        properties: {
+          addOnId: { type: "string", example: "cmokaddon0001" },
+          quantity: { type: "integer", minimum: 1, maximum: 10, example: 1 },
+        },
+      },
+    },
+  },
+};
+
+const rescheduleBookingRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["bookingDate", "slotStart"],
+  properties: {
+    bookingDate: { type: "string", format: "date", example: "2026-05-11" },
+    slotStart: { type: "string", example: "14:00:00" },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+  },
+};
+
+const cancelBookingRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    reason: {
+      type: "string",
+      nullable: true,
+      maxLength: 300,
+      example: "Customer requested cancellation.",
+    },
+  },
+};
+
 const authSessionDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "expiresAt", "user"],
@@ -1318,6 +1433,168 @@ export function GET(request: Request) {
           successCode: USER_CODES.BOOKING_HISTORY_LOADED,
           successDescription: "Booking history loaded.",
           successMessage: USER_MESSAGES.BOOKING_HISTORY_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/bookings": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Bookings",
+            summary: "List bookings",
+            description:
+              "List bookings owned by the current authenticated user. Supports status and limit filters.",
+            failureDescription: "Booking list load failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "status",
+                in: "query",
+                required: false,
+                schema: {
+                  type: "string",
+                  enum: [
+                    "PENDING",
+                    "CONFIRMED",
+                    "IN_PROGRESS",
+                    "COMPLETED",
+                    "CANCELLED",
+                    "NO_SHOW",
+                  ],
+                },
+              },
+              {
+                name: "limit",
+                in: "query",
+                required: false,
+                schema: {
+                  type: "integer",
+                  minimum: 1,
+                  maximum: 50,
+                  default: 20,
+                },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["bookings", "limit"],
+              properties: {
+                bookings: {
+                  type: "array",
+                  items: bookingDataSchema,
+                },
+                limit: { type: "integer", example: 20 },
+              },
+            },
+            successCode: BOOKING_CODES.BOOKING_LIST_LOADED,
+            successDescription: "Bookings loaded.",
+            successMessage: BOOKING_MESSAGES.BOOKING_LIST_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Bookings",
+            summary: "Create booking",
+            description:
+              "Create a pending booking for the current user. The server re-checks slot availability in a transaction and auto-assigns an available qualified staff member when staffId is omitted.",
+            failureDescription: "Booking creation failed.",
+            requiresAuth: true,
+            requestSchema: createBookingRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["booking"],
+              properties: {
+                booking: bookingDataSchema,
+              },
+            },
+            successCode: BOOKING_CODES.BOOKING_CREATED,
+            successDescription: "Booking created.",
+            successMessage: BOOKING_MESSAGES.BOOKING_CREATED,
+            successStatus: HTTP_STATUS.CREATED,
+          }),
+        },
+        "/api/v1/bookings/{bookingId}": jsonEndpoint({
+          method: "get",
+          tag: "Bookings",
+          summary: "Get booking",
+          description: "Load one booking owned by the current authenticated user.",
+          failureDescription: "Booking detail load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "bookingId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokbooking0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: {
+              booking: bookingDataSchema,
+            },
+          },
+          successCode: BOOKING_CODES.BOOKING_DETAIL_LOADED,
+          successDescription: "Booking details loaded.",
+          successMessage: BOOKING_MESSAGES.BOOKING_DETAIL_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/bookings/{bookingId}/cancel": jsonEndpoint({
+          method: "patch",
+          tag: "Bookings",
+          summary: "Cancel booking",
+          description:
+            "Cancel a pending or confirmed booking owned by the current user.",
+          failureDescription: "Booking cancellation failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "bookingId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokbooking0001" },
+            },
+          ],
+          requestSchema: cancelBookingRequestSchema,
+          requestBodyRequired: false,
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: {
+              booking: bookingDataSchema,
+            },
+          },
+          successCode: BOOKING_CODES.BOOKING_CANCELLED,
+          successDescription: "Booking cancelled.",
+          successMessage: BOOKING_MESSAGES.BOOKING_CANCELLED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/bookings/{bookingId}/reschedule": jsonEndpoint({
+          method: "patch",
+          tag: "Bookings",
+          summary: "Reschedule booking",
+          description:
+            "Move a pending or confirmed booking to a new date/time after re-checking availability.",
+          failureDescription: "Booking reschedule failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "bookingId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokbooking0001" },
+            },
+          ],
+          requestSchema: rescheduleBookingRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: {
+              booking: bookingDataSchema,
+            },
+          },
+          successCode: BOOKING_CODES.BOOKING_RESCHEDULED,
+          successDescription: "Booking rescheduled.",
+          successMessage: BOOKING_MESSAGES.BOOKING_RESCHEDULED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/bookings/slots": jsonEndpoint({

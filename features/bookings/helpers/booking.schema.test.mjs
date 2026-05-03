@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { listBookingSlotsQuerySchema } from "../../../schema/bookings/schema.booking.ts";
+import {
+  cancelBookingSchema,
+  createBookingSchema,
+  listBookingsQuerySchema,
+  listBookingSlotsQuerySchema,
+  rescheduleBookingSchema,
+} from "../../../schema/bookings/schema.booking.ts";
 
 test("listBookingSlotsQuerySchema parses required slot query fields", () => {
   assert.deepEqual(
@@ -40,4 +46,56 @@ test("listBookingSlotsQuerySchema rejects invalid dates", () => {
     }).success,
     false,
   );
+});
+
+test("listBookingsQuerySchema parses optional filters", () => {
+  assert.deepEqual(
+    listBookingsQuerySchema.parse({
+      limit: "10",
+      status: "PENDING",
+    }),
+    {
+      limit: 10,
+      status: "PENDING",
+    },
+  );
+});
+
+test("createBookingSchema parses booking payloads", () => {
+  assert.deepEqual(
+    createBookingSchema.parse({
+      addOns: [{ addOnId: "cmokaddon0001", quantity: 2 }],
+      bookingDate: "2026-05-10",
+      branchId: "cmokbranch0001",
+      notes: "Customer prefers afternoon reminder.",
+      serviceId: "cmokservice0001",
+      serviceVariantId: "",
+      slotStart: "10:00:00",
+      staffId: "",
+    }),
+    {
+      addOns: [{ addOnId: "cmokaddon0001", quantity: 2 }],
+      bookingDate: "2026-05-10",
+      branchId: "cmokbranch0001",
+      notes: "Customer prefers afternoon reminder.",
+      serviceId: "cmokservice0001",
+      serviceVariantId: undefined,
+      slotStart: "10:00:00",
+      staffId: undefined,
+    },
+  );
+});
+
+test("rescheduleBookingSchema rejects off-grid slot times", () => {
+  assert.equal(
+    rescheduleBookingSchema.safeParse({
+      bookingDate: "2026-05-10",
+      slotStart: "10:15:00",
+    }).success,
+    false,
+  );
+});
+
+test("cancelBookingSchema accepts an empty body", () => {
+  assert.deepEqual(cancelBookingSchema.parse(null), {});
 });
