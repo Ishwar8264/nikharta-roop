@@ -10,6 +10,10 @@ import {
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
 import {
+  SERVICE_CODES,
+  SERVICE_MESSAGES,
+} from "@/features/services/constants/service.constants";
+import {
   USER_CODES,
   USER_MESSAGES,
 } from "@/features/users/constants/user.constants";
@@ -277,6 +281,163 @@ const branchPatchRequestSchema: OpenApiRecord = {
   additionalProperties: false,
   minProperties: 1,
   properties: branchRequestSchema.properties,
+};
+
+const serviceCategoryDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "nameHi",
+    "nameEn",
+    "slug",
+    "sortOrder",
+    "isActive",
+    "createdAt",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokcategory0001" },
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    nameHi: { type: "string", example: "बाल सेवाएं" },
+    nameEn: { type: "string", example: "Hair Services" },
+    slug: { type: "string", example: "hair-services" },
+    description: {
+      type: "string",
+      nullable: true,
+      example: "Hair cut, styling, color, and care services.",
+    },
+    sortOrder: { type: "integer", example: 10 },
+    isActive: { type: "boolean", example: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const serviceDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "branchId",
+    "categoryId",
+    "nameHi",
+    "nameEn",
+    "slug",
+    "descriptionHi",
+    "price",
+    "durationMinutes",
+    "isActive",
+    "branch",
+    "category",
+    "createdAt",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokservice0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", example: "cmokcategory0001" },
+    nameHi: { type: "string", example: "हेयर कट" },
+    nameEn: { type: "string", example: "Hair Cut" },
+    slug: { type: "string", example: "hair-cut" },
+    descriptionHi: { type: "string", example: "स्टाइलिश हेयर कट सेवा।" },
+    descriptionEn: {
+      type: "string",
+      nullable: true,
+      example: "Stylish hair cut service.",
+    },
+    price: {
+      type: "string",
+      example: "499.00",
+      description: "Stored as Decimal and serialized as string.",
+    },
+    advanceAmount: {
+      type: "string",
+      nullable: true,
+      example: "100.00",
+      description: "Stored as Decimal and serialized as string.",
+    },
+    durationMinutes: { type: "integer", example: 45 },
+    imageUrl: {
+      type: "string",
+      nullable: true,
+      example: "https://cdn.example.com/services/hair-cut.jpg",
+    },
+    galleryUrls: {
+      type: "array",
+      items: { type: "string" },
+      example: ["https://cdn.example.com/services/hair-cut-1.jpg"],
+    },
+    isActive: { type: "boolean", example: true },
+    branch: {
+      type: "object",
+      required: ["id", "nameHi", "city"],
+      properties: {
+        id: { type: "string", example: "cmokbranch0001" },
+        nameHi: { type: "string", example: "निखरता रूप जयपुर" },
+        nameEn: { type: "string", nullable: true, example: "Nikharta Roop Jaipur" },
+        city: { type: "string", example: "Jaipur" },
+      },
+    },
+    category: serviceCategoryDataSchema,
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const serviceDetailDataSchema: OpenApiRecord = {
+  allOf: [
+    serviceDataSchema,
+    {
+      type: "object",
+      required: ["variants", "addOns"],
+      properties: {
+        variants: {
+          type: "array",
+          items: {
+            type: "object",
+            required: [
+              "id",
+              "nameHi",
+              "price",
+              "durationMinutes",
+              "sortOrder",
+              "isActive",
+            ],
+            properties: {
+              id: { type: "string", example: "cmokvariant0001" },
+              nameHi: { type: "string", example: "लेयर कट" },
+              nameEn: { type: "string", nullable: true, example: "Layer Cut" },
+              descriptionHi: { type: "string", nullable: true },
+              price: { type: "string", example: "699.00" },
+              advanceAmount: { type: "string", nullable: true, example: "150.00" },
+              durationMinutes: { type: "integer", example: 60 },
+              sortOrder: { type: "integer", example: 1 },
+              isActive: { type: "boolean", example: true },
+              createdAt: { type: "string", format: "date-time" },
+              updatedAt: { type: "string", format: "date-time" },
+            },
+          },
+        },
+        addOns: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["id", "nameHi", "price", "durationMinutes", "isActive"],
+            properties: {
+              id: { type: "string", example: "cmokaddon0001" },
+              nameHi: { type: "string", example: "हेयर वॉश" },
+              nameEn: { type: "string", nullable: true, example: "Hair Wash" },
+              descriptionHi: { type: "string", nullable: true },
+              price: { type: "string", example: "149.00" },
+              durationMinutes: { type: "integer", example: 10 },
+              isActive: { type: "boolean", example: true },
+              createdAt: { type: "string", format: "date-time" },
+              updatedAt: { type: "string", format: "date-time" },
+            },
+          },
+        },
+      },
+    },
+  ],
 };
 
 const avatarDataSchema: OpenApiRecord = {
@@ -680,6 +841,10 @@ export function GET(request: Request) {
         {
           name: "Branches",
           description: "Public branch discovery and branch selection.",
+        },
+        {
+          name: "Services",
+          description: "Public service categories, service lists, and details.",
         },
         {
           name: "Admin",
@@ -1184,6 +1349,141 @@ export function GET(request: Request) {
           successCode: BRANCH_CODES.BRANCH_LOADED,
           successDescription: "Branch loaded.",
           successMessage: BRANCH_MESSAGES.BRANCH_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/services/categories": jsonEndpoint({
+          method: "get",
+          tag: "Services",
+          summary: "List service categories",
+          description:
+            "List active global service categories and, when branchId is provided, active branch-specific categories.",
+          failureDescription: "Service category load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["categories"],
+            properties: {
+              categories: {
+                type: "array",
+                items: serviceCategoryDataSchema,
+              },
+            },
+          },
+          successCode: SERVICE_CODES.CATEGORIES_LISTED,
+          successDescription: "Service categories loaded.",
+          successMessage: SERVICE_MESSAGES.CATEGORIES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/services": jsonEndpoint({
+          method: "get",
+          tag: "Services",
+          summary: "List services",
+          description:
+            "List active services for one selected branch. Supports category, text search, and limit filters.",
+          failureDescription: "Service list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+            {
+              name: "categoryId",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "cmokcategory0001",
+              },
+            },
+            {
+              name: "categorySlug",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "hair-services",
+              },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: {
+                type: "integer",
+                minimum: 1,
+                maximum: 50,
+                default: 20,
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["services", "limit"],
+            properties: {
+              services: {
+                type: "array",
+                items: serviceDataSchema,
+              },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: SERVICE_CODES.SERVICES_LISTED,
+          successDescription: "Services loaded.",
+          successMessage: SERVICE_MESSAGES.SERVICES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/services/{serviceId}": jsonEndpoint({
+          method: "get",
+          tag: "Services",
+          summary: "Get service",
+          description:
+            "Load one active service by id, including active variants and add-ons.",
+          failureDescription: "Service load failed.",
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokservice0001",
+              },
+            },
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.SERVICE_LOADED,
+          successDescription: "Service loaded.",
+          successMessage: SERVICE_MESSAGES.SERVICE_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/branches": jsonEndpoint({
