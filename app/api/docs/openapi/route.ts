@@ -6,6 +6,10 @@ import {
   AUTH_OTP_CONFIG,
 } from "@/features/auth/constants/auth.constants";
 import {
+  BOOKING_CODES,
+  BOOKING_MESSAGES,
+} from "@/features/bookings/constants/booking.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -588,6 +592,29 @@ const bookingHistoryItemSchema: OpenApiRecord = {
   },
 };
 
+const bookingSlotDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["startTime", "endTime", "available", "availableStaffCount"],
+  properties: {
+    startTime: {
+      type: "string",
+      example: "10:00:00",
+      description: "Slot start time in HH:mm:ss format.",
+    },
+    endTime: {
+      type: "string",
+      example: "10:45:00",
+      description: "Slot end time in HH:mm:ss format.",
+    },
+    available: { type: "boolean", example: true },
+    availableStaffCount: {
+      type: "integer",
+      example: 2,
+      description: "Number of qualified staff available for this slot.",
+    },
+  },
+};
+
 const authSessionDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "expiresAt", "user"],
@@ -845,6 +872,10 @@ export function GET(request: Request) {
         {
           name: "Services",
           description: "Public service categories, service lists, and details.",
+        },
+        {
+          name: "Bookings",
+          description: "Booking availability, creation, and lifecycle endpoints.",
         },
         {
           name: "Admin",
@@ -1289,6 +1320,103 @@ export function GET(request: Request) {
           successMessage: USER_MESSAGES.BOOKING_HISTORY_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/bookings/slots": jsonEndpoint({
+          method: "get",
+          tag: "Bookings",
+          summary: "List booking slots",
+          description:
+            "Calculate available 30-minute grid slots for a service on one branch/date. Applies service duration, branch holidays, staff qualification, staff leave, existing bookings, and a 2-hour minimum advance window.",
+          failureDescription: "Booking slot load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+            {
+              name: "serviceId",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokservice0001",
+              },
+            },
+            {
+              name: "serviceVariantId",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "cmokvariant0001",
+              },
+            },
+            {
+              name: "staffId",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "cmokstaff0001",
+              },
+            },
+            {
+              name: "date",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                format: "date",
+                example: "2026-05-10",
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: [
+              "branchId",
+              "serviceId",
+              "date",
+              "durationMinutes",
+              "isClosed",
+              "slots",
+            ],
+            properties: {
+              branchId: { type: "string", example: "cmokbranch0001" },
+              serviceId: { type: "string", example: "cmokservice0001" },
+              serviceVariantId: {
+                type: "string",
+                nullable: true,
+                example: "cmokvariant0001",
+              },
+              staffId: {
+                type: "string",
+                nullable: true,
+                example: "cmokstaff0001",
+              },
+              date: { type: "string", format: "date", example: "2026-05-10" },
+              durationMinutes: { type: "integer", example: 45 },
+              isClosed: { type: "boolean", example: false },
+              closedReason: {
+                type: "string",
+                nullable: true,
+                example: null,
+              },
+              slots: {
+                type: "array",
+                items: bookingSlotDataSchema,
+              },
+            },
+          },
+          successCode: BOOKING_CODES.BOOKING_SLOTS_LISTED,
+          successDescription: "Booking slots loaded.",
+          successMessage: BOOKING_MESSAGES.BOOKING_SLOTS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/branches": jsonEndpoint({
           method: "get",
           tag: "Branches",
@@ -1389,7 +1517,7 @@ export function GET(request: Request) {
           tag: "Services",
           summary: "List services",
           description:
-            "List active services for one selected branch. Supports category, text search, and limit filters.",
+            "List active services for one selected branch. Supports category and limit filters.",
           failureDescription: "Service list load failed.",
           parameters: [
             {
