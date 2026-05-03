@@ -1,4 +1,7 @@
 export const BOOKING_CODES = {
+  ADMIN_BOOKING_ACTION_FAILED: "ADMIN_BOOKING_ACTION_FAILED",
+  ADMIN_BOOKING_LIST_LOAD_FAILED: "ADMIN_BOOKING_LIST_LOAD_FAILED",
+  ADMIN_BOOKING_LIST_LOADED: "ADMIN_BOOKING_LIST_LOADED",
   BOOKING_CANCELLED: "BOOKING_CANCELLED",
   BOOKING_CANCEL_FAILED: "BOOKING_CANCEL_FAILED",
   BOOKING_CREATED: "BOOKING_CREATED",
@@ -8,6 +11,7 @@ export const BOOKING_CODES = {
   BOOKING_LIST_LOAD_FAILED: "BOOKING_LIST_LOAD_FAILED",
   BOOKING_LIST_LOADED: "BOOKING_LIST_LOADED",
   BOOKING_NOT_FOUND: "BOOKING_NOT_FOUND",
+  BOOKING_STATUS_UPDATED: "BOOKING_STATUS_UPDATED",
   BOOKING_RESCHEDULED: "BOOKING_RESCHEDULED",
   BOOKING_RESCHEDULE_FAILED: "BOOKING_RESCHEDULE_FAILED",
   BOOKING_SLOTS_LOAD_FAILED: "BOOKING_SLOTS_LOAD_FAILED",
@@ -22,6 +26,9 @@ export const BOOKING_CODES = {
 } as const;
 
 export const BOOKING_MESSAGES = {
+  ADMIN_BOOKING_ACTION_FAILED: "Could not update booking. Please try again later.",
+  ADMIN_BOOKING_LIST_LOAD_FAILED: "Could not load admin bookings. Please try again later.",
+  ADMIN_BOOKING_LIST_LOADED: "Admin bookings loaded successfully.",
   BOOKING_CANCEL_FAILED: "Could not cancel booking. Please try again later.",
   BOOKING_CANCELLED: "Booking cancelled successfully.",
   BOOKING_CREATE_FAILED: "Could not create booking. Please try again later.",
@@ -31,6 +38,7 @@ export const BOOKING_MESSAGES = {
   BOOKING_LIST_LOAD_FAILED: "Could not load bookings. Please try again later.",
   BOOKING_LIST_LOADED: "Bookings loaded successfully.",
   BOOKING_NOT_FOUND: "Booking was not found.",
+  BOOKING_STATUS_UPDATED: "Booking status updated successfully.",
   BOOKING_RESCHEDULE_FAILED: "Could not reschedule booking. Please try again later.",
   BOOKING_RESCHEDULED: "Booking rescheduled successfully.",
   BOOKING_SLOTS_LOAD_FAILED: "Could not load booking slots. Please try again later.",

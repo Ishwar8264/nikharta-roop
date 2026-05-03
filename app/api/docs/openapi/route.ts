@@ -1252,6 +1252,37 @@ function jsonEndpoint(input: {
 }
 
 /**
+ * Builds repeated admin booking status action documentation.
+ */
+function adminBookingStatusEndpoint(summary: string, description: string) {
+  return jsonEndpoint({
+    method: "patch",
+    tag: "Admin",
+    summary,
+    description,
+    failureDescription: "Booking status update failed.",
+    requiresAuth: true,
+    parameters: [
+      {
+        name: "bookingId",
+        in: "path",
+        required: true,
+        schema: { type: "string", example: "cmokbooking0001" },
+      },
+    ],
+    responseSchema: {
+      type: "object",
+      required: ["booking"],
+      properties: { booking: bookingDataSchema },
+    },
+    successCode: BOOKING_CODES.BOOKING_STATUS_UPDATED,
+    successDescription: "Booking status updated.",
+    successMessage: BOOKING_MESSAGES.BOOKING_STATUS_UPDATED,
+    successStatus: HTTP_STATUS.OK,
+  });
+}
+
+/**
  * Returns the static OpenAPI document used by Swagger UI.
  */
 export function GET(request: Request) {
@@ -2774,6 +2805,120 @@ export function GET(request: Request) {
           successMessage: STAFF_MESSAGES.LEAVE_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/bookings": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List admin bookings",
+          description:
+            "List bookings for salon operations. Branch admins are scoped to their branch; super admins can filter by branch.",
+          failureDescription: "Admin booking list load failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+            { name: "date", in: "query", required: false, schema: { type: "string", format: "date" } },
+            { name: "status", in: "query", required: false, schema: { type: "string" } },
+            { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["bookings", "limit"],
+            properties: {
+              bookings: { type: "array", items: bookingDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: BOOKING_CODES.ADMIN_BOOKING_LIST_LOADED,
+          successDescription: "Admin bookings loaded.",
+          successMessage: BOOKING_MESSAGES.ADMIN_BOOKING_LIST_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/bookings/{bookingId}": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get admin booking",
+          description: "Load one booking for salon operations.",
+          failureDescription: "Admin booking detail load failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "bookingId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: { booking: bookingDataSchema },
+          },
+          successCode: BOOKING_CODES.BOOKING_DETAIL_LOADED,
+          successDescription: "Booking details loaded.",
+          successMessage: BOOKING_MESSAGES.BOOKING_DETAIL_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/bookings/{bookingId}/assign-staff": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Assign booking staff",
+          description: "Assign a qualified staff member from the booking branch.",
+          failureDescription: "Booking staff assignment failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "bookingId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            type: "object",
+            required: ["staffId"],
+            properties: { staffId: { type: "string", example: "cmokstaff0001" } },
+          },
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: { booking: bookingDataSchema },
+          },
+          successCode: BOOKING_CODES.BOOKING_STATUS_UPDATED,
+          successDescription: "Booking staff assigned.",
+          successMessage: BOOKING_MESSAGES.BOOKING_STATUS_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/bookings/{bookingId}/cancel": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Admin cancel booking",
+          description: "Cancel an operational booking and record status history.",
+          failureDescription: "Booking cancellation failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "bookingId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: cancelBookingRequestSchema,
+          requestBodyRequired: false,
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: { booking: bookingDataSchema },
+          },
+          successCode: BOOKING_CODES.BOOKING_STATUS_UPDATED,
+          successDescription: "Booking cancelled.",
+          successMessage: BOOKING_MESSAGES.BOOKING_CANCELLED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/bookings/{bookingId}/confirm": adminBookingStatusEndpoint(
+          "Confirm booking",
+          "Confirm a pending booking.",
+        ),
+        "/api/v1/admin/bookings/{bookingId}/check-in": adminBookingStatusEndpoint(
+          "Check in booking",
+          "Mark a confirmed booking as in progress and set checkedInAt.",
+        ),
+        "/api/v1/admin/bookings/{bookingId}/start": adminBookingStatusEndpoint(
+          "Start booking",
+          "Start a confirmed booking and set checkedInAt.",
+        ),
+        "/api/v1/admin/bookings/{bookingId}/complete": adminBookingStatusEndpoint(
+          "Complete booking",
+          "Complete an in-progress booking and set completedAt.",
+        ),
+        "/api/v1/admin/bookings/{bookingId}/no-show": adminBookingStatusEndpoint(
+          "Mark no-show",
+          "Mark a confirmed booking as no-show.",
+        ),
       },
     },
     {
