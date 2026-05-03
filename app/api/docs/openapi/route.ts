@@ -22,6 +22,10 @@ import {
   SERVICE_MESSAGES,
 } from "@/features/services/constants/service.constants";
 import {
+  STAFF_CODES,
+  STAFF_MESSAGES,
+} from "@/features/staff/constants/staff.constants";
+import {
   USER_CODES,
   USER_MESSAGES,
 } from "@/features/users/constants/user.constants";
@@ -553,6 +557,68 @@ const adminServiceAddOnPatchSchema: OpenApiRecord = {
   additionalProperties: false,
   minProperties: 1,
   properties: adminServiceAddOnRequestSchema.properties,
+};
+
+const staffDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "userId", "branchId", "name", "isAvailable"],
+  properties: {
+    id: { type: "string", example: "cmokstaff0001" },
+    userId: { type: "string", example: "cmokuser0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    name: { type: "string", nullable: true, example: "Anjali" },
+    specialization: { type: "array", items: { type: "string" } },
+    experienceYears: { type: "integer", nullable: true, example: 5 },
+    bioHi: { type: "string", nullable: true },
+    bioEn: { type: "string", nullable: true },
+    photoUrl: { type: "string", nullable: true },
+    rating: { type: "string", example: "4.80" },
+    isAvailable: { type: "boolean", example: true },
+    workDays: { type: "array", items: { type: "integer" } },
+    workStart: { type: "string", example: "10:00:00" },
+    workEnd: { type: "string", example: "19:00:00" },
+    services: { type: "array", items: { type: "object" } },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminStaffRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["userId", "branchId", "workStart", "workEnd"],
+  properties: {
+    userId: { type: "string", example: "cmokuser0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    specialization: { type: "array", items: { type: "string" } },
+    experienceYears: { type: "integer", nullable: true, minimum: 0 },
+    bioHi: { type: "string", nullable: true },
+    bioEn: { type: "string", nullable: true },
+    photoUrl: { type: "string", nullable: true, format: "uri" },
+    isAvailable: { type: "boolean", example: true },
+    workDays: { type: "array", items: { type: "integer", minimum: 0, maximum: 6 } },
+    workStart: { type: "string", example: "10:00" },
+    workEnd: { type: "string", example: "19:00" },
+    serviceIds: { type: "array", items: { type: "string" } },
+  },
+};
+
+const adminStaffPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminStaffRequestSchema.properties,
+};
+
+const staffLeaveRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["startsAt", "endsAt"],
+  properties: {
+    startsAt: { type: "string", format: "date-time" },
+    endsAt: { type: "string", format: "date-time" },
+    reason: { type: "string", nullable: true, maxLength: 300 },
+  },
 };
 
 const avatarDataSchema: OpenApiRecord = {
@@ -1216,6 +1282,10 @@ export function GET(request: Request) {
         {
           name: "Services",
           description: "Public service categories, service lists, and details.",
+        },
+        {
+          name: "Staff",
+          description: "Public staff discovery and staff detail endpoints.",
         },
         {
           name: "Bookings",
@@ -2246,6 +2316,67 @@ export function GET(request: Request) {
           successMessage: SERVICE_MESSAGES.SERVICE_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/staff": jsonEndpoint({
+          method: "get",
+          tag: "Staff",
+          summary: "List staff",
+          description:
+            "List available staff for one active branch, optionally filtered by service.",
+          failureDescription: "Staff list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "serviceId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: { type: "array", items: staffDataSchema } },
+          },
+          successCode: STAFF_CODES.STAFF_LISTED,
+          successDescription: "Staff loaded.",
+          successMessage: STAFF_MESSAGES.STAFF_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/staff/{staffId}": jsonEndpoint({
+          method: "get",
+          tag: "Staff",
+          summary: "Get staff",
+          description: "Load one available staff member for one active branch.",
+          failureDescription: "Staff detail load failed.",
+          parameters: [
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokstaff0001" },
+            },
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.STAFF_LOADED,
+          successDescription: "Staff details loaded.",
+          successMessage: STAFF_MESSAGES.STAFF_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/branches": jsonEndpoint({
           method: "post",
           tag: "Admin",
@@ -2519,6 +2650,128 @@ export function GET(request: Request) {
           successCode: SERVICE_CODES.ADD_ON_UPDATED,
           successDescription: "Service add-on updated.",
           successMessage: SERVICE_MESSAGES.ADD_ON_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/staff": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create staff",
+          description:
+            "Create a staff profile for an active user and optionally assign services.",
+          failureDescription: "Staff creation failed.",
+          requiresAuth: true,
+          requestSchema: adminStaffRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.STAFF_CREATED,
+          successDescription: "Staff created.",
+          successMessage: STAFF_MESSAGES.STAFF_CREATED,
+        }),
+        "/api/v1/admin/staff/{staffId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update staff",
+          description: "Update staff profile and availability fields.",
+          failureDescription: "Staff update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminStaffPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.STAFF_UPDATED,
+          successDescription: "Staff updated.",
+          successMessage: STAFF_MESSAGES.STAFF_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/staff/{staffId}/services": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Assign staff service",
+          description: "Assign one active branch service to a staff member.",
+          failureDescription: "Staff service assignment failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            type: "object",
+            required: ["serviceId"],
+            properties: { serviceId: { type: "string", example: "cmokservice0001" } },
+          },
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.SERVICE_ASSIGNED,
+          successDescription: "Staff service assigned.",
+          successMessage: STAFF_MESSAGES.SERVICE_ASSIGNED,
+        }),
+        "/api/v1/admin/staff/{staffId}/services/{serviceId}": jsonEndpoint({
+          method: "delete",
+          tag: "Admin",
+          summary: "Remove staff service",
+          description: "Remove one service assignment from a staff member.",
+          failureDescription: "Staff service removal failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+            { name: "serviceId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.SERVICE_REMOVED,
+          successDescription: "Staff service removed.",
+          successMessage: STAFF_MESSAGES.SERVICE_REMOVED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/staff/{staffId}/leaves": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create staff leave",
+          description: "Create a leave window that blocks staff availability.",
+          failureDescription: "Staff leave creation failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: staffLeaveRequestSchema,
+          responseSchema: { type: "object", additionalProperties: true },
+          successCode: STAFF_CODES.LEAVE_CREATED,
+          successDescription: "Staff leave created.",
+          successMessage: STAFF_MESSAGES.LEAVE_CREATED,
+        }),
+        "/api/v1/admin/staff/{staffId}/leaves/{leaveId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update staff leave",
+          description: "Update one staff leave window.",
+          failureDescription: "Staff leave update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+            { name: "leaveId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            ...staffLeaveRequestSchema,
+            required: undefined,
+            minProperties: 1,
+          },
+          responseSchema: { type: "object", additionalProperties: true },
+          successCode: STAFF_CODES.LEAVE_UPDATED,
+          successDescription: "Staff leave updated.",
+          successMessage: STAFF_MESSAGES.LEAVE_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
       },
