@@ -43,6 +43,7 @@ type RequestContext = {
 };
 
 type PublicUserRow = {
+  branchId: string | null;
   email: string | null;
   id: string;
   isActive: boolean;
@@ -547,6 +548,7 @@ async function verifySignupOtp(
           role: "USER",
         },
         select: {
+          branchId: true,
           email: true,
           id: true,
           isActive: true,
@@ -898,6 +900,7 @@ async function verifyLoginOtp(
     const result = await db.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         select: {
+          branchId: true,
           email: true,
           id: true,
           isActive: true,
@@ -1394,6 +1397,7 @@ function getSessionExpiry(now: Date) {
  */
 function publicUserSelect() {
   return {
+    branchId: true,
     email: true,
     id: true,
     isActive: true,
@@ -1409,6 +1413,8 @@ function publicUserSelect() {
  */
 function toPublicUser(user: PublicUserRow) {
   return {
+    // Admin APIs use branchId for branch-scoped authorization checks.
+    branchId: user.branchId,
     email: user.email,
     id: user.id,
     mobile: user.mobile,

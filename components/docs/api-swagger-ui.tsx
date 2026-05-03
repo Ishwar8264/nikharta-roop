@@ -119,8 +119,11 @@ export function ApiSwaggerUi({ specUrl }: ApiSwaggerUiProps) {
         displayRequestDuration: true,
         docExpansion: "list",
         filter: true,
+        // Keep Swagger UI groups and endpoints in predictable A-Z order.
+        operationsSorter: "alpha",
         showExtensions: true,
         showCommonExtensions: true,
+        tagsSorter: "alpha",
         tryItOutEnabled: true,
         presets: [
           SwaggerUIBundle.presets.apis,
