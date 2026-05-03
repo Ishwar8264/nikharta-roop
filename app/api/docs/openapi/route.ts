@@ -448,6 +448,113 @@ const serviceDetailDataSchema: OpenApiRecord = {
   ],
 };
 
+const adminServiceCategoryRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["nameHi", "nameEn", "slug"],
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", minLength: 2, maxLength: 200 },
+    slug: { type: "string", example: "hair-services" },
+    description: { type: "string", nullable: true, maxLength: 1000 },
+    sortOrder: { type: "integer", minimum: 0, example: 10 },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const adminServiceCategoryPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminServiceCategoryRequestSchema.properties,
+};
+
+const adminServiceRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "branchId",
+    "categoryId",
+    "nameHi",
+    "nameEn",
+    "slug",
+    "descriptionHi",
+    "price",
+    "durationMinutes",
+  ],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", example: "cmokcategory0001" },
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", minLength: 2, maxLength: 200 },
+    slug: { type: "string", example: "hair-cut" },
+    descriptionHi: { type: "string", minLength: 2, maxLength: 2000 },
+    descriptionEn: { type: "string", nullable: true, maxLength: 2000 },
+    price: { type: "number", minimum: 0, example: 499 },
+    advanceAmount: { type: "number", nullable: true, minimum: 0, example: 100 },
+    durationMinutes: { type: "integer", minimum: 5, maximum: 480, example: 45 },
+    imageUrl: { type: "string", nullable: true, format: "uri" },
+    galleryUrls: {
+      type: "array",
+      maxItems: 12,
+      items: { type: "string", format: "uri" },
+    },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const adminServicePatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminServiceRequestSchema.properties,
+};
+
+const adminServiceVariantRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["nameHi", "price", "durationMinutes"],
+  properties: {
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 1000 },
+    price: { type: "number", minimum: 0, example: 799 },
+    advanceAmount: { type: "number", nullable: true, minimum: 0, example: 100 },
+    durationMinutes: { type: "integer", minimum: 5, maximum: 480, example: 60 },
+    sortOrder: { type: "integer", minimum: 0, example: 10 },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const adminServiceVariantPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminServiceVariantRequestSchema.properties,
+};
+
+const adminServiceAddOnRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["nameHi", "price"],
+  properties: {
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 1000 },
+    price: { type: "number", minimum: 0, example: 149 },
+    durationMinutes: { type: "integer", minimum: 0, maximum: 240, example: 15 },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const adminServiceAddOnPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminServiceAddOnRequestSchema.properties,
+};
+
 const avatarDataSchema: OpenApiRecord = {
   type: "object",
   required: ["avatarUrl", "user"],
@@ -2190,6 +2297,228 @@ export function GET(request: Request) {
           successCode: BRANCH_CODES.BRANCH_UPDATED,
           successDescription: "Branch updated.",
           successMessage: BRANCH_MESSAGES.BRANCH_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/services/categories": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create service category",
+          description:
+            "Create a global or branch-specific service category. Branch admins are limited to their assigned branch; only super admins can create global categories.",
+          failureDescription: "Service category creation failed.",
+          requiresAuth: true,
+          requestSchema: adminServiceCategoryRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["category"],
+            properties: {
+              category: serviceCategoryDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.CATEGORY_CREATED,
+          successDescription: "Service category created.",
+          successMessage: SERVICE_MESSAGES.CATEGORY_CREATED,
+        }),
+        "/api/v1/admin/services/categories/{categoryId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update service category",
+          description:
+            "Update service category fields or deactivate a category by setting isActive to false.",
+          failureDescription: "Service category update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "categoryId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokcategory0001" },
+            },
+          ],
+          requestSchema: adminServiceCategoryPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["category"],
+            properties: {
+              category: serviceCategoryDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.CATEGORY_UPDATED,
+          successDescription: "Service category updated.",
+          successMessage: SERVICE_MESSAGES.CATEGORY_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/services": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create service",
+          description:
+            "Create a service under an active branch and matching global or branch-specific category.",
+          failureDescription: "Service creation failed.",
+          requiresAuth: true,
+          requestSchema: adminServiceRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.SERVICE_CREATED,
+          successDescription: "Service created.",
+          successMessage: SERVICE_MESSAGES.SERVICE_CREATED,
+        }),
+        "/api/v1/admin/services/{serviceId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update service",
+          description:
+            "Update service fields or deactivate a service by setting isActive to false.",
+          failureDescription: "Service update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          requestSchema: adminServicePatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.SERVICE_UPDATED,
+          successDescription: "Service updated.",
+          successMessage: SERVICE_MESSAGES.SERVICE_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/services/{serviceId}/variants": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create service variant",
+          description: "Create a priced duration option under one service.",
+          failureDescription: "Service variant creation failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          requestSchema: adminServiceVariantRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.VARIANT_CREATED,
+          successDescription: "Service variant created.",
+          successMessage: SERVICE_MESSAGES.VARIANT_CREATED,
+        }),
+        "/api/v1/admin/services/{serviceId}/variants/{variantId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update service variant",
+          description:
+            "Update variant fields or deactivate a variant by setting isActive to false.",
+          failureDescription: "Service variant update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+            {
+              name: "variantId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokvariant0001" },
+            },
+          ],
+          requestSchema: adminServiceVariantPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.VARIANT_UPDATED,
+          successDescription: "Service variant updated.",
+          successMessage: SERVICE_MESSAGES.VARIANT_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/services/{serviceId}/add-ons": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create service add-on",
+          description: "Create an optional priced add-on under one service.",
+          failureDescription: "Service add-on creation failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          requestSchema: adminServiceAddOnRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.ADD_ON_CREATED,
+          successDescription: "Service add-on created.",
+          successMessage: SERVICE_MESSAGES.ADD_ON_CREATED,
+        }),
+        "/api/v1/admin/services/{serviceId}/add-ons/{addOnId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update service add-on",
+          description:
+            "Update add-on fields or deactivate an add-on by setting isActive to false.",
+          failureDescription: "Service add-on update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+            {
+              name: "addOnId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokaddon0001" },
+            },
+          ],
+          requestSchema: adminServiceAddOnPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.ADD_ON_UPDATED,
+          successDescription: "Service add-on updated.",
+          successMessage: SERVICE_MESSAGES.ADD_ON_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
       },
