@@ -10,6 +10,10 @@ import {
   BOOKING_MESSAGES,
 } from "@/features/bookings/constants/booking.constants";
 import {
+  PAYMENT_CODES,
+  PAYMENT_MESSAGES,
+} from "@/features/payments/constants/payment.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -730,6 +734,124 @@ const cancelBookingRequestSchema: OpenApiRecord = {
   },
 };
 
+const refundDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "status", "amount", "requestedAt", "createdAt", "updatedAt"],
+  properties: {
+    id: { type: "string", example: "cmokrefund0001" },
+    status: {
+      type: "string",
+      enum: ["REQUESTED", "PROCESSING", "SUCCEEDED", "FAILED"],
+      example: "REQUESTED",
+    },
+    amount: { type: "string", example: "499.00" },
+    reason: { type: "string", nullable: true, example: "Customer cancelled." },
+    providerRefundId: { type: "string", nullable: true },
+    requestedAt: { type: "string", format: "date-time" },
+    processedAt: { type: "string", format: "date-time", nullable: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const paymentDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "bookingId",
+    "provider",
+    "status",
+    "currency",
+    "amount",
+    "amountPaid",
+    "amountRefunded",
+    "createdAt",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokpayment0001" },
+    bookingId: { type: "string", example: "cmokbooking0001" },
+    provider: {
+      type: "string",
+      enum: ["RAZORPAY", "CASH", "UPI_OFFLINE"],
+      example: "RAZORPAY",
+    },
+    providerOrderId: { type: "string", nullable: true, example: "razorpay_123" },
+    providerPaymentId: { type: "string", nullable: true, example: "pay_123" },
+    status: {
+      type: "string",
+      enum: [
+        "CREATED",
+        "PENDING",
+        "PAID",
+        "FAILED",
+        "REFUNDED",
+        "PARTIALLY_REFUNDED",
+      ],
+      example: "CREATED",
+    },
+    currency: { type: "string", example: "INR" },
+    amount: { type: "string", example: "499.00" },
+    amountPaid: { type: "string", example: "0.00" },
+    amountRefunded: { type: "string", example: "0.00" },
+    paymentUrl: { type: "string", nullable: true },
+    paidAt: { type: "string", format: "date-time", nullable: true },
+    refundedAt: { type: "string", format: "date-time", nullable: true },
+    refunds: {
+      type: "array",
+      items: refundDataSchema,
+    },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const createPaymentRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    provider: {
+      type: "string",
+      enum: ["RAZORPAY"],
+      default: "RAZORPAY",
+    },
+  },
+};
+
+const verifyPaymentRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["providerOrderId", "providerPaymentId"],
+  properties: {
+    providerOrderId: { type: "string", example: "razorpay_123" },
+    providerPaymentId: { type: "string", example: "pay_123" },
+    signature: {
+      type: "string",
+      description:
+        "Required in production for Razorpay HMAC verification.",
+      example: "d6f4...",
+    },
+  },
+};
+
+const createRefundRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    amount: {
+      type: "number",
+      example: 499,
+      description: "Defaults to the remaining refundable amount.",
+    },
+    reason: {
+      type: "string",
+      nullable: true,
+      maxLength: 300,
+      example: "Customer cancelled booking.",
+    },
+  },
+};
+
 const authSessionDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "expiresAt", "user"],
@@ -991,6 +1113,10 @@ export function GET(request: Request) {
         {
           name: "Bookings",
           description: "Booking availability, creation, and lifecycle endpoints.",
+        },
+        {
+          name: "Payments",
+          description: "Booking payments, verification, and refund requests.",
         },
         {
           name: "Admin",
@@ -1538,6 +1664,69 @@ export function GET(request: Request) {
           successMessage: BOOKING_MESSAGES.BOOKING_DETAIL_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/bookings/{bookingId}/payments": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Payments",
+            summary: "List booking payments",
+            description:
+              "List payment attempts for one booking owned by the current user.",
+            failureDescription: "Payment list load failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "bookingId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbooking0001" },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["payments"],
+              properties: {
+                payments: {
+                  type: "array",
+                  items: paymentDataSchema,
+                },
+              },
+            },
+            successCode: PAYMENT_CODES.PAYMENT_LIST_LOADED,
+            successDescription: "Payments loaded.",
+            successMessage: PAYMENT_MESSAGES.PAYMENT_LIST_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Payments",
+            summary: "Create booking payment",
+            description:
+              "Create or reuse an unpaid payment intent for a pending booking. The amount uses advanceAmount when configured, otherwise totalAmount.",
+            failureDescription: "Payment creation failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "bookingId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbooking0001" },
+              },
+            ],
+            requestBodyRequired: false,
+            requestSchema: createPaymentRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["payment"],
+              properties: {
+                payment: paymentDataSchema,
+              },
+            },
+            successCode: PAYMENT_CODES.PAYMENT_CREATED,
+            successDescription: "Payment created.",
+            successMessage: PAYMENT_MESSAGES.PAYMENT_CREATED,
+            successStatus: HTTP_STATUS.CREATED,
+          }),
+        },
         "/api/v1/bookings/{bookingId}/cancel": jsonEndpoint({
           method: "patch",
           tag: "Bookings",
@@ -1693,6 +1882,65 @@ export function GET(request: Request) {
           successDescription: "Booking slots loaded.",
           successMessage: BOOKING_MESSAGES.BOOKING_SLOTS_LISTED,
           successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/payments/{paymentId}/verify": jsonEndpoint({
+          method: "post",
+          tag: "Payments",
+          summary: "Verify payment",
+          description:
+            "Verify a provider payment for the current user. On success the payment becomes PAID and the pending booking becomes CONFIRMED.",
+          failureDescription: "Payment verification failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "paymentId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpayment0001" },
+            },
+          ],
+          requestSchema: verifyPaymentRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["payment"],
+            properties: {
+              payment: paymentDataSchema,
+            },
+          },
+          successCode: PAYMENT_CODES.PAYMENT_VERIFIED,
+          successDescription: "Payment verified.",
+          successMessage: PAYMENT_MESSAGES.PAYMENT_VERIFIED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/payments/{paymentId}/refunds": jsonEndpoint({
+          method: "post",
+          tag: "Payments",
+          summary: "Request refund",
+          description:
+            "Create a refund request for a paid payment after the booking has been cancelled. Provider processing is handled separately.",
+          failureDescription: "Refund request failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "paymentId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpayment0001" },
+            },
+          ],
+          requestBodyRequired: false,
+          requestSchema: createRefundRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["payment"],
+            properties: {
+              payment: paymentDataSchema,
+            },
+          },
+          successCode: PAYMENT_CODES.REFUND_CREATED,
+          successDescription: "Refund requested.",
+          successMessage: PAYMENT_MESSAGES.REFUND_CREATED,
+          successStatus: HTTP_STATUS.CREATED,
         }),
         "/api/v1/branches": jsonEndpoint({
           method: "get",
