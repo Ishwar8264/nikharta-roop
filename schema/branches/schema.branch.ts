@@ -13,6 +13,9 @@ const optionalUrlSchema = z.preprocess(
     .optional(),
 );
 
+/**
+ * Normalizes optional admin text fields that may be cleared from forms.
+ */
 const optionalTextSchema = (maxLength: number) =>
   z.preprocess(
     (value) => (value === "" ? null : value),
@@ -27,16 +30,25 @@ const timeSchema = z
   })
   .transform((value) => toTimeDate(value));
 
+/**
+ * Normalizes optional latitude values from map picker inputs.
+ */
 const optionalLatitudeSchema = z.preprocess(
   (value) => (value === "" ? null : value),
   z.number().min(-90).max(90).nullable().optional(),
 );
 
+/**
+ * Normalizes optional longitude values from map picker inputs.
+ */
 const optionalLongitudeSchema = z.preprocess(
   (value) => (value === "" ? null : value),
   z.number().min(-180).max(180).nullable().optional(),
 );
 
+/**
+ * Shared branch fields used by both create and patch validation.
+ */
 const branchFieldsSchema = z.object({
   address: z.string().trim().min(3).max(1000),
   city: z.string().trim().min(2).max(100),

@@ -11,12 +11,18 @@ type AddressRouteContext = {
   }>;
 };
 
+/**
+ * Routes address patch requests to the current-user address handler.
+ */
 export async function PATCH(request: Request, context: AddressRouteContext) {
   const { addressId } = await context.params;
 
   return handleUpdateAddress(request, addressId);
 }
 
+/**
+ * Routes address delete requests to the current-user address handler.
+ */
 export async function DELETE(request: Request, context: AddressRouteContext) {
   const { addressId } = await context.params;
 
