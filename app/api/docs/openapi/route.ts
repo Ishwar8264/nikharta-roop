@@ -14,6 +14,10 @@ import {
   PAYMENT_MESSAGES,
 } from "@/features/payments/constants/payment.constants";
 import {
+  PACKAGE_CODES,
+  PACKAGE_MESSAGES,
+} from "@/features/packages/constants/package.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -561,6 +565,122 @@ const adminServiceAddOnPatchSchema: OpenApiRecord = {
   additionalProperties: false,
   minProperties: 1,
   properties: adminServiceAddOnRequestSchema.properties,
+};
+
+const packageServiceDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["serviceId", "quantity", "sortOrder", "service"],
+  properties: {
+    serviceId: { type: "string", example: "cmokservice0001" },
+    quantity: { type: "integer", example: 1 },
+    sortOrder: { type: "integer", example: 0 },
+    service: {
+      type: "object",
+      required: ["id", "nameHi", "slug", "price", "durationMinutes"],
+      properties: {
+        id: { type: "string", example: "cmokservice0001" },
+        nameHi: { type: "string", example: "हेयर कट" },
+        nameEn: { type: "string", nullable: true, example: "Hair Cut" },
+        slug: { type: "string", example: "hair-cut" },
+        price: { type: "string", example: "499.00" },
+        durationMinutes: { type: "integer", example: 45 },
+        imageUrl: { type: "string", nullable: true, format: "uri" },
+      },
+    },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
+const packageDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "nameHi", "slug", "price", "isActive"],
+  properties: {
+    id: { type: "string", example: "cmokpackage0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokcategory0001" },
+    nameHi: { type: "string", example: "ब्राइडल पैकेज" },
+    nameEn: { type: "string", nullable: true, example: "Bridal Package" },
+    slug: { type: "string", example: "bridal-package" },
+    descriptionHi: { type: "string", nullable: true },
+    descriptionEn: { type: "string", nullable: true },
+    price: { type: "string", example: "4999.00" },
+    advanceAmount: { type: "string", nullable: true, example: "1000.00" },
+    durationMinutes: { type: "integer", nullable: true, example: 180 },
+    imageUrl: { type: "string", nullable: true, format: "uri" },
+    isCustom: { type: "boolean", example: false },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", additionalProperties: true },
+    category: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const packageDetailDataSchema: OpenApiRecord = {
+  allOf: [
+    packageDataSchema,
+    {
+      type: "object",
+      required: ["services"],
+      properties: {
+        services: { type: "array", items: packageServiceDataSchema },
+      },
+    },
+  ],
+};
+
+const packageServiceRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["serviceId"],
+  properties: {
+    serviceId: { type: "string", example: "cmokservice0001" },
+    quantity: { type: "integer", minimum: 1, maximum: 50, default: 1 },
+    sortOrder: { type: "integer", minimum: 0, default: 0 },
+  },
+};
+
+const adminPackageRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["branchId", "nameHi", "slug", "price"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokcategory0001" },
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "bridal-package" },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    descriptionEn: { type: "string", nullable: true, maxLength: 2000 },
+    price: { type: "number", minimum: 0, example: 4999 },
+    advanceAmount: { type: "number", nullable: true, minimum: 0, example: 1000 },
+    durationMinutes: { type: "integer", nullable: true, minimum: 5 },
+    imageUrl: { type: "string", nullable: true, format: "uri" },
+    isCustom: { type: "boolean", example: false },
+    isActive: { type: "boolean", example: true },
+    services: { type: "array", maxItems: 30, items: packageServiceRequestSchema },
+  },
+};
+
+const adminPackagePatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokcategory0001" },
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "bridal-package" },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    descriptionEn: { type: "string", nullable: true, maxLength: 2000 },
+    price: { type: "number", minimum: 0, example: 4999 },
+    advanceAmount: { type: "number", nullable: true, minimum: 0, example: 1000 },
+    durationMinutes: { type: "integer", nullable: true, minimum: 5 },
+    imageUrl: { type: "string", nullable: true, format: "uri" },
+    isCustom: { type: "boolean", example: false },
+    isActive: { type: "boolean", example: true },
+  },
 };
 
 const staffDataSchema: OpenApiRecord = {
@@ -1359,6 +1479,10 @@ export function GET(request: Request) {
         {
           name: "Services",
           description: "Public service categories, service lists, and details.",
+        },
+        {
+          name: "Packages",
+          description: "Public package discovery and package details.",
         },
         {
           name: "Staff",
@@ -2464,6 +2588,82 @@ export function GET(request: Request) {
           successMessage: REVIEW_MESSAGES.REVIEW_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/packages": jsonEndpoint({
+          method: "get",
+          tag: "Packages",
+          summary: "List packages",
+          description:
+            "List active packages for one selected branch. Supports category and limit filters.",
+          failureDescription: "Package list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "categoryId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokcategory0001" },
+            },
+            {
+              name: "categorySlug",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "bridal" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["packages", "limit"],
+            properties: {
+              packages: { type: "array", items: packageDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: PACKAGE_CODES.PACKAGES_LISTED,
+          successDescription: "Packages loaded.",
+          successMessage: PACKAGE_MESSAGES.PACKAGES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/packages/{packageId}": jsonEndpoint({
+          method: "get",
+          tag: "Packages",
+          summary: "Get package",
+          description: "Load one active package with attached active services.",
+          failureDescription: "Package load failed.",
+          parameters: [
+            {
+              name: "packageId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpackage0001" },
+            },
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["package"],
+            properties: { package: packageDetailDataSchema },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_LOADED,
+          successDescription: "Package loaded.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/staff": jsonEndpoint({
           method: "get",
           tag: "Staff",
@@ -2838,6 +3038,111 @@ export function GET(request: Request) {
           successCode: SERVICE_CODES.ADD_ON_UPDATED,
           successDescription: "Service add-on updated.",
           successMessage: SERVICE_MESSAGES.ADD_ON_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/packages": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create package",
+          description:
+            "Create a package under an active branch and optionally attach active branch services.",
+          failureDescription: "Package creation failed.",
+          requiresAuth: true,
+          requestSchema: adminPackageRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["package"],
+            properties: { package: packageDetailDataSchema },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_CREATED,
+          successDescription: "Package created.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_CREATED,
+        }),
+        "/api/v1/admin/packages/{packageId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update package",
+          description:
+            "Update package fields or deactivate a package by setting isActive to false.",
+          failureDescription: "Package update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "packageId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpackage0001" },
+            },
+          ],
+          requestSchema: adminPackagePatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["package"],
+            properties: { package: packageDetailDataSchema },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_UPDATED,
+          successDescription: "Package updated.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/packages/{packageId}/services": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Assign package service",
+          description:
+            "Attach or update one active branch service inside a package.",
+          failureDescription: "Package service assignment failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "packageId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpackage0001" },
+            },
+          ],
+          requestSchema: packageServiceRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["package"],
+            properties: { package: packageDetailDataSchema },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_SERVICE_ASSIGNED,
+          successDescription: "Package service assigned.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_SERVICE_ASSIGNED,
+        }),
+        "/api/v1/admin/packages/{packageId}/services/{serviceId}": jsonEndpoint({
+          method: "delete",
+          tag: "Admin",
+          summary: "Remove package service",
+          description: "Remove one service from a package.",
+          failureDescription: "Package service removal failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "packageId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpackage0001" },
+            },
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["packageId", "serviceId"],
+            properties: {
+              packageId: { type: "string", example: "cmokpackage0001" },
+              serviceId: { type: "string", example: "cmokservice0001" },
+            },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_SERVICE_REMOVED,
+          successDescription: "Package service removed.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_SERVICE_REMOVED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/staff": jsonEndpoint({
