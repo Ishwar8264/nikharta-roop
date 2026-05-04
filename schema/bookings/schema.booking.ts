@@ -92,6 +92,20 @@ export const listBookingsQuerySchema = z.object({
 export type ListBookingsQueryInput = z.infer<typeof listBookingsQuerySchema>;
 
 /**
+ * Query schema for GET /api/v1/admin/bookings.
+ */
+export const adminListBookingsQuerySchema = z.object({
+  branchId: optionalIdSchema,
+  date: bookingDateSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  status: z.enum(BookingStatus).optional(),
+});
+
+export type AdminListBookingsQueryInput = z.infer<
+  typeof adminListBookingsQuerySchema
+>;
+
+/**
  * Request schema for POST /api/v1/bookings.
  */
 export const createBookingSchema = z.object({
@@ -129,3 +143,19 @@ export const rescheduleBookingSchema = z.object({
 });
 
 export type RescheduleBookingInput = z.infer<typeof rescheduleBookingSchema>;
+
+/**
+ * Request schema for admin booking cancellation.
+ */
+export const adminCancelBookingSchema = cancelBookingSchema;
+
+export type AdminCancelBookingInput = z.infer<typeof adminCancelBookingSchema>;
+
+/**
+ * Request schema for PATCH /api/v1/admin/bookings/:bookingId/assign-staff.
+ */
+export const adminAssignStaffSchema = z.object({
+  staffId: idSchema,
+});
+
+export type AdminAssignStaffInput = z.infer<typeof adminAssignStaffSchema>;

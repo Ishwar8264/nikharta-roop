@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  adminAssignStaffSchema,
+  adminListBookingsQuerySchema,
   cancelBookingSchema,
   createBookingSchema,
   listBookingsQuerySchema,
@@ -98,4 +100,30 @@ test("rescheduleBookingSchema rejects off-grid slot times", () => {
 
 test("cancelBookingSchema accepts an empty body", () => {
   assert.deepEqual(cancelBookingSchema.parse(null), {});
+});
+
+test("adminListBookingsQuerySchema parses admin filters", () => {
+  assert.deepEqual(
+    adminListBookingsQuerySchema.parse({
+      branchId: "",
+      date: "2026-05-10",
+      limit: "25",
+      status: "CONFIRMED",
+    }),
+    {
+      branchId: undefined,
+      date: "2026-05-10",
+      limit: 25,
+      status: "CONFIRMED",
+    },
+  );
+});
+
+test("adminAssignStaffSchema requires staff id", () => {
+  assert.equal(
+    adminAssignStaffSchema.safeParse({
+      staffId: "cmokstaff0001",
+    }).success,
+    true,
+  );
 });
