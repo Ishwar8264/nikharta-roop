@@ -1,6 +1,6 @@
 import { getDb } from "@/db";
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
-import { parseJsonBody } from "@/features/auth/helpers/auth.route-helpers";
+import { readJsonBody } from "@/features/auth/helpers/auth.route-helpers";
 import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
@@ -17,6 +17,7 @@ import {
   updateBranchSchema,
   type UpdateBranchInput,
 } from "@/schema/branches/schema.branch";
+import type { ZodError, ZodType } from "zod";
 
 /**
  * Handles public active branch listing for discovery screens.
@@ -39,13 +40,13 @@ export async function handleGetBranch(branchId: string) {
  * Handles admin branch creation.
  */
 export async function handleCreateBranch(request: Request) {
-  const auth = await requireBranchAdmin(request);
+  const auth = await requireBranchSuperAdmin(request);
 
   if (!auth.success) {
     return auth.error;
   }
 
-  const parsedBody = await parseJsonBody(request, createBranchSchema);
+  const parsedBody = await parseBranchJsonBody(request, createBranchSchema);
 
   if (parsedBody.error) {
     return parsedBody.error;
@@ -64,13 +65,13 @@ export async function handleUpdateBranch(request: Request, branchId: string) {
     return auth.error;
   }
 
-  const parsedBody = await parseJsonBody(request, updateBranchSchema);
+  const parsedBody = await parseBranchJsonBody(request, updateBranchSchema);
 
   if (parsedBody.error) {
     return parsedBody.error;
   }
 
-  return updateBranch(branchId, parsedBody.data);
+  return updateBranch(branchId, parsedBody.data, auth.session.user);
 }
 
 /**
@@ -208,7 +209,11 @@ async function createBranch(input: CreateBranchInput) {
 /**
  * Updates one branch by id.
  */
-async function updateBranch(branchId: string, input: UpdateBranchInput) {
+async function updateBranch(
+  branchId: string,
+  input: UpdateBranchInput,
+  adminUser: BranchAdminUser,
+) {
   try {
     const existingBranch = await getDb().branch.findUnique({
       select: {
@@ -229,6 +234,14 @@ async function updateBranch(branchId: string, input: UpdateBranchInput) {
         code: BRANCH_CODES.BRANCH_NOT_FOUND,
         message: BRANCH_MESSAGES.BRANCH_NOT_FOUND,
         status: HTTP_STATUS.NOT_FOUND,
+      });
+    }
+
+    if (!canManageBranch(adminUser, existingBranch.id)) {
+      return branchError({
+        code: BRANCH_CODES.FORBIDDEN,
+        message: BRANCH_MESSAGES.FORBIDDEN,
+        status: HTTP_STATUS.FORBIDDEN,
       });
     }
 
@@ -293,6 +306,37 @@ async function updateBranch(branchId: string, input: UpdateBranchInput) {
 }
 
 /**
+ * Parses branch request JSON with branch-owned validation error codes.
+ */
+async function parseBranchJsonBody<T>(request: Request, schema: ZodType<T>) {
+  const body = await readJsonBody(request);
+  const parsed = schema.safeParse(body);
+
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: branchError({
+        code: BRANCH_CODES.VALIDATION_ERROR,
+        message: getBranchValidationMessage(parsed.error),
+        status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+      }),
+    };
+  }
+
+  return {
+    data: parsed.data,
+    error: null,
+  };
+}
+
+/**
+ * Keeps validation responses focused on the first actionable branch field.
+ */
+function getBranchValidationMessage(error: ZodError) {
+  return error.issues[0]?.message ?? BRANCH_MESSAGES.VALIDATION_ERROR;
+}
+
+/**
  * Finds branches that would create confusing duplicate admin records.
  */
 async function findDuplicateBranch(
@@ -329,7 +373,31 @@ async function findDuplicateBranch(
 }
 
 /**
- * Allows only admin roles to create or update branches.
+ * Allows only super admins to create new branches.
+ */
+async function requireBranchSuperAdmin(request: Request) {
+  const auth = await requireBranchAdmin(request);
+
+  if (!auth.success) {
+    return auth;
+  }
+
+  if (auth.session.user.role !== "SUPER_ADMIN") {
+    return {
+      error: branchError({
+        code: BRANCH_CODES.FORBIDDEN,
+        message: BRANCH_MESSAGES.FORBIDDEN,
+        status: HTTP_STATUS.FORBIDDEN,
+      }),
+      success: false as const,
+    };
+  }
+
+  return auth;
+}
+
+/**
+ * Allows only admin roles to reach branch management handlers.
  */
 async function requireBranchAdmin(request: Request) {
   const auth = await getAuthenticatedSession(request);
@@ -351,6 +419,19 @@ async function requireBranchAdmin(request: Request) {
 
   return auth;
 }
+
+/**
+ * Branch admins stay limited to their assigned branch; super admins are global.
+ */
+function canManageBranch(adminUser: BranchAdminUser, branchId: string) {
+  return adminUser.role === "SUPER_ADMIN" || adminUser.branchId === branchId;
+}
+
+type BranchAdminUser = {
+  branchId?: string | null;
+  id: string;
+  role: string;
+};
 
 /**
  * Keeps public branch responses from exposing operational relations.

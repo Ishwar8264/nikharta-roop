@@ -27,6 +27,9 @@ export function getDeviceName(userAgent: string | null) {
   return `${browser} on ${platform}`;
 }
 
+/**
+ * Detects the primary browser family from common User-Agent markers.
+ */
 function getBrowserName(userAgent: string) {
   if (userAgent.includes("Edg/")) {
     return "Edge";
@@ -51,6 +54,9 @@ function getBrowserName(userAgent: string) {
   return null;
 }
 
+/**
+ * Detects the user-visible platform name from common User-Agent markers.
+ */
 function getPlatformName(userAgent: string) {
   if (userAgent.includes("iPhone")) {
     return "iPhone";

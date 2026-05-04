@@ -47,6 +47,9 @@ const optionalIdSchema = z.preprocess(
   z.string().trim().cuid().nullable().optional(),
 );
 
+/**
+ * Restricts notification preference keys to the supported user settings.
+ */
 const notificationPreferencesSchema = z
   .object({
     bookingReminders: z.boolean().optional(),
@@ -102,6 +105,9 @@ export const updateAvatarSchema = z.object({
 
 export type UpdateAvatarInput = z.infer<typeof updateAvatarSchema>;
 
+/**
+ * Shared customer address fields used by create and patch validation.
+ */
 const addressBaseSchema = z.object({
   branchId: optionalIdSchema,
   city: z.string().trim().min(2).max(100),

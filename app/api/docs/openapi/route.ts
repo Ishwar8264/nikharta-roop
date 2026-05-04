@@ -6,9 +6,25 @@ import {
   AUTH_OTP_CONFIG,
 } from "@/features/auth/constants/auth.constants";
 import {
+  BOOKING_CODES,
+  BOOKING_MESSAGES,
+} from "@/features/bookings/constants/booking.constants";
+import {
+  PAYMENT_CODES,
+  PAYMENT_MESSAGES,
+} from "@/features/payments/constants/payment.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
+import {
+  SERVICE_CODES,
+  SERVICE_MESSAGES,
+} from "@/features/services/constants/service.constants";
+import {
+  STAFF_CODES,
+  STAFF_MESSAGES,
+} from "@/features/staff/constants/staff.constants";
 import {
   USER_CODES,
   USER_MESSAGES,
@@ -279,6 +295,332 @@ const branchPatchRequestSchema: OpenApiRecord = {
   properties: branchRequestSchema.properties,
 };
 
+const serviceCategoryDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "nameHi",
+    "nameEn",
+    "slug",
+    "sortOrder",
+    "isActive",
+    "createdAt",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokcategory0001" },
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    nameHi: { type: "string", example: "बाल सेवाएं" },
+    nameEn: { type: "string", example: "Hair Services" },
+    slug: { type: "string", example: "hair-services" },
+    description: {
+      type: "string",
+      nullable: true,
+      example: "Hair cut, styling, color, and care services.",
+    },
+    sortOrder: { type: "integer", example: 10 },
+    isActive: { type: "boolean", example: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const serviceDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "branchId",
+    "categoryId",
+    "nameHi",
+    "nameEn",
+    "slug",
+    "descriptionHi",
+    "price",
+    "durationMinutes",
+    "isActive",
+    "branch",
+    "category",
+    "createdAt",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokservice0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", example: "cmokcategory0001" },
+    nameHi: { type: "string", example: "हेयर कट" },
+    nameEn: { type: "string", example: "Hair Cut" },
+    slug: { type: "string", example: "hair-cut" },
+    descriptionHi: { type: "string", example: "स्टाइलिश हेयर कट सेवा।" },
+    descriptionEn: {
+      type: "string",
+      nullable: true,
+      example: "Stylish hair cut service.",
+    },
+    price: {
+      type: "string",
+      example: "499.00",
+      description: "Stored as Decimal and serialized as string.",
+    },
+    advanceAmount: {
+      type: "string",
+      nullable: true,
+      example: "100.00",
+      description: "Stored as Decimal and serialized as string.",
+    },
+    durationMinutes: { type: "integer", example: 45 },
+    imageUrl: {
+      type: "string",
+      nullable: true,
+      example: "https://cdn.example.com/services/hair-cut.jpg",
+    },
+    galleryUrls: {
+      type: "array",
+      items: { type: "string" },
+      example: ["https://cdn.example.com/services/hair-cut-1.jpg"],
+    },
+    isActive: { type: "boolean", example: true },
+    branch: {
+      type: "object",
+      required: ["id", "nameHi", "city"],
+      properties: {
+        id: { type: "string", example: "cmokbranch0001" },
+        nameHi: { type: "string", example: "निखरता रूप जयपुर" },
+        nameEn: { type: "string", nullable: true, example: "Nikharta Roop Jaipur" },
+        city: { type: "string", example: "Jaipur" },
+      },
+    },
+    category: serviceCategoryDataSchema,
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const serviceDetailDataSchema: OpenApiRecord = {
+  allOf: [
+    serviceDataSchema,
+    {
+      type: "object",
+      required: ["variants", "addOns"],
+      properties: {
+        variants: {
+          type: "array",
+          items: {
+            type: "object",
+            required: [
+              "id",
+              "nameHi",
+              "price",
+              "durationMinutes",
+              "sortOrder",
+              "isActive",
+            ],
+            properties: {
+              id: { type: "string", example: "cmokvariant0001" },
+              nameHi: { type: "string", example: "लेयर कट" },
+              nameEn: { type: "string", nullable: true, example: "Layer Cut" },
+              descriptionHi: { type: "string", nullable: true },
+              price: { type: "string", example: "699.00" },
+              advanceAmount: { type: "string", nullable: true, example: "150.00" },
+              durationMinutes: { type: "integer", example: 60 },
+              sortOrder: { type: "integer", example: 1 },
+              isActive: { type: "boolean", example: true },
+              createdAt: { type: "string", format: "date-time" },
+              updatedAt: { type: "string", format: "date-time" },
+            },
+          },
+        },
+        addOns: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["id", "nameHi", "price", "durationMinutes", "isActive"],
+            properties: {
+              id: { type: "string", example: "cmokaddon0001" },
+              nameHi: { type: "string", example: "हेयर वॉश" },
+              nameEn: { type: "string", nullable: true, example: "Hair Wash" },
+              descriptionHi: { type: "string", nullable: true },
+              price: { type: "string", example: "149.00" },
+              durationMinutes: { type: "integer", example: 10 },
+              isActive: { type: "boolean", example: true },
+              createdAt: { type: "string", format: "date-time" },
+              updatedAt: { type: "string", format: "date-time" },
+            },
+          },
+        },
+      },
+    },
+  ],
+};
+
+const adminServiceCategoryRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["nameHi", "nameEn", "slug"],
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", minLength: 2, maxLength: 200 },
+    slug: { type: "string", example: "hair-services" },
+    description: { type: "string", nullable: true, maxLength: 1000 },
+    sortOrder: { type: "integer", minimum: 0, example: 10 },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const adminServiceCategoryPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminServiceCategoryRequestSchema.properties,
+};
+
+const adminServiceRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "branchId",
+    "categoryId",
+    "nameHi",
+    "nameEn",
+    "slug",
+    "descriptionHi",
+    "price",
+    "durationMinutes",
+  ],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", example: "cmokcategory0001" },
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", minLength: 2, maxLength: 200 },
+    slug: { type: "string", example: "hair-cut" },
+    descriptionHi: { type: "string", minLength: 2, maxLength: 2000 },
+    descriptionEn: { type: "string", nullable: true, maxLength: 2000 },
+    price: { type: "number", minimum: 0, example: 499 },
+    advanceAmount: { type: "number", nullable: true, minimum: 0, example: 100 },
+    durationMinutes: { type: "integer", minimum: 5, maximum: 480, example: 45 },
+    imageUrl: { type: "string", nullable: true, format: "uri" },
+    galleryUrls: {
+      type: "array",
+      maxItems: 12,
+      items: { type: "string", format: "uri" },
+    },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const adminServicePatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminServiceRequestSchema.properties,
+};
+
+const adminServiceVariantRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["nameHi", "price", "durationMinutes"],
+  properties: {
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 1000 },
+    price: { type: "number", minimum: 0, example: 799 },
+    advanceAmount: { type: "number", nullable: true, minimum: 0, example: 100 },
+    durationMinutes: { type: "integer", minimum: 5, maximum: 480, example: 60 },
+    sortOrder: { type: "integer", minimum: 0, example: 10 },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const adminServiceVariantPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminServiceVariantRequestSchema.properties,
+};
+
+const adminServiceAddOnRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["nameHi", "price"],
+  properties: {
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 1000 },
+    price: { type: "number", minimum: 0, example: 149 },
+    durationMinutes: { type: "integer", minimum: 0, maximum: 240, example: 15 },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const adminServiceAddOnPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminServiceAddOnRequestSchema.properties,
+};
+
+const staffDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "userId", "branchId", "name", "isAvailable"],
+  properties: {
+    id: { type: "string", example: "cmokstaff0001" },
+    userId: { type: "string", example: "cmokuser0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    name: { type: "string", nullable: true, example: "Anjali" },
+    specialization: { type: "array", items: { type: "string" } },
+    experienceYears: { type: "integer", nullable: true, example: 5 },
+    bioHi: { type: "string", nullable: true },
+    bioEn: { type: "string", nullable: true },
+    photoUrl: { type: "string", nullable: true },
+    rating: { type: "string", example: "4.80" },
+    isAvailable: { type: "boolean", example: true },
+    workDays: { type: "array", items: { type: "integer" } },
+    workStart: { type: "string", example: "10:00:00" },
+    workEnd: { type: "string", example: "19:00:00" },
+    services: { type: "array", items: { type: "object" } },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminStaffRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["userId", "branchId", "workStart", "workEnd"],
+  properties: {
+    userId: { type: "string", example: "cmokuser0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    specialization: { type: "array", items: { type: "string" } },
+    experienceYears: { type: "integer", nullable: true, minimum: 0 },
+    bioHi: { type: "string", nullable: true },
+    bioEn: { type: "string", nullable: true },
+    photoUrl: { type: "string", nullable: true, format: "uri" },
+    isAvailable: { type: "boolean", example: true },
+    workDays: { type: "array", items: { type: "integer", minimum: 0, maximum: 6 } },
+    workStart: { type: "string", example: "10:00" },
+    workEnd: { type: "string", example: "19:00" },
+    serviceIds: { type: "array", items: { type: "string" } },
+  },
+};
+
+const adminStaffPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: adminStaffRequestSchema.properties,
+};
+
+const staffLeaveRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["startsAt", "endsAt"],
+  properties: {
+    startsAt: { type: "string", format: "date-time" },
+    endsAt: { type: "string", format: "date-time" },
+    reason: { type: "string", nullable: true, maxLength: 300 },
+  },
+};
+
 const avatarDataSchema: OpenApiRecord = {
   type: "object",
   required: ["avatarUrl", "user"],
@@ -424,6 +766,262 @@ const bookingHistoryItemSchema: OpenApiRecord = {
     staff: { type: "object", nullable: true },
     createdAt: { type: "string", format: "date-time" },
     updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const bookingSlotDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["startTime", "endTime", "available", "availableStaffCount"],
+  properties: {
+    startTime: {
+      type: "string",
+      example: "10:00:00",
+      description: "Slot start time in HH:mm:ss format.",
+    },
+    endTime: {
+      type: "string",
+      example: "10:45:00",
+      description: "Slot end time in HH:mm:ss format.",
+    },
+    available: { type: "boolean", example: true },
+    availableStaffCount: {
+      type: "integer",
+      example: 2,
+      description: "Number of qualified staff available for this slot.",
+    },
+  },
+};
+
+const bookingDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "displayId",
+    "bookingDate",
+    "slotStart",
+    "slotEnd",
+    "status",
+    "totalAmount",
+    "branch",
+    "createdAt",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokbooking0001" },
+    displayId: { type: "string", example: "NR20260503A1B2C3" },
+    bookingDate: { type: "string", format: "date-time" },
+    slotStart: { type: "string", format: "date-time" },
+    slotEnd: { type: "string", format: "date-time" },
+    status: {
+      type: "string",
+      enum: [
+        "PENDING",
+        "CONFIRMED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELLED",
+        "NO_SHOW",
+      ],
+      example: "PENDING",
+    },
+    totalAmount: { type: "string", example: "799.00" },
+    advanceAmount: { type: "string", nullable: true, example: "100.00" },
+    discountAmount: { type: "string", example: "0.00" },
+    notes: { type: "string", nullable: true, example: "Prefer quiet room." },
+    pendingExpiresAt: { type: "string", format: "date-time", nullable: true },
+    cancelledAt: { type: "string", format: "date-time", nullable: true },
+    cancellationReason: { type: "string", nullable: true },
+    checkedInAt: { type: "string", format: "date-time", nullable: true },
+    completedAt: { type: "string", format: "date-time", nullable: true },
+    branch: {
+      type: "object",
+      required: ["id", "nameHi", "city"],
+      properties: {
+        id: { type: "string", example: "cmokbranch0001" },
+        nameHi: { type: "string", example: "निखरता रूप जयपुर" },
+        nameEn: { type: "string", nullable: true, example: "Nikharta Roop Jaipur" },
+        city: { type: "string", example: "Jaipur" },
+      },
+    },
+    service: { type: "object", nullable: true },
+    serviceVariant: { type: "object", nullable: true },
+    staff: { type: "object", nullable: true },
+    addOns: { type: "array", items: { type: "object" } },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const createBookingRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["branchId", "serviceId", "bookingDate", "slotStart"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    serviceId: { type: "string", example: "cmokservice0001" },
+    serviceVariantId: {
+      type: "string",
+      nullable: true,
+      example: "cmokvariant0001",
+    },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+    bookingDate: { type: "string", format: "date", example: "2026-05-10" },
+    slotStart: { type: "string", example: "10:00:00" },
+    notes: { type: "string", nullable: true, maxLength: 500 },
+    addOns: {
+      type: "array",
+      maxItems: 10,
+      items: {
+        type: "object",
+        required: ["addOnId"],
+        properties: {
+          addOnId: { type: "string", example: "cmokaddon0001" },
+          quantity: { type: "integer", minimum: 1, maximum: 10, example: 1 },
+        },
+      },
+    },
+  },
+};
+
+const rescheduleBookingRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["bookingDate", "slotStart"],
+  properties: {
+    bookingDate: { type: "string", format: "date", example: "2026-05-11" },
+    slotStart: { type: "string", example: "14:00:00" },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+  },
+};
+
+const cancelBookingRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    reason: {
+      type: "string",
+      nullable: true,
+      maxLength: 300,
+      example: "Customer requested cancellation.",
+    },
+  },
+};
+
+const refundDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "status", "amount", "requestedAt", "createdAt", "updatedAt"],
+  properties: {
+    id: { type: "string", example: "cmokrefund0001" },
+    status: {
+      type: "string",
+      enum: ["REQUESTED", "PROCESSING", "SUCCEEDED", "FAILED"],
+      example: "REQUESTED",
+    },
+    amount: { type: "string", example: "499.00" },
+    reason: { type: "string", nullable: true, example: "Customer cancelled." },
+    providerRefundId: { type: "string", nullable: true },
+    requestedAt: { type: "string", format: "date-time" },
+    processedAt: { type: "string", format: "date-time", nullable: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const paymentDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "bookingId",
+    "provider",
+    "status",
+    "currency",
+    "amount",
+    "amountPaid",
+    "amountRefunded",
+    "createdAt",
+    "updatedAt",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokpayment0001" },
+    bookingId: { type: "string", example: "cmokbooking0001" },
+    provider: {
+      type: "string",
+      enum: ["RAZORPAY", "CASH", "UPI_OFFLINE"],
+      example: "RAZORPAY",
+    },
+    providerOrderId: { type: "string", nullable: true, example: "razorpay_123" },
+    providerPaymentId: { type: "string", nullable: true, example: "pay_123" },
+    status: {
+      type: "string",
+      enum: [
+        "CREATED",
+        "PENDING",
+        "PAID",
+        "FAILED",
+        "REFUNDED",
+        "PARTIALLY_REFUNDED",
+      ],
+      example: "CREATED",
+    },
+    currency: { type: "string", example: "INR" },
+    amount: { type: "string", example: "499.00" },
+    amountPaid: { type: "string", example: "0.00" },
+    amountRefunded: { type: "string", example: "0.00" },
+    paymentUrl: { type: "string", nullable: true },
+    paidAt: { type: "string", format: "date-time", nullable: true },
+    refundedAt: { type: "string", format: "date-time", nullable: true },
+    refunds: {
+      type: "array",
+      items: refundDataSchema,
+    },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const createPaymentRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    provider: {
+      type: "string",
+      enum: ["RAZORPAY"],
+      default: "RAZORPAY",
+    },
+  },
+};
+
+const verifyPaymentRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["providerOrderId", "providerPaymentId"],
+  properties: {
+    providerOrderId: { type: "string", example: "razorpay_123" },
+    providerPaymentId: { type: "string", example: "pay_123" },
+    signature: {
+      type: "string",
+      description:
+        "Required in production for Razorpay HMAC verification.",
+      example: "d6f4...",
+    },
+  },
+};
+
+const createRefundRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    amount: {
+      type: "number",
+      example: 499,
+      description: "Defaults to the remaining refundable amount.",
+    },
+    reason: {
+      type: "string",
+      nullable: true,
+      maxLength: 300,
+      example: "Customer cancelled booking.",
+    },
   },
 };
 
@@ -680,6 +1278,22 @@ export function GET(request: Request) {
         {
           name: "Branches",
           description: "Public branch discovery and branch selection.",
+        },
+        {
+          name: "Services",
+          description: "Public service categories, service lists, and details.",
+        },
+        {
+          name: "Staff",
+          description: "Public staff discovery and staff detail endpoints.",
+        },
+        {
+          name: "Bookings",
+          description: "Booking availability, creation, and lifecycle endpoints.",
+        },
+        {
+          name: "Payments",
+          description: "Booking payments, verification, and refund requests.",
         },
         {
           name: "Admin",
@@ -1124,6 +1738,387 @@ export function GET(request: Request) {
           successMessage: USER_MESSAGES.BOOKING_HISTORY_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/bookings": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Bookings",
+            summary: "List bookings",
+            description:
+              "List bookings owned by the current authenticated user. Supports status and limit filters.",
+            failureDescription: "Booking list load failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "status",
+                in: "query",
+                required: false,
+                schema: {
+                  type: "string",
+                  enum: [
+                    "PENDING",
+                    "CONFIRMED",
+                    "IN_PROGRESS",
+                    "COMPLETED",
+                    "CANCELLED",
+                    "NO_SHOW",
+                  ],
+                },
+              },
+              {
+                name: "limit",
+                in: "query",
+                required: false,
+                schema: {
+                  type: "integer",
+                  minimum: 1,
+                  maximum: 50,
+                  default: 20,
+                },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["bookings", "limit"],
+              properties: {
+                bookings: {
+                  type: "array",
+                  items: bookingDataSchema,
+                },
+                limit: { type: "integer", example: 20 },
+              },
+            },
+            successCode: BOOKING_CODES.BOOKING_LIST_LOADED,
+            successDescription: "Bookings loaded.",
+            successMessage: BOOKING_MESSAGES.BOOKING_LIST_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Bookings",
+            summary: "Create booking",
+            description:
+              "Create a pending booking for the current user. The server re-checks slot availability in a transaction and auto-assigns an available qualified staff member when staffId is omitted.",
+            failureDescription: "Booking creation failed.",
+            requiresAuth: true,
+            requestSchema: createBookingRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["booking"],
+              properties: {
+                booking: bookingDataSchema,
+              },
+            },
+            successCode: BOOKING_CODES.BOOKING_CREATED,
+            successDescription: "Booking created.",
+            successMessage: BOOKING_MESSAGES.BOOKING_CREATED,
+            successStatus: HTTP_STATUS.CREATED,
+          }),
+        },
+        "/api/v1/bookings/{bookingId}": jsonEndpoint({
+          method: "get",
+          tag: "Bookings",
+          summary: "Get booking",
+          description: "Load one booking owned by the current authenticated user.",
+          failureDescription: "Booking detail load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "bookingId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokbooking0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: {
+              booking: bookingDataSchema,
+            },
+          },
+          successCode: BOOKING_CODES.BOOKING_DETAIL_LOADED,
+          successDescription: "Booking details loaded.",
+          successMessage: BOOKING_MESSAGES.BOOKING_DETAIL_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/bookings/{bookingId}/payments": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Payments",
+            summary: "List booking payments",
+            description:
+              "List payment attempts for one booking owned by the current user.",
+            failureDescription: "Payment list load failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "bookingId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbooking0001" },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["payments"],
+              properties: {
+                payments: {
+                  type: "array",
+                  items: paymentDataSchema,
+                },
+              },
+            },
+            successCode: PAYMENT_CODES.PAYMENT_LIST_LOADED,
+            successDescription: "Payments loaded.",
+            successMessage: PAYMENT_MESSAGES.PAYMENT_LIST_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Payments",
+            summary: "Create booking payment",
+            description:
+              "Create or reuse an unpaid payment intent for a pending booking. The amount uses advanceAmount when configured, otherwise totalAmount.",
+            failureDescription: "Payment creation failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "bookingId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbooking0001" },
+              },
+            ],
+            requestBodyRequired: false,
+            requestSchema: createPaymentRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["payment"],
+              properties: {
+                payment: paymentDataSchema,
+              },
+            },
+            successCode: PAYMENT_CODES.PAYMENT_CREATED,
+            successDescription: "Payment created.",
+            successMessage: PAYMENT_MESSAGES.PAYMENT_CREATED,
+            successStatus: HTTP_STATUS.CREATED,
+          }),
+        },
+        "/api/v1/bookings/{bookingId}/cancel": jsonEndpoint({
+          method: "patch",
+          tag: "Bookings",
+          summary: "Cancel booking",
+          description:
+            "Cancel a pending or confirmed booking owned by the current user.",
+          failureDescription: "Booking cancellation failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "bookingId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokbooking0001" },
+            },
+          ],
+          requestSchema: cancelBookingRequestSchema,
+          requestBodyRequired: false,
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: {
+              booking: bookingDataSchema,
+            },
+          },
+          successCode: BOOKING_CODES.BOOKING_CANCELLED,
+          successDescription: "Booking cancelled.",
+          successMessage: BOOKING_MESSAGES.BOOKING_CANCELLED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/bookings/{bookingId}/reschedule": jsonEndpoint({
+          method: "patch",
+          tag: "Bookings",
+          summary: "Reschedule booking",
+          description:
+            "Move a pending or confirmed booking to a new date/time after re-checking availability.",
+          failureDescription: "Booking reschedule failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "bookingId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokbooking0001" },
+            },
+          ],
+          requestSchema: rescheduleBookingRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["booking"],
+            properties: {
+              booking: bookingDataSchema,
+            },
+          },
+          successCode: BOOKING_CODES.BOOKING_RESCHEDULED,
+          successDescription: "Booking rescheduled.",
+          successMessage: BOOKING_MESSAGES.BOOKING_RESCHEDULED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/bookings/slots": jsonEndpoint({
+          method: "get",
+          tag: "Bookings",
+          summary: "List booking slots",
+          description:
+            "Calculate available 30-minute grid slots for a service on one branch/date. Applies service duration, branch holidays, staff qualification, staff leave, existing bookings, and a 2-hour minimum advance window.",
+          failureDescription: "Booking slot load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+            {
+              name: "serviceId",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokservice0001",
+              },
+            },
+            {
+              name: "serviceVariantId",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "cmokvariant0001",
+              },
+            },
+            {
+              name: "staffId",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "cmokstaff0001",
+              },
+            },
+            {
+              name: "date",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                format: "date",
+                example: "2026-05-10",
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: [
+              "branchId",
+              "serviceId",
+              "date",
+              "durationMinutes",
+              "isClosed",
+              "slots",
+            ],
+            properties: {
+              branchId: { type: "string", example: "cmokbranch0001" },
+              serviceId: { type: "string", example: "cmokservice0001" },
+              serviceVariantId: {
+                type: "string",
+                nullable: true,
+                example: "cmokvariant0001",
+              },
+              staffId: {
+                type: "string",
+                nullable: true,
+                example: "cmokstaff0001",
+              },
+              date: { type: "string", format: "date", example: "2026-05-10" },
+              durationMinutes: { type: "integer", example: 45 },
+              isClosed: { type: "boolean", example: false },
+              closedReason: {
+                type: "string",
+                nullable: true,
+                example: null,
+              },
+              slots: {
+                type: "array",
+                items: bookingSlotDataSchema,
+              },
+            },
+          },
+          successCode: BOOKING_CODES.BOOKING_SLOTS_LISTED,
+          successDescription: "Booking slots loaded.",
+          successMessage: BOOKING_MESSAGES.BOOKING_SLOTS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/payments/{paymentId}/verify": jsonEndpoint({
+          method: "post",
+          tag: "Payments",
+          summary: "Verify payment",
+          description:
+            "Verify a provider payment for the current user. On success the payment becomes PAID and the pending booking becomes CONFIRMED.",
+          failureDescription: "Payment verification failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "paymentId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpayment0001" },
+            },
+          ],
+          requestSchema: verifyPaymentRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["payment"],
+            properties: {
+              payment: paymentDataSchema,
+            },
+          },
+          successCode: PAYMENT_CODES.PAYMENT_VERIFIED,
+          successDescription: "Payment verified.",
+          successMessage: PAYMENT_MESSAGES.PAYMENT_VERIFIED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/payments/{paymentId}/refunds": jsonEndpoint({
+          method: "post",
+          tag: "Payments",
+          summary: "Request refund",
+          description:
+            "Create a refund request for a paid payment after the booking has been cancelled. Provider processing is handled separately.",
+          failureDescription: "Refund request failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "paymentId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpayment0001" },
+            },
+          ],
+          requestBodyRequired: false,
+          requestSchema: createRefundRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["payment"],
+            properties: {
+              payment: paymentDataSchema,
+            },
+          },
+          successCode: PAYMENT_CODES.REFUND_CREATED,
+          successDescription: "Refund requested.",
+          successMessage: PAYMENT_MESSAGES.REFUND_CREATED,
+          successStatus: HTTP_STATUS.CREATED,
+        }),
         "/api/v1/branches": jsonEndpoint({
           method: "get",
           tag: "Branches",
@@ -1186,6 +2181,202 @@ export function GET(request: Request) {
           successMessage: BRANCH_MESSAGES.BRANCH_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/services/categories": jsonEndpoint({
+          method: "get",
+          tag: "Services",
+          summary: "List service categories",
+          description:
+            "List active global service categories and, when branchId is provided, active branch-specific categories.",
+          failureDescription: "Service category load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["categories"],
+            properties: {
+              categories: {
+                type: "array",
+                items: serviceCategoryDataSchema,
+              },
+            },
+          },
+          successCode: SERVICE_CODES.CATEGORIES_LISTED,
+          successDescription: "Service categories loaded.",
+          successMessage: SERVICE_MESSAGES.CATEGORIES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/services": jsonEndpoint({
+          method: "get",
+          tag: "Services",
+          summary: "List services",
+          description:
+            "List active services for one selected branch. Supports category and limit filters.",
+          failureDescription: "Service list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+            {
+              name: "categoryId",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "cmokcategory0001",
+              },
+            },
+            {
+              name: "categorySlug",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                example: "hair-services",
+              },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: {
+                type: "integer",
+                minimum: 1,
+                maximum: 50,
+                default: 20,
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["services", "limit"],
+            properties: {
+              services: {
+                type: "array",
+                items: serviceDataSchema,
+              },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: SERVICE_CODES.SERVICES_LISTED,
+          successDescription: "Services loaded.",
+          successMessage: SERVICE_MESSAGES.SERVICES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/services/{serviceId}": jsonEndpoint({
+          method: "get",
+          tag: "Services",
+          summary: "Get service",
+          description:
+            "Load one active service by id, including active variants and add-ons.",
+          failureDescription: "Service load failed.",
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokservice0001",
+              },
+            },
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                example: "cmokbranch0001",
+              },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.SERVICE_LOADED,
+          successDescription: "Service loaded.",
+          successMessage: SERVICE_MESSAGES.SERVICE_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/staff": jsonEndpoint({
+          method: "get",
+          tag: "Staff",
+          summary: "List staff",
+          description:
+            "List available staff for one active branch, optionally filtered by service.",
+          failureDescription: "Staff list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "serviceId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: { type: "array", items: staffDataSchema } },
+          },
+          successCode: STAFF_CODES.STAFF_LISTED,
+          successDescription: "Staff loaded.",
+          successMessage: STAFF_MESSAGES.STAFF_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/staff/{staffId}": jsonEndpoint({
+          method: "get",
+          tag: "Staff",
+          summary: "Get staff",
+          description: "Load one available staff member for one active branch.",
+          failureDescription: "Staff detail load failed.",
+          parameters: [
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokstaff0001" },
+            },
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.STAFF_LOADED,
+          successDescription: "Staff details loaded.",
+          successMessage: STAFF_MESSAGES.STAFF_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/branches": jsonEndpoint({
           method: "post",
           tag: "Admin",
@@ -1237,6 +2428,350 @@ export function GET(request: Request) {
           successCode: BRANCH_CODES.BRANCH_UPDATED,
           successDescription: "Branch updated.",
           successMessage: BRANCH_MESSAGES.BRANCH_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/services/categories": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create service category",
+          description:
+            "Create a global or branch-specific service category. Branch admins are limited to their assigned branch; only super admins can create global categories.",
+          failureDescription: "Service category creation failed.",
+          requiresAuth: true,
+          requestSchema: adminServiceCategoryRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["category"],
+            properties: {
+              category: serviceCategoryDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.CATEGORY_CREATED,
+          successDescription: "Service category created.",
+          successMessage: SERVICE_MESSAGES.CATEGORY_CREATED,
+        }),
+        "/api/v1/admin/services/categories/{categoryId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update service category",
+          description:
+            "Update service category fields or deactivate a category by setting isActive to false.",
+          failureDescription: "Service category update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "categoryId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokcategory0001" },
+            },
+          ],
+          requestSchema: adminServiceCategoryPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["category"],
+            properties: {
+              category: serviceCategoryDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.CATEGORY_UPDATED,
+          successDescription: "Service category updated.",
+          successMessage: SERVICE_MESSAGES.CATEGORY_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/services": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create service",
+          description:
+            "Create a service under an active branch and matching global or branch-specific category.",
+          failureDescription: "Service creation failed.",
+          requiresAuth: true,
+          requestSchema: adminServiceRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.SERVICE_CREATED,
+          successDescription: "Service created.",
+          successMessage: SERVICE_MESSAGES.SERVICE_CREATED,
+        }),
+        "/api/v1/admin/services/{serviceId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update service",
+          description:
+            "Update service fields or deactivate a service by setting isActive to false.",
+          failureDescription: "Service update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          requestSchema: adminServicePatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.SERVICE_UPDATED,
+          successDescription: "Service updated.",
+          successMessage: SERVICE_MESSAGES.SERVICE_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/services/{serviceId}/variants": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create service variant",
+          description: "Create a priced duration option under one service.",
+          failureDescription: "Service variant creation failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          requestSchema: adminServiceVariantRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.VARIANT_CREATED,
+          successDescription: "Service variant created.",
+          successMessage: SERVICE_MESSAGES.VARIANT_CREATED,
+        }),
+        "/api/v1/admin/services/{serviceId}/variants/{variantId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update service variant",
+          description:
+            "Update variant fields or deactivate a variant by setting isActive to false.",
+          failureDescription: "Service variant update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+            {
+              name: "variantId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokvariant0001" },
+            },
+          ],
+          requestSchema: adminServiceVariantPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.VARIANT_UPDATED,
+          successDescription: "Service variant updated.",
+          successMessage: SERVICE_MESSAGES.VARIANT_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/services/{serviceId}/add-ons": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create service add-on",
+          description: "Create an optional priced add-on under one service.",
+          failureDescription: "Service add-on creation failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          requestSchema: adminServiceAddOnRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.ADD_ON_CREATED,
+          successDescription: "Service add-on created.",
+          successMessage: SERVICE_MESSAGES.ADD_ON_CREATED,
+        }),
+        "/api/v1/admin/services/{serviceId}/add-ons/{addOnId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update service add-on",
+          description:
+            "Update add-on fields or deactivate an add-on by setting isActive to false.",
+          failureDescription: "Service add-on update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+            {
+              name: "addOnId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokaddon0001" },
+            },
+          ],
+          requestSchema: adminServiceAddOnPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["service"],
+            properties: {
+              service: serviceDetailDataSchema,
+            },
+          },
+          successCode: SERVICE_CODES.ADD_ON_UPDATED,
+          successDescription: "Service add-on updated.",
+          successMessage: SERVICE_MESSAGES.ADD_ON_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/staff": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create staff",
+          description:
+            "Create a staff profile for an active user and optionally assign services.",
+          failureDescription: "Staff creation failed.",
+          requiresAuth: true,
+          requestSchema: adminStaffRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.STAFF_CREATED,
+          successDescription: "Staff created.",
+          successMessage: STAFF_MESSAGES.STAFF_CREATED,
+        }),
+        "/api/v1/admin/staff/{staffId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update staff",
+          description: "Update staff profile and availability fields.",
+          failureDescription: "Staff update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminStaffPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.STAFF_UPDATED,
+          successDescription: "Staff updated.",
+          successMessage: STAFF_MESSAGES.STAFF_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/staff/{staffId}/services": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Assign staff service",
+          description: "Assign one active branch service to a staff member.",
+          failureDescription: "Staff service assignment failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            type: "object",
+            required: ["serviceId"],
+            properties: { serviceId: { type: "string", example: "cmokservice0001" } },
+          },
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.SERVICE_ASSIGNED,
+          successDescription: "Staff service assigned.",
+          successMessage: STAFF_MESSAGES.SERVICE_ASSIGNED,
+        }),
+        "/api/v1/admin/staff/{staffId}/services/{serviceId}": jsonEndpoint({
+          method: "delete",
+          tag: "Admin",
+          summary: "Remove staff service",
+          description: "Remove one service assignment from a staff member.",
+          failureDescription: "Staff service removal failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+            { name: "serviceId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["staff"],
+            properties: { staff: staffDataSchema },
+          },
+          successCode: STAFF_CODES.SERVICE_REMOVED,
+          successDescription: "Staff service removed.",
+          successMessage: STAFF_MESSAGES.SERVICE_REMOVED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/staff/{staffId}/leaves": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create staff leave",
+          description: "Create a leave window that blocks staff availability.",
+          failureDescription: "Staff leave creation failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: staffLeaveRequestSchema,
+          responseSchema: { type: "object", additionalProperties: true },
+          successCode: STAFF_CODES.LEAVE_CREATED,
+          successDescription: "Staff leave created.",
+          successMessage: STAFF_MESSAGES.LEAVE_CREATED,
+        }),
+        "/api/v1/admin/staff/{staffId}/leaves/{leaveId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update staff leave",
+          description: "Update one staff leave window.",
+          failureDescription: "Staff leave update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "staffId", in: "path", required: true, schema: { type: "string" } },
+            { name: "leaveId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            ...staffLeaveRequestSchema,
+            required: undefined,
+            minProperties: 1,
+          },
+          responseSchema: { type: "object", additionalProperties: true },
+          successCode: STAFF_CODES.LEAVE_UPDATED,
+          successDescription: "Staff leave updated.",
+          successMessage: STAFF_MESSAGES.LEAVE_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
       },
