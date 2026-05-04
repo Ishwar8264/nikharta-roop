@@ -10,6 +10,10 @@ import {
   BOOKING_MESSAGES,
 } from "@/features/bookings/constants/booking.constants";
 import {
+  CONSULTATION_CODES,
+  CONSULTATION_MESSAGES,
+} from "@/features/consultations/constants/consultation.constants";
+import {
   PAYMENT_CODES,
   PAYMENT_MESSAGES,
 } from "@/features/payments/constants/payment.constants";
@@ -680,6 +684,67 @@ const adminPackagePatchSchema: OpenApiRecord = {
     imageUrl: { type: "string", nullable: true, format: "uri" },
     isCustom: { type: "boolean", example: false },
     isActive: { type: "boolean", example: true },
+  },
+};
+
+const consultationDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "userId", "branchId", "status", "createdAt", "updatedAt"],
+  properties: {
+    id: { type: "string", example: "cmokconsult0001" },
+    userId: { type: "string", example: "cmokuser0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+    packageId: { type: "string", nullable: true, example: "cmokpackage0001" },
+    preferredDate: { type: "string", format: "date", nullable: true },
+    preferredTime: { type: "string", nullable: true, example: "11:30:00" },
+    status: {
+      type: "string",
+      enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
+      example: "REQUESTED",
+    },
+    notes: { type: "string", nullable: true },
+    adminNotes: { type: "string", nullable: true },
+    completedAt: { type: "string", format: "date-time", nullable: true },
+    cancelledAt: { type: "string", format: "date-time", nullable: true },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    staff: { type: "object", nullable: true, additionalProperties: true },
+    package: { type: "object", nullable: true, additionalProperties: true },
+    user: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const createConsultationRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["branchId"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", example: "cmokstaff0001" },
+    packageId: { type: "string", example: "cmokpackage0001" },
+    preferredDate: { type: "string", format: "date", example: "2026-05-10" },
+    preferredTime: { type: "string", example: "11:30" },
+    notes: { type: "string", nullable: true, maxLength: 1000 },
+  },
+};
+
+const adminConsultationPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", example: "cmokstaff0001" },
+    packageId: { type: "string", example: "cmokpackage0001" },
+    preferredDate: { type: "string", format: "date", example: "2026-05-10" },
+    preferredTime: { type: "string", example: "11:30" },
+    status: {
+      type: "string",
+      enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
+    },
+    adminNotes: { type: "string", nullable: true, maxLength: 1000 },
   },
 };
 
@@ -1485,6 +1550,10 @@ export function GET(request: Request) {
           description: "Public package discovery and package details.",
         },
         {
+          name: "Consultations",
+          description: "Consultation requests and follow-up scheduling.",
+        },
+        {
           name: "Staff",
           description: "Public staff discovery and staff detail endpoints.",
         },
@@ -1941,6 +2010,44 @@ export function GET(request: Request) {
           successCode: USER_CODES.BOOKING_HISTORY_LOADED,
           successDescription: "Booking history loaded.",
           successMessage: USER_MESSAGES.BOOKING_HISTORY_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/users/me/consultations": jsonEndpoint({
+          method: "get",
+          tag: "User",
+          summary: "List my consultations",
+          description:
+            "List consultation requests owned by the current user. Supports status and limit filters.",
+          failureDescription: "Consultation list load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "status",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
+              },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["consultations", "limit"],
+            properties: {
+              consultations: { type: "array", items: consultationDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: CONSULTATION_CODES.CONSULTATIONS_LISTED,
+          successDescription: "Consultations loaded.",
+          successMessage: CONSULTATION_MESSAGES.CONSULTATIONS_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/bookings": {
@@ -2664,6 +2771,50 @@ export function GET(request: Request) {
           successMessage: PACKAGE_MESSAGES.PACKAGE_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/consultations": jsonEndpoint({
+          method: "post",
+          tag: "Consultations",
+          summary: "Create consultation",
+          description:
+            "Create a consultation request for the current user. Optional package and staff must belong to the selected active branch.",
+          failureDescription: "Consultation creation failed.",
+          requiresAuth: true,
+          requestSchema: createConsultationRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["consultation"],
+            properties: { consultation: consultationDataSchema },
+          },
+          successCode: CONSULTATION_CODES.CONSULTATION_CREATED,
+          successDescription: "Consultation created.",
+          successMessage: CONSULTATION_MESSAGES.CONSULTATION_CREATED,
+          successStatus: HTTP_STATUS.CREATED,
+        }),
+        "/api/v1/consultations/{consultationId}": jsonEndpoint({
+          method: "get",
+          tag: "Consultations",
+          summary: "Get consultation",
+          description: "Load one consultation request owned by the current user.",
+          failureDescription: "Consultation load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "consultationId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokconsult0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["consultation"],
+            properties: { consultation: consultationDataSchema },
+          },
+          successCode: CONSULTATION_CODES.CONSULTATION_LOADED,
+          successDescription: "Consultation loaded.",
+          successMessage: CONSULTATION_MESSAGES.CONSULTATION_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/staff": jsonEndpoint({
           method: "get",
           tag: "Staff",
@@ -3381,6 +3532,110 @@ export function GET(request: Request) {
           "Mark no-show",
           "Mark a confirmed booking as no-show.",
         ),
+        "/api/v1/admin/consultations": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List admin consultations",
+          description:
+            "List consultation requests for salon operations. Branch admins are scoped to their branch; super admins can filter by branch.",
+          failureDescription: "Admin consultation list load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "date",
+              in: "query",
+              required: false,
+              schema: { type: "string", format: "date" },
+            },
+            {
+              name: "status",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
+              },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["consultations", "limit"],
+            properties: {
+              consultations: { type: "array", items: consultationDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: CONSULTATION_CODES.CONSULTATIONS_LISTED,
+          successDescription: "Admin consultations loaded.",
+          successMessage: CONSULTATION_MESSAGES.CONSULTATIONS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/consultations/{consultationId}": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "Get admin consultation",
+            description: "Load one consultation request for salon operations.",
+            failureDescription: "Admin consultation load failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "consultationId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokconsult0001" },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["consultation"],
+              properties: { consultation: consultationDataSchema },
+            },
+            successCode: CONSULTATION_CODES.CONSULTATION_LOADED,
+            successDescription: "Consultation loaded.",
+            successMessage: CONSULTATION_MESSAGES.CONSULTATION_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update admin consultation",
+            description:
+              "Update consultation assignment, preferred schedule, status, or admin notes.",
+            failureDescription: "Admin consultation update failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "consultationId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokconsult0001" },
+              },
+            ],
+            requestSchema: adminConsultationPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["consultation"],
+              properties: { consultation: consultationDataSchema },
+            },
+            successCode: CONSULTATION_CODES.CONSULTATION_UPDATED,
+            successDescription: "Consultation updated.",
+            successMessage: CONSULTATION_MESSAGES.CONSULTATION_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
