@@ -311,6 +311,39 @@ const branchPatchRequestSchema: OpenApiRecord = {
   properties: branchRequestSchema.properties,
 };
 
+const branchHolidayDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "date", "isClosed", "createdAt"],
+  properties: {
+    id: { type: "string", example: "cmokholiday0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    date: { type: "string", format: "date", example: "2026-05-10" },
+    reasonHi: { type: "string", nullable: true, example: "त्योहार" },
+    reasonEn: { type: "string", nullable: true, example: "Festival" },
+    isClosed: { type: "boolean", example: true },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
+const branchHolidayRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["date"],
+  properties: {
+    date: { type: "string", format: "date", example: "2026-05-10" },
+    reasonHi: { type: "string", nullable: true, maxLength: 300 },
+    reasonEn: { type: "string", nullable: true, maxLength: 300 },
+    isClosed: { type: "boolean", default: true },
+  },
+};
+
+const branchHolidayPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: branchHolidayRequestSchema.properties,
+};
+
 const serviceCategoryDataSchema: OpenApiRecord = {
   type: "object",
   required: [
@@ -3143,6 +3176,149 @@ export function GET(request: Request) {
           successMessage: BRANCH_MESSAGES.BRANCH_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/branches/{branchId}/holidays": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List branch holidays",
+            description:
+              "List closed or special operating dates for one branch. Booking slot calculation uses closed holidays to block availability.",
+            failureDescription: "Branch holiday list load failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "branchId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbranch0001" },
+              },
+              {
+                name: "from",
+                in: "query",
+                required: false,
+                schema: { type: "string", format: "date" },
+              },
+              {
+                name: "to",
+                in: "query",
+                required: false,
+                schema: { type: "string", format: "date" },
+              },
+              {
+                name: "limit",
+                in: "query",
+                required: false,
+                schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["holidays", "limit"],
+              properties: {
+                holidays: { type: "array", items: branchHolidayDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: BRANCH_CODES.HOLIDAY_LISTED,
+            successDescription: "Branch holidays loaded.",
+            successMessage: BRANCH_MESSAGES.HOLIDAY_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create branch holiday",
+            description:
+              "Create one branch holiday or special closed date. Duplicate branch/date rows are rejected.",
+            failureDescription: "Branch holiday creation failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "branchId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbranch0001" },
+              },
+            ],
+            requestSchema: branchHolidayRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["holiday"],
+              properties: { holiday: branchHolidayDataSchema },
+            },
+            successCode: BRANCH_CODES.HOLIDAY_CREATED,
+            successDescription: "Branch holiday created.",
+            successMessage: BRANCH_MESSAGES.HOLIDAY_CREATED,
+          }),
+        },
+        "/api/v1/admin/branches/{branchId}/holidays/{holidayId}": {
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update branch holiday",
+            description:
+              "Update one branch holiday date, reason, or closed flag.",
+            failureDescription: "Branch holiday update failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "branchId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbranch0001" },
+              },
+              {
+                name: "holidayId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokholiday0001" },
+              },
+            ],
+            requestSchema: branchHolidayPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["holiday"],
+              properties: { holiday: branchHolidayDataSchema },
+            },
+            successCode: BRANCH_CODES.HOLIDAY_UPDATED,
+            successDescription: "Branch holiday updated.",
+            successMessage: BRANCH_MESSAGES.HOLIDAY_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "delete",
+            tag: "Admin",
+            summary: "Delete branch holiday",
+            description: "Delete one branch holiday by id.",
+            failureDescription: "Branch holiday deletion failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "branchId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbranch0001" },
+              },
+              {
+                name: "holidayId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokholiday0001" },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["holidayId"],
+              properties: {
+                holidayId: { type: "string", example: "cmokholiday0001" },
+              },
+            },
+            successCode: BRANCH_CODES.HOLIDAY_DELETED,
+            successDescription: "Branch holiday deleted.",
+            successMessage: BRANCH_MESSAGES.HOLIDAY_DELETED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/services/categories": jsonEndpoint({
           method: "post",
           tag: "Admin",
