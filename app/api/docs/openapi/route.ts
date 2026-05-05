@@ -10,9 +10,37 @@ import {
   BOOKING_MESSAGES,
 } from "@/features/bookings/constants/booking.constants";
 import {
+  BLOG_CODES,
+  BLOG_MESSAGES,
+} from "@/features/blogs/constants/blog.constants";
+import {
+  CONSULTATION_CODES,
+  CONSULTATION_MESSAGES,
+} from "@/features/consultations/constants/consultation.constants";
+import {
   PAYMENT_CODES,
   PAYMENT_MESSAGES,
 } from "@/features/payments/constants/payment.constants";
+import {
+  PACKAGE_CODES,
+  PACKAGE_MESSAGES,
+} from "@/features/packages/constants/package.constants";
+import {
+  OFFER_CODES,
+  OFFER_MESSAGES,
+} from "@/features/offers/constants/offer.constants";
+import {
+  PORTFOLIO_CODES,
+  PORTFOLIO_MESSAGES,
+} from "@/features/portfolio/constants/portfolio.constants";
+import {
+  PRODUCT_CODES,
+  PRODUCT_MESSAGES,
+} from "@/features/products/constants/product.constants";
+import {
+  PRODUCT_SALE_CODES,
+  PRODUCT_SALE_MESSAGES,
+} from "@/features/product-sales/constants/product-sale.constants";
 import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
@@ -299,6 +327,39 @@ const branchPatchRequestSchema: OpenApiRecord = {
   properties: branchRequestSchema.properties,
 };
 
+const branchHolidayDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "date", "isClosed", "createdAt"],
+  properties: {
+    id: { type: "string", example: "cmokholiday0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    date: { type: "string", format: "date", example: "2026-05-10" },
+    reasonHi: { type: "string", nullable: true, example: "त्योहार" },
+    reasonEn: { type: "string", nullable: true, example: "Festival" },
+    isClosed: { type: "boolean", example: true },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
+const branchHolidayRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["date"],
+  properties: {
+    date: { type: "string", format: "date", example: "2026-05-10" },
+    reasonHi: { type: "string", nullable: true, maxLength: 300 },
+    reasonEn: { type: "string", nullable: true, maxLength: 300 },
+    isClosed: { type: "boolean", default: true },
+  },
+};
+
+const branchHolidayPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: branchHolidayRequestSchema.properties,
+};
+
 const serviceCategoryDataSchema: OpenApiRecord = {
   type: "object",
   required: [
@@ -561,6 +622,563 @@ const adminServiceAddOnPatchSchema: OpenApiRecord = {
   additionalProperties: false,
   minProperties: 1,
   properties: adminServiceAddOnRequestSchema.properties,
+};
+
+const packageServiceDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["serviceId", "quantity", "sortOrder", "service"],
+  properties: {
+    serviceId: { type: "string", example: "cmokservice0001" },
+    quantity: { type: "integer", example: 1 },
+    sortOrder: { type: "integer", example: 0 },
+    service: {
+      type: "object",
+      required: ["id", "nameHi", "slug", "price", "durationMinutes"],
+      properties: {
+        id: { type: "string", example: "cmokservice0001" },
+        nameHi: { type: "string", example: "हेयर कट" },
+        nameEn: { type: "string", nullable: true, example: "Hair Cut" },
+        slug: { type: "string", example: "hair-cut" },
+        price: { type: "string", example: "499.00" },
+        durationMinutes: { type: "integer", example: 45 },
+        imageUrl: { type: "string", nullable: true, format: "uri" },
+      },
+    },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
+const packageDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "nameHi", "slug", "price", "isActive"],
+  properties: {
+    id: { type: "string", example: "cmokpackage0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokcategory0001" },
+    nameHi: { type: "string", example: "ब्राइडल पैकेज" },
+    nameEn: { type: "string", nullable: true, example: "Bridal Package" },
+    slug: { type: "string", example: "bridal-package" },
+    descriptionHi: { type: "string", nullable: true },
+    descriptionEn: { type: "string", nullable: true },
+    price: { type: "string", example: "4999.00" },
+    advanceAmount: { type: "string", nullable: true, example: "1000.00" },
+    durationMinutes: { type: "integer", nullable: true, example: 180 },
+    imageUrl: { type: "string", nullable: true, format: "uri" },
+    isCustom: { type: "boolean", example: false },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", additionalProperties: true },
+    category: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const packageDetailDataSchema: OpenApiRecord = {
+  allOf: [
+    packageDataSchema,
+    {
+      type: "object",
+      required: ["services"],
+      properties: {
+        services: { type: "array", items: packageServiceDataSchema },
+      },
+    },
+  ],
+};
+
+const packageServiceRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["serviceId"],
+  properties: {
+    serviceId: { type: "string", example: "cmokservice0001" },
+    quantity: { type: "integer", minimum: 1, maximum: 50, default: 1 },
+    sortOrder: { type: "integer", minimum: 0, default: 0 },
+  },
+};
+
+const adminPackageRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["branchId", "nameHi", "slug", "price"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokcategory0001" },
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "bridal-package" },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    descriptionEn: { type: "string", nullable: true, maxLength: 2000 },
+    price: { type: "number", minimum: 0, example: 4999 },
+    advanceAmount: { type: "number", nullable: true, minimum: 0, example: 1000 },
+    durationMinutes: { type: "integer", nullable: true, minimum: 5 },
+    imageUrl: { type: "string", nullable: true, format: "uri" },
+    isCustom: { type: "boolean", example: false },
+    isActive: { type: "boolean", example: true },
+    services: { type: "array", maxItems: 30, items: packageServiceRequestSchema },
+  },
+};
+
+const adminPackagePatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokcategory0001" },
+    nameHi: { type: "string", minLength: 2, maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "bridal-package" },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    descriptionEn: { type: "string", nullable: true, maxLength: 2000 },
+    price: { type: "number", minimum: 0, example: 4999 },
+    advanceAmount: { type: "number", nullable: true, minimum: 0, example: 1000 },
+    durationMinutes: { type: "integer", nullable: true, minimum: 5 },
+    imageUrl: { type: "string", nullable: true, format: "uri" },
+    isCustom: { type: "boolean", example: false },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const consultationDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "userId", "branchId", "status", "createdAt", "updatedAt"],
+  properties: {
+    id: { type: "string", example: "cmokconsult0001" },
+    userId: { type: "string", example: "cmokuser0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+    packageId: { type: "string", nullable: true, example: "cmokpackage0001" },
+    preferredDate: { type: "string", format: "date", nullable: true },
+    preferredTime: { type: "string", nullable: true, example: "11:30:00" },
+    status: {
+      type: "string",
+      enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
+      example: "REQUESTED",
+    },
+    notes: { type: "string", nullable: true },
+    adminNotes: { type: "string", nullable: true },
+    completedAt: { type: "string", format: "date-time", nullable: true },
+    cancelledAt: { type: "string", format: "date-time", nullable: true },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    staff: { type: "object", nullable: true, additionalProperties: true },
+    package: { type: "object", nullable: true, additionalProperties: true },
+    user: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const createConsultationRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["branchId"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", example: "cmokstaff0001" },
+    packageId: { type: "string", example: "cmokpackage0001" },
+    preferredDate: { type: "string", format: "date", example: "2026-05-10" },
+    preferredTime: { type: "string", example: "11:30" },
+    notes: { type: "string", nullable: true, maxLength: 1000 },
+  },
+};
+
+const adminConsultationPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", example: "cmokstaff0001" },
+    packageId: { type: "string", example: "cmokpackage0001" },
+    preferredDate: { type: "string", format: "date", example: "2026-05-10" },
+    preferredTime: { type: "string", example: "11:30" },
+    status: {
+      type: "string",
+      enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
+    },
+    adminNotes: { type: "string", nullable: true, maxLength: 1000 },
+  },
+};
+
+const offerDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "code",
+    "titleHi",
+    "discountType",
+    "discountValue",
+    "validFrom",
+    "validUntil",
+    "isActive",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokoffer0001" },
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    code: { type: "string", example: "BRIDAL10" },
+    titleHi: { type: "string", example: "ब्राइडल ऑफर" },
+    titleEn: { type: "string", nullable: true, example: "Bridal Offer" },
+    descriptionHi: { type: "string", nullable: true },
+    discountType: { type: "string", enum: ["PERCENTAGE", "FLAT_AMOUNT"] },
+    discountValue: { type: "string", example: "10.00" },
+    minOrder: { type: "string", nullable: true, example: "999.00" },
+    maxDiscount: { type: "string", nullable: true, example: "500.00" },
+    usageLimit: { type: "integer", nullable: true, example: 100 },
+    usageCount: { type: "integer", example: 0 },
+    perUserLimit: { type: "integer", nullable: true, example: 1 },
+    validFrom: { type: "string", format: "date-time" },
+    validUntil: { type: "string", format: "date-time" },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    services: { type: "array", items: { type: "object" } },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const validateOfferRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["branchId", "code", "orderAmount"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    code: { type: "string", example: "BRIDAL10" },
+    orderAmount: { type: "number", minimum: 0, example: 4999 },
+    serviceIds: { type: "array", items: { type: "string" } },
+  },
+};
+
+const adminOfferRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "code",
+    "titleHi",
+    "discountType",
+    "discountValue",
+    "validFrom",
+    "validUntil",
+  ],
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    code: { type: "string", example: "BRIDAL10" },
+    titleHi: { type: "string", minLength: 2, maxLength: 200 },
+    titleEn: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    discountType: { type: "string", enum: ["PERCENTAGE", "FLAT_AMOUNT"] },
+    discountValue: { type: "number", minimum: 0, example: 10 },
+    minOrder: { type: "number", nullable: true, minimum: 0, example: 999 },
+    maxDiscount: { type: "number", nullable: true, minimum: 0, example: 500 },
+    usageLimit: { type: "integer", nullable: true, minimum: 1 },
+    perUserLimit: { type: "integer", nullable: true, minimum: 1 },
+    validFrom: { type: "string", format: "date-time" },
+    validUntil: { type: "string", format: "date-time" },
+    isActive: { type: "boolean", example: true },
+    serviceIds: { type: "array", maxItems: 100, items: { type: "string" } },
+  },
+};
+
+const adminOfferPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    code: { type: "string", example: "BRIDAL10" },
+    titleHi: { type: "string", minLength: 2, maxLength: 200 },
+    titleEn: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    discountType: { type: "string", enum: ["PERCENTAGE", "FLAT_AMOUNT"] },
+    discountValue: { type: "number", minimum: 0, example: 10 },
+    minOrder: { type: "number", nullable: true, minimum: 0, example: 999 },
+    maxDiscount: { type: "number", nullable: true, minimum: 0, example: 500 },
+    usageLimit: { type: "integer", nullable: true, minimum: 1 },
+    perUserLimit: { type: "integer", nullable: true, minimum: 1 },
+    validFrom: { type: "string", format: "date-time" },
+    validUntil: { type: "string", format: "date-time" },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const offerServiceRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["serviceId"],
+  properties: {
+    serviceId: { type: "string", example: "cmokservice0001" },
+  },
+};
+
+const portfolioDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "imageUrls", "isFeatured", "isPublished"],
+  properties: {
+    id: { type: "string", example: "cmokportfolio0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+    serviceId: { type: "string", nullable: true, example: "cmokservice0001" },
+    packageId: { type: "string", nullable: true, example: "cmokpackage0001" },
+    titleHi: { type: "string", nullable: true, example: "ब्राइडल मेकअप" },
+    descriptionHi: { type: "string", nullable: true },
+    beforeImageUrl: { type: "string", nullable: true },
+    afterImageUrl: { type: "string", nullable: true },
+    imageUrls: {
+      type: "array",
+      items: { type: "string" },
+      example: ["https://cdn.example.com/look.jpg"],
+    },
+    isFeatured: { type: "boolean", example: true },
+    isPublished: { type: "boolean", example: true },
+    sortOrder: { type: "integer", example: 10 },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    staff: { type: "object", nullable: true, additionalProperties: true },
+    service: { type: "object", nullable: true, additionalProperties: true },
+    package: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminPortfolioRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+    serviceId: { type: "string", nullable: true, example: "cmokservice0001" },
+    packageId: { type: "string", nullable: true, example: "cmokpackage0001" },
+    titleHi: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    beforeImageUrl: { type: "string", nullable: true },
+    afterImageUrl: { type: "string", nullable: true },
+    imageUrls: { type: "array", items: { type: "string" }, maxItems: 20 },
+    isFeatured: { type: "boolean", default: false },
+    isPublished: { type: "boolean", default: true },
+    sortOrder: { type: "integer", minimum: 0, maximum: 100000 },
+  },
+};
+
+const adminPortfolioPatchSchema: OpenApiRecord = {
+  ...adminPortfolioRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
+const blogCategoryDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "nameHi", "slug", "isActive", "sortOrder"],
+  properties: {
+    id: { type: "string", example: "cmokblogcat0001" },
+    nameHi: { type: "string", example: "ब्यूटी टिप्स" },
+    nameEn: { type: "string", nullable: true, example: "Beauty Tips" },
+    slug: { type: "string", example: "beauty-tips" },
+    description: { type: "string", nullable: true },
+    sortOrder: { type: "integer", example: 10 },
+    isActive: { type: "boolean", example: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const blogDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "categoryId", "titleHi", "slug", "contentHi", "status"],
+  properties: {
+    id: { type: "string", example: "cmokblog0001" },
+    categoryId: { type: "string", example: "cmokblogcat0001" },
+    authorId: { type: "string", nullable: true, example: "cmokuser0001" },
+    titleHi: { type: "string", example: "ब्राइडल मेकअप गाइड" },
+    titleEn: { type: "string", nullable: true, example: "Bridal Makeup Guide" },
+    slug: { type: "string", example: "bridal-makeup-guide" },
+    excerptHi: { type: "string", nullable: true },
+    contentHi: { type: "string" },
+    coverImageUrl: { type: "string", nullable: true },
+    status: { type: "string", enum: ["DRAFT", "PUBLISHED", "ARCHIVED"] },
+    publishedAt: { type: "string", format: "date-time", nullable: true },
+    category: blogCategoryDataSchema,
+    author: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminBlogCategoryRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["nameHi", "slug"],
+  properties: {
+    nameHi: { type: "string", maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "beauty-tips", maxLength: 220 },
+    description: { type: "string", nullable: true, maxLength: 2000 },
+    sortOrder: { type: "integer", minimum: 0, maximum: 100000 },
+    isActive: { type: "boolean", default: true },
+  },
+};
+
+const adminBlogPostRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["categoryId", "titleHi", "slug", "contentHi"],
+  properties: {
+    categoryId: { type: "string", example: "cmokblogcat0001" },
+    titleHi: { type: "string", maxLength: 240 },
+    titleEn: { type: "string", nullable: true, maxLength: 240 },
+    slug: { type: "string", example: "bridal-makeup-guide", maxLength: 260 },
+    excerptHi: { type: "string", nullable: true, maxLength: 1000 },
+    contentHi: { type: "string", minLength: 10 },
+    coverImageUrl: { type: "string", nullable: true },
+    status: { type: "string", enum: ["DRAFT", "PUBLISHED", "ARCHIVED"] },
+    publishedAt: { type: "string", format: "date-time", nullable: true },
+  },
+};
+
+const adminBlogPatchSchema: OpenApiRecord = {
+  ...adminBlogPostRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
+const productCategoryDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "nameHi", "slug", "slugScope", "isActive"],
+  properties: {
+    id: { type: "string", example: "cmokproductcat0001" },
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    slugScope: { type: "string", example: "global" },
+    nameHi: { type: "string", example: "हेयर केयर" },
+    nameEn: { type: "string", nullable: true, example: "Hair Care" },
+    slug: { type: "string", example: "hair-care" },
+    description: { type: "string", nullable: true },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const productDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "nameHi", "slug", "price", "stockQuantity"],
+  properties: {
+    id: { type: "string", example: "cmokproduct0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokproductcat0001" },
+    nameHi: { type: "string", example: "शैम्पू" },
+    nameEn: { type: "string", nullable: true, example: "Shampoo" },
+    slug: { type: "string", example: "shampoo" },
+    descriptionHi: { type: "string", nullable: true },
+    price: { type: "string", example: "299.00" },
+    stockQuantity: { type: "integer", example: 10 },
+    imageUrl: { type: "string", nullable: true },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", additionalProperties: true },
+    category: { ...productCategoryDataSchema, nullable: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminProductCategoryRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["nameHi", "slug"],
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    nameHi: { type: "string", maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "hair-care", maxLength: 220 },
+    description: { type: "string", nullable: true, maxLength: 2000 },
+    isActive: { type: "boolean", default: true },
+  },
+};
+
+const adminProductRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId", "nameHi", "slug", "price"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokproductcat0001" },
+    nameHi: { type: "string", maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "shampoo", maxLength: 220 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    price: { type: "number", example: 299 },
+    stockQuantity: { type: "integer", minimum: 0, default: 0 },
+    imageUrl: { type: "string", nullable: true },
+    isActive: { type: "boolean", default: true },
+  },
+};
+
+const adminProductPatchSchema: OpenApiRecord = {
+  ...adminProductRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
+const productSaleItemDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "productId", "quantity", "unitPrice", "lineTotal"],
+  properties: {
+    id: { type: "string", example: "cmoksaleitem0001" },
+    productId: { type: "string", example: "cmokproduct0001" },
+    quantity: { type: "integer", example: 2 },
+    unitPrice: { type: "string", example: "299.00" },
+    lineTotal: { type: "string", example: "598.00" },
+    product: { type: "object", additionalProperties: true },
+  },
+};
+
+const productSaleDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "status", "subtotal", "totalAmount", "items"],
+  properties: {
+    id: { type: "string", example: "cmokproductsale0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    userId: { type: "string", nullable: true, example: "cmokuser0001" },
+    status: { type: "string", enum: ["DRAFT", "COMPLETED", "CANCELLED", "REFUNDED"] },
+    subtotal: { type: "string", example: "598.00" },
+    discountAmount: { type: "string", example: "50.00" },
+    totalAmount: { type: "string", example: "548.00" },
+    notes: { type: "string", nullable: true },
+    soldAt: { type: "string", format: "date-time", nullable: true },
+    branch: { type: "object", additionalProperties: true },
+    user: { type: "object", nullable: true, additionalProperties: true },
+    items: { type: "array", items: productSaleItemDataSchema },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminProductSaleRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId", "items"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    userId: { type: "string", example: "cmokuser0001" },
+    discountAmount: { type: "number", default: 0 },
+    notes: { type: "string", nullable: true, maxLength: 2000 },
+    items: {
+      type: "array",
+      minItems: 1,
+      maxItems: 100,
+      items: {
+        type: "object",
+        required: ["productId", "quantity"],
+        properties: {
+          productId: { type: "string", example: "cmokproduct0001" },
+          quantity: { type: "integer", minimum: 1, example: 2 },
+        },
+      },
+    },
+  },
+};
+
+const adminProductSalePatchSchema: OpenApiRecord = {
+  type: "object",
+  minProperties: 1,
+  properties: {
+    notes: { type: "string", nullable: true, maxLength: 2000 },
+    status: { type: "string", enum: ["COMPLETED", "CANCELLED", "REFUNDED"] },
+  },
 };
 
 const staffDataSchema: OpenApiRecord = {
@@ -1361,6 +1979,30 @@ export function GET(request: Request) {
           description: "Public service categories, service lists, and details.",
         },
         {
+          name: "Packages",
+          description: "Public package discovery and package details.",
+        },
+        {
+          name: "Consultations",
+          description: "Consultation requests and follow-up scheduling.",
+        },
+        {
+          name: "Offers",
+          description: "Coupons, discounts, and offer validation.",
+        },
+        {
+          name: "Portfolio",
+          description: "Before/after gallery and featured salon work.",
+        },
+        {
+          name: "Blogs",
+          description: "Public editorial content and admin blog management.",
+        },
+        {
+          name: "Products",
+          description: "Retail product discovery and admin product management.",
+        },
+        {
           name: "Staff",
           description: "Public staff discovery and staff detail endpoints.",
         },
@@ -1817,6 +2459,44 @@ export function GET(request: Request) {
           successCode: USER_CODES.BOOKING_HISTORY_LOADED,
           successDescription: "Booking history loaded.",
           successMessage: USER_MESSAGES.BOOKING_HISTORY_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/users/me/consultations": jsonEndpoint({
+          method: "get",
+          tag: "User",
+          summary: "List my consultations",
+          description:
+            "List consultation requests owned by the current user. Supports status and limit filters.",
+          failureDescription: "Consultation list load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "status",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
+              },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["consultations", "limit"],
+            properties: {
+              consultations: { type: "array", items: consultationDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: CONSULTATION_CODES.CONSULTATIONS_LISTED,
+          successDescription: "Consultations loaded.",
+          successMessage: CONSULTATION_MESSAGES.CONSULTATIONS_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/bookings": {
@@ -2464,6 +3144,391 @@ export function GET(request: Request) {
           successMessage: REVIEW_MESSAGES.REVIEW_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/packages": jsonEndpoint({
+          method: "get",
+          tag: "Packages",
+          summary: "List packages",
+          description:
+            "List active packages for one selected branch. Supports category and limit filters.",
+          failureDescription: "Package list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "categoryId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokcategory0001" },
+            },
+            {
+              name: "categorySlug",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "bridal" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["packages", "limit"],
+            properties: {
+              packages: { type: "array", items: packageDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: PACKAGE_CODES.PACKAGES_LISTED,
+          successDescription: "Packages loaded.",
+          successMessage: PACKAGE_MESSAGES.PACKAGES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/packages/{packageId}": jsonEndpoint({
+          method: "get",
+          tag: "Packages",
+          summary: "Get package",
+          description: "Load one active package with attached active services.",
+          failureDescription: "Package load failed.",
+          parameters: [
+            {
+              name: "packageId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpackage0001" },
+            },
+            {
+              name: "branchId",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["package"],
+            properties: { package: packageDetailDataSchema },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_LOADED,
+          successDescription: "Package loaded.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/consultations": jsonEndpoint({
+          method: "post",
+          tag: "Consultations",
+          summary: "Create consultation",
+          description:
+            "Create a consultation request for the current user. Optional package and staff must belong to the selected active branch.",
+          failureDescription: "Consultation creation failed.",
+          requiresAuth: true,
+          requestSchema: createConsultationRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["consultation"],
+            properties: { consultation: consultationDataSchema },
+          },
+          successCode: CONSULTATION_CODES.CONSULTATION_CREATED,
+          successDescription: "Consultation created.",
+          successMessage: CONSULTATION_MESSAGES.CONSULTATION_CREATED,
+          successStatus: HTTP_STATUS.CREATED,
+        }),
+        "/api/v1/consultations/{consultationId}": jsonEndpoint({
+          method: "get",
+          tag: "Consultations",
+          summary: "Get consultation",
+          description: "Load one consultation request owned by the current user.",
+          failureDescription: "Consultation load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "consultationId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokconsult0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["consultation"],
+            properties: { consultation: consultationDataSchema },
+          },
+          successCode: CONSULTATION_CODES.CONSULTATION_LOADED,
+          successDescription: "Consultation loaded.",
+          successMessage: CONSULTATION_MESSAGES.CONSULTATION_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/offers": jsonEndpoint({
+          method: "get",
+          tag: "Offers",
+          summary: "List offers",
+          description:
+            "List active global offers and branch-specific offers for discovery.",
+          failureDescription: "Offer list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["offers", "limit"],
+            properties: {
+              offers: { type: "array", items: offerDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: OFFER_CODES.OFFERS_LISTED,
+          successDescription: "Offers loaded.",
+          successMessage: OFFER_MESSAGES.OFFERS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/offers/validate": jsonEndpoint({
+          method: "post",
+          tag: "Offers",
+          summary: "Validate offer",
+          description:
+            "Validate a coupon for the current user before booking creation. The response includes computed discount and final amount.",
+          failureDescription: "Offer validation failed.",
+          requiresAuth: true,
+          requestSchema: validateOfferRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["offer", "discountAmount", "finalAmount"],
+            properties: {
+              offer: offerDataSchema,
+              discountAmount: { type: "string", example: "500.00" },
+              finalAmount: { type: "string", example: "4499.00" },
+            },
+          },
+          successCode: OFFER_CODES.OFFER_VALIDATED,
+          successDescription: "Offer validated.",
+          successMessage: OFFER_MESSAGES.OFFER_VALIDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/portfolio": jsonEndpoint({
+          method: "get",
+          tag: "Portfolio",
+          summary: "List portfolio",
+          description:
+            "List published gallery work, optionally filtered by branch, staff, service, package, or featured state.",
+          failureDescription: "Portfolio list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "staffId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokstaff0001" },
+            },
+            {
+              name: "serviceId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+            {
+              name: "featured",
+              in: "query",
+              required: false,
+              schema: { type: "boolean" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["portfolio", "limit"],
+            properties: {
+              portfolio: { type: "array", items: portfolioDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: PORTFOLIO_CODES.PORTFOLIO_LISTED,
+          successDescription: "Portfolio loaded.",
+          successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/blogs/categories": jsonEndpoint({
+          method: "get",
+          tag: "Blogs",
+          summary: "List blog categories",
+          description: "List active blog categories for editorial filters.",
+          failureDescription: "Blog category list load failed.",
+          responseSchema: {
+            type: "object",
+            required: ["categories"],
+            properties: {
+              categories: { type: "array", items: blogCategoryDataSchema },
+            },
+          },
+          successCode: BLOG_CODES.CATEGORIES_LISTED,
+          successDescription: "Blog categories loaded.",
+          successMessage: BLOG_MESSAGES.CATEGORIES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/blogs": jsonEndpoint({
+          method: "get",
+          tag: "Blogs",
+          summary: "List blogs",
+          description:
+            "List published blog posts, optionally filtered by category slug.",
+          failureDescription: "Blog list load failed.",
+          parameters: [
+            {
+              name: "categorySlug",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "beauty-tips" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["blogs", "limit"],
+            properties: {
+              blogs: { type: "array", items: blogDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: BLOG_CODES.BLOGS_LISTED,
+          successDescription: "Blogs loaded.",
+          successMessage: BLOG_MESSAGES.BLOGS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/blogs/{slug}": jsonEndpoint({
+          method: "get",
+          tag: "Blogs",
+          summary: "Get blog",
+          description: "Load one published blog post by slug.",
+          failureDescription: "Blog detail load failed.",
+          parameters: [
+            {
+              name: "slug",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "bridal-makeup-guide" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["blog"],
+            properties: { blog: blogDataSchema },
+          },
+          successCode: BLOG_CODES.BLOG_LOADED,
+          successDescription: "Blog loaded.",
+          successMessage: BLOG_MESSAGES.BLOG_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/products/categories": jsonEndpoint({
+          method: "get",
+          tag: "Products",
+          summary: "List product categories",
+          description:
+            "List active global and branch-specific product categories.",
+          failureDescription: "Product category list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["categories", "limit"],
+            properties: {
+              categories: { type: "array", items: productCategoryDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: PRODUCT_CODES.CATEGORY_LISTED,
+          successDescription: "Product categories loaded.",
+          successMessage: PRODUCT_MESSAGES.CATEGORY_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/products": jsonEndpoint({
+          method: "get",
+          tag: "Products",
+          summary: "List products",
+          description:
+            "List active retail products, optionally filtered by branch or category.",
+          failureDescription: "Product list load failed.",
+          parameters: [
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+            { name: "categoryId", in: "query", required: false, schema: { type: "string" } },
+            { name: "categorySlug", in: "query", required: false, schema: { type: "string" } },
+            { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["products", "limit"],
+            properties: {
+              products: { type: "array", items: productDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: PRODUCT_CODES.PRODUCTS_LISTED,
+          successDescription: "Products loaded.",
+          successMessage: PRODUCT_MESSAGES.PRODUCTS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/products/{productId}": jsonEndpoint({
+          method: "get",
+          tag: "Products",
+          summary: "Get product",
+          description: "Load one active retail product by id.",
+          failureDescription: "Product detail load failed.",
+          parameters: [
+            { name: "productId", in: "path", required: true, schema: { type: "string" } },
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["product"],
+            properties: { product: productDataSchema },
+          },
+          successCode: PRODUCT_CODES.PRODUCT_LOADED,
+          successDescription: "Product loaded.",
+          successMessage: PRODUCT_MESSAGES.PRODUCT_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/staff": jsonEndpoint({
           method: "get",
           tag: "Staff",
@@ -2618,6 +3683,149 @@ export function GET(request: Request) {
           successMessage: BRANCH_MESSAGES.BRANCH_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/branches/{branchId}/holidays": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List branch holidays",
+            description:
+              "List closed or special operating dates for one branch. Booking slot calculation uses closed holidays to block availability.",
+            failureDescription: "Branch holiday list load failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "branchId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbranch0001" },
+              },
+              {
+                name: "from",
+                in: "query",
+                required: false,
+                schema: { type: "string", format: "date" },
+              },
+              {
+                name: "to",
+                in: "query",
+                required: false,
+                schema: { type: "string", format: "date" },
+              },
+              {
+                name: "limit",
+                in: "query",
+                required: false,
+                schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["holidays", "limit"],
+              properties: {
+                holidays: { type: "array", items: branchHolidayDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: BRANCH_CODES.HOLIDAY_LISTED,
+            successDescription: "Branch holidays loaded.",
+            successMessage: BRANCH_MESSAGES.HOLIDAY_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create branch holiday",
+            description:
+              "Create one branch holiday or special closed date. Duplicate branch/date rows are rejected.",
+            failureDescription: "Branch holiday creation failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "branchId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbranch0001" },
+              },
+            ],
+            requestSchema: branchHolidayRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["holiday"],
+              properties: { holiday: branchHolidayDataSchema },
+            },
+            successCode: BRANCH_CODES.HOLIDAY_CREATED,
+            successDescription: "Branch holiday created.",
+            successMessage: BRANCH_MESSAGES.HOLIDAY_CREATED,
+          }),
+        },
+        "/api/v1/admin/branches/{branchId}/holidays/{holidayId}": {
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update branch holiday",
+            description:
+              "Update one branch holiday date, reason, or closed flag.",
+            failureDescription: "Branch holiday update failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "branchId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbranch0001" },
+              },
+              {
+                name: "holidayId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokholiday0001" },
+              },
+            ],
+            requestSchema: branchHolidayPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["holiday"],
+              properties: { holiday: branchHolidayDataSchema },
+            },
+            successCode: BRANCH_CODES.HOLIDAY_UPDATED,
+            successDescription: "Branch holiday updated.",
+            successMessage: BRANCH_MESSAGES.HOLIDAY_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "delete",
+            tag: "Admin",
+            summary: "Delete branch holiday",
+            description: "Delete one branch holiday by id.",
+            failureDescription: "Branch holiday deletion failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "branchId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokbranch0001" },
+              },
+              {
+                name: "holidayId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokholiday0001" },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["holidayId"],
+              properties: {
+                holidayId: { type: "string", example: "cmokholiday0001" },
+              },
+            },
+            successCode: BRANCH_CODES.HOLIDAY_DELETED,
+            successDescription: "Branch holiday deleted.",
+            successMessage: BRANCH_MESSAGES.HOLIDAY_DELETED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/services/categories": jsonEndpoint({
           method: "post",
           tag: "Admin",
@@ -2838,6 +4046,111 @@ export function GET(request: Request) {
           successCode: SERVICE_CODES.ADD_ON_UPDATED,
           successDescription: "Service add-on updated.",
           successMessage: SERVICE_MESSAGES.ADD_ON_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/packages": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create package",
+          description:
+            "Create a package under an active branch and optionally attach active branch services.",
+          failureDescription: "Package creation failed.",
+          requiresAuth: true,
+          requestSchema: adminPackageRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["package"],
+            properties: { package: packageDetailDataSchema },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_CREATED,
+          successDescription: "Package created.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_CREATED,
+        }),
+        "/api/v1/admin/packages/{packageId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update package",
+          description:
+            "Update package fields or deactivate a package by setting isActive to false.",
+          failureDescription: "Package update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "packageId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpackage0001" },
+            },
+          ],
+          requestSchema: adminPackagePatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["package"],
+            properties: { package: packageDetailDataSchema },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_UPDATED,
+          successDescription: "Package updated.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/packages/{packageId}/services": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Assign package service",
+          description:
+            "Attach or update one active branch service inside a package.",
+          failureDescription: "Package service assignment failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "packageId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpackage0001" },
+            },
+          ],
+          requestSchema: packageServiceRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["package"],
+            properties: { package: packageDetailDataSchema },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_SERVICE_ASSIGNED,
+          successDescription: "Package service assigned.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_SERVICE_ASSIGNED,
+        }),
+        "/api/v1/admin/packages/{packageId}/services/{serviceId}": jsonEndpoint({
+          method: "delete",
+          tag: "Admin",
+          summary: "Remove package service",
+          description: "Remove one service from a package.",
+          failureDescription: "Package service removal failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "packageId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokpackage0001" },
+            },
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["packageId", "serviceId"],
+            properties: {
+              packageId: { type: "string", example: "cmokpackage0001" },
+              serviceId: { type: "string", example: "cmokservice0001" },
+            },
+          },
+          successCode: PACKAGE_CODES.PACKAGE_SERVICE_REMOVED,
+          successDescription: "Package service removed.",
+          successMessage: PACKAGE_MESSAGES.PACKAGE_SERVICE_REMOVED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/staff": jsonEndpoint({
@@ -3076,6 +4389,689 @@ export function GET(request: Request) {
           "Mark no-show",
           "Mark a confirmed booking as no-show.",
         ),
+        "/api/v1/admin/consultations": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List admin consultations",
+          description:
+            "List consultation requests for salon operations. Branch admins are scoped to their branch; super admins can filter by branch.",
+          failureDescription: "Admin consultation list load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "date",
+              in: "query",
+              required: false,
+              schema: { type: "string", format: "date" },
+            },
+            {
+              name: "status",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
+              },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["consultations", "limit"],
+            properties: {
+              consultations: { type: "array", items: consultationDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: CONSULTATION_CODES.CONSULTATIONS_LISTED,
+          successDescription: "Admin consultations loaded.",
+          successMessage: CONSULTATION_MESSAGES.CONSULTATIONS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/consultations/{consultationId}": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "Get admin consultation",
+            description: "Load one consultation request for salon operations.",
+            failureDescription: "Admin consultation load failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "consultationId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokconsult0001" },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["consultation"],
+              properties: { consultation: consultationDataSchema },
+            },
+            successCode: CONSULTATION_CODES.CONSULTATION_LOADED,
+            successDescription: "Consultation loaded.",
+            successMessage: CONSULTATION_MESSAGES.CONSULTATION_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update admin consultation",
+            description:
+              "Update consultation assignment, preferred schedule, status, or admin notes.",
+            failureDescription: "Admin consultation update failed.",
+            requiresAuth: true,
+            parameters: [
+              {
+                name: "consultationId",
+                in: "path",
+                required: true,
+                schema: { type: "string", example: "cmokconsult0001" },
+              },
+            ],
+            requestSchema: adminConsultationPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["consultation"],
+              properties: { consultation: consultationDataSchema },
+            },
+            successCode: CONSULTATION_CODES.CONSULTATION_UPDATED,
+            successDescription: "Consultation updated.",
+            successMessage: CONSULTATION_MESSAGES.CONSULTATION_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
+        "/api/v1/admin/offers": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create offer",
+          description:
+            "Create a global or branch-specific offer. Branch admins are limited to their assigned branch; only super admins can create global offers.",
+          failureDescription: "Offer creation failed.",
+          requiresAuth: true,
+          requestSchema: adminOfferRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["offer"],
+            properties: { offer: offerDataSchema },
+          },
+          successCode: OFFER_CODES.OFFER_CREATED,
+          successDescription: "Offer created.",
+          successMessage: OFFER_MESSAGES.OFFER_CREATED,
+        }),
+        "/api/v1/admin/offers/{offerId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update offer",
+          description:
+            "Update offer fields or deactivate an offer by setting isActive to false.",
+          failureDescription: "Offer update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "offerId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokoffer0001" },
+            },
+          ],
+          requestSchema: adminOfferPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["offer"],
+            properties: { offer: offerDataSchema },
+          },
+          successCode: OFFER_CODES.OFFER_UPDATED,
+          successDescription: "Offer updated.",
+          successMessage: OFFER_MESSAGES.OFFER_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/offers/{offerId}/services": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Assign offer service",
+          description:
+            "Attach one active branch service to an offer. Offers with no services apply to all services.",
+          failureDescription: "Offer service assignment failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "offerId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokoffer0001" },
+            },
+          ],
+          requestSchema: offerServiceRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["offer"],
+            properties: { offer: offerDataSchema },
+          },
+          successCode: OFFER_CODES.OFFER_SERVICE_ASSIGNED,
+          successDescription: "Offer service assigned.",
+          successMessage: OFFER_MESSAGES.OFFER_SERVICE_ASSIGNED,
+        }),
+        "/api/v1/admin/offers/{offerId}/services/{serviceId}": jsonEndpoint({
+          method: "delete",
+          tag: "Admin",
+          summary: "Remove offer service",
+          description: "Remove one service restriction from an offer.",
+          failureDescription: "Offer service removal failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "offerId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokoffer0001" },
+            },
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["offerId", "serviceId"],
+            properties: {
+              offerId: { type: "string", example: "cmokoffer0001" },
+              serviceId: { type: "string", example: "cmokservice0001" },
+            },
+          },
+          successCode: OFFER_CODES.OFFER_SERVICE_REMOVED,
+          successDescription: "Offer service removed.",
+          successMessage: OFFER_MESSAGES.OFFER_SERVICE_REMOVED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/portfolio": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin portfolio",
+            description:
+              "List portfolio items for gallery operations. Branch admins are scoped to their branch.",
+            failureDescription: "Admin portfolio list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "staffId", in: "query", required: false, schema: { type: "string" } },
+              { name: "serviceId", in: "query", required: false, schema: { type: "string" } },
+              { name: "isPublished", in: "query", required: false, schema: { type: "boolean" } },
+              { name: "isFeatured", in: "query", required: false, schema: { type: "boolean" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["portfolio", "limit"],
+              properties: {
+                portfolio: { type: "array", items: portfolioDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: PORTFOLIO_CODES.PORTFOLIO_LISTED,
+            successDescription: "Admin portfolio loaded.",
+            successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create portfolio item",
+            description:
+              "Create gallery work linked to one branch and optional staff, service, or package.",
+            failureDescription: "Portfolio creation failed.",
+            requiresAuth: true,
+            requestSchema: adminPortfolioRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["portfolioItem"],
+              properties: { portfolioItem: portfolioDataSchema },
+            },
+            successCode: PORTFOLIO_CODES.PORTFOLIO_CREATED,
+            successDescription: "Portfolio item created.",
+            successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_CREATED,
+          }),
+        },
+        "/api/v1/admin/portfolio/{portfolioItemId}": {
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update portfolio item",
+            description:
+              "Update portfolio content, media URLs, publish state, or sort order.",
+            failureDescription: "Portfolio update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "portfolioItemId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminPortfolioPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["portfolioItem"],
+              properties: { portfolioItem: portfolioDataSchema },
+            },
+            successCode: PORTFOLIO_CODES.PORTFOLIO_UPDATED,
+            successDescription: "Portfolio item updated.",
+            successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "delete",
+            tag: "Admin",
+            summary: "Delete portfolio item",
+            description: "Delete one portfolio item and its linked media assets.",
+            failureDescription: "Portfolio deletion failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "portfolioItemId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["portfolioItemId"],
+              properties: {
+                portfolioItemId: { type: "string", example: "cmokportfolio0001" },
+              },
+            },
+            successCode: PORTFOLIO_CODES.PORTFOLIO_DELETED,
+            successDescription: "Portfolio item deleted.",
+            successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_DELETED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
+        "/api/v1/admin/blogs/categories": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin blog categories",
+            description: "List all blog categories, including inactive categories.",
+            failureDescription: "Admin blog category list load failed.",
+            requiresAuth: true,
+            responseSchema: {
+              type: "object",
+              required: ["categories"],
+              properties: {
+                categories: { type: "array", items: blogCategoryDataSchema },
+              },
+            },
+            successCode: BLOG_CODES.CATEGORIES_LISTED,
+            successDescription: "Admin blog categories loaded.",
+            successMessage: BLOG_MESSAGES.CATEGORIES_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create blog category",
+            description: "Create a category used by blog posts.",
+            failureDescription: "Blog category creation failed.",
+            requiresAuth: true,
+            requestSchema: adminBlogCategoryRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["category"],
+              properties: { category: blogCategoryDataSchema },
+            },
+            successCode: BLOG_CODES.BLOG_CATEGORY_CREATED,
+            successDescription: "Blog category created.",
+            successMessage: BLOG_MESSAGES.BLOG_CATEGORY_CREATED,
+          }),
+        },
+        "/api/v1/admin/blogs/categories/{categoryId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update blog category",
+          description: "Update blog category fields or deactivate a category.",
+          failureDescription: "Blog category update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "categoryId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            ...adminBlogCategoryRequestSchema,
+            required: undefined,
+            minProperties: 1,
+          },
+          responseSchema: {
+            type: "object",
+            required: ["category"],
+            properties: { category: blogCategoryDataSchema },
+          },
+          successCode: BLOG_CODES.BLOG_CATEGORY_UPDATED,
+          successDescription: "Blog category updated.",
+          successMessage: BLOG_MESSAGES.BLOG_CATEGORY_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/blogs": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin blogs",
+            description: "List draft, published, or archived blog posts.",
+            failureDescription: "Admin blog list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "categoryId", in: "query", required: false, schema: { type: "string" } },
+              { name: "categorySlug", in: "query", required: false, schema: { type: "string" } },
+              { name: "status", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["blogs", "limit"],
+              properties: {
+                blogs: { type: "array", items: blogDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: BLOG_CODES.BLOGS_LISTED,
+            successDescription: "Admin blogs loaded.",
+            successMessage: BLOG_MESSAGES.BLOGS_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create blog",
+            description: "Create a draft or published blog post.",
+            failureDescription: "Blog creation failed.",
+            requiresAuth: true,
+            requestSchema: adminBlogPostRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["blog"],
+              properties: { blog: blogDataSchema },
+            },
+            successCode: BLOG_CODES.BLOG_CREATED,
+            successDescription: "Blog created.",
+            successMessage: BLOG_MESSAGES.BLOG_CREATED,
+          }),
+        },
+        "/api/v1/admin/blogs/{blogId}": {
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update blog",
+            description: "Update blog content, category, status, or publish time.",
+            failureDescription: "Blog update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "blogId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminBlogPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["blog"],
+              properties: { blog: blogDataSchema },
+            },
+            successCode: BLOG_CODES.BLOG_UPDATED,
+            successDescription: "Blog updated.",
+            successMessage: BLOG_MESSAGES.BLOG_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "delete",
+            tag: "Admin",
+            summary: "Delete blog",
+            description: "Delete one blog post and its linked media assets.",
+            failureDescription: "Blog deletion failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "blogId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["blogId"],
+              properties: { blogId: { type: "string", example: "cmokblog0001" } },
+            },
+            successCode: BLOG_CODES.BLOG_DELETED,
+            successDescription: "Blog deleted.",
+            successMessage: BLOG_MESSAGES.BLOG_DELETED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
+        "/api/v1/admin/products/categories": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin product categories",
+            description:
+              "List global and branch-specific product categories for retail setup.",
+            failureDescription: "Admin product category list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["categories", "limit"],
+              properties: {
+                categories: { type: "array", items: productCategoryDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: PRODUCT_CODES.CATEGORY_LISTED,
+            successDescription: "Admin product categories loaded.",
+            successMessage: PRODUCT_MESSAGES.CATEGORY_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create product category",
+            description:
+              "Create a global or branch-specific retail product category.",
+            failureDescription: "Product category creation failed.",
+            requiresAuth: true,
+            requestSchema: adminProductCategoryRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["category"],
+              properties: { category: productCategoryDataSchema },
+            },
+            successCode: PRODUCT_CODES.CATEGORY_CREATED,
+            successDescription: "Product category created.",
+            successMessage: PRODUCT_MESSAGES.CATEGORY_CREATED,
+          }),
+        },
+        "/api/v1/admin/products/categories/{categoryId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update product category",
+          description: "Update product category fields or deactivate a category.",
+          failureDescription: "Product category update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "categoryId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            ...adminProductCategoryRequestSchema,
+            required: undefined,
+            minProperties: 1,
+          },
+          responseSchema: {
+            type: "object",
+            required: ["category"],
+            properties: { category: productCategoryDataSchema },
+          },
+          successCode: PRODUCT_CODES.CATEGORY_UPDATED,
+          successDescription: "Product category updated.",
+          successMessage: PRODUCT_MESSAGES.CATEGORY_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/products": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin products",
+            description: "List retail products for admin inventory setup.",
+            failureDescription: "Admin product list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "categoryId", in: "query", required: false, schema: { type: "string" } },
+              { name: "categorySlug", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["products", "limit"],
+              properties: {
+                products: { type: "array", items: productDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: PRODUCT_CODES.PRODUCTS_LISTED,
+            successDescription: "Admin products loaded.",
+            successMessage: PRODUCT_MESSAGES.PRODUCTS_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create product",
+            description: "Create one retail product for an active branch.",
+            failureDescription: "Product creation failed.",
+            requiresAuth: true,
+            requestSchema: adminProductRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["product"],
+              properties: { product: productDataSchema },
+            },
+            successCode: PRODUCT_CODES.PRODUCT_CREATED,
+            successDescription: "Product created.",
+            successMessage: PRODUCT_MESSAGES.PRODUCT_CREATED,
+          }),
+        },
+        "/api/v1/admin/products/{productId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update product",
+          description: "Update product details, price, stock, or active state.",
+          failureDescription: "Product update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "productId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminProductPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["product"],
+            properties: { product: productDataSchema },
+          },
+          successCode: PRODUCT_CODES.PRODUCT_UPDATED,
+          successDescription: "Product updated.",
+          successMessage: PRODUCT_MESSAGES.PRODUCT_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/product-sales": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List product sales",
+            description:
+              "List retail product sales for POS and admin reporting. Branch admins are scoped to their branch.",
+            failureDescription: "Product sale list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "userId", in: "query", required: false, schema: { type: "string" } },
+              { name: "date", in: "query", required: false, schema: { type: "string", format: "date" } },
+              { name: "status", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["productSales", "limit"],
+              properties: {
+                productSales: { type: "array", items: productSaleDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: PRODUCT_SALE_CODES.PRODUCT_SALES_LISTED,
+            successDescription: "Product sales loaded.",
+            successMessage: PRODUCT_SALE_MESSAGES.PRODUCT_SALES_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create product sale",
+            description:
+              "Create a draft retail sale using current product prices. Stock is checked before the sale is created.",
+            failureDescription: "Product sale creation failed.",
+            requiresAuth: true,
+            requestSchema: adminProductSaleRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["productSale"],
+              properties: { productSale: productSaleDataSchema },
+            },
+            successCode: PRODUCT_SALE_CODES.PRODUCT_SALE_CREATED,
+            successDescription: "Product sale created.",
+            successMessage: PRODUCT_SALE_MESSAGES.PRODUCT_SALE_CREATED,
+          }),
+        },
+        "/api/v1/admin/product-sales/{saleId}": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "Get product sale",
+            description: "Load one retail product sale with item details.",
+            failureDescription: "Product sale detail load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "saleId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["productSale"],
+              properties: { productSale: productSaleDataSchema },
+            },
+            successCode: PRODUCT_SALE_CODES.PRODUCT_SALE_LOADED,
+            successDescription: "Product sale loaded.",
+            successMessage: PRODUCT_SALE_MESSAGES.PRODUCT_SALE_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update product sale",
+            description:
+              "Update sale notes or complete/cancel/refund a draft sale. Completing a sale decrements product stock.",
+            failureDescription: "Product sale update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "saleId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminProductSalePatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["productSale"],
+              properties: { productSale: productSaleDataSchema },
+            },
+            successCode: PRODUCT_SALE_CODES.PRODUCT_SALE_UPDATED,
+            successDescription: "Product sale updated.",
+            successMessage: PRODUCT_SALE_MESSAGES.PRODUCT_SALE_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
