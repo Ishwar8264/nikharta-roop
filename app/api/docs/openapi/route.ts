@@ -22,6 +22,10 @@ import {
   PACKAGE_MESSAGES,
 } from "@/features/packages/constants/package.constants";
 import {
+  OFFER_CODES,
+  OFFER_MESSAGES,
+} from "@/features/offers/constants/offer.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -745,6 +749,115 @@ const adminConsultationPatchSchema: OpenApiRecord = {
       enum: ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELLED"],
     },
     adminNotes: { type: "string", nullable: true, maxLength: 1000 },
+  },
+};
+
+const offerDataSchema: OpenApiRecord = {
+  type: "object",
+  required: [
+    "id",
+    "code",
+    "titleHi",
+    "discountType",
+    "discountValue",
+    "validFrom",
+    "validUntil",
+    "isActive",
+  ],
+  properties: {
+    id: { type: "string", example: "cmokoffer0001" },
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    code: { type: "string", example: "BRIDAL10" },
+    titleHi: { type: "string", example: "ब्राइडल ऑफर" },
+    titleEn: { type: "string", nullable: true, example: "Bridal Offer" },
+    descriptionHi: { type: "string", nullable: true },
+    discountType: { type: "string", enum: ["PERCENTAGE", "FLAT_AMOUNT"] },
+    discountValue: { type: "string", example: "10.00" },
+    minOrder: { type: "string", nullable: true, example: "999.00" },
+    maxDiscount: { type: "string", nullable: true, example: "500.00" },
+    usageLimit: { type: "integer", nullable: true, example: 100 },
+    usageCount: { type: "integer", example: 0 },
+    perUserLimit: { type: "integer", nullable: true, example: 1 },
+    validFrom: { type: "string", format: "date-time" },
+    validUntil: { type: "string", format: "date-time" },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    services: { type: "array", items: { type: "object" } },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const validateOfferRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["branchId", "code", "orderAmount"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    code: { type: "string", example: "BRIDAL10" },
+    orderAmount: { type: "number", minimum: 0, example: 4999 },
+    serviceIds: { type: "array", items: { type: "string" } },
+  },
+};
+
+const adminOfferRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "code",
+    "titleHi",
+    "discountType",
+    "discountValue",
+    "validFrom",
+    "validUntil",
+  ],
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    code: { type: "string", example: "BRIDAL10" },
+    titleHi: { type: "string", minLength: 2, maxLength: 200 },
+    titleEn: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    discountType: { type: "string", enum: ["PERCENTAGE", "FLAT_AMOUNT"] },
+    discountValue: { type: "number", minimum: 0, example: 10 },
+    minOrder: { type: "number", nullable: true, minimum: 0, example: 999 },
+    maxDiscount: { type: "number", nullable: true, minimum: 0, example: 500 },
+    usageLimit: { type: "integer", nullable: true, minimum: 1 },
+    perUserLimit: { type: "integer", nullable: true, minimum: 1 },
+    validFrom: { type: "string", format: "date-time" },
+    validUntil: { type: "string", format: "date-time" },
+    isActive: { type: "boolean", example: true },
+    serviceIds: { type: "array", maxItems: 100, items: { type: "string" } },
+  },
+};
+
+const adminOfferPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    code: { type: "string", example: "BRIDAL10" },
+    titleHi: { type: "string", minLength: 2, maxLength: 200 },
+    titleEn: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    discountType: { type: "string", enum: ["PERCENTAGE", "FLAT_AMOUNT"] },
+    discountValue: { type: "number", minimum: 0, example: 10 },
+    minOrder: { type: "number", nullable: true, minimum: 0, example: 999 },
+    maxDiscount: { type: "number", nullable: true, minimum: 0, example: 500 },
+    usageLimit: { type: "integer", nullable: true, minimum: 1 },
+    perUserLimit: { type: "integer", nullable: true, minimum: 1 },
+    validFrom: { type: "string", format: "date-time" },
+    validUntil: { type: "string", format: "date-time" },
+    isActive: { type: "boolean", example: true },
+  },
+};
+
+const offerServiceRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["serviceId"],
+  properties: {
+    serviceId: { type: "string", example: "cmokservice0001" },
   },
 };
 
@@ -1552,6 +1665,10 @@ export function GET(request: Request) {
         {
           name: "Consultations",
           description: "Consultation requests and follow-up scheduling.",
+        },
+        {
+          name: "Offers",
+          description: "Coupons, discounts, and offer validation.",
         },
         {
           name: "Staff",
@@ -2815,6 +2932,63 @@ export function GET(request: Request) {
           successMessage: CONSULTATION_MESSAGES.CONSULTATION_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/offers": jsonEndpoint({
+          method: "get",
+          tag: "Offers",
+          summary: "List offers",
+          description:
+            "List active global offers and branch-specific offers for discovery.",
+          failureDescription: "Offer list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["offers", "limit"],
+            properties: {
+              offers: { type: "array", items: offerDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: OFFER_CODES.OFFERS_LISTED,
+          successDescription: "Offers loaded.",
+          successMessage: OFFER_MESSAGES.OFFERS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/offers/validate": jsonEndpoint({
+          method: "post",
+          tag: "Offers",
+          summary: "Validate offer",
+          description:
+            "Validate a coupon for the current user before booking creation. The response includes computed discount and final amount.",
+          failureDescription: "Offer validation failed.",
+          requiresAuth: true,
+          requestSchema: validateOfferRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["offer", "discountAmount", "finalAmount"],
+            properties: {
+              offer: offerDataSchema,
+              discountAmount: { type: "string", example: "500.00" },
+              finalAmount: { type: "string", example: "4499.00" },
+            },
+          },
+          successCode: OFFER_CODES.OFFER_VALIDATED,
+          successDescription: "Offer validated.",
+          successMessage: OFFER_MESSAGES.OFFER_VALIDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/staff": jsonEndpoint({
           method: "get",
           tag: "Staff",
@@ -3636,6 +3810,111 @@ export function GET(request: Request) {
             successStatus: HTTP_STATUS.OK,
           }),
         },
+        "/api/v1/admin/offers": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Create offer",
+          description:
+            "Create a global or branch-specific offer. Branch admins are limited to their assigned branch; only super admins can create global offers.",
+          failureDescription: "Offer creation failed.",
+          requiresAuth: true,
+          requestSchema: adminOfferRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["offer"],
+            properties: { offer: offerDataSchema },
+          },
+          successCode: OFFER_CODES.OFFER_CREATED,
+          successDescription: "Offer created.",
+          successMessage: OFFER_MESSAGES.OFFER_CREATED,
+        }),
+        "/api/v1/admin/offers/{offerId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update offer",
+          description:
+            "Update offer fields or deactivate an offer by setting isActive to false.",
+          failureDescription: "Offer update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "offerId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokoffer0001" },
+            },
+          ],
+          requestSchema: adminOfferPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["offer"],
+            properties: { offer: offerDataSchema },
+          },
+          successCode: OFFER_CODES.OFFER_UPDATED,
+          successDescription: "Offer updated.",
+          successMessage: OFFER_MESSAGES.OFFER_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/offers/{offerId}/services": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Assign offer service",
+          description:
+            "Attach one active branch service to an offer. Offers with no services apply to all services.",
+          failureDescription: "Offer service assignment failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "offerId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokoffer0001" },
+            },
+          ],
+          requestSchema: offerServiceRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["offer"],
+            properties: { offer: offerDataSchema },
+          },
+          successCode: OFFER_CODES.OFFER_SERVICE_ASSIGNED,
+          successDescription: "Offer service assigned.",
+          successMessage: OFFER_MESSAGES.OFFER_SERVICE_ASSIGNED,
+        }),
+        "/api/v1/admin/offers/{offerId}/services/{serviceId}": jsonEndpoint({
+          method: "delete",
+          tag: "Admin",
+          summary: "Remove offer service",
+          description: "Remove one service restriction from an offer.",
+          failureDescription: "Offer service removal failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "offerId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokoffer0001" },
+            },
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["offerId", "serviceId"],
+            properties: {
+              offerId: { type: "string", example: "cmokoffer0001" },
+              serviceId: { type: "string", example: "cmokservice0001" },
+            },
+          },
+          successCode: OFFER_CODES.OFFER_SERVICE_REMOVED,
+          successDescription: "Offer service removed.",
+          successMessage: OFFER_MESSAGES.OFFER_SERVICE_REMOVED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
