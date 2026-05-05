@@ -10,6 +10,10 @@ import {
   BOOKING_MESSAGES,
 } from "@/features/bookings/constants/booking.constants";
 import {
+  BLOG_CODES,
+  BLOG_MESSAGES,
+} from "@/features/blogs/constants/blog.constants";
+import {
   CONSULTATION_CODES,
   CONSULTATION_MESSAGES,
 } from "@/features/consultations/constants/consultation.constants";
@@ -953,6 +957,79 @@ const adminPortfolioPatchSchema: OpenApiRecord = {
   minProperties: 1,
 };
 
+const blogCategoryDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "nameHi", "slug", "isActive", "sortOrder"],
+  properties: {
+    id: { type: "string", example: "cmokblogcat0001" },
+    nameHi: { type: "string", example: "ब्यूटी टिप्स" },
+    nameEn: { type: "string", nullable: true, example: "Beauty Tips" },
+    slug: { type: "string", example: "beauty-tips" },
+    description: { type: "string", nullable: true },
+    sortOrder: { type: "integer", example: 10 },
+    isActive: { type: "boolean", example: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const blogDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "categoryId", "titleHi", "slug", "contentHi", "status"],
+  properties: {
+    id: { type: "string", example: "cmokblog0001" },
+    categoryId: { type: "string", example: "cmokblogcat0001" },
+    authorId: { type: "string", nullable: true, example: "cmokuser0001" },
+    titleHi: { type: "string", example: "ब्राइडल मेकअप गाइड" },
+    titleEn: { type: "string", nullable: true, example: "Bridal Makeup Guide" },
+    slug: { type: "string", example: "bridal-makeup-guide" },
+    excerptHi: { type: "string", nullable: true },
+    contentHi: { type: "string" },
+    coverImageUrl: { type: "string", nullable: true },
+    status: { type: "string", enum: ["DRAFT", "PUBLISHED", "ARCHIVED"] },
+    publishedAt: { type: "string", format: "date-time", nullable: true },
+    category: blogCategoryDataSchema,
+    author: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminBlogCategoryRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["nameHi", "slug"],
+  properties: {
+    nameHi: { type: "string", maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "beauty-tips", maxLength: 220 },
+    description: { type: "string", nullable: true, maxLength: 2000 },
+    sortOrder: { type: "integer", minimum: 0, maximum: 100000 },
+    isActive: { type: "boolean", default: true },
+  },
+};
+
+const adminBlogPostRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["categoryId", "titleHi", "slug", "contentHi"],
+  properties: {
+    categoryId: { type: "string", example: "cmokblogcat0001" },
+    titleHi: { type: "string", maxLength: 240 },
+    titleEn: { type: "string", nullable: true, maxLength: 240 },
+    slug: { type: "string", example: "bridal-makeup-guide", maxLength: 260 },
+    excerptHi: { type: "string", nullable: true, maxLength: 1000 },
+    contentHi: { type: "string", minLength: 10 },
+    coverImageUrl: { type: "string", nullable: true },
+    status: { type: "string", enum: ["DRAFT", "PUBLISHED", "ARCHIVED"] },
+    publishedAt: { type: "string", format: "date-time", nullable: true },
+  },
+};
+
+const adminBlogPatchSchema: OpenApiRecord = {
+  ...adminBlogPostRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
 const staffDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "userId", "branchId", "name", "isAvailable"],
@@ -1765,6 +1842,10 @@ export function GET(request: Request) {
         {
           name: "Portfolio",
           description: "Before/after gallery and featured salon work.",
+        },
+        {
+          name: "Blogs",
+          description: "Public editorial content and admin blog management.",
         },
         {
           name: "Staff",
@@ -3137,6 +3218,82 @@ export function GET(request: Request) {
           successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/blogs/categories": jsonEndpoint({
+          method: "get",
+          tag: "Blogs",
+          summary: "List blog categories",
+          description: "List active blog categories for editorial filters.",
+          failureDescription: "Blog category list load failed.",
+          responseSchema: {
+            type: "object",
+            required: ["categories"],
+            properties: {
+              categories: { type: "array", items: blogCategoryDataSchema },
+            },
+          },
+          successCode: BLOG_CODES.CATEGORIES_LISTED,
+          successDescription: "Blog categories loaded.",
+          successMessage: BLOG_MESSAGES.CATEGORIES_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/blogs": jsonEndpoint({
+          method: "get",
+          tag: "Blogs",
+          summary: "List blogs",
+          description:
+            "List published blog posts, optionally filtered by category slug.",
+          failureDescription: "Blog list load failed.",
+          parameters: [
+            {
+              name: "categorySlug",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "beauty-tips" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["blogs", "limit"],
+            properties: {
+              blogs: { type: "array", items: blogDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: BLOG_CODES.BLOGS_LISTED,
+          successDescription: "Blogs loaded.",
+          successMessage: BLOG_MESSAGES.BLOGS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/blogs/{slug}": jsonEndpoint({
+          method: "get",
+          tag: "Blogs",
+          summary: "Get blog",
+          description: "Load one published blog post by slug.",
+          failureDescription: "Blog detail load failed.",
+          parameters: [
+            {
+              name: "slug",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "bridal-makeup-guide" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["blog"],
+            properties: { blog: blogDataSchema },
+          },
+          successCode: BLOG_CODES.BLOG_LOADED,
+          successDescription: "Blog loaded.",
+          successMessage: BLOG_MESSAGES.BLOG_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/staff": jsonEndpoint({
           method: "get",
           tag: "Staff",
@@ -4298,6 +4455,157 @@ export function GET(request: Request) {
             successCode: PORTFOLIO_CODES.PORTFOLIO_DELETED,
             successDescription: "Portfolio item deleted.",
             successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_DELETED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
+        "/api/v1/admin/blogs/categories": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin blog categories",
+            description: "List all blog categories, including inactive categories.",
+            failureDescription: "Admin blog category list load failed.",
+            requiresAuth: true,
+            responseSchema: {
+              type: "object",
+              required: ["categories"],
+              properties: {
+                categories: { type: "array", items: blogCategoryDataSchema },
+              },
+            },
+            successCode: BLOG_CODES.CATEGORIES_LISTED,
+            successDescription: "Admin blog categories loaded.",
+            successMessage: BLOG_MESSAGES.CATEGORIES_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create blog category",
+            description: "Create a category used by blog posts.",
+            failureDescription: "Blog category creation failed.",
+            requiresAuth: true,
+            requestSchema: adminBlogCategoryRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["category"],
+              properties: { category: blogCategoryDataSchema },
+            },
+            successCode: BLOG_CODES.BLOG_CATEGORY_CREATED,
+            successDescription: "Blog category created.",
+            successMessage: BLOG_MESSAGES.BLOG_CATEGORY_CREATED,
+          }),
+        },
+        "/api/v1/admin/blogs/categories/{categoryId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update blog category",
+          description: "Update blog category fields or deactivate a category.",
+          failureDescription: "Blog category update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "categoryId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            ...adminBlogCategoryRequestSchema,
+            required: undefined,
+            minProperties: 1,
+          },
+          responseSchema: {
+            type: "object",
+            required: ["category"],
+            properties: { category: blogCategoryDataSchema },
+          },
+          successCode: BLOG_CODES.BLOG_CATEGORY_UPDATED,
+          successDescription: "Blog category updated.",
+          successMessage: BLOG_MESSAGES.BLOG_CATEGORY_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/blogs": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin blogs",
+            description: "List draft, published, or archived blog posts.",
+            failureDescription: "Admin blog list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "categoryId", in: "query", required: false, schema: { type: "string" } },
+              { name: "categorySlug", in: "query", required: false, schema: { type: "string" } },
+              { name: "status", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["blogs", "limit"],
+              properties: {
+                blogs: { type: "array", items: blogDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: BLOG_CODES.BLOGS_LISTED,
+            successDescription: "Admin blogs loaded.",
+            successMessage: BLOG_MESSAGES.BLOGS_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create blog",
+            description: "Create a draft or published blog post.",
+            failureDescription: "Blog creation failed.",
+            requiresAuth: true,
+            requestSchema: adminBlogPostRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["blog"],
+              properties: { blog: blogDataSchema },
+            },
+            successCode: BLOG_CODES.BLOG_CREATED,
+            successDescription: "Blog created.",
+            successMessage: BLOG_MESSAGES.BLOG_CREATED,
+          }),
+        },
+        "/api/v1/admin/blogs/{blogId}": {
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update blog",
+            description: "Update blog content, category, status, or publish time.",
+            failureDescription: "Blog update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "blogId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminBlogPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["blog"],
+              properties: { blog: blogDataSchema },
+            },
+            successCode: BLOG_CODES.BLOG_UPDATED,
+            successDescription: "Blog updated.",
+            successMessage: BLOG_MESSAGES.BLOG_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "delete",
+            tag: "Admin",
+            summary: "Delete blog",
+            description: "Delete one blog post and its linked media assets.",
+            failureDescription: "Blog deletion failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "blogId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["blogId"],
+              properties: { blogId: { type: "string", example: "cmokblog0001" } },
+            },
+            successCode: BLOG_CODES.BLOG_DELETED,
+            successDescription: "Blog deleted.",
+            successMessage: BLOG_MESSAGES.BLOG_DELETED,
             successStatus: HTTP_STATUS.OK,
           }),
         },
