@@ -26,6 +26,10 @@ import {
   OFFER_MESSAGES,
 } from "@/features/offers/constants/offer.constants";
 import {
+  PORTFOLIO_CODES,
+  PORTFOLIO_MESSAGES,
+} from "@/features/portfolio/constants/portfolio.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -894,6 +898,61 @@ const offerServiceRequestSchema: OpenApiRecord = {
   },
 };
 
+const portfolioDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "imageUrls", "isFeatured", "isPublished"],
+  properties: {
+    id: { type: "string", example: "cmokportfolio0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+    serviceId: { type: "string", nullable: true, example: "cmokservice0001" },
+    packageId: { type: "string", nullable: true, example: "cmokpackage0001" },
+    titleHi: { type: "string", nullable: true, example: "ब्राइडल मेकअप" },
+    descriptionHi: { type: "string", nullable: true },
+    beforeImageUrl: { type: "string", nullable: true },
+    afterImageUrl: { type: "string", nullable: true },
+    imageUrls: {
+      type: "array",
+      items: { type: "string" },
+      example: ["https://cdn.example.com/look.jpg"],
+    },
+    isFeatured: { type: "boolean", example: true },
+    isPublished: { type: "boolean", example: true },
+    sortOrder: { type: "integer", example: 10 },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    staff: { type: "object", nullable: true, additionalProperties: true },
+    service: { type: "object", nullable: true, additionalProperties: true },
+    package: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminPortfolioRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    staffId: { type: "string", nullable: true, example: "cmokstaff0001" },
+    serviceId: { type: "string", nullable: true, example: "cmokservice0001" },
+    packageId: { type: "string", nullable: true, example: "cmokpackage0001" },
+    titleHi: { type: "string", nullable: true, maxLength: 200 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    beforeImageUrl: { type: "string", nullable: true },
+    afterImageUrl: { type: "string", nullable: true },
+    imageUrls: { type: "array", items: { type: "string" }, maxItems: 20 },
+    isFeatured: { type: "boolean", default: false },
+    isPublished: { type: "boolean", default: true },
+    sortOrder: { type: "integer", minimum: 0, maximum: 100000 },
+  },
+};
+
+const adminPortfolioPatchSchema: OpenApiRecord = {
+  ...adminPortfolioRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
 const staffDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "userId", "branchId", "name", "isAvailable"],
@@ -1702,6 +1761,10 @@ export function GET(request: Request) {
         {
           name: "Offers",
           description: "Coupons, discounts, and offer validation.",
+        },
+        {
+          name: "Portfolio",
+          description: "Before/after gallery and featured salon work.",
         },
         {
           name: "Staff",
@@ -3022,6 +3085,58 @@ export function GET(request: Request) {
           successMessage: OFFER_MESSAGES.OFFER_VALIDATED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/portfolio": jsonEndpoint({
+          method: "get",
+          tag: "Portfolio",
+          summary: "List portfolio",
+          description:
+            "List published gallery work, optionally filtered by branch, staff, service, package, or featured state.",
+          failureDescription: "Portfolio list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "staffId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokstaff0001" },
+            },
+            {
+              name: "serviceId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokservice0001" },
+            },
+            {
+              name: "featured",
+              in: "query",
+              required: false,
+              schema: { type: "boolean" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["portfolio", "limit"],
+            properties: {
+              portfolio: { type: "array", items: portfolioDataSchema },
+              limit: { type: "integer", example: 20 },
+            },
+          },
+          successCode: PORTFOLIO_CODES.PORTFOLIO_LISTED,
+          successDescription: "Portfolio loaded.",
+          successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/staff": jsonEndpoint({
           method: "get",
           tag: "Staff",
@@ -4091,6 +4206,101 @@ export function GET(request: Request) {
           successMessage: OFFER_MESSAGES.OFFER_SERVICE_REMOVED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/portfolio": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin portfolio",
+            description:
+              "List portfolio items for gallery operations. Branch admins are scoped to their branch.",
+            failureDescription: "Admin portfolio list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "staffId", in: "query", required: false, schema: { type: "string" } },
+              { name: "serviceId", in: "query", required: false, schema: { type: "string" } },
+              { name: "isPublished", in: "query", required: false, schema: { type: "boolean" } },
+              { name: "isFeatured", in: "query", required: false, schema: { type: "boolean" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["portfolio", "limit"],
+              properties: {
+                portfolio: { type: "array", items: portfolioDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: PORTFOLIO_CODES.PORTFOLIO_LISTED,
+            successDescription: "Admin portfolio loaded.",
+            successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create portfolio item",
+            description:
+              "Create gallery work linked to one branch and optional staff, service, or package.",
+            failureDescription: "Portfolio creation failed.",
+            requiresAuth: true,
+            requestSchema: adminPortfolioRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["portfolioItem"],
+              properties: { portfolioItem: portfolioDataSchema },
+            },
+            successCode: PORTFOLIO_CODES.PORTFOLIO_CREATED,
+            successDescription: "Portfolio item created.",
+            successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_CREATED,
+          }),
+        },
+        "/api/v1/admin/portfolio/{portfolioItemId}": {
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update portfolio item",
+            description:
+              "Update portfolio content, media URLs, publish state, or sort order.",
+            failureDescription: "Portfolio update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "portfolioItemId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminPortfolioPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["portfolioItem"],
+              properties: { portfolioItem: portfolioDataSchema },
+            },
+            successCode: PORTFOLIO_CODES.PORTFOLIO_UPDATED,
+            successDescription: "Portfolio item updated.",
+            successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "delete",
+            tag: "Admin",
+            summary: "Delete portfolio item",
+            description: "Delete one portfolio item and its linked media assets.",
+            failureDescription: "Portfolio deletion failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "portfolioItemId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["portfolioItemId"],
+              properties: {
+                portfolioItemId: { type: "string", example: "cmokportfolio0001" },
+              },
+            },
+            successCode: PORTFOLIO_CODES.PORTFOLIO_DELETED,
+            successDescription: "Portfolio item deleted.",
+            successMessage: PORTFOLIO_MESSAGES.PORTFOLIO_DELETED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
