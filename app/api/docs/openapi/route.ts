@@ -34,6 +34,10 @@ import {
   PORTFOLIO_MESSAGES,
 } from "@/features/portfolio/constants/portfolio.constants";
 import {
+  PRODUCT_CODES,
+  PRODUCT_MESSAGES,
+} from "@/features/products/constants/product.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -1030,6 +1034,82 @@ const adminBlogPatchSchema: OpenApiRecord = {
   minProperties: 1,
 };
 
+const productCategoryDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "nameHi", "slug", "slugScope", "isActive"],
+  properties: {
+    id: { type: "string", example: "cmokproductcat0001" },
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    slugScope: { type: "string", example: "global" },
+    nameHi: { type: "string", example: "हेयर केयर" },
+    nameEn: { type: "string", nullable: true, example: "Hair Care" },
+    slug: { type: "string", example: "hair-care" },
+    description: { type: "string", nullable: true },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const productDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "nameHi", "slug", "price", "stockQuantity"],
+  properties: {
+    id: { type: "string", example: "cmokproduct0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokproductcat0001" },
+    nameHi: { type: "string", example: "शैम्पू" },
+    nameEn: { type: "string", nullable: true, example: "Shampoo" },
+    slug: { type: "string", example: "shampoo" },
+    descriptionHi: { type: "string", nullable: true },
+    price: { type: "string", example: "299.00" },
+    stockQuantity: { type: "integer", example: 10 },
+    imageUrl: { type: "string", nullable: true },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", additionalProperties: true },
+    category: { ...productCategoryDataSchema, nullable: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminProductCategoryRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["nameHi", "slug"],
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    nameHi: { type: "string", maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "hair-care", maxLength: 220 },
+    description: { type: "string", nullable: true, maxLength: 2000 },
+    isActive: { type: "boolean", default: true },
+  },
+};
+
+const adminProductRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId", "nameHi", "slug", "price"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    categoryId: { type: "string", nullable: true, example: "cmokproductcat0001" },
+    nameHi: { type: "string", maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    slug: { type: "string", example: "shampoo", maxLength: 220 },
+    descriptionHi: { type: "string", nullable: true, maxLength: 2000 },
+    price: { type: "number", example: 299 },
+    stockQuantity: { type: "integer", minimum: 0, default: 0 },
+    imageUrl: { type: "string", nullable: true },
+    isActive: { type: "boolean", default: true },
+  },
+};
+
+const adminProductPatchSchema: OpenApiRecord = {
+  ...adminProductRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
 const staffDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "userId", "branchId", "name", "isAvailable"],
@@ -1846,6 +1926,10 @@ export function GET(request: Request) {
         {
           name: "Blogs",
           description: "Public editorial content and admin blog management.",
+        },
+        {
+          name: "Products",
+          description: "Retail product discovery and admin product management.",
         },
         {
           name: "Staff",
@@ -3294,6 +3378,86 @@ export function GET(request: Request) {
           successMessage: BLOG_MESSAGES.BLOG_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/products/categories": jsonEndpoint({
+          method: "get",
+          tag: "Products",
+          summary: "List product categories",
+          description:
+            "List active global and branch-specific product categories.",
+          failureDescription: "Product category list load failed.",
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["categories", "limit"],
+            properties: {
+              categories: { type: "array", items: productCategoryDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: PRODUCT_CODES.CATEGORY_LISTED,
+          successDescription: "Product categories loaded.",
+          successMessage: PRODUCT_MESSAGES.CATEGORY_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/products": jsonEndpoint({
+          method: "get",
+          tag: "Products",
+          summary: "List products",
+          description:
+            "List active retail products, optionally filtered by branch or category.",
+          failureDescription: "Product list load failed.",
+          parameters: [
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+            { name: "categoryId", in: "query", required: false, schema: { type: "string" } },
+            { name: "categorySlug", in: "query", required: false, schema: { type: "string" } },
+            { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["products", "limit"],
+            properties: {
+              products: { type: "array", items: productDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: PRODUCT_CODES.PRODUCTS_LISTED,
+          successDescription: "Products loaded.",
+          successMessage: PRODUCT_MESSAGES.PRODUCTS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/products/{productId}": jsonEndpoint({
+          method: "get",
+          tag: "Products",
+          summary: "Get product",
+          description: "Load one active retail product by id.",
+          failureDescription: "Product detail load failed.",
+          parameters: [
+            { name: "productId", in: "path", required: true, schema: { type: "string" } },
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["product"],
+            properties: { product: productDataSchema },
+          },
+          successCode: PRODUCT_CODES.PRODUCT_LOADED,
+          successDescription: "Product loaded.",
+          successMessage: PRODUCT_MESSAGES.PRODUCT_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/staff": jsonEndpoint({
           method: "get",
           tag: "Staff",
@@ -4609,6 +4773,142 @@ export function GET(request: Request) {
             successStatus: HTTP_STATUS.OK,
           }),
         },
+        "/api/v1/admin/products/categories": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin product categories",
+            description:
+              "List global and branch-specific product categories for retail setup.",
+            failureDescription: "Admin product category list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["categories", "limit"],
+              properties: {
+                categories: { type: "array", items: productCategoryDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: PRODUCT_CODES.CATEGORY_LISTED,
+            successDescription: "Admin product categories loaded.",
+            successMessage: PRODUCT_MESSAGES.CATEGORY_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create product category",
+            description:
+              "Create a global or branch-specific retail product category.",
+            failureDescription: "Product category creation failed.",
+            requiresAuth: true,
+            requestSchema: adminProductCategoryRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["category"],
+              properties: { category: productCategoryDataSchema },
+            },
+            successCode: PRODUCT_CODES.CATEGORY_CREATED,
+            successDescription: "Product category created.",
+            successMessage: PRODUCT_MESSAGES.CATEGORY_CREATED,
+          }),
+        },
+        "/api/v1/admin/products/categories/{categoryId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update product category",
+          description: "Update product category fields or deactivate a category.",
+          failureDescription: "Product category update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "categoryId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: {
+            ...adminProductCategoryRequestSchema,
+            required: undefined,
+            minProperties: 1,
+          },
+          responseSchema: {
+            type: "object",
+            required: ["category"],
+            properties: { category: productCategoryDataSchema },
+          },
+          successCode: PRODUCT_CODES.CATEGORY_UPDATED,
+          successDescription: "Product category updated.",
+          successMessage: PRODUCT_MESSAGES.CATEGORY_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/products": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin products",
+            description: "List retail products for admin inventory setup.",
+            failureDescription: "Admin product list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "categoryId", in: "query", required: false, schema: { type: "string" } },
+              { name: "categorySlug", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["products", "limit"],
+              properties: {
+                products: { type: "array", items: productDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: PRODUCT_CODES.PRODUCTS_LISTED,
+            successDescription: "Admin products loaded.",
+            successMessage: PRODUCT_MESSAGES.PRODUCTS_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create product",
+            description: "Create one retail product for an active branch.",
+            failureDescription: "Product creation failed.",
+            requiresAuth: true,
+            requestSchema: adminProductRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["product"],
+              properties: { product: productDataSchema },
+            },
+            successCode: PRODUCT_CODES.PRODUCT_CREATED,
+            successDescription: "Product created.",
+            successMessage: PRODUCT_MESSAGES.PRODUCT_CREATED,
+          }),
+        },
+        "/api/v1/admin/products/{productId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update product",
+          description: "Update product details, price, stock, or active state.",
+          failureDescription: "Product update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "productId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminProductPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["product"],
+            properties: { product: productDataSchema },
+          },
+          successCode: PRODUCT_CODES.PRODUCT_UPDATED,
+          successDescription: "Product updated.",
+          successMessage: PRODUCT_MESSAGES.PRODUCT_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
