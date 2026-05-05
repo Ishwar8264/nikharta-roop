@@ -38,6 +38,10 @@ import {
   PRODUCT_MESSAGES,
 } from "@/features/products/constants/product.constants";
 import {
+  PRODUCT_SALE_CODES,
+  PRODUCT_SALE_MESSAGES,
+} from "@/features/product-sales/constants/product-sale.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -1108,6 +1112,73 @@ const adminProductPatchSchema: OpenApiRecord = {
   ...adminProductRequestSchema,
   required: undefined,
   minProperties: 1,
+};
+
+const productSaleItemDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "productId", "quantity", "unitPrice", "lineTotal"],
+  properties: {
+    id: { type: "string", example: "cmoksaleitem0001" },
+    productId: { type: "string", example: "cmokproduct0001" },
+    quantity: { type: "integer", example: 2 },
+    unitPrice: { type: "string", example: "299.00" },
+    lineTotal: { type: "string", example: "598.00" },
+    product: { type: "object", additionalProperties: true },
+  },
+};
+
+const productSaleDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "status", "subtotal", "totalAmount", "items"],
+  properties: {
+    id: { type: "string", example: "cmokproductsale0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    userId: { type: "string", nullable: true, example: "cmokuser0001" },
+    status: { type: "string", enum: ["DRAFT", "COMPLETED", "CANCELLED", "REFUNDED"] },
+    subtotal: { type: "string", example: "598.00" },
+    discountAmount: { type: "string", example: "50.00" },
+    totalAmount: { type: "string", example: "548.00" },
+    notes: { type: "string", nullable: true },
+    soldAt: { type: "string", format: "date-time", nullable: true },
+    branch: { type: "object", additionalProperties: true },
+    user: { type: "object", nullable: true, additionalProperties: true },
+    items: { type: "array", items: productSaleItemDataSchema },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminProductSaleRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId", "items"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    userId: { type: "string", example: "cmokuser0001" },
+    discountAmount: { type: "number", default: 0 },
+    notes: { type: "string", nullable: true, maxLength: 2000 },
+    items: {
+      type: "array",
+      minItems: 1,
+      maxItems: 100,
+      items: {
+        type: "object",
+        required: ["productId", "quantity"],
+        properties: {
+          productId: { type: "string", example: "cmokproduct0001" },
+          quantity: { type: "integer", minimum: 1, example: 2 },
+        },
+      },
+    },
+  },
+};
+
+const adminProductSalePatchSchema: OpenApiRecord = {
+  type: "object",
+  minProperties: 1,
+  properties: {
+    notes: { type: "string", nullable: true, maxLength: 2000 },
+    status: { type: "string", enum: ["COMPLETED", "CANCELLED", "REFUNDED"] },
+  },
 };
 
 const staffDataSchema: OpenApiRecord = {
@@ -4909,6 +4980,98 @@ export function GET(request: Request) {
           successMessage: PRODUCT_MESSAGES.PRODUCT_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/product-sales": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List product sales",
+            description:
+              "List retail product sales for POS and admin reporting. Branch admins are scoped to their branch.",
+            failureDescription: "Product sale list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "userId", in: "query", required: false, schema: { type: "string" } },
+              { name: "date", in: "query", required: false, schema: { type: "string", format: "date" } },
+              { name: "status", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["productSales", "limit"],
+              properties: {
+                productSales: { type: "array", items: productSaleDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: PRODUCT_SALE_CODES.PRODUCT_SALES_LISTED,
+            successDescription: "Product sales loaded.",
+            successMessage: PRODUCT_SALE_MESSAGES.PRODUCT_SALES_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create product sale",
+            description:
+              "Create a draft retail sale using current product prices. Stock is checked before the sale is created.",
+            failureDescription: "Product sale creation failed.",
+            requiresAuth: true,
+            requestSchema: adminProductSaleRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["productSale"],
+              properties: { productSale: productSaleDataSchema },
+            },
+            successCode: PRODUCT_SALE_CODES.PRODUCT_SALE_CREATED,
+            successDescription: "Product sale created.",
+            successMessage: PRODUCT_SALE_MESSAGES.PRODUCT_SALE_CREATED,
+          }),
+        },
+        "/api/v1/admin/product-sales/{saleId}": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "Get product sale",
+            description: "Load one retail product sale with item details.",
+            failureDescription: "Product sale detail load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "saleId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["productSale"],
+              properties: { productSale: productSaleDataSchema },
+            },
+            successCode: PRODUCT_SALE_CODES.PRODUCT_SALE_LOADED,
+            successDescription: "Product sale loaded.",
+            successMessage: PRODUCT_SALE_MESSAGES.PRODUCT_SALE_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update product sale",
+            description:
+              "Update sale notes or complete/cancel/refund a draft sale. Completing a sale decrements product stock.",
+            failureDescription: "Product sale update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "saleId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminProductSalePatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["productSale"],
+              properties: { productSale: productSaleDataSchema },
+            },
+            successCode: PRODUCT_SALE_CODES.PRODUCT_SALE_UPDATED,
+            successDescription: "Product sale updated.",
+            successMessage: PRODUCT_SALE_MESSAGES.PRODUCT_SALE_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
