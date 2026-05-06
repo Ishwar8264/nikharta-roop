@@ -54,6 +54,10 @@ import {
   REPORT_MESSAGES,
 } from "@/features/reports/constants/report.constants";
 import {
+  MEDIA_CODES,
+  MEDIA_MESSAGES,
+} from "@/features/media/constants/media.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -1339,6 +1343,62 @@ const reportMetricSchema: OpenApiRecord = {
     total: "12000.00",
     totalCount: 12,
   },
+};
+
+const mediaDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "ownerType", "url", "sortOrder", "createdAt"],
+  properties: {
+    id: { type: "string", example: "cmokmedia0001" },
+    ownerType: {
+      type: "string",
+      enum: ["SERVICE", "PACKAGE", "STAFF", "PORTFOLIO", "REVIEW", "BLOG_POST", "PRODUCT", "BRANCH"],
+    },
+    url: { type: "string", example: "https://cdn.example.com/service.jpg" },
+    provider: { type: "string", nullable: true, example: "cloudinary" },
+    providerPublicId: { type: "string", nullable: true },
+    altHi: { type: "string", nullable: true },
+    sortOrder: { type: "integer", example: 10 },
+    branchId: { type: "string", nullable: true },
+    serviceId: { type: "string", nullable: true },
+    packageId: { type: "string", nullable: true },
+    staffId: { type: "string", nullable: true },
+    portfolioItemId: { type: "string", nullable: true },
+    reviewId: { type: "string", nullable: true },
+    blogPostId: { type: "string", nullable: true },
+    productId: { type: "string", nullable: true },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminMediaRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["ownerType", "url"],
+  properties: {
+    ownerType: {
+      type: "string",
+      enum: ["SERVICE", "PACKAGE", "STAFF", "PORTFOLIO", "REVIEW", "BLOG_POST", "PRODUCT", "BRANCH"],
+    },
+    url: { type: "string", maxLength: 2048 },
+    provider: { type: "string", nullable: true, maxLength: 80 },
+    providerPublicId: { type: "string", nullable: true },
+    altHi: { type: "string", nullable: true, maxLength: 500 },
+    sortOrder: { type: "integer", minimum: 0, maximum: 100000 },
+    branchId: { type: "string" },
+    serviceId: { type: "string" },
+    packageId: { type: "string" },
+    staffId: { type: "string" },
+    portfolioItemId: { type: "string" },
+    reviewId: { type: "string" },
+    blogPostId: { type: "string" },
+    productId: { type: "string" },
+  },
+};
+
+const adminMediaPatchSchema: OpenApiRecord = {
+  ...adminMediaRequestSchema,
+  required: undefined,
+  minProperties: 1,
 };
 
 const staffDataSchema: OpenApiRecord = {
@@ -5512,6 +5572,102 @@ export function GET(request: Request) {
           successMessage: REPORT_MESSAGES.PRODUCT_REPORT_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/media": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List media assets",
+            description:
+              "List externally uploaded media asset metadata by owner type or owner id.",
+            failureDescription: "Media list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "ownerType", in: "query", required: false, schema: { type: "string" } },
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "serviceId", in: "query", required: false, schema: { type: "string" } },
+              { name: "packageId", in: "query", required: false, schema: { type: "string" } },
+              { name: "staffId", in: "query", required: false, schema: { type: "string" } },
+              { name: "portfolioItemId", in: "query", required: false, schema: { type: "string" } },
+              { name: "blogPostId", in: "query", required: false, schema: { type: "string" } },
+              { name: "productId", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["media", "limit"],
+              properties: {
+                media: { type: "array", items: mediaDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: MEDIA_CODES.MEDIA_LISTED,
+            successDescription: "Media assets loaded.",
+            successMessage: MEDIA_MESSAGES.MEDIA_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create media asset",
+            description:
+              "Register externally uploaded media metadata against exactly one owner id.",
+            failureDescription: "Media creation failed.",
+            requiresAuth: true,
+            requestSchema: adminMediaRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["media"],
+              properties: { media: mediaDataSchema },
+            },
+            successCode: MEDIA_CODES.MEDIA_CREATED,
+            successDescription: "Media asset created.",
+            successMessage: MEDIA_MESSAGES.MEDIA_CREATED,
+          }),
+        },
+        "/api/v1/admin/media/{mediaId}": {
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update media asset",
+            description: "Update media metadata, URL, alt text, provider data, or owner.",
+            failureDescription: "Media update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "mediaId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminMediaPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["media"],
+              properties: { media: mediaDataSchema },
+            },
+            successCode: MEDIA_CODES.MEDIA_UPDATED,
+            successDescription: "Media asset updated.",
+            successMessage: MEDIA_MESSAGES.MEDIA_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "delete",
+            tag: "Admin",
+            summary: "Delete media asset",
+            description:
+              "Delete one media metadata row. External storage deletion remains provider-side.",
+            failureDescription: "Media deletion failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "mediaId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["mediaId"],
+              properties: { mediaId: { type: "string", example: "cmokmedia0001" } },
+            },
+            successCode: MEDIA_CODES.MEDIA_DELETED,
+            successDescription: "Media asset deleted.",
+            successMessage: MEDIA_MESSAGES.MEDIA_DELETED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
