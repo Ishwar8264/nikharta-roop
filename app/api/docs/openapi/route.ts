@@ -42,6 +42,14 @@ import {
   PRODUCT_SALE_MESSAGES,
 } from "@/features/product-sales/constants/product-sale.constants";
 import {
+  INVENTORY_CODES,
+  INVENTORY_MESSAGES,
+} from "@/features/inventory/constants/inventory.constants";
+import {
+  EXPENSE_CODES,
+  EXPENSE_MESSAGES,
+} from "@/features/expenses/constants/expense.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -1179,6 +1187,134 @@ const adminProductSalePatchSchema: OpenApiRecord = {
     notes: { type: "string", nullable: true, maxLength: 2000 },
     status: { type: "string", enum: ["COMPLETED", "CANCELLED", "REFUNDED"] },
   },
+};
+
+const inventoryDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "nameHi", "unit", "quantityOnHand", "isActive"],
+  properties: {
+    id: { type: "string", example: "cmokinventory0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    productId: { type: "string", nullable: true, example: "cmokproduct0001" },
+    nameHi: { type: "string", example: "क्रीम" },
+    nameEn: { type: "string", nullable: true, example: "Cream" },
+    sku: { type: "string", nullable: true, example: "CREAM-001" },
+    unit: { type: "string", example: "piece" },
+    quantityOnHand: { type: "string", example: "12.500" },
+    reorderLevel: { type: "string", nullable: true, example: "5.000" },
+    costPerUnit: { type: "string", nullable: true, example: "120.00" },
+    isActive: { type: "boolean", example: true },
+    branch: { type: "object", additionalProperties: true },
+    product: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const inventoryTransactionDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "inventoryItemId", "type", "quantityChange"],
+  properties: {
+    id: { type: "string", example: "cmokinvtxn0001" },
+    inventoryItemId: { type: "string", example: "cmokinventory0001" },
+    bookingId: { type: "string", nullable: true },
+    productSaleItemId: { type: "string", nullable: true },
+    type: {
+      type: "string",
+      enum: ["PURCHASE", "SERVICE_USAGE", "PRODUCT_SALE", "ADJUSTMENT", "WASTAGE", "RETURN"],
+    },
+    quantityChange: { type: "string", example: "5.000" },
+    unitCost: { type: "string", nullable: true, example: "120.00" },
+    notes: { type: "string", nullable: true },
+    inventoryItem: { type: "object", additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminInventoryRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId", "nameHi"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    productId: { type: "string", nullable: true, example: "cmokproduct0001" },
+    nameHi: { type: "string", maxLength: 200 },
+    nameEn: { type: "string", nullable: true, maxLength: 200 },
+    sku: { type: "string", nullable: true, maxLength: 80 },
+    unit: { type: "string", default: "piece", maxLength: 40 },
+    quantityOnHand: { type: "number", minimum: 0 },
+    reorderLevel: { type: "number", nullable: true, minimum: 0 },
+    costPerUnit: { type: "number", nullable: true, minimum: 0 },
+    isActive: { type: "boolean", default: true },
+  },
+};
+
+const adminInventoryPatchSchema: OpenApiRecord = {
+  ...adminInventoryRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
+const adminInventoryAdjustmentSchema: OpenApiRecord = {
+  type: "object",
+  required: ["quantityChange"],
+  properties: {
+    quantityChange: { type: "number", example: 5 },
+    type: {
+      type: "string",
+      enum: ["PURCHASE", "SERVICE_USAGE", "PRODUCT_SALE", "ADJUSTMENT", "WASTAGE", "RETURN"],
+      default: "ADJUSTMENT",
+    },
+    unitCost: { type: "number", nullable: true },
+    notes: { type: "string", nullable: true, maxLength: 2000 },
+  },
+};
+
+const expenseDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "category", "titleHi", "amount", "expenseDate"],
+  properties: {
+    id: { type: "string", example: "cmokexpense0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    createdById: { type: "string", nullable: true, example: "cmokuser0001" },
+    category: {
+      type: "string",
+      enum: ["RENT", "SALARY", "PRODUCT_PURCHASE", "UTILITIES", "MARKETING", "MAINTENANCE", "REFUND_COST", "OTHER"],
+    },
+    titleHi: { type: "string", example: "बिजली बिल" },
+    amount: { type: "string", example: "1200.50" },
+    expenseDate: { type: "string", format: "date-time" },
+    vendorName: { type: "string", nullable: true },
+    receiptUrl: { type: "string", nullable: true },
+    notes: { type: "string", nullable: true },
+    branch: { type: "object", additionalProperties: true },
+    createdBy: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminExpenseRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId", "category", "titleHi", "amount", "expenseDate"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    category: {
+      type: "string",
+      enum: ["RENT", "SALARY", "PRODUCT_PURCHASE", "UTILITIES", "MARKETING", "MAINTENANCE", "REFUND_COST", "OTHER"],
+    },
+    titleHi: { type: "string", maxLength: 200 },
+    amount: { type: "number", example: 1200.5 },
+    expenseDate: { type: "string", format: "date" },
+    vendorName: { type: "string", nullable: true, maxLength: 200 },
+    receiptUrl: { type: "string", nullable: true },
+    notes: { type: "string", nullable: true, maxLength: 2000 },
+  },
+};
+
+const adminExpensePatchSchema: OpenApiRecord = {
+  ...adminExpenseRequestSchema,
+  required: undefined,
+  minProperties: 1,
 };
 
 const staffDataSchema: OpenApiRecord = {
@@ -5072,6 +5208,199 @@ export function GET(request: Request) {
             successStatus: HTTP_STATUS.OK,
           }),
         },
+        "/api/v1/admin/inventory": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List inventory",
+            description:
+              "List branch inventory items for stock monitoring and reorder planning.",
+            failureDescription: "Inventory list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "productId", in: "query", required: false, schema: { type: "string" } },
+              { name: "isActive", in: "query", required: false, schema: { type: "boolean" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["inventory", "limit"],
+              properties: {
+                inventory: { type: "array", items: inventoryDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: INVENTORY_CODES.INVENTORY_LISTED,
+            successDescription: "Inventory loaded.",
+            successMessage: INVENTORY_MESSAGES.INVENTORY_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create inventory item",
+            description:
+              "Create one branch inventory item with optional product linkage and SKU.",
+            failureDescription: "Inventory creation failed.",
+            requiresAuth: true,
+            requestSchema: adminInventoryRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["inventoryItem"],
+              properties: { inventoryItem: inventoryDataSchema },
+            },
+            successCode: INVENTORY_CODES.INVENTORY_CREATED,
+            successDescription: "Inventory item created.",
+            successMessage: INVENTORY_MESSAGES.INVENTORY_CREATED,
+          }),
+        },
+        "/api/v1/admin/inventory/{inventoryItemId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update inventory item",
+          description:
+            "Update inventory metadata, SKU, reorder level, product link, or active state.",
+          failureDescription: "Inventory update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "inventoryItemId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminInventoryPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["inventoryItem"],
+            properties: { inventoryItem: inventoryDataSchema },
+          },
+          successCode: INVENTORY_CODES.INVENTORY_UPDATED,
+          successDescription: "Inventory item updated.",
+          successMessage: INVENTORY_MESSAGES.INVENTORY_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/inventory/{inventoryItemId}/adjustments": jsonEndpoint({
+          method: "post",
+          tag: "Admin",
+          summary: "Adjust inventory stock",
+          description:
+            "Apply a stock movement and record the matching inventory transaction atomically.",
+          failureDescription: "Inventory adjustment failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "inventoryItemId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminInventoryAdjustmentSchema,
+          responseSchema: {
+            type: "object",
+            required: ["inventoryItem", "transaction"],
+            properties: {
+              inventoryItem: inventoryDataSchema,
+              transaction: inventoryTransactionDataSchema,
+            },
+          },
+          successCode: INVENTORY_CODES.STOCK_ADJUSTED,
+          successDescription: "Inventory stock adjusted.",
+          successMessage: INVENTORY_MESSAGES.STOCK_ADJUSTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/inventory/transactions": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List inventory transactions",
+          description:
+            "List inventory stock movement history by branch, item, or transaction type.",
+          failureDescription: "Inventory transaction list load failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+            { name: "inventoryItemId", in: "query", required: false, schema: { type: "string" } },
+            { name: "type", in: "query", required: false, schema: { type: "string" } },
+            { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["transactions", "limit"],
+            properties: {
+              transactions: {
+                type: "array",
+                items: inventoryTransactionDataSchema,
+              },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: INVENTORY_CODES.TRANSACTIONS_LISTED,
+          successDescription: "Inventory transactions loaded.",
+          successMessage: INVENTORY_MESSAGES.TRANSACTIONS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/expenses": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List expenses",
+            description:
+              "List salon expenses by branch, category, and expense date range.",
+            failureDescription: "Expense list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "category", in: "query", required: false, schema: { type: "string" } },
+              { name: "from", in: "query", required: false, schema: { type: "string", format: "date" } },
+              { name: "to", in: "query", required: false, schema: { type: "string", format: "date" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["expenses", "limit"],
+              properties: {
+                expenses: { type: "array", items: expenseDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: EXPENSE_CODES.EXPENSE_LISTED,
+            successDescription: "Expenses loaded.",
+            successMessage: EXPENSE_MESSAGES.EXPENSE_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create expense",
+            description: "Create one branch expense with receipt and vendor metadata.",
+            failureDescription: "Expense creation failed.",
+            requiresAuth: true,
+            requestSchema: adminExpenseRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["expense"],
+              properties: { expense: expenseDataSchema },
+            },
+            successCode: EXPENSE_CODES.EXPENSE_CREATED,
+            successDescription: "Expense created.",
+            successMessage: EXPENSE_MESSAGES.EXPENSE_CREATED,
+          }),
+        },
+        "/api/v1/admin/expenses/{expenseId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update expense",
+          description:
+            "Update expense amount, category, date, receipt, vendor, or notes.",
+          failureDescription: "Expense update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "expenseId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminExpensePatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["expense"],
+            properties: { expense: expenseDataSchema },
+          },
+          successCode: EXPENSE_CODES.EXPENSE_UPDATED,
+          successDescription: "Expense updated.",
+          successMessage: EXPENSE_MESSAGES.EXPENSE_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
