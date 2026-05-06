@@ -46,6 +46,10 @@ import {
   INVENTORY_MESSAGES,
 } from "@/features/inventory/constants/inventory.constants";
 import {
+  EXPENSE_CODES,
+  EXPENSE_MESSAGES,
+} from "@/features/expenses/constants/expense.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -1263,6 +1267,54 @@ const adminInventoryAdjustmentSchema: OpenApiRecord = {
     unitCost: { type: "number", nullable: true },
     notes: { type: "string", nullable: true, maxLength: 2000 },
   },
+};
+
+const expenseDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "category", "titleHi", "amount", "expenseDate"],
+  properties: {
+    id: { type: "string", example: "cmokexpense0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    createdById: { type: "string", nullable: true, example: "cmokuser0001" },
+    category: {
+      type: "string",
+      enum: ["RENT", "SALARY", "PRODUCT_PURCHASE", "UTILITIES", "MARKETING", "MAINTENANCE", "REFUND_COST", "OTHER"],
+    },
+    titleHi: { type: "string", example: "बिजली बिल" },
+    amount: { type: "string", example: "1200.50" },
+    expenseDate: { type: "string", format: "date-time" },
+    vendorName: { type: "string", nullable: true },
+    receiptUrl: { type: "string", nullable: true },
+    notes: { type: "string", nullable: true },
+    branch: { type: "object", additionalProperties: true },
+    createdBy: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminExpenseRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId", "category", "titleHi", "amount", "expenseDate"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    category: {
+      type: "string",
+      enum: ["RENT", "SALARY", "PRODUCT_PURCHASE", "UTILITIES", "MARKETING", "MAINTENANCE", "REFUND_COST", "OTHER"],
+    },
+    titleHi: { type: "string", maxLength: 200 },
+    amount: { type: "number", example: 1200.5 },
+    expenseDate: { type: "string", format: "date" },
+    vendorName: { type: "string", nullable: true, maxLength: 200 },
+    receiptUrl: { type: "string", nullable: true },
+    notes: { type: "string", nullable: true, maxLength: 2000 },
+  },
+};
+
+const adminExpensePatchSchema: OpenApiRecord = {
+  ...adminExpenseRequestSchema,
+  required: undefined,
+  minProperties: 1,
 };
 
 const staffDataSchema: OpenApiRecord = {
@@ -5278,6 +5330,75 @@ export function GET(request: Request) {
           successCode: INVENTORY_CODES.TRANSACTIONS_LISTED,
           successDescription: "Inventory transactions loaded.",
           successMessage: INVENTORY_MESSAGES.TRANSACTIONS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/expenses": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List expenses",
+            description:
+              "List salon expenses by branch, category, and expense date range.",
+            failureDescription: "Expense list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "category", in: "query", required: false, schema: { type: "string" } },
+              { name: "from", in: "query", required: false, schema: { type: "string", format: "date" } },
+              { name: "to", in: "query", required: false, schema: { type: "string", format: "date" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["expenses", "limit"],
+              properties: {
+                expenses: { type: "array", items: expenseDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: EXPENSE_CODES.EXPENSE_LISTED,
+            successDescription: "Expenses loaded.",
+            successMessage: EXPENSE_MESSAGES.EXPENSE_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create expense",
+            description: "Create one branch expense with receipt and vendor metadata.",
+            failureDescription: "Expense creation failed.",
+            requiresAuth: true,
+            requestSchema: adminExpenseRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["expense"],
+              properties: { expense: expenseDataSchema },
+            },
+            successCode: EXPENSE_CODES.EXPENSE_CREATED,
+            successDescription: "Expense created.",
+            successMessage: EXPENSE_MESSAGES.EXPENSE_CREATED,
+          }),
+        },
+        "/api/v1/admin/expenses/{expenseId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update expense",
+          description:
+            "Update expense amount, category, date, receipt, vendor, or notes.",
+          failureDescription: "Expense update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "expenseId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminExpensePatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["expense"],
+            properties: { expense: expenseDataSchema },
+          },
+          successCode: EXPENSE_CODES.EXPENSE_UPDATED,
+          successDescription: "Expense updated.",
+          successMessage: EXPENSE_MESSAGES.EXPENSE_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
