@@ -81,6 +81,10 @@ import {
   NOTIFICATION_CODES,
   NOTIFICATION_MESSAGES,
 } from "@/features/notifications/constants/notification.constants";
+import {
+  LOYALTY_CODES,
+  LOYALTY_MESSAGES,
+} from "@/features/loyalty/constants/loyalty.constants";
 import { HTTP_STATUS } from "@/lib/constants/http-status";
 
 export const runtime = "nodejs";
@@ -1461,6 +1465,40 @@ const adminNotificationPatchSchema: OpenApiRecord = {
   minProperties: 1,
 };
 
+const loyaltyTransactionDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "userId", "type", "points", "createdAt"],
+  properties: {
+    id: { type: "string", example: "cmokloyalty0001" },
+    userId: { type: "string", example: "cmokuser0001" },
+    bookingId: { type: "string", nullable: true, example: "cmokbooking0001" },
+    type: { type: "string", enum: ["EARNED", "REDEEMED", "ADJUSTED", "DEDUCTED"] },
+    points: {
+      type: "integer",
+      example: 200,
+      description: "Signed ledger delta. Redeemed and deducted points are returned negative.",
+    },
+    reasonHi: { type: "string", nullable: true, example: "Manual reward adjustment" },
+    expiresAt: { type: "string", format: "date-time", nullable: true },
+    user: { type: "object", additionalProperties: true },
+    booking: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminLoyaltyTransactionRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["userId", "type", "points"],
+  properties: {
+    userId: { type: "string", example: "cmokuser0001" },
+    bookingId: { type: "string", example: "cmokbooking0001" },
+    type: { type: "string", enum: ["EARNED", "REDEEMED", "ADJUSTED", "DEDUCTED"] },
+    points: { type: "integer", minimum: 1, maximum: 100000, example: 200 },
+    reasonHi: { type: "string", nullable: true, maxLength: 500 },
+    expiresAt: { type: "string", format: "date-time", nullable: true },
+  },
+};
+
 const staffDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "userId", "branchId", "name", "isAvailable"],
@@ -2788,6 +2826,63 @@ export function GET(request: Request) {
           successCode: CONSULTATION_CODES.CONSULTATIONS_LISTED,
           successDescription: "Consultations loaded.",
           successMessage: CONSULTATION_MESSAGES.CONSULTATIONS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/users/me/loyalty": jsonEndpoint({
+          method: "get",
+          tag: "User",
+          summary: "Get my loyalty summary",
+          description: "Return the current user's cached loyalty points balance.",
+          failureDescription: "Loyalty summary load failed.",
+          requiresAuth: true,
+          responseSchema: {
+            type: "object",
+            required: ["points", "user"],
+            properties: {
+              points: { type: "integer", example: 1250 },
+              user: { type: "object", additionalProperties: true },
+            },
+          },
+          successCode: LOYALTY_CODES.LOYALTY_SUMMARY_LOADED,
+          successDescription: "Loyalty summary loaded.",
+          successMessage: LOYALTY_MESSAGES.LOYALTY_SUMMARY_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/users/me/loyalty/transactions": jsonEndpoint({
+          method: "get",
+          tag: "User",
+          summary: "List my loyalty transactions",
+          description: "List loyalty ledger entries for the current user.",
+          failureDescription: "Loyalty transactions load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "type",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["EARNED", "REDEEMED", "ADJUSTED", "DEDUCTED"],
+              },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["transactions", "limit"],
+            properties: {
+              transactions: { type: "array", items: loyaltyTransactionDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: LOYALTY_CODES.TRANSACTIONS_LISTED,
+          successDescription: "Loyalty transactions loaded.",
+          successMessage: LOYALTY_MESSAGES.TRANSACTIONS_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/users/me/notifications": jsonEndpoint({
@@ -5780,6 +5875,66 @@ export function GET(request: Request) {
             successDescription: "Media asset deleted.",
             successMessage: MEDIA_MESSAGES.MEDIA_DELETED,
             successStatus: HTTP_STATUS.OK,
+          }),
+        },
+        "/api/v1/admin/loyalty/transactions": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List loyalty transactions",
+            description:
+              "List loyalty ledger entries. Branch admins are scoped to their branch customers.",
+            failureDescription: "Loyalty transactions load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "userId", in: "query", required: false, schema: { type: "string" } },
+              {
+                name: "type",
+                in: "query",
+                required: false,
+                schema: {
+                  type: "string",
+                  enum: ["EARNED", "REDEEMED", "ADJUSTED", "DEDUCTED"],
+                },
+              },
+              {
+                name: "limit",
+                in: "query",
+                required: false,
+                schema: { type: "integer", default: 50 },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["transactions", "limit"],
+              properties: {
+                transactions: { type: "array", items: loyaltyTransactionDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: LOYALTY_CODES.TRANSACTIONS_LISTED,
+            successDescription: "Loyalty transactions loaded.",
+            successMessage: LOYALTY_MESSAGES.TRANSACTIONS_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create loyalty transaction",
+            description:
+              "Create one signed loyalty ledger entry and atomically update the customer balance.",
+            failureDescription: "Loyalty transaction creation failed.",
+            requiresAuth: true,
+            requestSchema: adminLoyaltyTransactionRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["transaction"],
+              properties: { transaction: loyaltyTransactionDataSchema },
+            },
+            successCode: LOYALTY_CODES.TRANSACTION_CREATED,
+            successDescription: "Loyalty transaction created.",
+            successMessage: LOYALTY_MESSAGES.TRANSACTION_CREATED,
           }),
         },
         "/api/v1/admin/notifications": {
