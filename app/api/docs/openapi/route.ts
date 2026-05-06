@@ -50,6 +50,10 @@ import {
   EXPENSE_MESSAGES,
 } from "@/features/expenses/constants/expense.constants";
 import {
+  REPORT_CODES,
+  REPORT_MESSAGES,
+} from "@/features/reports/constants/report.constants";
+import {
   BRANCH_CODES,
   BRANCH_MESSAGES,
 } from "@/features/branches/constants/branch.constants";
@@ -1317,6 +1321,26 @@ const adminExpensePatchSchema: OpenApiRecord = {
   minProperties: 1,
 };
 
+const reportSummarySchema: OpenApiRecord = {
+  type: "object",
+  required: ["bookings", "revenue", "expenses", "productSales"],
+  properties: {
+    bookings: { type: "object", additionalProperties: true },
+    revenue: { type: "object", additionalProperties: true },
+    expenses: { type: "object", additionalProperties: true },
+    productSales: { type: "object", additionalProperties: true },
+  },
+};
+
+const reportMetricSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: true,
+  example: {
+    total: "12000.00",
+    totalCount: 12,
+  },
+};
+
 const staffDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "userId", "branchId", "name", "isAvailable"],
@@ -2080,6 +2104,17 @@ function adminBookingStatusEndpoint(summary: string, description: string) {
     successMessage: BOOKING_MESSAGES.BOOKING_STATUS_UPDATED,
     successStatus: HTTP_STATUS.OK,
   });
+}
+
+/**
+ * Builds repeated admin report query parameter docs.
+ */
+function reportQueryParameters(): OpenApiRecord[] {
+  return [
+    { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+    { name: "from", in: "query", required: false, schema: { type: "string", format: "date" } },
+    { name: "to", in: "query", required: false, schema: { type: "string", format: "date" } },
+  ];
 }
 
 /**
@@ -5399,6 +5434,82 @@ export function GET(request: Request) {
           successCode: EXPENSE_CODES.EXPENSE_UPDATED,
           successDescription: "Expense updated.",
           successMessage: EXPENSE_MESSAGES.EXPENSE_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/reports/summary": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get report summary",
+          description:
+            "Load a business dashboard summary across bookings, revenue, expenses, and product sales.",
+          failureDescription: "Report summary load failed.",
+          requiresAuth: true,
+          parameters: reportQueryParameters(),
+          responseSchema: {
+            type: "object",
+            required: ["bookings", "revenue", "expenses", "productSales"],
+            properties: reportSummarySchema.properties,
+          },
+          successCode: REPORT_CODES.SUMMARY_LOADED,
+          successDescription: "Report summary loaded.",
+          successMessage: REPORT_MESSAGES.SUMMARY_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/reports/revenue": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get revenue report",
+          description:
+            "Load booking and product revenue totals with revenue snapshot rows.",
+          failureDescription: "Revenue report load failed.",
+          requiresAuth: true,
+          parameters: reportQueryParameters(),
+          responseSchema: reportMetricSchema,
+          successCode: REPORT_CODES.REVENUE_REPORT_LOADED,
+          successDescription: "Revenue report loaded.",
+          successMessage: REPORT_MESSAGES.REVENUE_REPORT_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/reports/expenses": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get expense report",
+          description: "Load total expense amount and count for a date range.",
+          failureDescription: "Expense report load failed.",
+          requiresAuth: true,
+          parameters: reportQueryParameters(),
+          responseSchema: reportMetricSchema,
+          successCode: REPORT_CODES.EXPENSE_REPORT_LOADED,
+          successDescription: "Expense report loaded.",
+          successMessage: REPORT_MESSAGES.EXPENSE_REPORT_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/reports/bookings": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get booking report",
+          description: "Load booking counts and booking revenue totals.",
+          failureDescription: "Booking report load failed.",
+          requiresAuth: true,
+          parameters: reportQueryParameters(),
+          responseSchema: reportMetricSchema,
+          successCode: REPORT_CODES.BOOKING_REPORT_LOADED,
+          successDescription: "Booking report loaded.",
+          successMessage: REPORT_MESSAGES.BOOKING_REPORT_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/reports/products": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get product report",
+          description: "Load completed product sale totals for a date range.",
+          failureDescription: "Product report load failed.",
+          requiresAuth: true,
+          parameters: reportQueryParameters(),
+          responseSchema: reportMetricSchema,
+          successCode: REPORT_CODES.PRODUCT_REPORT_LOADED,
+          successDescription: "Product report loaded.",
+          successMessage: REPORT_MESSAGES.PRODUCT_REPORT_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
