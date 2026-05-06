@@ -77,6 +77,10 @@ import {
   USER_CODES,
   USER_MESSAGES,
 } from "@/features/users/constants/user.constants";
+import {
+  NOTIFICATION_CODES,
+  NOTIFICATION_MESSAGES,
+} from "@/features/notifications/constants/notification.constants";
 import { HTTP_STATUS } from "@/lib/constants/http-status";
 
 export const runtime = "nodejs";
@@ -1397,6 +1401,62 @@ const adminMediaRequestSchema: OpenApiRecord = {
 
 const adminMediaPatchSchema: OpenApiRecord = {
   ...adminMediaRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
+const notificationDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "channel", "trigger", "recipient", "messageHi", "status"],
+  properties: {
+    id: { type: "string", example: "cmoknotification0001" },
+    userId: { type: "string", nullable: true },
+    branchId: { type: "string", nullable: true },
+    bookingId: { type: "string", nullable: true },
+    channel: { type: "string", enum: ["WHATSAPP", "SMS", "EMAIL", "PUSH"] },
+    trigger: { type: "string" },
+    recipient: { type: "string", example: "9876543210" },
+    templateKey: { type: "string", nullable: true },
+    messageHi: { type: "string" },
+    provider: { type: "string", nullable: true },
+    providerMessageId: { type: "string", nullable: true },
+    status: { type: "string", enum: ["QUEUED", "SENT", "FAILED", "FALLBACK_SENT"] },
+    retryCount: { type: "integer", example: 0 },
+    scheduledAt: { type: "string", format: "date-time", nullable: true },
+    sentAt: { type: "string", format: "date-time", nullable: true },
+    failedAt: { type: "string", format: "date-time", nullable: true },
+    errorMessage: { type: "string", nullable: true },
+    metadata: { type: "object", additionalProperties: true },
+    user: { type: "object", nullable: true, additionalProperties: true },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminNotificationRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["channel", "trigger", "recipient", "messageHi"],
+  properties: {
+    userId: { type: "string" },
+    branchId: { type: "string" },
+    bookingId: { type: "string" },
+    channel: { type: "string", enum: ["WHATSAPP", "SMS", "EMAIL", "PUSH"] },
+    trigger: { type: "string" },
+    recipient: { type: "string" },
+    templateKey: { type: "string", nullable: true },
+    messageHi: { type: "string" },
+    provider: { type: "string", nullable: true },
+    providerMessageId: { type: "string", nullable: true },
+    status: { type: "string", enum: ["QUEUED", "SENT", "FAILED", "FALLBACK_SENT"] },
+    retryCount: { type: "integer", minimum: 0 },
+    scheduledAt: { type: "string", format: "date-time", nullable: true },
+    errorMessage: { type: "string", nullable: true },
+  },
+};
+
+const adminNotificationPatchSchema: OpenApiRecord = {
+  ...adminNotificationRequestSchema,
   required: undefined,
   minProperties: 1,
 };
@@ -2728,6 +2788,60 @@ export function GET(request: Request) {
           successCode: CONSULTATION_CODES.CONSULTATIONS_LISTED,
           successDescription: "Consultations loaded.",
           successMessage: CONSULTATION_MESSAGES.CONSULTATIONS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/users/me/notifications": jsonEndpoint({
+          method: "get",
+          tag: "User",
+          summary: "List my notifications",
+          description: "List notifications addressed to the current user.",
+          failureDescription: "Notification list load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["notifications", "limit"],
+            properties: {
+              notifications: { type: "array", items: notificationDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: NOTIFICATION_CODES.NOTIFICATION_LISTED,
+          successDescription: "Notifications loaded.",
+          successMessage: NOTIFICATION_MESSAGES.NOTIFICATION_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/users/me/notifications/{notificationId}/read": jsonEndpoint({
+          method: "patch",
+          tag: "User",
+          summary: "Mark notification read",
+          description:
+            "Mark a current user's notification as read using metadata.readAt.",
+          failureDescription: "Notification read update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "notificationId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmoknotification0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["notification"],
+            properties: { notification: notificationDataSchema },
+          },
+          successCode: NOTIFICATION_CODES.NOTIFICATION_MARKED_READ,
+          successDescription: "Notification marked as read.",
+          successMessage: NOTIFICATION_MESSAGES.NOTIFICATION_MARKED_READ,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/bookings": {
@@ -5668,6 +5782,75 @@ export function GET(request: Request) {
             successStatus: HTTP_STATUS.OK,
           }),
         },
+        "/api/v1/admin/notifications": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List notifications",
+            description:
+              "List notification delivery records by branch, user, channel, trigger, or status.",
+            failureDescription: "Notification list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "userId", in: "query", required: false, schema: { type: "string" } },
+              { name: "channel", in: "query", required: false, schema: { type: "string" } },
+              { name: "trigger", in: "query", required: false, schema: { type: "string" } },
+              { name: "status", in: "query", required: false, schema: { type: "string" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["notifications", "limit"],
+              properties: {
+                notifications: { type: "array", items: notificationDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: NOTIFICATION_CODES.NOTIFICATION_LISTED,
+            successDescription: "Notifications loaded.",
+            successMessage: NOTIFICATION_MESSAGES.NOTIFICATION_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create notification",
+            description: "Create one queued notification record for provider delivery.",
+            failureDescription: "Notification creation failed.",
+            requiresAuth: true,
+            requestSchema: adminNotificationRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["notification"],
+              properties: { notification: notificationDataSchema },
+            },
+            successCode: NOTIFICATION_CODES.NOTIFICATION_CREATED,
+            successDescription: "Notification created.",
+            successMessage: NOTIFICATION_MESSAGES.NOTIFICATION_CREATED,
+          }),
+        },
+        "/api/v1/admin/notifications/{notificationId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update notification",
+          description: "Update notification delivery metadata, status, retry, or schedule.",
+          failureDescription: "Notification update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "notificationId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminNotificationPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["notification"],
+            properties: { notification: notificationDataSchema },
+          },
+          successCode: NOTIFICATION_CODES.NOTIFICATION_UPDATED,
+          successDescription: "Notification updated.",
+          successMessage: NOTIFICATION_MESSAGES.NOTIFICATION_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/reviews/{reviewId}": jsonEndpoint({
           method: "patch",
           tag: "Admin",
