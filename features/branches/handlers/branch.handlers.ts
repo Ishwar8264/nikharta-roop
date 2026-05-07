@@ -56,6 +56,32 @@ export async function handleCreateBranch(request: Request) {
 }
 
 /**
+ * Handles admin branch listing including inactive records.
+ */
+export async function handleAdminListBranches(request: Request) {
+  const auth = await requireBranchAdmin(request);
+
+  if (!auth.success) {
+    return auth.error;
+  }
+
+  return adminListBranches(auth.session.user);
+}
+
+/**
+ * Handles admin branch detail loading including inactive records.
+ */
+export async function handleAdminGetBranch(request: Request, branchId: string) {
+  const auth = await requireBranchAdmin(request);
+
+  if (!auth.success) {
+    return auth.error;
+  }
+
+  return adminGetBranch(branchId, auth.session.user);
+}
+
+/**
  * Handles admin branch updates.
  */
 export async function handleUpdateBranch(request: Request, branchId: string) {
@@ -72,6 +98,88 @@ export async function handleUpdateBranch(request: Request, branchId: string) {
   }
 
   return updateBranch(branchId, parsedBody.data, auth.session.user);
+}
+
+/**
+ * Lists branches visible to the authenticated admin.
+ */
+async function adminListBranches(adminUser: BranchAdminUser) {
+  try {
+    const branches = await getDb().branch.findMany({
+      orderBy: [{ city: "asc" }, { nameHi: "asc" }],
+      select: branchSelect(),
+      where: {
+        id: adminUser.role === "SUPER_ADMIN" ? undefined : adminUser.branchId ?? "",
+      },
+    });
+
+    return branchJson({
+      code: BRANCH_CODES.BRANCHES_LISTED,
+      data: { branches: branches.map(toPublicBranch) },
+      message: BRANCH_MESSAGES.BRANCHES_LISTED,
+      status: HTTP_STATUS.OK,
+      success: true,
+    });
+  } catch (error) {
+    console.error(BRANCH_CODES.BRANCHES_LOAD_FAILED, {
+      error,
+      handler: "adminListBranches",
+    });
+
+    return branchError({
+      code: BRANCH_CODES.BRANCHES_LOAD_FAILED,
+      message: BRANCH_MESSAGES.BRANCHES_LOAD_FAILED,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
+  }
+}
+
+/**
+ * Loads one branch after validating admin branch scope.
+ */
+async function adminGetBranch(branchId: string, adminUser: BranchAdminUser) {
+  try {
+    if (!canManageBranch(adminUser, branchId)) {
+      return branchError({
+        code: BRANCH_CODES.FORBIDDEN,
+        message: BRANCH_MESSAGES.FORBIDDEN,
+        status: HTTP_STATUS.FORBIDDEN,
+      });
+    }
+
+    const branch = await getDb().branch.findUnique({
+      select: branchSelect(),
+      where: { id: branchId },
+    });
+
+    if (!branch) {
+      return branchError({
+        code: BRANCH_CODES.BRANCH_NOT_FOUND,
+        message: BRANCH_MESSAGES.BRANCH_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND,
+      });
+    }
+
+    return branchJson({
+      code: BRANCH_CODES.BRANCH_LOADED,
+      data: { branch: toPublicBranch(branch) },
+      message: BRANCH_MESSAGES.BRANCH_LOADED,
+      status: HTTP_STATUS.OK,
+      success: true,
+    });
+  } catch (error) {
+    console.error(BRANCH_CODES.BRANCH_LOAD_FAILED, {
+      branchId,
+      error,
+      handler: "adminGetBranch",
+    });
+
+    return branchError({
+      code: BRANCH_CODES.BRANCH_LOAD_FAILED,
+      message: BRANCH_MESSAGES.BRANCH_LOAD_FAILED,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
+  }
 }
 
 /**

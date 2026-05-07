@@ -10,6 +10,18 @@ import {
   AUTH_EVENT_MESSAGES,
 } from "@/features/auth-events/constants/auth-event.constants";
 import {
+  ADMIN_DASHBOARD_CODES,
+  ADMIN_DASHBOARD_MESSAGES,
+} from "@/features/admin-dashboard/constants/admin-dashboard.constants";
+import {
+  ADMIN_PAYMENT_CODES,
+  ADMIN_PAYMENT_MESSAGES,
+} from "@/features/admin-payments/constants/admin-payment.constants";
+import {
+  ADMIN_USER_CODES,
+  ADMIN_USER_MESSAGES,
+} from "@/features/admin-users/constants/admin-user.constants";
+import {
   BOOKING_CODES,
   BOOKING_MESSAGES,
 } from "@/features/bookings/constants/booking.constants";
@@ -188,6 +200,47 @@ const authUserDataSchema: OpenApiRecord = {
   type: "object",
   required: ["id", "mobile", "role", "mobileVerifiedAt"],
   properties: authUserProperties,
+};
+
+const adminUserDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "mobile", "role", "isActive", "createdAt", "updatedAt"],
+  properties: {
+    ...authUserProperties,
+    avatarUrl: { type: "string", nullable: true },
+    branch: { type: "object", nullable: true, additionalProperties: true },
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    isActive: { type: "boolean", example: true },
+    lastLoginAt: { type: "string", format: "date-time", nullable: true },
+    loyaltyPoints: { type: "integer", example: 120 },
+    notificationPreferences: { type: "object", additionalProperties: true },
+    profileCompletedAt: { type: "string", format: "date-time", nullable: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminUserPatchSchema: OpenApiRecord = {
+  type: "object",
+  minProperties: 1,
+  properties: {
+    branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+    email: { type: "string", format: "email", nullable: true },
+    isActive: { type: "boolean", example: true },
+    name: { type: "string", nullable: true, example: "Priya" },
+    role: { type: "string", enum: ["USER", "ADMIN", "SUPER_ADMIN"] },
+  },
+};
+
+const adminUserSuspendSchema: OpenApiRecord = {
+  type: "object",
+  properties: {
+    isActive: {
+      type: "boolean",
+      default: false,
+      description: "Send false to suspend, true to reactivate.",
+    },
+  },
 };
 
 const profileUserDataSchema: OpenApiRecord = {
@@ -1430,6 +1483,35 @@ const reportSummarySchema: OpenApiRecord = {
   },
 };
 
+const adminDashboardSchema: OpenApiRecord = {
+  type: "object",
+  required: ["bookings", "revenue", "staff"],
+  properties: {
+    bookings: {
+      type: "object",
+      properties: {
+        cancelled: { type: "integer", example: 1 },
+        confirmed: { type: "integer", example: 6 },
+        pending: { type: "integer", example: 3 },
+        total: { type: "integer", example: 12 },
+      },
+    },
+    revenue: {
+      type: "object",
+      properties: {
+        advance: { type: "string", example: "2500.00" },
+        bookingTotal: { type: "string", example: "12000.00" },
+        discount: { type: "string", example: "500.00" },
+        productTotal: { type: "string", example: "1800.00" },
+      },
+    },
+    staff: {
+      type: "object",
+      properties: { available: { type: "integer", example: 8 } },
+    },
+  },
+};
+
 const reportMetricSchema: OpenApiRecord = {
   type: "object",
   additionalProperties: true,
@@ -2097,6 +2179,16 @@ const paymentDataSchema: OpenApiRecord = {
     },
     createdAt: { type: "string", format: "date-time" },
     updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminPaymentDataSchema: OpenApiRecord = {
+  ...paymentDataSchema,
+  properties: {
+    ...(paymentDataSchema.properties as OpenApiRecord),
+    booking: { type: "object", additionalProperties: true },
+    user: { type: "object", additionalProperties: true },
+    userId: { type: "string", example: "cmokuser0001" },
   },
 };
 
@@ -4307,6 +4399,117 @@ export function GET(request: Request) {
           successMessage: REVIEW_MESSAGES.REVIEW_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/dashboard": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get dashboard",
+          description:
+            "Load today's bookings, revenue, pending actions, and staff quick stats.",
+          failureDescription: "Dashboard load failed.",
+          requiresAuth: true,
+          responseSchema: adminDashboardSchema,
+          successCode: ADMIN_DASHBOARD_CODES.DASHBOARD_LOADED,
+          successDescription: "Dashboard loaded.",
+          successMessage: ADMIN_DASHBOARD_MESSAGES.DASHBOARD_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/users": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List users",
+          description:
+            "List customers and admins with branch, role, active, and text filters.",
+          failureDescription: "User list load failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+            { name: "role", in: "query", required: false, schema: { type: "string" } },
+            { name: "isActive", in: "query", required: false, schema: { type: "boolean" } },
+            { name: "search", in: "query", required: false, schema: { type: "string" } },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["users", "limit"],
+            properties: {
+              users: { type: "array", items: adminUserDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: ADMIN_USER_CODES.USER_LISTED,
+          successDescription: "Users loaded.",
+          successMessage: ADMIN_USER_MESSAGES.USER_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/users/{userId}": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "Get user",
+            description: "Load one customer or admin user by id.",
+            failureDescription: "User load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "userId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["user"],
+              properties: { user: adminUserDataSchema },
+            },
+            successCode: ADMIN_USER_CODES.USER_LOADED,
+            successDescription: "User loaded.",
+            successMessage: ADMIN_USER_MESSAGES.USER_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update user",
+            description: "Update editable admin-owned user fields.",
+            failureDescription: "User update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "userId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminUserPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["user"],
+              properties: { user: adminUserDataSchema },
+            },
+            successCode: ADMIN_USER_CODES.USER_UPDATED,
+            successDescription: "User updated.",
+            successMessage: ADMIN_USER_MESSAGES.USER_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
+        "/api/v1/admin/users/{userId}/suspend": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Suspend user",
+          description: "Suspend or reactivate one manageable user account.",
+          failureDescription: "User suspend failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "userId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminUserSuspendSchema,
+          responseSchema: {
+            type: "object",
+            required: ["user"],
+            properties: { user: adminUserDataSchema },
+          },
+          successCode: ADMIN_USER_CODES.USER_UPDATED,
+          successDescription: "User updated.",
+          successMessage: ADMIN_USER_MESSAGES.USER_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/auth-events": jsonEndpoint({
           method: "get",
           tag: "Admin",
@@ -4417,59 +4620,89 @@ export function GET(request: Request) {
           successMessage: AUTH_EVENT_MESSAGES.EVENT_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
-        "/api/v1/admin/branches": jsonEndpoint({
-          method: "post",
-          tag: "Admin",
-          summary: "Create branch",
-          description:
-            "Create a branch and return the generated branch id. Supports map-ready coordinates, Google Maps URL, and Google place id. Requires ADMIN or SUPER_ADMIN.",
-          failureDescription: "Branch creation failed.",
-          requiresAuth: true,
-          requestSchema: branchRequestSchema,
-          responseSchema: {
-            type: "object",
-            required: ["branchId", "branch"],
-            properties: {
-              branchId: { type: "string", example: "cmokbranch0001" },
-              branch: branchDataSchema,
+        "/api/v1/admin/branches": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List admin branches",
+            description: "List branches visible to the authenticated admin.",
+            failureDescription: "Branch list load failed.",
+            requiresAuth: true,
+            responseSchema: {
+              type: "object",
+              required: ["branches"],
+              properties: { branches: { type: "array", items: branchDataSchema } },
             },
-          },
-          successCode: BRANCH_CODES.BRANCH_CREATED,
-          successDescription: "Branch created.",
-          successMessage: BRANCH_MESSAGES.BRANCH_CREATED,
-        }),
-        "/api/v1/admin/branches/{branchId}": jsonEndpoint({
-          method: "patch",
-          tag: "Admin",
-          summary: "Update branch",
-          description:
-            "Update one or more branch fields. Omitted fields stay unchanged. Requires ADMIN or SUPER_ADMIN.",
-          failureDescription: "Branch update failed.",
-          requiresAuth: true,
-          parameters: [
-            {
-              name: "branchId",
-              in: "path",
-              required: true,
-              schema: {
-                type: "string",
-                example: "cmokbranch0001",
+            successCode: BRANCH_CODES.BRANCHES_LISTED,
+            successDescription: "Branches loaded.",
+            successMessage: BRANCH_MESSAGES.BRANCHES_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create branch",
+            description:
+              "Create a branch and return the generated branch id. Requires SUPER_ADMIN.",
+            failureDescription: "Branch creation failed.",
+            requiresAuth: true,
+            requestSchema: branchRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["branchId", "branch"],
+              properties: {
+                branchId: { type: "string", example: "cmokbranch0001" },
+                branch: branchDataSchema,
               },
             },
-          ],
-          requestSchema: branchPatchRequestSchema,
-          responseSchema: {
-            type: "object",
-            required: ["branch"],
-            properties: {
-              branch: branchDataSchema,
+            successCode: BRANCH_CODES.BRANCH_CREATED,
+            successDescription: "Branch created.",
+            successMessage: BRANCH_MESSAGES.BRANCH_CREATED,
+          }),
+        },
+        "/api/v1/admin/branches/{branchId}": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "Get admin branch",
+            description: "Load one branch including inactive admin-visible records.",
+            failureDescription: "Branch load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["branch"],
+              properties: { branch: branchDataSchema },
             },
-          },
-          successCode: BRANCH_CODES.BRANCH_UPDATED,
-          successDescription: "Branch updated.",
-          successMessage: BRANCH_MESSAGES.BRANCH_UPDATED,
-          successStatus: HTTP_STATUS.OK,
-        }),
+            successCode: BRANCH_CODES.BRANCH_LOADED,
+            successDescription: "Branch loaded.",
+            successMessage: BRANCH_MESSAGES.BRANCH_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update branch",
+            description: "Update one or more branch fields. Omitted fields stay unchanged.",
+            failureDescription: "Branch update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: branchPatchRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["branch"],
+              properties: { branch: branchDataSchema },
+            },
+            successCode: BRANCH_CODES.BRANCH_UPDATED,
+            successDescription: "Branch updated.",
+            successMessage: BRANCH_MESSAGES.BRANCH_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/branches/{branchId}/holidays": {
           ...jsonEndpoint({
             method: "get",
@@ -6078,6 +6311,57 @@ export function GET(request: Request) {
           successCode: EXPENSE_CODES.EXPENSE_UPDATED,
           successDescription: "Expense updated.",
           successMessage: EXPENSE_MESSAGES.EXPENSE_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/payments": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List payments",
+          description:
+            "List payments by branch, booking, user, provider, status, or created date.",
+          failureDescription: "Payment list load failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+            { name: "bookingId", in: "query", required: false, schema: { type: "string" } },
+            { name: "userId", in: "query", required: false, schema: { type: "string" } },
+            { name: "provider", in: "query", required: false, schema: { type: "string" } },
+            { name: "status", in: "query", required: false, schema: { type: "string" } },
+            { name: "from", in: "query", required: false, schema: { type: "string" } },
+            { name: "to", in: "query", required: false, schema: { type: "string" } },
+            { name: "limit", in: "query", required: false, schema: { type: "integer" } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["payments", "limit"],
+            properties: {
+              payments: { type: "array", items: adminPaymentDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: ADMIN_PAYMENT_CODES.PAYMENT_LISTED,
+          successDescription: "Payments loaded.",
+          successMessage: ADMIN_PAYMENT_MESSAGES.PAYMENT_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/payments/{paymentId}": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get payment",
+          description: "Load one payment ledger row with booking and user context.",
+          failureDescription: "Payment load failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "paymentId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["payment"],
+            properties: { payment: adminPaymentDataSchema },
+          },
+          successCode: ADMIN_PAYMENT_CODES.PAYMENT_LOADED,
+          successDescription: "Payment loaded.",
+          successMessage: ADMIN_PAYMENT_MESSAGES.PAYMENT_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/refunds": jsonEndpoint({
