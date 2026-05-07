@@ -134,10 +134,11 @@ async function createBookingPayment(
   try {
     const payment = await getDb().$transaction(async (tx) => {
       const booking = await tx.booking.findFirst({
-        select: {
-          advanceAmount: true,
-          id: true,
-          status: true,
+            select: {
+              advanceAmount: true,
+              discountAmount: true,
+              id: true,
+              status: true,
           totalAmount: true,
           userId: true,
         },
@@ -182,7 +183,7 @@ async function createBookingPayment(
         return reusablePayment;
       }
 
-      const amount = booking.advanceAmount ?? booking.totalAmount;
+      const amount = booking.advanceAmount ?? booking.totalAmount.minus(booking.discountAmount);
       const payment = await tx.payment.create({
         data: {
           amount,

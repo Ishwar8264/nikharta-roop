@@ -877,6 +877,32 @@ const validateOfferRequestSchema: OpenApiRecord = {
   },
 };
 
+const redeemOfferRequestSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  required: ["bookingId", "code"],
+  properties: {
+    bookingId: { type: "string", example: "cmokbooking0001" },
+    code: { type: "string", example: "BRIDAL10" },
+  },
+};
+
+const offerRedemptionDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "offerId", "bookingId", "userId", "discountAmount", "createdAt"],
+  properties: {
+    id: { type: "string", example: "cmokredemption0001" },
+    offerId: { type: "string", example: "cmokoffer0001" },
+    bookingId: { type: "string", example: "cmokbooking0001" },
+    userId: { type: "string", example: "cmokuser0001" },
+    discountAmount: { type: "string", example: "500.00" },
+    offer: { type: "object", additionalProperties: true },
+    booking: { type: "object", additionalProperties: true },
+    user: { type: "object", additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
 const adminOfferRequestSchema: OpenApiRecord = {
   type: "object",
   additionalProperties: false,
@@ -2906,6 +2932,34 @@ export function GET(request: Request) {
           successMessage: LOYALTY_MESSAGES.TRANSACTIONS_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/users/me/offers/redemptions": jsonEndpoint({
+          method: "get",
+          tag: "User",
+          summary: "List my offer redemptions",
+          description: "List offer redemptions created by the current user.",
+          failureDescription: "Offer redemption list load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["redemptions", "limit"],
+            properties: {
+              redemptions: { type: "array", items: offerRedemptionDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: OFFER_CODES.OFFER_REDEMPTIONS_LISTED,
+          successDescription: "Offer redemptions loaded.",
+          successMessage: OFFER_MESSAGES.OFFER_REDEMPTIONS_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/users/me/notifications": jsonEndpoint({
           method: "get",
           tag: "User",
@@ -3781,6 +3835,24 @@ export function GET(request: Request) {
           successDescription: "Offer validated.",
           successMessage: OFFER_MESSAGES.OFFER_VALIDATED,
           successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/offers/redeem": jsonEndpoint({
+          method: "post",
+          tag: "Offers",
+          summary: "Redeem offer",
+          description:
+            "Redeem a validated coupon against the current user's pending booking before payment creation.",
+          failureDescription: "Offer redemption failed.",
+          requiresAuth: true,
+          requestSchema: redeemOfferRequestSchema,
+          responseSchema: {
+            type: "object",
+            required: ["redemption"],
+            properties: { redemption: offerRedemptionDataSchema },
+          },
+          successCode: OFFER_CODES.OFFER_REDEEMED,
+          successDescription: "Offer redeemed.",
+          successMessage: OFFER_MESSAGES.OFFER_REDEEMED,
         }),
         "/api/v1/portfolio": jsonEndpoint({
           method: "get",
@@ -5057,6 +5129,34 @@ export function GET(request: Request) {
           successCode: OFFER_CODES.OFFER_SERVICE_REMOVED,
           successDescription: "Offer service removed.",
           successMessage: OFFER_MESSAGES.OFFER_SERVICE_REMOVED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/offers/redemptions": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List offer redemptions",
+          description:
+            "List coupon redemptions by booking branch, offer, booking, or user. Branch admins are scoped to their branch bookings.",
+          failureDescription: "Offer redemption list load failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+            { name: "offerId", in: "query", required: false, schema: { type: "string" } },
+            { name: "bookingId", in: "query", required: false, schema: { type: "string" } },
+            { name: "userId", in: "query", required: false, schema: { type: "string" } },
+            { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["redemptions", "limit"],
+            properties: {
+              redemptions: { type: "array", items: offerRedemptionDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: OFFER_CODES.OFFER_REDEMPTIONS_LISTED,
+          successDescription: "Offer redemptions loaded.",
+          successMessage: OFFER_MESSAGES.OFFER_REDEMPTIONS_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/portfolio": {

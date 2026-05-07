@@ -21,6 +21,13 @@ export function handleOfferError(
     });
   }
   if (isUniqueError(error)) {
+    if (isRedemptionUniqueError(error)) {
+      return offerError({
+        code: OFFER_CODES.OFFER_REDEMPTION_DUPLICATE,
+        message: OFFER_MESSAGES.OFFER_REDEMPTION_DUPLICATE,
+        status: HTTP_STATUS.CONFLICT,
+      });
+    }
     return offerError({
       code: OFFER_CODES.OFFER_DUPLICATE,
       message: OFFER_MESSAGES.OFFER_DUPLICATE,
@@ -67,4 +74,14 @@ function isUniqueError(error: unknown) {
     "code" in error &&
     error.code === "P2002"
   );
+}
+
+/**
+ * Detects duplicate redemption writes for the same offer and booking.
+ */
+function isRedemptionUniqueError(error: unknown) {
+  if (!isUniqueError(error) || typeof error !== "object" || error === null) return false;
+  const meta = "meta" in error ? error.meta : null;
+  if (!meta || typeof meta !== "object" || !("target" in meta)) return false;
+  return String(meta.target).includes("offerId") && String(meta.target).includes("bookingId");
 }
