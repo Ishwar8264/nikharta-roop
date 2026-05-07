@@ -50,6 +50,10 @@ import {
   EXPENSE_MESSAGES,
 } from "@/features/expenses/constants/expense.constants";
 import {
+  REFUND_CODES,
+  REFUND_MESSAGES,
+} from "@/features/refunds/constants/refund.constants";
+import {
   REPORT_CODES,
   REPORT_MESSAGES,
 } from "@/features/reports/constants/report.constants";
@@ -1894,14 +1898,19 @@ const refundDataSchema: OpenApiRecord = {
   required: ["id", "status", "amount", "requestedAt", "createdAt", "updatedAt"],
   properties: {
     id: { type: "string", example: "cmokrefund0001" },
+    paymentId: { type: "string", example: "cmokpayment0001" },
+    bookingId: { type: "string", example: "cmokbooking0001" },
     status: {
       type: "string",
       enum: ["REQUESTED", "PROCESSING", "SUCCEEDED", "FAILED"],
       example: "REQUESTED",
     },
     amount: { type: "string", example: "499.00" },
+    reasonHi: { type: "string", nullable: true, example: "Customer cancelled." },
     reason: { type: "string", nullable: true, example: "Customer cancelled." },
     providerRefundId: { type: "string", nullable: true },
+    booking: { type: "object", additionalProperties: true },
+    payment: { type: "object", additionalProperties: true },
     requestedAt: { type: "string", format: "date-time" },
     processedAt: { type: "string", format: "date-time", nullable: true },
     createdAt: { type: "string", format: "date-time" },
@@ -2004,6 +2013,18 @@ const createRefundRequestSchema: OpenApiRecord = {
       maxLength: 300,
       example: "Customer cancelled booking.",
     },
+  },
+};
+
+const adminRefundPatchSchema: OpenApiRecord = {
+  type: "object",
+  additionalProperties: false,
+  minProperties: 1,
+  properties: {
+    status: { type: "string", enum: ["REQUESTED", "PROCESSING", "SUCCEEDED", "FAILED"] },
+    providerRefundId: { type: "string", nullable: true },
+    processedAt: { type: "string", format: "date-time", nullable: true },
+    reasonHi: { type: "string", nullable: true, maxLength: 300 },
   },
 };
 
@@ -5705,6 +5726,83 @@ export function GET(request: Request) {
           successMessage: EXPENSE_MESSAGES.EXPENSE_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/refunds": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List refunds",
+          description:
+            "List refund requests by branch, payment, booking, or status. Branch admins are scoped to their branch bookings.",
+          failureDescription: "Refund list load failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+            { name: "paymentId", in: "query", required: false, schema: { type: "string" } },
+            { name: "bookingId", in: "query", required: false, schema: { type: "string" } },
+            {
+              name: "status",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["REQUESTED", "PROCESSING", "SUCCEEDED", "FAILED"] },
+            },
+            { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["refunds", "limit"],
+            properties: {
+              refunds: { type: "array", items: refundDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: REFUND_CODES.REFUND_LISTED,
+          successDescription: "Refunds loaded.",
+          successMessage: REFUND_MESSAGES.REFUND_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/refunds/{refundId}": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "Get refund",
+            description: "Load one refund request with booking and payment context.",
+            failureDescription: "Refund detail load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "refundId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["refund"],
+              properties: { refund: refundDataSchema },
+            },
+            successCode: REFUND_CODES.REFUND_LOADED,
+            successDescription: "Refund loaded.",
+            successMessage: REFUND_MESSAGES.REFUND_LOADED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "patch",
+            tag: "Admin",
+            summary: "Update refund",
+            description:
+              "Move refund status, store provider refund id, and mark processed refunds.",
+            failureDescription: "Refund update failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "refundId", in: "path", required: true, schema: { type: "string" } },
+            ],
+            requestSchema: adminRefundPatchSchema,
+            responseSchema: {
+              type: "object",
+              required: ["refund"],
+              properties: { refund: refundDataSchema },
+            },
+            successCode: REFUND_CODES.REFUND_UPDATED,
+            successDescription: "Refund updated.",
+            successMessage: REFUND_MESSAGES.REFUND_UPDATED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+        },
         "/api/v1/admin/reports/summary": jsonEndpoint({
           method: "get",
           tag: "Admin",
