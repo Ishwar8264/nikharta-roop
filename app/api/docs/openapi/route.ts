@@ -66,6 +66,10 @@ import {
   REPORT_MESSAGES,
 } from "@/features/reports/constants/report.constants";
 import {
+  REVENUE_SNAPSHOT_CODES,
+  REVENUE_SNAPSHOT_MESSAGES,
+} from "@/features/revenue-snapshots/constants/revenue-snapshot.constants";
+import {
   MEDIA_CODES,
   MEDIA_MESSAGES,
 } from "@/features/media/constants/media.constants";
@@ -1432,6 +1436,54 @@ const reportMetricSchema: OpenApiRecord = {
   example: {
     total: "12000.00",
     totalCount: 12,
+  },
+};
+
+const revenueSnapshotDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "branchId", "date", "bookingCount", "grossRevenue"],
+  properties: {
+    id: { type: "string", example: "cmoksnapshot0001" },
+    branchId: { type: "string", example: "cmokbranch0001" },
+    date: { type: "string", format: "date-time" },
+    bookingCount: { type: "integer", example: 18 },
+    completedCount: { type: "integer", example: 15 },
+    cancelledCount: { type: "integer", example: 2 },
+    grossRevenue: { type: "string", example: "18500.00" },
+    advanceRevenue: { type: "string", example: "4500.00" },
+    discountTotal: { type: "string", example: "750.00" },
+    branch: { type: "object", additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const revenueSnapshotRequestSchema: OpenApiRecord = {
+  type: "object",
+  required: ["branchId", "date"],
+  properties: {
+    branchId: { type: "string", example: "cmokbranch0001" },
+    date: { type: "string", format: "date", example: "2026-05-07" },
+    bookingCount: { type: "integer", minimum: 0, example: 18 },
+    completedCount: { type: "integer", minimum: 0, example: 15 },
+    cancelledCount: { type: "integer", minimum: 0, example: 2 },
+    grossRevenue: { type: "number", minimum: 0, example: 18500 },
+    advanceRevenue: { type: "number", minimum: 0, example: 4500 },
+    discountTotal: { type: "number", minimum: 0, example: 750 },
+  },
+};
+
+const revenueSnapshotPatchSchema: OpenApiRecord = {
+  ...revenueSnapshotRequestSchema,
+  required: undefined,
+  minProperties: 1,
+  properties: {
+    bookingCount: { type: "integer", minimum: 0, example: 18 },
+    completedCount: { type: "integer", minimum: 0, example: 15 },
+    cancelledCount: { type: "integer", minimum: 0, example: 2 },
+    grossRevenue: { type: "number", minimum: 0, example: 18500 },
+    advanceRevenue: { type: "number", minimum: 0, example: 4500 },
+    discountTotal: { type: "number", minimum: 0, example: 750 },
   },
 };
 
@@ -6215,6 +6267,81 @@ export function GET(request: Request) {
           successCode: REPORT_CODES.REVENUE_REPORT_LOADED,
           successDescription: "Revenue report loaded.",
           successMessage: REPORT_MESSAGES.REVENUE_REPORT_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/revenue-snapshots": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List revenue snapshots",
+            description:
+              "List daily revenue snapshot rows. Branch admins are scoped to their branch.",
+            failureDescription: "Revenue snapshot list load failed.",
+            requiresAuth: true,
+            parameters: [
+              ...reportQueryParameters(),
+              {
+                name: "limit",
+                in: "query",
+                required: false,
+                schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+              },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["snapshots", "limit"],
+              properties: {
+                snapshots: { type: "array", items: revenueSnapshotDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: REVENUE_SNAPSHOT_CODES.SNAPSHOT_LISTED,
+            successDescription: "Revenue snapshots loaded.",
+            successMessage: REVENUE_SNAPSHOT_MESSAGES.SNAPSHOT_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create revenue snapshot",
+            description: "Create one daily revenue snapshot for a branch.",
+            failureDescription: "Revenue snapshot creation failed.",
+            requiresAuth: true,
+            requestSchema: revenueSnapshotRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["snapshot"],
+              properties: { snapshot: revenueSnapshotDataSchema },
+            },
+            successCode: REVENUE_SNAPSHOT_CODES.SNAPSHOT_CREATED,
+            successDescription: "Revenue snapshot created.",
+            successMessage: REVENUE_SNAPSHOT_MESSAGES.SNAPSHOT_CREATED,
+          }),
+        },
+        "/api/v1/admin/revenue-snapshots/{snapshotId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update revenue snapshot",
+          description: "Update editable totals on one revenue snapshot.",
+          failureDescription: "Revenue snapshot update failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "snapshotId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmoksnapshot0001" },
+            },
+          ],
+          requestSchema: revenueSnapshotPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["snapshot"],
+            properties: { snapshot: revenueSnapshotDataSchema },
+          },
+          successCode: REVENUE_SNAPSHOT_CODES.SNAPSHOT_UPDATED,
+          successDescription: "Revenue snapshot updated.",
+          successMessage: REVENUE_SNAPSHOT_MESSAGES.SNAPSHOT_UPDATED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/reports/expenses": jsonEndpoint({
