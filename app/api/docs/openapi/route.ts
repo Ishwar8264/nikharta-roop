@@ -6,6 +6,10 @@ import {
   AUTH_OTP_CONFIG,
 } from "@/features/auth/constants/auth.constants";
 import {
+  AUTH_EVENT_CODES,
+  AUTH_EVENT_MESSAGES,
+} from "@/features/auth-events/constants/auth-event.constants";
+import {
   BOOKING_CODES,
   BOOKING_MESSAGES,
 } from "@/features/bookings/constants/booking.constants";
@@ -53,6 +57,10 @@ import {
   REFUND_CODES,
   REFUND_MESSAGES,
 } from "@/features/refunds/constants/refund.constants";
+import {
+  STAFF_COMMISSION_CODES,
+  STAFF_COMMISSION_MESSAGES,
+} from "@/features/staff-commissions/constants/staff-commission.constants";
 import {
   REPORT_CODES,
   REPORT_MESSAGES,
@@ -1363,6 +1371,50 @@ const adminExpensePatchSchema: OpenApiRecord = {
   minProperties: 1,
 };
 
+const staffCommissionDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "staffId", "status", "baseAmount", "commissionAmount"],
+  properties: {
+    id: { type: "string", example: "cmokcommission0001" },
+    staffId: { type: "string", example: "cmokstaff0001" },
+    bookingId: { type: "string", nullable: true, example: "cmokbooking0001" },
+    productSaleId: { type: "string", nullable: true, example: "cmoksale0001" },
+    status: { type: "string", enum: ["PENDING", "APPROVED", "PAID", "CANCELLED"] },
+    baseAmount: { type: "string", example: "2500" },
+    commissionRate: { type: "string", nullable: true, example: "10" },
+    commissionAmount: { type: "string", example: "250" },
+    paidAt: { type: "string", format: "date-time", nullable: true },
+    staff: { type: "object", additionalProperties: true },
+    booking: { type: "object", nullable: true, additionalProperties: true },
+    productSale: { type: "object", nullable: true, additionalProperties: true },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+  },
+};
+
+const adminStaffCommissionRequestSchema: OpenApiRecord = {
+  type: "object",
+  description:
+    "Send commissionAmount directly or send commissionRate to calculate amount from baseAmount.",
+  required: ["staffId", "baseAmount"],
+  properties: {
+    staffId: { type: "string", example: "cmokstaff0001" },
+    bookingId: { type: "string", example: "cmokbooking0001" },
+    productSaleId: { type: "string", example: "cmoksale0001" },
+    status: { type: "string", enum: ["PENDING", "APPROVED", "PAID", "CANCELLED"] },
+    baseAmount: { type: "number", example: 2500 },
+    commissionRate: { type: "number", nullable: true, minimum: 0, maximum: 100 },
+    commissionAmount: { type: "number", example: 250 },
+    paidAt: { type: "string", format: "date-time", nullable: true },
+  },
+};
+
+const adminStaffCommissionPatchSchema: OpenApiRecord = {
+  ...adminStaffCommissionRequestSchema,
+  required: undefined,
+  minProperties: 1,
+};
+
 const reportSummarySchema: OpenApiRecord = {
   type: "object",
   required: ["bookings", "revenue", "expenses", "productSales"],
@@ -2061,6 +2113,46 @@ const authSessionDataSchema: OpenApiRecord = {
     id: { type: "string", example: "cmokabtp40002fjw9v6ehw21x" },
     expiresAt: { type: "string", format: "date-time" },
     user: authUserDataSchema,
+  },
+};
+
+const authEventDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "type", "metadata", "createdAt"],
+  properties: {
+    id: { type: "string", example: "cmokauthevent0001" },
+    userId: { type: "string", nullable: true, example: "cmokuser0001" },
+    mobile: { type: "string", nullable: true, example: "9876543210" },
+    type: {
+      type: "string",
+      enum: [
+        "OTP_REQUESTED",
+        "OTP_VERIFIED",
+        "OTP_FAILED",
+        "SIGNUP_STARTED",
+        "SIGNUP_COMPLETED",
+        "LOGIN_COMPLETED",
+        "LOGOUT_COMPLETED",
+        "TOKEN_REVOKED",
+        "ACCOUNT_SUSPENDED",
+      ],
+      example: "LOGIN_COMPLETED",
+    },
+    ipAddress: { type: "string", nullable: true, example: "203.0.113.12" },
+    userAgent: { type: "string", nullable: true, example: "Mozilla/5.0" },
+    metadata: { type: "object", additionalProperties: true },
+    user: {
+      type: "object",
+      nullable: true,
+      properties: {
+        branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+        id: { type: "string", example: "cmokuser0001" },
+        mobile: { type: "string", example: "9876543210" },
+        name: { type: "string", nullable: true, example: "Priya" },
+        role: { type: "string", example: "USER" },
+      },
+    },
+    createdAt: { type: "string", format: "date-time" },
   },
 };
 
@@ -4163,6 +4255,116 @@ export function GET(request: Request) {
           successMessage: REVIEW_MESSAGES.REVIEW_LISTED,
           successStatus: HTTP_STATUS.OK,
         }),
+        "/api/v1/admin/auth-events": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List auth events",
+          description:
+            "List authentication audit events. SUPER_ADMIN can inspect all events; " +
+            "branch admins only see events tied to users in their branch.",
+          failureDescription: "Auth event list load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "userId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokuser0001" },
+            },
+            {
+              name: "mobile",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                pattern: "^\\d{10}$",
+                example: "9876543210",
+              },
+            },
+            {
+              name: "type",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                enum: [
+                  "OTP_REQUESTED",
+                  "OTP_VERIFIED",
+                  "OTP_FAILED",
+                  "SIGNUP_STARTED",
+                  "SIGNUP_COMPLETED",
+                  "LOGIN_COMPLETED",
+                  "LOGOUT_COMPLETED",
+                  "TOKEN_REVOKED",
+                  "ACCOUNT_SUSPENDED",
+                ],
+              },
+            },
+            {
+              name: "from",
+              in: "query",
+              required: false,
+              schema: { type: "string", format: "date" },
+            },
+            {
+              name: "to",
+              in: "query",
+              required: false,
+              schema: { type: "string", format: "date" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["events", "limit"],
+            properties: {
+              events: { type: "array", items: authEventDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: AUTH_EVENT_CODES.EVENT_LISTED,
+          successDescription: "Auth events loaded.",
+          successMessage: AUTH_EVENT_MESSAGES.EVENT_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/auth-events/{eventId}": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get auth event",
+          description:
+            "Load one authentication audit event by id. " +
+            "Branch admins can only load events for users in their branch.",
+          failureDescription: "Auth event load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "eventId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokauthevent0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["event"],
+            properties: { event: authEventDataSchema },
+          },
+          successCode: AUTH_EVENT_CODES.EVENT_LOADED,
+          successDescription: "Auth event loaded.",
+          successMessage: AUTH_EVENT_MESSAGES.EVENT_LOADED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/branches": jsonEndpoint({
           method: "post",
           tag: "Admin",
@@ -5903,6 +6105,84 @@ export function GET(request: Request) {
             successStatus: HTTP_STATUS.OK,
           }),
         },
+        "/api/v1/admin/staff-commissions": {
+          ...jsonEndpoint({
+            method: "get",
+            tag: "Admin",
+            summary: "List staff commissions",
+            description:
+              "List staff commission records by branch, staff, status, source, or created date range.",
+            failureDescription: "Staff commission list load failed.",
+            requiresAuth: true,
+            parameters: [
+              { name: "branchId", in: "query", required: false, schema: { type: "string" } },
+              { name: "staffId", in: "query", required: false, schema: { type: "string" } },
+              { name: "bookingId", in: "query", required: false, schema: { type: "string" } },
+              { name: "productSaleId", in: "query", required: false, schema: { type: "string" } },
+              {
+                name: "status",
+                in: "query",
+                required: false,
+                schema: { type: "string", enum: ["PENDING", "APPROVED", "PAID", "CANCELLED"] },
+              },
+              { name: "from", in: "query", required: false, schema: { type: "string", format: "date" } },
+              { name: "to", in: "query", required: false, schema: { type: "string", format: "date" } },
+              { name: "limit", in: "query", required: false, schema: { type: "integer", default: 50 } },
+            ],
+            responseSchema: {
+              type: "object",
+              required: ["commissions", "limit"],
+              properties: {
+                commissions: { type: "array", items: staffCommissionDataSchema },
+                limit: { type: "integer", example: 50 },
+              },
+            },
+            successCode: STAFF_COMMISSION_CODES.COMMISSION_LISTED,
+            successDescription: "Staff commissions loaded.",
+            successMessage: STAFF_COMMISSION_MESSAGES.COMMISSION_LISTED,
+            successStatus: HTTP_STATUS.OK,
+          }),
+          ...jsonEndpoint({
+            method: "post",
+            tag: "Admin",
+            summary: "Create staff commission",
+            description:
+              "Create one staff commission linked to a booking, product sale, or manual adjustment.",
+            failureDescription: "Staff commission creation failed.",
+            requiresAuth: true,
+            requestSchema: adminStaffCommissionRequestSchema,
+            responseSchema: {
+              type: "object",
+              required: ["commission"],
+              properties: { commission: staffCommissionDataSchema },
+            },
+            successCode: STAFF_COMMISSION_CODES.COMMISSION_CREATED,
+            successDescription: "Staff commission created.",
+            successMessage: STAFF_COMMISSION_MESSAGES.COMMISSION_CREATED,
+          }),
+        },
+        "/api/v1/admin/staff-commissions/{commissionId}": jsonEndpoint({
+          method: "patch",
+          tag: "Admin",
+          summary: "Update staff commission",
+          description:
+            "Update staff commission amount, rate, status, or paid timestamp without changing source links.",
+          failureDescription: "Staff commission update failed.",
+          requiresAuth: true,
+          parameters: [
+            { name: "commissionId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestSchema: adminStaffCommissionPatchSchema,
+          responseSchema: {
+            type: "object",
+            required: ["commission"],
+            properties: { commission: staffCommissionDataSchema },
+          },
+          successCode: STAFF_COMMISSION_CODES.COMMISSION_UPDATED,
+          successDescription: "Staff commission updated.",
+          successMessage: STAFF_COMMISSION_MESSAGES.COMMISSION_UPDATED,
+          successStatus: HTTP_STATUS.OK,
+        }),
         "/api/v1/admin/reports/summary": jsonEndpoint({
           method: "get",
           tag: "Admin",
