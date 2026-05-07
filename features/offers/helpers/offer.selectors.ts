@@ -31,4 +31,24 @@ export const offerSelect = () =>
     usageLimit: true,
     validFrom: true,
     validUntil: true,
-  }) satisfies Prisma.OfferSelect;
+	  }) satisfies Prisma.OfferSelect;
+
+/**
+ * Selects offer redemption fields exposed by user and admin APIs.
+ */
+export const offerRedemptionSelect = () =>
+  ({
+    booking: {
+      select: { bookingDate: true, branchId: true, displayId: true, id: true, status: true },
+    },
+    bookingId: true,
+    createdAt: true,
+    discountAmount: true,
+    id: true,
+    offer: {
+      select: { branchId: true, code: true, id: true, titleEn: true, titleHi: true },
+    },
+    offerId: true,
+    user: { select: { id: true, mobile: true, name: true } },
+    userId: true,
+  }) satisfies Prisma.OfferRedemptionSelect;

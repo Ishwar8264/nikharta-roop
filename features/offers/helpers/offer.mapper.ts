@@ -39,6 +39,18 @@ type OfferRow = {
   validUntil: Date;
 };
 
+export type OfferRedemptionRow = {
+  booking: Record<string, unknown>;
+  bookingId: string;
+  createdAt: Date;
+  discountAmount: DecimalLike;
+  id: string;
+  offer: Record<string, unknown>;
+  offerId: string;
+  user: Record<string, unknown>;
+  userId: string;
+};
+
 /**
  * Converts an offer row into the public API shape.
  */
@@ -75,5 +87,15 @@ function toPublicOfferService(service: OfferServiceRow) {
     createdAt: service.createdAt,
     service: service.service,
     serviceId: service.serviceId,
+  };
+}
+
+/**
+ * Converts one offer redemption row into the API shape.
+ */
+export function toPublicOfferRedemption(redemption: OfferRedemptionRow) {
+  return {
+    ...redemption,
+    discountAmount: redemption.discountAmount.toString(),
   };
 }

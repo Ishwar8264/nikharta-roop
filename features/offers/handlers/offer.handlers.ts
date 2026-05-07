@@ -11,6 +11,16 @@ export {
   handleValidateOffer,
 } from "./offer-validation.handlers";
 /**
+ * Re-exports offer redemption handlers.
+ */
+export {
+  handleListAdminOfferRedemptions,
+  handleListMyOfferRedemptions,
+} from "./offer-redemption-list.handlers";
+export {
+  handleRedeemOffer,
+} from "./offer-redemption-redeem.handlers";
+/**
  * Re-exports admin offer creation handlers.
  */
 export {
