@@ -6,6 +6,10 @@ import {
   AUTH_OTP_CONFIG,
 } from "@/features/auth/constants/auth.constants";
 import {
+  AUTH_EVENT_CODES,
+  AUTH_EVENT_MESSAGES,
+} from "@/features/auth-events/constants/auth-event.constants";
+import {
   BOOKING_CODES,
   BOOKING_MESSAGES,
 } from "@/features/bookings/constants/booking.constants";
@@ -2112,6 +2116,46 @@ const authSessionDataSchema: OpenApiRecord = {
   },
 };
 
+const authEventDataSchema: OpenApiRecord = {
+  type: "object",
+  required: ["id", "type", "metadata", "createdAt"],
+  properties: {
+    id: { type: "string", example: "cmokauthevent0001" },
+    userId: { type: "string", nullable: true, example: "cmokuser0001" },
+    mobile: { type: "string", nullable: true, example: "9876543210" },
+    type: {
+      type: "string",
+      enum: [
+        "OTP_REQUESTED",
+        "OTP_VERIFIED",
+        "OTP_FAILED",
+        "SIGNUP_STARTED",
+        "SIGNUP_COMPLETED",
+        "LOGIN_COMPLETED",
+        "LOGOUT_COMPLETED",
+        "TOKEN_REVOKED",
+        "ACCOUNT_SUSPENDED",
+      ],
+      example: "LOGIN_COMPLETED",
+    },
+    ipAddress: { type: "string", nullable: true, example: "203.0.113.12" },
+    userAgent: { type: "string", nullable: true, example: "Mozilla/5.0" },
+    metadata: { type: "object", additionalProperties: true },
+    user: {
+      type: "object",
+      nullable: true,
+      properties: {
+        branchId: { type: "string", nullable: true, example: "cmokbranch0001" },
+        id: { type: "string", example: "cmokuser0001" },
+        mobile: { type: "string", example: "9876543210" },
+        name: { type: "string", nullable: true, example: "Priya" },
+        role: { type: "string", example: "USER" },
+      },
+    },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
 const signupVerifyDataSchema: OpenApiRecord = {
   type: "object",
   required: ["user", "session", "accessToken", "refreshToken"],
@@ -4209,6 +4253,116 @@ export function GET(request: Request) {
           successCode: REVIEW_CODES.REVIEW_LISTED,
           successDescription: "Reviews loaded.",
           successMessage: REVIEW_MESSAGES.REVIEW_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/auth-events": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "List auth events",
+          description:
+            "List authentication audit events. SUPER_ADMIN can inspect all events; " +
+            "branch admins only see events tied to users in their branch.",
+          failureDescription: "Auth event list load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "branchId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokbranch0001" },
+            },
+            {
+              name: "userId",
+              in: "query",
+              required: false,
+              schema: { type: "string", example: "cmokuser0001" },
+            },
+            {
+              name: "mobile",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                pattern: "^\\d{10}$",
+                example: "9876543210",
+              },
+            },
+            {
+              name: "type",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                enum: [
+                  "OTP_REQUESTED",
+                  "OTP_VERIFIED",
+                  "OTP_FAILED",
+                  "SIGNUP_STARTED",
+                  "SIGNUP_COMPLETED",
+                  "LOGIN_COMPLETED",
+                  "LOGOUT_COMPLETED",
+                  "TOKEN_REVOKED",
+                  "ACCOUNT_SUSPENDED",
+                ],
+              },
+            },
+            {
+              name: "from",
+              in: "query",
+              required: false,
+              schema: { type: "string", format: "date" },
+            },
+            {
+              name: "to",
+              in: "query",
+              required: false,
+              schema: { type: "string", format: "date" },
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["events", "limit"],
+            properties: {
+              events: { type: "array", items: authEventDataSchema },
+              limit: { type: "integer", example: 50 },
+            },
+          },
+          successCode: AUTH_EVENT_CODES.EVENT_LISTED,
+          successDescription: "Auth events loaded.",
+          successMessage: AUTH_EVENT_MESSAGES.EVENT_LISTED,
+          successStatus: HTTP_STATUS.OK,
+        }),
+        "/api/v1/admin/auth-events/{eventId}": jsonEndpoint({
+          method: "get",
+          tag: "Admin",
+          summary: "Get auth event",
+          description:
+            "Load one authentication audit event by id. " +
+            "Branch admins can only load events for users in their branch.",
+          failureDescription: "Auth event load failed.",
+          requiresAuth: true,
+          parameters: [
+            {
+              name: "eventId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "cmokauthevent0001" },
+            },
+          ],
+          responseSchema: {
+            type: "object",
+            required: ["event"],
+            properties: { event: authEventDataSchema },
+          },
+          successCode: AUTH_EVENT_CODES.EVENT_LOADED,
+          successDescription: "Auth event loaded.",
+          successMessage: AUTH_EVENT_MESSAGES.EVENT_LOADED,
           successStatus: HTTP_STATUS.OK,
         }),
         "/api/v1/admin/branches": jsonEndpoint({
