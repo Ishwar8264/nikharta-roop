@@ -1,13 +1,13 @@
 import { VerifyOtpForm } from "@/components/auth/otp/form";
 import React from "react";
 
-const VerifyLoginPage = () => {
+const VerifyRegisterPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <VerifyOtpForm
-        title="Verify Login"
-        subtitle="Enter the OTP sent to your mobile to login"
-        submitButtonLabel="Verify & Login"
+        title="Verify Registration"
+        subtitle="Enter the OTP to complete your account setup"
+        submitButtonLabel="Verify & Register"
         defaultMobile="9876543210"
         disableMobile
       />
@@ -15,4 +15,4 @@ const VerifyLoginPage = () => {
   );
 };
 
-export default VerifyLoginPage;
+export default VerifyRegisterPage;
