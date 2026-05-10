@@ -1,3 +1,4 @@
+import { TestComponent } from "@/components/tost";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { SearchInput } from "@/components/ui/shared/input/search-input";
 import { Logo } from "@/components/ui/shared/logo/logo";
@@ -109,6 +110,8 @@ const PreviewsPage = () => {
         <Logo disabled />
         {/* // Disabled + custom size */}
         <Logo disabled size="lg" />
+
+        <TestComponent />
       </div>
     </div>
   );
