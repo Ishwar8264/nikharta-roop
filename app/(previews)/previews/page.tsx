@@ -1,5 +1,6 @@
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { SearchInput } from "@/components/ui/shared/input/search-input";
+import { Logo } from "@/components/ui/shared/logo/logo";
 import { FilterIcon, Lock, Mail, Phone } from "lucide-react";
 
 const PreviewsPage = () => {
@@ -35,9 +36,7 @@ const PreviewsPage = () => {
           className="rounded-sm py-4"
         />
       </form>
-
       {/* search input field */}
-
       <div className="space-y-4">
         <SearchInput
           placeholder="Search users..."
@@ -101,6 +100,15 @@ const PreviewsPage = () => {
           inputClassName="rounded-full"
           searchIconClassName="text-blue-500"
         />
+      </div>
+      {/* logo  */}
+      <div className="bg-black">
+        {/* // Normal — clickable, links to / */}
+        <Logo size="lg" className="" />
+        {/* // Disabled — no link, just image, faded */}
+        <Logo disabled />
+        {/* // Disabled + custom size */}
+        <Logo disabled size="lg" />
       </div>
     </div>
   );
