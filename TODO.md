@@ -1,19 +1,14 @@
-# Signup Form Implementation - Nikharta Roop (Refactored)
+# TODO
 
-## Status: ✅ Complete & Refactored
+- [ ] Create Typography & Brand Style Guide page at `/typography`
+- [x] Replace existing `app/typography/page.tsx` content with full style guide sections
 
-### Refactor Changes (Next.js Best Practices):
-
-- **Split files**: `components/auth/signup-form.tsx` ("use client") – extracted form logic (hooks, state, API call, validation, toasts). Server-safe page.tsx imports/passes props.
-- **Server/Client separation**: page.tsx is pure Server Component (static markup, Link). Client logic isolated.
-- **Better code**: Numeric-only mobile input (`replace(/\D/g,'')`), client-side regex validation + error toast, `onSuccess` prop callback (flexible), disabled states, improved error messages (Hindi).
-- Clean, reusable: Form component ready for other pages (e.g., modal).
-- Hydration fixed: No mismatches.
-
-### Files:
-
-- `app/(auth)/signup/page.tsx` (Server Component)
-- `components/auth/signup-form.tsx` (Client Component)
-- `app/(auth)/signup/loading.tsx`
-
-**Test:** Dev server shows `/signup` working (no errors). Submit → API call → toast → redirect.
+- [ ] Create reusable typography/brand components under `components/typography/`
+- [ ] Add brand color palette section (primary/secondary/accent/background/text/muted)
+- [ ] Add heading styles H1–H6 previews
+- [ ] Add body text styles (large/regular/small/caption/muted)
+- [ ] Add font weight preview (light/regular/medium/semibold/bold)
+- [ ] Add button/label text examples
+- [ ] Add spacing + visual hierarchy samples
+- [ ] Ensure responsive layout (mobile/tablet/desktop)
+- [ ] Dev check: open `/typography` and verify rendering
