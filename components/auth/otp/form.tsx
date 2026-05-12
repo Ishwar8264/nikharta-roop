@@ -1,18 +1,25 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Phone, ShieldCheck } from "lucide-react";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
+import {
+  verifySigninAction,
+  verifySignupAction,
+} from "@/features/auth/actions/auth.actions";
+import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
 
 interface VerifyOtpFormProps {
   title?: string;
   subtitle?: string;
   submitButtonLabel?: string;
   defaultMobile?: string;
+  devOtp?: string;
   disableMobile?: boolean;
   containerClassName?: string;
-  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+  mode: "signin" | "signup";
 }
 
 const VerifyOtpForm = ({
@@ -20,16 +27,37 @@ const VerifyOtpForm = ({
   subtitle = "Enter the OTP sent to your mobile number",
   submitButtonLabel = "Verify",
   defaultMobile = "",
+  devOtp,
   disableMobile = false,
   containerClassName,
-  onSubmit,
+  mode,
 }: VerifyOtpFormProps) => {
+  const router = useRouter();
+  const [state, setState] = React.useState<AuthActionState | null>(null);
+  const [isPending, startTransition] = React.useTransition();
+
+  // The same OTP component serves signin and signup. Mode picks the correct
+  // Server Action while keeping the UI reusable.
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const action = mode === "signin" ? verifySigninAction : verifySignupAction;
+
+    startTransition(async () => {
+      const result = await action(formData);
+      setState(result);
+
+      // On success the action has already set HttpOnly cookies server-side.
+      // The client only navigates to the returned route.
+      if (result.success && result.data?.redirectTo) {
+        router.push(result.data.redirectTo);
+      }
+    });
+  }
+
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit?.(e);
-      }}
+      onSubmit={handleSubmit}
       className={containerClassName}
     >
       <div className="w-full max-w-md space-y-5 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
@@ -40,7 +68,13 @@ const VerifyOtpForm = ({
         </div>
 
         {/* ── Mobile ── */}
+        {/* Disabled inputs are not submitted by browsers, so a hidden input
+            carries the mobile value when the visible field is locked. */}
+        {disableMobile ? (
+          <input type="hidden" name="mobile" value={defaultMobile} />
+        ) : null}
         <InputField
+          name={disableMobile ? undefined : "mobile"}
           label="Mobile Number"
           placeholder="9876543210"
           type="tel"
@@ -54,6 +88,7 @@ const VerifyOtpForm = ({
 
         {/* ── OTP ── */}
         <InputField
+          name="otp"
           label="OTP"
           placeholder="123456"
           type="text"
@@ -63,9 +98,29 @@ const VerifyOtpForm = ({
           helperText="6-digit one-time password"
         />
 
+        {/* Local development only: handlers omit devOtp in production, so this
+            helper never appears for real users. */}
+        {devOtp ? (
+          <p className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+            Dev OTP: {devOtp}
+          </p>
+        ) : null}
+
+        {state && (
+          <p
+            className={
+              state.success
+                ? "text-sm text-green-700"
+                : "text-sm text-destructive"
+            }
+          >
+            {state.message}
+          </p>
+        )}
+
         {/* ── Submit ── */}
-        <Button type="submit" className="w-full">
-          {submitButtonLabel}
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "Verifying..." : submitButtonLabel}
         </Button>
 
         {/* ── Resend OTP ── */}
