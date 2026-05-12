@@ -18,7 +18,10 @@ type LogoutButtonProps = {
   compact?: boolean;
 };
 
-export function LogoutButton({ className, compact = false }: LogoutButtonProps) {
+export function LogoutButton({
+  className,
+  compact = false,
+}: LogoutButtonProps) {
   const router = useRouter();
   const [state, setState] = React.useState<AuthActionState | null>(null);
   const [isPending, startTransition] = React.useTransition();
@@ -48,12 +51,14 @@ export function LogoutButton({ className, compact = false }: LogoutButtonProps) 
     <div className={cn("space-y-2", className)}>
       <Button
         aria-label="Logout"
-        className={compact ? undefined : "w-full justify-start"}
+        className={
+          compact ? undefined : "w-full justify-start bg-red-700 font-semibold"
+        }
         disabled={isPending}
         onClick={handleLogout}
         size={compact ? "icon" : "default"}
         type="button"
-        variant="outline"
+        variant="default"
       >
         <LogOut className="size-4" />
         {compact ? null : isPending ? "Logging out..." : "Logout"}

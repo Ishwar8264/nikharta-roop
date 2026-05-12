@@ -8,6 +8,14 @@ export type AuthActionData = {
   retryAfter?: number;
 };
 
+export type AuthUser = {
+  email?: string | null;
+  id: string;
+  mobile: string;
+  name?: string | null;
+  role?: string;
+};
+
 // Small serializable state returned from auth Server Actions to client forms.
 // React can pass this safely across the server/client boundary.
 export type AuthActionState = {
@@ -15,4 +23,10 @@ export type AuthActionState = {
   data?: AuthActionData;
   message: string;
   success: boolean;
+};
+
+export type AuthUserActionState = {
+  message: string;
+  success: boolean;
+  user: AuthUser | null;
 };

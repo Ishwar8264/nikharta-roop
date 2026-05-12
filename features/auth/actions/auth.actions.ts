@@ -5,11 +5,16 @@ import { cookies, headers } from "next/headers";
 import {
   handleLogin,
   handleLogout,
+  handleMe,
   handleRegister,
   handleVerifyLogin,
   handleVerifyRegister,
 } from "@/features/auth/handlers/auth.handlers";
-import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
+import type {
+  AuthActionState,
+  AuthUser,
+  AuthUserActionState,
+} from "@/features/auth/actions/auth-action.types";
 import { AUTH_COOKIE_NAMES } from "@/features/auth/helpers/auth.cookies";
 
 // This type describes only the small part of the auth API response that the
@@ -27,12 +32,31 @@ type AuthResponsePayload = {
     session?: {
       expiresAt?: string;
     };
+    user?: AuthUser;
   } | null;
   message?: string;
   success?: boolean;
 };
 
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+
+/**
+ * Loads the current authenticated user for client UI chrome.
+ *
+ * This keeps the browser away from `/api/v1/auth/me`; the client asks this
+ * Server Action for a safe user object, and the action reuses the same handler
+ * that powers the API route.
+ */
+export async function getCurrentUserAction(): Promise<AuthUserActionState> {
+  const response = await callAuthHandler(handleMe, {});
+  const user = response.payload?.data?.user ?? null;
+
+  return {
+    message: response.payload?.message ?? DEFAULT_ERROR_MESSAGE,
+    success: response.payload?.success === true && Boolean(user),
+    user,
+  };
+}
 
 /**
  * Logs out the current browser session.
