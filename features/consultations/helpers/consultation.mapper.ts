@@ -1,28 +1,10 @@
-type ConsultationRow = {
-  adminNotes: string | null;
-  branch?: { city: string; id: string; nameEn: string | null; nameHi: string };
-  branchId: string;
-  cancelledAt: Date | null;
-  completedAt: Date | null;
-  createdAt: Date;
-  id: string;
-  notes: string | null;
-  package?: {
-    id: string;
-    nameEn: string | null;
-    nameHi: string;
-    slug: string;
-  } | null;
-  packageId: string | null;
-  preferredDate: Date | null;
-  preferredTime: Date | null;
-  staff?: { id: string; user: { name: string | null } } | null;
-  staffId: string | null;
-  status: string;
-  updatedAt: Date;
-  user?: { id: string; mobile: string; name: string | null };
-  userId: string;
-};
+import type { Prisma } from "@prisma/client";
+
+import { consultationSelect } from "./consultation.selectors";
+
+type ConsultationRow = Prisma.ConsultationGetPayload<{
+  select: ReturnType<typeof consultationSelect>;
+}>;
 
 /**
  * Converts a consultation row into the public API shape.

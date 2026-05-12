@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
 import { readJsonBody } from "@/features/auth/helpers/auth.route-helpers";
@@ -33,7 +33,10 @@ export async function requireNotificationAdmin(request: Request) {
 /**
  * Parses JSON bodies with notification-owned validation errors.
  */
-export async function parseNotificationBody<T>(request: Request, schema: ZodType<T>) {
+export async function parseNotificationBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(await readJsonBody(request));
   if (!parsed.success) {
     return {
@@ -45,7 +48,7 @@ export async function parseNotificationBody<T>(request: Request, schema: ZodType
       }),
     };
   }
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**

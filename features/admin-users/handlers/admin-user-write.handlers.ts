@@ -41,7 +41,11 @@ export async function handleSuspendAdminUser(request: Request, userId: string) {
   if (!auth.success) return auth.error;
   const body = await parseAdminUserBody(request, suspendAdminUserSchema);
   if (body.error) return body.error;
-  return suspendAdminUser(userId, body.data, auth.session.user);
+  return suspendAdminUser(
+    userId,
+    { isActive: body.data.isActive ?? false },
+    auth.session.user,
+  );
 }
 
 /**
@@ -91,5 +95,5 @@ async function suspendAdminUser(
   input: SuspendAdminUserInput,
   admin: AdminUserActor,
 ) {
-  return updateAdminUser(userId, { isActive: input.isActive }, admin);
+  return updateAdminUser(userId, { isActive: input.isActive ?? false }, admin);
 }

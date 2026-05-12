@@ -1,4 +1,4 @@
-import type { ZodError, ZodType } from "zod";
+import { z, type ZodError } from "zod";
 
 import { getDb } from "@/db";
 import {
@@ -220,7 +220,10 @@ async function getService(serviceId: string, input: GetServiceQueryInput) {
 /**
  * Parses query parameters with service-owned validation error codes.
  */
-function parseServiceQuery<T>(request: Request, schema: ZodType<T>) {
+function parseServiceQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const url = new URL(request.url);
   const parsed = schema.safeParse(Object.fromEntries(url.searchParams));
 
@@ -235,7 +238,7 @@ function parseServiceQuery<T>(request: Request, schema: ZodType<T>) {
     };
   }
 
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**

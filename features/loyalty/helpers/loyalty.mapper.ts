@@ -1,23 +1,17 @@
-export type LoyaltyTransactionRow = {
-  booking: Record<string, unknown> | null;
-  bookingId: string | null;
-  createdAt: Date;
-  expiresAt: Date | null;
-  id: string;
-  points: number;
-  reasonHi: string | null;
-  type: string;
-  user: Record<string, unknown>;
-  userId: string;
-};
+import type { Prisma } from "@prisma/client";
 
-export type LoyaltyUserRow = {
-  branchId: string | null;
-  id: string;
-  loyaltyPoints: number;
-  mobile: string;
-  name: string | null;
-};
+import {
+  loyaltyTransactionSelect,
+  loyaltyUserSelect,
+} from "./loyalty.selectors";
+
+export type LoyaltyTransactionRow = Prisma.LoyaltyTransactionGetPayload<{
+  select: ReturnType<typeof loyaltyTransactionSelect>;
+}>;
+
+export type LoyaltyUserRow = Prisma.UserGetPayload<{
+  select: ReturnType<typeof loyaltyUserSelect>;
+}>;
 
 /**
  * Converts a loyalty transaction into the API shape.

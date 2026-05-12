@@ -30,14 +30,14 @@ export async function handleListInventoryTransactions(request: Request) {
     const transactions = await getDb().inventoryTransaction.findMany({
       orderBy: [{ createdAt: "desc" }],
       select: inventoryTransactionSelect(),
-      take: query.data.limit,
+      take: query.data.limit ?? 50,
       where: {
         inventoryItem: { branchId },
         inventoryItemId: query.data.inventoryItemId,
         type: query.data.type,
       },
     });
-    return inventoryTransactionListResponse(transactions, query.data.limit);
+    return inventoryTransactionListResponse(transactions, query.data.limit ?? 50);
   } catch (error) {
     return handleInventoryError(error, {
       code: INVENTORY_CODES.TRANSACTIONS_LOAD_FAILED,

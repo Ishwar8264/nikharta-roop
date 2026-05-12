@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
 import { readJsonBody } from "@/features/auth/helpers/auth.route-helpers";
@@ -41,9 +41,9 @@ export async function requireConsultationAdmin(request: Request) {
 /**
  * Parses JSON bodies with consultation-owned validation error codes.
  */
-export async function parseConsultationBody<T>(
+export async function parseConsultationBody<TSchema extends z.ZodTypeAny>(
   request: Request,
-  schema: ZodType<T>,
+  schema: TSchema,
 ) {
   const parsed = schema.safeParse(await readJsonBody(request));
   if (!parsed.success) {
@@ -58,7 +58,7 @@ export async function parseConsultationBody<T>(
       }),
     };
   }
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 export class ConsultationVisibleError extends Error {

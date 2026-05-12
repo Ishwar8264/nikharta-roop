@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -25,13 +25,13 @@ const ownerIdFields = {
 export const listMediaQuerySchema = z.object({
   ...ownerIdFields,
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  ownerType: z.enum(MediaOwnerType).optional(),
+  ownerType: z.nativeEnum(MediaOwnerType).optional(),
 });
 
 const mediaBodySchema = z.object({
   ...ownerIdFields,
   altHi: z.string().trim().max(500).nullable().optional(),
-  ownerType: z.enum(MediaOwnerType),
+  ownerType: z.nativeEnum(MediaOwnerType),
   provider: z.string().trim().max(80).nullable().optional(),
   providerPublicId: z.string().trim().max(500).nullable().optional(),
   sortOrder: z.coerce.number().int().min(0).max(100000).optional(),
@@ -48,7 +48,12 @@ export const updateMediaSchema = mediaBodySchema.partial().refine(
 );
 
 export type CreateMediaInput = z.infer<typeof createMediaSchema>;
-export type ListMediaQueryInput = z.infer<typeof listMediaQuerySchema>;
+export type ListMediaQueryInput = Omit<
+  z.infer<typeof listMediaQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type UpdateMediaInput = z.infer<typeof updateMediaSchema>;
 
 function hasOneOwnerId(value: Record<string, unknown>) {

@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -35,7 +35,7 @@ export const listBlogsQuerySchema = z.object({
 export const adminListBlogsQuerySchema = listBlogsQuerySchema.extend({
   categoryId: optionalIdSchema,
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  status: z.enum(BlogPostStatus).optional(),
+  status: z.nativeEnum(BlogPostStatus).optional(),
 });
 
 /**
@@ -60,7 +60,7 @@ const blogPostBodySchema = z.object({
   excerptHi: z.string().trim().max(1000).nullable().optional(),
   publishedAt: z.coerce.date().nullable().optional(),
   slug: slugSchema,
-  status: z.enum(BlogPostStatus).optional(),
+  status: z.nativeEnum(BlogPostStatus).optional(),
   titleEn: z.string().trim().max(240).nullable().optional(),
   titleHi: z.string().trim().min(2).max(240),
 });
@@ -76,9 +76,19 @@ export const updateBlogPostSchema = blogPostBodySchema.partial().refine(
   { message: "Send at least one blog post field to update." },
 );
 
-export type AdminListBlogsQueryInput = z.infer<typeof adminListBlogsQuerySchema>;
+export type AdminListBlogsQueryInput = Omit<
+  z.infer<typeof adminListBlogsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type CreateBlogCategoryInput = z.infer<typeof createBlogCategorySchema>;
 export type CreateBlogPostInput = z.infer<typeof createBlogPostSchema>;
-export type ListBlogsQueryInput = z.infer<typeof listBlogsQuerySchema>;
+export type ListBlogsQueryInput = Omit<
+  z.infer<typeof listBlogsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type UpdateBlogCategoryInput = z.infer<typeof updateBlogCategorySchema>;
 export type UpdateBlogPostInput = z.infer<typeof updateBlogPostSchema>;

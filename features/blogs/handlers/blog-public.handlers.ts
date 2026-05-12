@@ -33,13 +33,13 @@ export async function handleListBlogs(request: Request) {
   const posts = await getDb().blogPost.findMany({
     orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
     select: blogPostSelect(),
-    take: query.data.limit,
+    take: query.data.limit ?? 20,
     where: {
       category: { isActive: true, slug: query.data.categorySlug },
       status: BlogPostStatus.PUBLISHED,
     },
   });
-  return blogListResponse(posts, query.data.limit);
+  return blogListResponse(posts, query.data.limit ?? 20);
 }
 
 /**

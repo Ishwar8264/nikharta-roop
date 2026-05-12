@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -23,7 +23,7 @@ export const listStaffCommissionsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   productSaleId: optionalIdSchema,
   staffId: optionalIdSchema,
-  status: z.enum(StaffCommissionStatus).optional(),
+  status: z.nativeEnum(StaffCommissionStatus).optional(),
   to: z.string().trim().date().optional(),
 });
 
@@ -35,7 +35,7 @@ const commissionBaseSchema = z.object({
   paidAt: z.coerce.date().nullable().optional(),
   productSaleId: optionalIdSchema,
   staffId: idSchema,
-  status: z.enum(StaffCommissionStatus).optional(),
+  status: z.nativeEnum(StaffCommissionStatus).optional(),
 });
 
 export const createStaffCommissionSchema = commissionBaseSchema

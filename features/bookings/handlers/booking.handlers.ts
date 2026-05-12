@@ -1,5 +1,5 @@
 import { BookingStatus, Prisma } from "@prisma/client";
-import type { ZodError, ZodType } from "zod";
+import { z, type ZodError } from "zod";
 
 import { getDb } from "@/db";
 import {
@@ -63,7 +63,10 @@ export async function handleListBookings(request: Request) {
     return parsedQuery.error;
   }
 
-  return listBookings(auth.session.id, auth.session.userId, parsedQuery.data);
+  return listBookings(auth.session.id, auth.session.userId, {
+    ...parsedQuery.data,
+    limit: parsedQuery.data.limit ?? 20,
+  });
 }
 
 /**
@@ -1357,7 +1360,10 @@ function isStaffWorkingDay(workDays: Prisma.JsonValue, bookingDate: Date) {
 /**
  * Parses query parameters with booking-owned validation error codes.
  */
-function parseBookingQuery<T>(request: Request, schema: ZodType<T>) {
+function parseBookingQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const url = new URL(request.url);
   const parsed = schema.safeParse(Object.fromEntries(url.searchParams));
 
@@ -1373,7 +1379,7 @@ function parseBookingQuery<T>(request: Request, schema: ZodType<T>) {
   }
 
   return {
-    data: parsed.data,
+    data: parsed.data as z.output<TSchema>,
     error: null,
   };
 }
@@ -1381,7 +1387,10 @@ function parseBookingQuery<T>(request: Request, schema: ZodType<T>) {
 /**
  * Parses JSON bodies with booking-owned validation error codes.
  */
-async function parseBookingBody<T>(request: Request, schema: ZodType<T>) {
+async function parseBookingBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const body = await readJsonBody(request);
   const parsed = schema.safeParse(body);
 
@@ -1397,7 +1406,7 @@ async function parseBookingBody<T>(request: Request, schema: ZodType<T>) {
   }
 
   return {
-    data: parsed.data,
+    data: parsed.data as z.output<TSchema>,
     error: null,
   };
 }

@@ -1,4 +1,4 @@
-import type { ZodError, ZodType } from "zod";
+import { z, type ZodError } from "zod";
 
 import { getDb } from "@/db";
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
@@ -34,7 +34,10 @@ export async function requireStaffAdmin(request: Request) {
 /**
  * Parses JSON bodies with staff-owned validation errors.
  */
-export async function parseStaffJsonBody<T>(request: Request, schema: ZodType<T>) {
+export async function parseStaffJsonBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(await readJsonBody(request));
 
   if (!parsed.success) {
@@ -48,7 +51,7 @@ export async function parseStaffJsonBody<T>(request: Request, schema: ZodType<T>
     };
   }
 
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**

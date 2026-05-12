@@ -23,14 +23,14 @@ export async function handleListInventory(request: Request) {
     const items = await getDb().inventoryItem.findMany({
       orderBy: [{ updatedAt: "desc" }],
       select: inventorySelect(),
-      take: query.data.limit,
+      take: query.data.limit ?? 50,
       where: {
         branchId,
         isActive: query.data.isActive,
         productId: query.data.productId,
       },
     });
-    return inventoryListResponse(items, query.data.limit);
+    return inventoryListResponse(items, query.data.limit ?? 50);
   } catch (error) {
     return handleInventoryError(error, {
       code: INVENTORY_CODES.INVENTORY_LOAD_FAILED,

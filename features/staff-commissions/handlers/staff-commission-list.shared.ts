@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import {
   STAFF_COMMISSION_CODES,
@@ -12,9 +12,14 @@ import { HTTP_STATUS } from "@/lib/constants/http-status";
 /**
  * Parses staff commission query strings with feature-owned validation errors.
  */
-export function parseStaffCommissionQuery<T>(request: Request, schema: ZodType<T>) {
+export function parseStaffCommissionQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
-  if (parsed.success) return { data: parsed.data, success: true as const };
+  if (parsed.success) {
+    return { data: parsed.data as z.output<TSchema>, success: true as const };
+  }
   return {
     error: staffCommissionError({
       code: STAFF_COMMISSION_CODES.VALIDATION_ERROR,

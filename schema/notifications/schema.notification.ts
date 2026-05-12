@@ -10,17 +10,17 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
 
 export const listNotificationsQuerySchema = z.object({
   branchId: optionalIdSchema,
-  channel: z.enum(NotificationChannel).optional(),
+  channel: z.nativeEnum(NotificationChannel).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  status: z.enum(NotificationStatus).optional(),
-  trigger: z.enum(NotificationTrigger).optional(),
+  status: z.nativeEnum(NotificationStatus).optional(),
+  trigger: z.nativeEnum(NotificationTrigger).optional(),
   userId: optionalIdSchema,
 });
 
@@ -31,7 +31,7 @@ export const listMyNotificationsQuerySchema = z.object({
 const notificationBodySchema = z.object({
   bookingId: optionalIdSchema,
   branchId: optionalIdSchema,
-  channel: z.enum(NotificationChannel),
+  channel: z.nativeEnum(NotificationChannel),
   errorMessage: z.string().trim().max(2000).nullable().optional(),
   messageHi: z.string().trim().min(1).max(2000),
   provider: z.string().trim().max(80).nullable().optional(),
@@ -39,9 +39,9 @@ const notificationBodySchema = z.object({
   recipient: z.string().trim().min(2).max(200),
   retryCount: z.coerce.number().int().min(0).max(100).optional(),
   scheduledAt: z.coerce.date().nullable().optional(),
-  status: z.enum(NotificationStatus).optional(),
+  status: z.nativeEnum(NotificationStatus).optional(),
   templateKey: z.string().trim().max(120).nullable().optional(),
-  trigger: z.enum(NotificationTrigger),
+  trigger: z.nativeEnum(NotificationTrigger),
   userId: optionalIdSchema,
 });
 
@@ -52,6 +52,16 @@ export const updateNotificationSchema = notificationBodySchema.partial().refine(
 );
 
 export type CreateNotificationInput = z.infer<typeof createNotificationSchema>;
-export type ListMyNotificationsQueryInput = z.infer<typeof listMyNotificationsQuerySchema>;
-export type ListNotificationsQueryInput = z.infer<typeof listNotificationsQuerySchema>;
+export type ListMyNotificationsQueryInput = Omit<
+  z.infer<typeof listMyNotificationsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
+export type ListNotificationsQueryInput = Omit<
+  z.infer<typeof listNotificationsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type UpdateNotificationInput = z.infer<typeof updateNotificationSchema>;

@@ -8,7 +8,7 @@ const idSchema = z.string().trim().cuid();
 /**
  * Allows optional CUID fields to be omitted or sent as an empty string.
  */
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );

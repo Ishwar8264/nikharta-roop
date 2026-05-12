@@ -19,10 +19,10 @@ export async function handleListMedia(request: Request) {
     const media = await getDb().mediaAsset.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       select: mediaSelect(),
-      take: query.data.limit,
+      take: query.data.limit ?? 50,
       where: { ...mediaOwnerWhere(query.data), ownerType: query.data.ownerType },
     });
-    return mediaListResponse(media, query.data.limit);
+    return mediaListResponse(media, query.data.limit ?? 50);
   } catch (error) {
     return handleMediaError(error, {
       code: MEDIA_CODES.MEDIA_LOAD_FAILED,

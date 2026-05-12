@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -52,7 +52,7 @@ const offerBodySchema = z.object({
   branchId: optionalIdSchema,
   code: offerCodeSchema,
   descriptionHi: z.string().trim().max(2000).nullable().optional(),
-  discountType: z.enum(DiscountType),
+  discountType: z.nativeEnum(DiscountType),
   discountValue: moneySchema,
   isActive: z.boolean().optional(),
   maxDiscount: moneySchema.nullable().optional(),
@@ -103,7 +103,17 @@ export const assignOfferServiceSchema = z.object({
 });
 
 export type AssignOfferServiceInput = z.infer<typeof assignOfferServiceSchema>;
-export type CreateOfferInput = z.infer<typeof createOfferSchema>;
-export type ListOffersQueryInput = z.infer<typeof listOffersQuerySchema>;
+export type CreateOfferInput = Omit<
+  z.infer<typeof createOfferSchema>,
+  "serviceIds"
+> & {
+  serviceIds: string[];
+};
+export type ListOffersQueryInput = Omit<
+  z.infer<typeof listOffersQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type UpdateOfferInput = z.infer<typeof updateOfferSchema>;
 export type ValidateOfferInput = z.infer<typeof validateOfferSchema>;

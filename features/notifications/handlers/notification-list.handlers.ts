@@ -30,10 +30,16 @@ export async function handleListAdminNotifications(request: Request) {
     const notifications = await getDb().notification.findMany({
       orderBy: [{ createdAt: "desc" }],
       select: notificationSelect(),
-      take: query.data.limit,
-      where: { ...query.data, branchId },
+      take: query.data.limit ?? 50,
+      where: {
+        branchId,
+        channel: query.data.channel,
+        status: query.data.status,
+        trigger: query.data.trigger,
+        userId: query.data.userId,
+      },
     });
-    return notificationListResponse(notifications, query.data.limit);
+    return notificationListResponse(notifications, query.data.limit ?? 50);
   } catch (error) {
     return handleNotificationError(error, {
       code: NOTIFICATION_CODES.NOTIFICATION_LOAD_FAILED,
@@ -54,8 +60,8 @@ export async function handleListMyNotifications(request: Request) {
   const notifications = await getDb().notification.findMany({
     orderBy: [{ createdAt: "desc" }],
     select: notificationSelect(),
-    take: query.data.limit,
+    take: query.data.limit ?? 50,
     where: { userId: auth.session.userId },
   });
-  return notificationListResponse(notifications, query.data.limit);
+  return notificationListResponse(notifications, query.data.limit ?? 50);
 }

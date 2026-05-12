@@ -1,16 +1,10 @@
-import type { AuthEventType, Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
-export type AuthEventRow = {
-  createdAt: Date;
-  id: string;
-  ipAddress: string | null;
-  metadata: Prisma.JsonValue;
-  mobile: string | null;
-  type: AuthEventType;
-  user: Record<string, unknown> | null;
-  userAgent: string | null;
-  userId: string | null;
-};
+import { authEventSelect } from "./auth-event.selectors";
+
+export type AuthEventRow = Prisma.AuthEventGetPayload<{
+  select: ReturnType<typeof authEventSelect>;
+}>;
 
 /**
  * Normalizes one auth event row for public admin responses.

@@ -1,4 +1,4 @@
-import type { ZodError, ZodType } from "zod";
+import { z, type ZodError } from "zod";
 
 import { getDb } from "@/db";
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
@@ -45,9 +45,9 @@ export async function requireBookingAdmin(request: Request) {
 /**
  * Parses admin JSON bodies with booking-owned validation errors.
  */
-export async function parseBookingAdminBody<T>(
+export async function parseBookingAdminBody<TSchema extends z.ZodTypeAny>(
   request: Request,
-  schema: ZodType<T>,
+  schema: TSchema,
 ) {
   const parsed = schema.safeParse(await readJsonBody(request));
 
@@ -62,7 +62,7 @@ export async function parseBookingAdminBody<T>(
     };
   }
 
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**

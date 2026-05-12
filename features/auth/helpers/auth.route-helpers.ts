@@ -1,4 +1,4 @@
-import { ZodError, type ZodType } from "zod";
+import { z, ZodError } from "zod";
 
 import {
   AUTH_CODES,
@@ -27,7 +27,10 @@ export async function readJsonBody(request: Request) {
  * The return shape keeps route handlers simple: either `data` is available
  * or `error` is already a ready-to-return Response.
  */
-export async function parseJsonBody<T>(request: Request, schema: ZodType<T>) {
+export async function parseJsonBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const body = await readJsonBody(request);
   const parsed = schema.safeParse(body);
 
@@ -43,7 +46,7 @@ export async function parseJsonBody<T>(request: Request, schema: ZodType<T>) {
   }
 
   return {
-    data: parsed.data,
+    data: parsed.data as z.output<TSchema>,
     error: null,
   };
 }

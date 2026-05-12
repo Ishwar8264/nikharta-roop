@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -20,7 +20,7 @@ export const listProductSalesQuerySchema = z.object({
   branchId: optionalIdSchema,
   date: z.string().trim().date().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  status: z.enum(ProductSaleStatus).optional(),
+  status: z.nativeEnum(ProductSaleStatus).optional(),
   userId: optionalIdSchema,
 });
 
@@ -37,7 +37,7 @@ export const createProductSaleSchema = z.object({
 
 export const updateProductSaleSchema = z.object({
   notes: z.string().trim().max(2000).nullable().optional(),
-  status: z.enum(ProductSaleStatus).optional(),
+  status: z.nativeEnum(ProductSaleStatus).optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: "Send at least one product sale field to update.",
 });

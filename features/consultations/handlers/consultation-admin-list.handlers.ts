@@ -30,7 +30,11 @@ export async function handleListAdminConsultations(request: Request) {
   if (!query.success) return validationError(query.error.issues[0]?.message);
   const branchId = resolveBranchId(query.data.branchId, auth.session.user);
   if (!branchId.ok) return branchId.error;
-  return listAdminConsultations({ ...query.data, branchId: branchId.value });
+  return listAdminConsultations({
+    ...query.data,
+    branchId: branchId.value,
+    limit: query.data.limit ?? 50,
+  });
 }
 
 async function listAdminConsultations(input: {

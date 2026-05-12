@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -18,7 +18,7 @@ const moneySchema = z.coerce.number().min(0).max(999999.99);
 
 export const listExpensesQuerySchema = z.object({
   branchId: optionalIdSchema,
-  category: z.enum(ExpenseCategory).optional(),
+  category: z.nativeEnum(ExpenseCategory).optional(),
   from: z.string().trim().date().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   to: z.string().trim().date().optional(),
@@ -27,7 +27,7 @@ export const listExpensesQuerySchema = z.object({
 const expenseBodySchema = z.object({
   amount: moneySchema,
   branchId: idSchema,
-  category: z.enum(ExpenseCategory),
+  category: z.nativeEnum(ExpenseCategory),
   expenseDate: z.coerce.date(),
   notes: z.string().trim().max(2000).nullable().optional(),
   receiptUrl: z.string().trim().url().max(1000).nullable().optional(),
@@ -42,5 +42,10 @@ export const updateExpenseSchema = expenseBodySchema.partial().refine(
 );
 
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
-export type ListExpensesQueryInput = z.infer<typeof listExpensesQuerySchema>;
+export type ListExpensesQueryInput = Omit<
+  z.infer<typeof listExpensesQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;

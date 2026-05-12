@@ -39,7 +39,13 @@ export async function handleAdminListBookings(request: Request) {
     Object.fromEntries(new URL(request.url).searchParams),
   );
   if (!parsed.success) return handleAdminBookingError(parsed.error);
-  return listAdminBookings(parsed.data, auth.session.user);
+  return listAdminBookings(
+    {
+      ...parsed.data,
+      limit: parsed.data.limit ?? 50,
+    },
+    auth.session.user,
+  );
 }
 
 export async function handleAdminGetBooking(request: Request, bookingId: string) {

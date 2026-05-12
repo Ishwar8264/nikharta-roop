@@ -1,55 +1,16 @@
-type DecimalLike = { toString(): string };
+import type { Prisma } from "@prisma/client";
 
-type OfferServiceRow = {
-  createdAt: Date;
-  service: {
-    id: string;
-    nameEn: string;
-    nameHi: string;
-    slug: string;
-  };
-  serviceId: string;
-};
+import { offerRedemptionSelect, offerSelect } from "./offer.selectors";
 
-type OfferRow = {
-  branch: {
-    city: string;
-    id: string;
-    nameEn: string | null;
-    nameHi: string;
-  } | null;
-  branchId: string | null;
-  code: string;
-  createdAt: Date;
-  descriptionHi: string | null;
-  discountType: string;
-  discountValue: DecimalLike;
-  id: string;
-  isActive: boolean;
-  maxDiscount: DecimalLike | null;
-  minOrder: DecimalLike | null;
-  perUserLimit: number | null;
-  services: OfferServiceRow[];
-  titleEn: string | null;
-  titleHi: string;
-  updatedAt: Date;
-  usageCount: number;
-  usageLimit: number | null;
-  validFrom: Date;
-  validUntil: Date;
-};
+type OfferRow = Prisma.OfferGetPayload<{
+  select: ReturnType<typeof offerSelect>;
+}>;
 
-export type OfferRedemptionRow = {
-  booking: Record<string, unknown>;
-  bookingId: string;
-  createdAt: Date;
-  discountAmount: DecimalLike;
-  id: string;
-  offer: Record<string, unknown>;
-  offerId: string;
-  user: Record<string, unknown>;
-  userId: string;
-};
+export type OfferRedemptionRow = Prisma.OfferRedemptionGetPayload<{
+  select: ReturnType<typeof offerRedemptionSelect>;
+}>;
+
+type OfferServiceRow = OfferRow["services"][number];
 
 /**
  * Converts an offer row into the public API shape.

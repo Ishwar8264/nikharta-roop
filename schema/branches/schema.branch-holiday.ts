@@ -7,7 +7,7 @@ const optionalTextSchema = (maxLength: number) =>
   z.preprocess(
     (value) => (value === "" ? null : value),
     z.string().trim().max(maxLength).nullable().optional(),
-  );
+  ) as z.ZodType<string | null | undefined>;
 
 /**
  * Validates branch holiday dates passed as YYYY-MM-DD.
@@ -61,10 +61,18 @@ export const updateBranchHolidaySchema = branchHolidayFieldsSchema
     message: "Please provide at least one holiday field.",
   });
 
-export type CreateBranchHolidayInput = z.infer<typeof createBranchHolidaySchema>;
-export type ListBranchHolidaysQueryInput = z.infer<
-  typeof listBranchHolidaysQuerySchema
->;
+export type CreateBranchHolidayInput = Omit<
+  z.infer<typeof createBranchHolidaySchema>,
+  "isClosed"
+> & {
+  isClosed: boolean;
+};
+export type ListBranchHolidaysQueryInput = Omit<
+  z.infer<typeof listBranchHolidaysQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type UpdateBranchHolidayInput = z.infer<typeof updateBranchHolidaySchema>;
 
 /**

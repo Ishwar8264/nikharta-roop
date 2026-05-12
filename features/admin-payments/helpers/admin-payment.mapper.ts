@@ -1,25 +1,10 @@
-type DecimalLike = { toString(): string };
+import type { Prisma } from "@prisma/client";
 
-export type AdminPaymentRow = {
-  amount: DecimalLike;
-  amountPaid: DecimalLike;
-  amountRefunded: DecimalLike;
-  booking: Record<string, unknown>;
-  bookingId: string;
-  createdAt: Date;
-  currency: string;
-  id: string;
-  paidAt: Date | null;
-  paymentUrl: string | null;
-  provider: string;
-  providerOrderId: string | null;
-  providerPaymentId: string | null;
-  refundedAt: Date | null;
-  status: string;
-  updatedAt: Date;
-  user: Record<string, unknown>;
-  userId: string;
-};
+import { adminPaymentSelect } from "./admin-payment.selectors";
+
+export type AdminPaymentRow = Prisma.PaymentGetPayload<{
+  select: ReturnType<typeof adminPaymentSelect>;
+}>;
 
 /**
  * Converts decimal payment fields into API-safe string values.
