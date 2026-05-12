@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Bell, Sparkles } from "lucide-react";
 
+import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
 import { CustomerBottomNav } from "@/features/navigation/components/customer-bottom-nav";
@@ -27,6 +28,7 @@ export default function CustomerAppLayout({
                 <Bell className="size-4" />
               </Link>
             </Button>
+            <LogoutButton compact />
           </div>
         </div>
       </header>

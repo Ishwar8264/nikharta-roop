@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { LogoutButton } from "@/components/auth/logout-button";
 import { Logo } from "@/components/ui/shared/logo/logo";
 import { adminNavSections } from "../navigation.config";
 import { NavLinkItem } from "./nav-link-item";
@@ -41,6 +42,10 @@ export function DashboardSidebar() {
           </section>
         ))}
       </nav>
+
+      <div className="border-t border-rose-100 p-4">
+        <LogoutButton />
+      </div>
     </aside>
   );
 }

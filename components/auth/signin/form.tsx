@@ -8,6 +8,10 @@ import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
 import {
+  showError,
+  showSuccess,
+} from "@/components/ui/shared/toast/custom-toast";
+import {
   startSigninAction,
 } from "@/features/auth/actions/auth.actions";
 import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
@@ -27,6 +31,12 @@ const LoginForm = () => {
     startTransition(async () => {
       const result = await startSigninAction(formData);
       setState(result);
+
+      if (result.success) {
+        showSuccess("OTP sent", result.message);
+      } else {
+        showError("Signin failed", result.message);
+      }
 
       // The action decides the next safe route. The client only follows that
       // redirect target and does not inspect auth tokens or cookies.
@@ -68,19 +78,9 @@ const LoginForm = () => {
           helperText="10-digit Indian mobile number"
         />
 
-        {state && (
-          // Success stays visible briefly before redirect; failures remain on
-          // this page so the user can correct the mobile number.
-          <p
-            className={
-              state.success
-                ? "text-sm text-green-700"
-                : "text-sm text-destructive"
-            }
-          >
-            {state.message}
-          </p>
-        )}
+        {state && !state.success ? (
+          <p className="text-sm text-destructive">{state.message}</p>
+        ) : null}
 
         {/* ── Submit ── */}
         <Button type="submit" className="w-full" disabled={isPending}>

@@ -6,6 +6,10 @@ import { Phone, ShieldCheck } from "lucide-react";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
 import {
+  showError,
+  showSuccess,
+} from "@/components/ui/shared/toast/custom-toast";
+import {
   verifySigninAction,
   verifySignupAction,
 } from "@/features/auth/actions/auth.actions";
@@ -46,6 +50,12 @@ const VerifyOtpForm = ({
     startTransition(async () => {
       const result = await action(formData);
       setState(result);
+
+      if (result.success) {
+        showSuccess("Verification complete", result.message);
+      } else {
+        showError("Verification failed", result.message);
+      }
 
       // On success the action has already set HttpOnly cookies server-side.
       // The client only navigates to the returned route.
@@ -106,17 +116,9 @@ const VerifyOtpForm = ({
           </p>
         ) : null}
 
-        {state && (
-          <p
-            className={
-              state.success
-                ? "text-sm text-green-700"
-                : "text-sm text-destructive"
-            }
-          >
-            {state.message}
-          </p>
-        )}
+        {state && !state.success ? (
+          <p className="text-sm text-destructive">{state.message}</p>
+        ) : null}
 
         {/* ── Submit ── */}
         <Button type="submit" className="w-full" disabled={isPending}>

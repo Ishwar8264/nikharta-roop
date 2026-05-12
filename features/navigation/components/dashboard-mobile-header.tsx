@@ -2,6 +2,7 @@
 
 import { Menu } from "lucide-react";
 
+import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
 import {
@@ -46,6 +47,9 @@ export function DashboardMobileHeader() {
               </section>
             ))}
           </nav>
+          <div className="border-t border-rose-100 px-4 pt-4">
+            <LogoutButton />
+          </div>
         </SheetContent>
       </Sheet>
     </header>

@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 
 import {
   handleLogin,
+  handleLogout,
   handleRegister,
   handleVerifyLogin,
   handleVerifyRegister,
@@ -32,6 +33,29 @@ type AuthResponsePayload = {
 };
 
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+
+/**
+ * Logs out the current browser session.
+ *
+ * The browser does not fetch `/api/v1/auth/logout`. This action forwards the
+ * current HttpOnly cookies to the existing logout handler so the session can be
+ * revoked in the database, then clears the same cookies through Next's cookies
+ * API to guarantee the browser receives expiry Set-Cookie headers.
+ */
+export async function logoutAction(): Promise<AuthActionState> {
+  const response = await callAuthHandler(handleLogout, {});
+
+  await clearBrowserAuthCookies();
+
+  return {
+    code: response.payload?.code,
+    data: {
+      redirectTo: "/signin",
+    },
+    message: response.payload?.message ?? "Logged out successfully.",
+    success: response.payload?.success !== false,
+  };
+}
 
 /**
  * Starts the signin OTP flow from the browser form.
@@ -213,6 +237,28 @@ async function persistAuthCookies(response: {
 
   cookieStore.set(AUTH_COOKIE_NAMES.SESSION, accessToken, cookieOptions);
   cookieStore.set(AUTH_COOKIE_NAMES.REFRESH, refreshToken, cookieOptions);
+}
+
+/**
+ * Clears auth cookies from the browser after logout.
+ *
+ * `handleLogout` also returns Set-Cookie headers, but Server Actions do not
+ * automatically apply headers from a manually-created Response. Writing through
+ * `cookies()` makes the deletion explicit and reliable for this action flow.
+ */
+async function clearBrowserAuthCookies() {
+  const cookieStore = await cookies();
+  const clearOptions = {
+    expires: new Date(0),
+    httpOnly: true,
+    maxAge: 0,
+    path: "/",
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+  };
+
+  cookieStore.set(AUTH_COOKIE_NAMES.SESSION, "", clearOptions);
+  cookieStore.set(AUTH_COOKIE_NAMES.REFRESH, "", clearOptions);
 }
 
 /**

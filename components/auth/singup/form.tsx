@@ -8,6 +8,10 @@ import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
 import {
+  showError,
+  showSuccess,
+} from "@/components/ui/shared/toast/custom-toast";
+import {
   startSignupAction,
 } from "@/features/auth/actions/auth.actions";
 import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
@@ -26,6 +30,12 @@ const RegisterForm = () => {
     startTransition(async () => {
       const result = await startSignupAction(formData);
       setState(result);
+
+      if (result.success) {
+        showSuccess("OTP sent", result.message);
+      } else {
+        showError("Signup failed", result.message);
+      }
 
       // Redirect destination comes from the action so the client does not need
       // to know auth flow details beyond rendering the next screen.
@@ -90,18 +100,9 @@ const RegisterForm = () => {
           helperText="10-digit Indian mobile number"
         />
 
-        {state && (
-          // Show server validation/OTP messages without exposing token data.
-          <p
-            className={
-              state.success
-                ? "text-sm text-green-700"
-                : "text-sm text-destructive"
-            }
-          >
-            {state.message}
-          </p>
-        )}
+        {state && !state.success ? (
+          <p className="text-sm text-destructive">{state.message}</p>
+        ) : null}
 
         {/* ── Submit ── */}
         <Button type="submit" className="w-full" disabled={isPending}>
