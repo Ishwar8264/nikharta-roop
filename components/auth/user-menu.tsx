@@ -19,14 +19,20 @@ import { cn } from "@/lib/utils";
 
 type UserMenuProps = {
   className?: string;
+  user: AuthUser;
 };
 
-export function UserMenu({ className }: UserMenuProps) {
-  const [user, setUser] = React.useState<AuthUser | null>(null);
+export function UserMenu({ className, user: initialUser }: UserMenuProps) {
+  const [user, setUser] = React.useState<AuthUser | null>(initialUser);
 
-  // User identity is loaded through a Server Action so the client does not
-  // fetch `/api/v1/auth/me` directly and never reads HttpOnly auth cookies.
+  // User identity is passed from the protected account layout. This fallback
+  // keeps the component resilient if it is reused somewhere that cannot provide
+  // a server-loaded user yet.
   React.useEffect(() => {
+    if (initialUser) {
+      return;
+    }
+
     let isMounted = true;
 
     getCurrentUserAction().then((result) => {
@@ -38,7 +44,7 @@ export function UserMenu({ className }: UserMenuProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialUser]);
 
   const displayName = user?.name || user?.mobile || "Account";
   const subtitle = user?.mobile || user?.email || "Signed in";

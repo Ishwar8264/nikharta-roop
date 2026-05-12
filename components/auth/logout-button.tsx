@@ -51,14 +51,12 @@ export function LogoutButton({
     <div className={cn("space-y-2", className)}>
       <Button
         aria-label="Logout"
-        className={
-          compact ? undefined : "w-full justify-start bg-red-700 font-semibold"
-        }
+        className={compact ? undefined : "w-full justify-start font-semibold"}
         disabled={isPending}
         onClick={handleLogout}
         size={compact ? "icon" : "default"}
         type="button"
-        variant="default"
+        variant="destructive"
       >
         <LogOut className="size-4" />
         {compact ? null : isPending ? "Logging out..." : "Logout"}
