@@ -2,15 +2,53 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Phone } from "lucide-react";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
+import {
+  showError,
+  showSuccess,
+} from "@/components/ui/shared/toast/custom-toast";
+import {
+  startSigninAction,
+} from "@/features/auth/actions/auth.actions";
+import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
 
 const LoginForm = () => {
+  const router = useRouter();
+  const [state, setState] = React.useState<AuthActionState | null>(null);
+  const [isPending, startTransition] = React.useTransition();
+
+  // The form submits to a Server Action instead of fetching an API route.
+  // Network tab may show the Server Action request, but `/api/v1/auth/login`
+  // is never called directly from the browser.
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    startTransition(async () => {
+      const result = await startSigninAction(formData);
+      setState(result);
+
+      if (result.success) {
+        showSuccess("OTP sent", result.message);
+      } else {
+        showError("Signin failed", result.message);
+      }
+
+      // The action decides the next safe route. The client only follows that
+      // redirect target and does not inspect auth tokens or cookies.
+      if (result.success && result.data?.redirectTo) {
+        router.push(result.data.redirectTo);
+      }
+    });
+  }
+
   return (
     <form
-      onSubmit={(e) => e.preventDefault()}
+      onSubmit={handleSubmit}
       /* Reduced top padding (pt-6 instead of p-8), kept sides/bottom same */
       className="w-full max-w-md rounded-2xl border border-gray-200 bg-white px-8 pt-6 pb-8 shadow-sm"
     >
@@ -30,6 +68,7 @@ const LoginForm = () => {
       <div className="mt-6 space-y-5">
         {/* ── Mobile ── */}
         <InputField
+          name="mobile"
           label="Mobile Number"
           placeholder="9876543210"
           type="tel"
@@ -39,9 +78,13 @@ const LoginForm = () => {
           helperText="10-digit Indian mobile number"
         />
 
+        {state && !state.success ? (
+          <p className="text-sm text-destructive">{state.message}</p>
+        ) : null}
+
         {/* ── Submit ── */}
-        <Button type="submit" className="w-full">
-          Login
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "Sending OTP..." : "Login"}
         </Button>
       </div>
 

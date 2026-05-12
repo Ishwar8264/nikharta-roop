@@ -2,15 +2,52 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Mail, Phone, User } from "lucide-react";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
+import {
+  showError,
+  showSuccess,
+} from "@/components/ui/shared/toast/custom-toast";
+import {
+  startSignupAction,
+} from "@/features/auth/actions/auth.actions";
+import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
 
 const RegisterForm = () => {
+  const router = useRouter();
+  const [state, setState] = React.useState<AuthActionState | null>(null);
+  const [isPending, startTransition] = React.useTransition();
+
+  // Signup starts on the server. The browser submits form data to a Server
+  // Action, and the action reuses the existing auth handler to create the OTP.
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    startTransition(async () => {
+      const result = await startSignupAction(formData);
+      setState(result);
+
+      if (result.success) {
+        showSuccess("OTP sent", result.message);
+      } else {
+        showError("Signup failed", result.message);
+      }
+
+      // Redirect destination comes from the action so the client does not need
+      // to know auth flow details beyond rendering the next screen.
+      if (result.success && result.data?.redirectTo) {
+        router.push(result.data.redirectTo);
+      }
+    });
+  }
+
   return (
     <form
-      onSubmit={(e) => e.preventDefault()}
+      onSubmit={handleSubmit}
       className="w-full max-w-md rounded-2xl border border-gray-200 bg-white px-8 pt-6 pb-8 shadow-sm"
     >
       {/* ── Logo & Header grouped tightly ── */}
@@ -31,6 +68,7 @@ const RegisterForm = () => {
       <div className="mt-6 space-y-5">
         {/* ── Name ── */}
         <InputField
+          name="name"
           label="Name"
           placeholder="Enter your name"
           type="text"
@@ -41,6 +79,7 @@ const RegisterForm = () => {
 
         {/* ── Email ── */}
         <InputField
+          name="email"
           label="Email"
           placeholder="you@example.com"
           type="email"
@@ -51,6 +90,7 @@ const RegisterForm = () => {
 
         {/* ── Mobile ── */}
         <InputField
+          name="mobile"
           label="Mobile Number"
           placeholder="9876543210"
           type="tel"
@@ -60,9 +100,13 @@ const RegisterForm = () => {
           helperText="10-digit Indian mobile number"
         />
 
+        {state && !state.success ? (
+          <p className="text-sm text-destructive">{state.message}</p>
+        ) : null}
+
         {/* ── Submit ── */}
-        <Button type="submit" className="w-full">
-          Register
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "Sending OTP..." : "Register"}
         </Button>
       </div>
 

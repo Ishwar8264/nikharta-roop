@@ -1,37 +1,92 @@
-import Link from "next/link";
-import { Bell, Sparkles } from "lucide-react";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/shared/logo/logo";
+import type { AuthUser } from "@/features/auth/actions/auth-action.types";
+import { handleMe } from "@/features/auth/handlers/auth.handlers";
+import { CustomerHeader } from "@/features/navigation/components/customer-header";
 import { CustomerBottomNav } from "@/features/navigation/components/customer-bottom-nav";
 
-export default function CustomerAppLayout({
+type AuthMePayload = {
+  data?: {
+    user?: AuthUser;
+  } | null;
+  success?: boolean;
+};
+
+export default async function CustomerAppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCustomerUser();
+
+  if (!user) {
+    redirect("/signin");
+  }
+
   return (
     <div className="min-h-screen bg-[#fffaf6] pb-20 text-stone-950 md:pb-0">
-      <header className="sticky top-0 z-40 border-b border-rose-100 bg-[#fffaf6]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <Logo size="sm" href="/account" />
-          <div className="flex items-center gap-2">
-            <Button asChild className="hidden bg-rose-900 text-white hover:bg-rose-800 sm:inline-flex">
-              <Link href="/account/book">
-                <Sparkles className="size-4" />
-                Book
-              </Link>
-            </Button>
-            <Button asChild aria-label="Notifications" size="icon" variant="outline">
-              <Link href="/account/notifications">
-                <Bell className="size-4" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <CustomerHeader user={user} />
       <main>{children}</main>
       <CustomerBottomNav />
     </div>
   );
+}
+
+async function getCustomerUser() {
+  const requestHeaders = await createAuthRequestHeaders();
+
+  if (!requestHeaders.has("cookie")) {
+    return null;
+  }
+
+  const response = await handleMe(
+    new Request("http://nikharta-roop.local/account-layout", {
+      headers: requestHeaders,
+      method: "GET",
+    }),
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json().catch(() => null)) as
+    | AuthMePayload
+    | null;
+
+  return payload?.success ? payload.data?.user ?? null : null;
+}
+
+async function createAuthRequestHeaders() {
+  const incomingHeaders = await headers();
+  const cookieStore = await cookies();
+  const requestHeaders = new Headers();
+
+  const cookieHeader = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${encodeURIComponent(value)}`)
+    .join("; ");
+
+  if (cookieHeader) {
+    requestHeaders.set("cookie", cookieHeader);
+  }
+
+  const userAgent = incomingHeaders.get("user-agent");
+  const forwardedFor = incomingHeaders.get("x-forwarded-for");
+  const realIp = incomingHeaders.get("x-real-ip");
+
+  if (userAgent) {
+    requestHeaders.set("user-agent", userAgent);
+  }
+
+  if (forwardedFor) {
+    requestHeaders.set("x-forwarded-for", forwardedFor);
+  }
+
+  if (realIp) {
+    requestHeaders.set("x-real-ip", realIp);
+  }
+
+  return requestHeaders;
 }
