@@ -3,11 +3,7 @@ import "server-only";
 import { cookies, headers } from "next/headers";
 
 import type { AuthUser } from "@/features/auth/actions/auth-action.types";
-import { AUTH_COOKIE_NAMES } from "@/features/auth/helpers/auth.cookies";
-import {
-  handleMe,
-  handleRefreshSession,
-} from "@/features/auth/handlers/auth.handlers";
+import { handleMe } from "@/features/auth/handlers/auth.handlers";
 
 type AuthResponsePayload = {
   data?: {
@@ -22,26 +18,13 @@ type AuthResponsePayload = {
 };
 
 /**
- * Loads the current user for protected server layouts.
+ * Loads the current user for Server Component layouts.
  *
- * It first checks the access/session cookie with `/auth/me`. If that cookie is
- * stale but the refresh cookie is still valid, it rotates the cookies through
- * `/auth/refresh` and retries `/auth/me` once. Client components never call the
- * auth API directly in this flow.
+ * This helper intentionally only reads cookies. Next.js allows cookie writes
+ * only inside Server Actions and Route Handlers, so layouts must not refresh or
+ * clear auth cookies here.
  */
-export async function getCurrentUserWithRefresh() {
-  const firstAttempt = await getCurrentUserOnce();
-
-  if (firstAttempt) {
-    return firstAttempt;
-  }
-
-  const refreshed = await refreshBrowserSession();
-
-  if (!refreshed) {
-    return null;
-  }
-
+export async function getCurrentUserFromRequest() {
   return getCurrentUserOnce();
 }
 
@@ -74,49 +57,6 @@ async function getCurrentUserOnce() {
     | null;
 
   return payload?.success ? payload.data?.user ?? null : null;
-}
-
-/**
- * Rotates auth cookies using the refresh cookie.
- *
- * `handleRefreshSession` returns token data in its response body for API/mobile
- * clients. Server layouts must explicitly write those tokens into Next cookies
- * so the browser receives the rotated HttpOnly cookies.
- */
-async function refreshBrowserSession() {
-  const requestHeaders = await createAuthRequestHeaders();
-
-  if (!requestHeaders.has("cookie")) {
-    return false;
-  }
-
-  const response = await handleRefreshSession(
-    new Request("http://nikharta-roop.local/auth-session/refresh", {
-      body: JSON.stringify({}),
-      headers: requestHeaders,
-      method: "POST",
-    }),
-  );
-
-  if (!response.ok) {
-    await clearBrowserAuthCookies();
-
-    return false;
-  }
-
-  const payload = (await response.json().catch(() => null)) as
-    | AuthResponsePayload
-    | null;
-
-  if (!payload?.success || !payload.data) {
-    await clearBrowserAuthCookies();
-
-    return false;
-  }
-
-  await persistBrowserAuthCookies(payload);
-
-  return true;
 }
 
 /**
@@ -158,48 +98,4 @@ async function createAuthRequestHeaders() {
   }
 
   return requestHeaders;
-}
-
-/**
- * Stores refreshed access/refresh tokens as HttpOnly browser cookies.
- */
-async function persistBrowserAuthCookies(payload: AuthResponsePayload) {
-  const { accessToken, refreshToken, session } = payload.data ?? {};
-  const expiresAt = session?.expiresAt ? new Date(session.expiresAt) : null;
-
-  if (!accessToken || !refreshToken || !expiresAt) {
-    await clearBrowserAuthCookies();
-
-    return;
-  }
-
-  const cookieStore = await cookies();
-  const cookieOptions = {
-    expires: expiresAt,
-    httpOnly: true,
-    path: "/",
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-  };
-
-  cookieStore.set(AUTH_COOKIE_NAMES.SESSION, accessToken, cookieOptions);
-  cookieStore.set(AUTH_COOKIE_NAMES.REFRESH, refreshToken, cookieOptions);
-}
-
-/**
- * Clears stale auth cookies when refresh fails.
- */
-async function clearBrowserAuthCookies() {
-  const cookieStore = await cookies();
-  const clearOptions = {
-    expires: new Date(0),
-    httpOnly: true,
-    maxAge: 0,
-    path: "/",
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-  };
-
-  cookieStore.set(AUTH_COOKIE_NAMES.SESSION, "", clearOptions);
-  cookieStore.set(AUTH_COOKIE_NAMES.REFRESH, "", clearOptions);
 }
