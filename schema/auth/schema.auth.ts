@@ -13,18 +13,29 @@ const mobileSchema = z
   .trim()
   .regex(/^[6-9]\d{9}$/, AUTH_MESSAGES.INVALID_MOBILE);
 
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email(AUTH_MESSAGES.INVALID_EMAIL)
+  .max(150);
+
+const identifierSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .refine(
+    (value) => emailSchema.safeParse(value).success || mobileSchema.safeParse(value).success,
+    AUTH_MESSAGES.INVALID_IDENTIFIER,
+  );
+
 /**
  * Allows email to be omitted or submitted as an empty string.
  *
  * Email is optional for this Hindi/mobile-first product, but when provided it
  * must still be normalized and valid.
  */
-const optionalEmailSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .email(AUTH_MESSAGES.INVALID_EMAIL)
-  .max(150)
+const optionalEmailSchema = emailSchema
   .optional()
   .or(z.literal(""));
 
@@ -60,7 +71,7 @@ export type VerifyRegisterInput = z.infer<typeof verifyRegisterSchema>;
  * Request schema for POST /api/v1/auth/login.
  */
 export const loginSchema = z.object({
-  mobile: mobileSchema,
+  identifier: identifierSchema,
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -69,11 +80,25 @@ export type LoginInput = z.infer<typeof loginSchema>;
  * Request schema for POST /api/v1/auth/login/verify.
  */
 export const verifyLoginSchema = z.object({
-  mobile: mobileSchema,
+  identifier: identifierSchema,
   otp: otpSchema,
 });
 
 export type VerifyLoginInput = z.infer<typeof verifyLoginSchema>;
+
+export const checkIdentifierSchema = z.object({
+  identifier: identifierSchema,
+  purpose: z.enum(["LOGIN", "SIGNUP"]).default("SIGNUP"),
+});
+
+export type CheckIdentifierInput = z.infer<typeof checkIdentifierSchema>;
+
+export const resendOtpSchema = z.object({
+  identifier: identifierSchema,
+  purpose: z.enum(["LOGIN", "SIGNUP"]),
+});
+
+export type ResendOtpInput = z.infer<typeof resendOtpSchema>;
 
 /**
  * Request schema for POST /api/v1/auth/refresh.

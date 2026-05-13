@@ -3,8 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Phone } from "lucide-react";
-import { InputField } from "@/components/ui/shared/input/generic-input";
+import { AtSign } from "lucide-react";
+import { IdentifierCheckField } from "@/components/auth/identifier-check-field";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
 import {
@@ -59,23 +59,23 @@ const LoginForm = () => {
         <div className="text-center">
           <h2 className="text-xl font-semibold tracking-tight">Welcome Back</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Enter your mobile number to login
+            Enter your mobile number or email to login
           </p>
         </div>
       </div>
 
       {/* ── Form Fields ── */}
       <div className="mt-6 space-y-5">
-        {/* ── Mobile ── */}
-        <InputField
-          name="mobile"
-          label="Mobile Number"
-          placeholder="9876543210"
-          type="tel"
-          autoComplete="tel"
+        <IdentifierCheckField
+          name="identifier"
+          purpose="LOGIN"
+          label="Mobile Number or Email"
+          placeholder="9876543210 or you@example.com"
+          type="text"
+          autoComplete="username"
           required
-          leftIcon={<Phone className="h-4 w-4" />}
-          helperText="10-digit Indian mobile number"
+          leftIcon={<AtSign className="h-4 w-4" />}
+          helperText="Use your registered mobile number or email"
         />
 
         {state && !state.success ? (

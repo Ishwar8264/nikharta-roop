@@ -24,12 +24,16 @@ import { parseJsonBody } from "@/features/auth/helpers/auth.route-helpers";
 import { authError, authJson } from "@/features/auth/responses/auth.responses";
 import { HTTP_STATUS } from "@/lib/constants/http-status";
 import {
+  checkIdentifierSchema,
+  type CheckIdentifierInput,
   loginSchema,
   type LoginInput,
   registerSchema,
   refreshSessionSchema,
   type RefreshSessionInput,
   type RegisterInput,
+  resendOtpSchema,
+  type ResendOtpInput,
   verifyLoginSchema,
   type VerifyLoginInput,
   verifyRegisterSchema,
@@ -61,6 +65,11 @@ type AuthTokenPair = {
 type PublicSessionRow = {
   expiresAt: Date;
   id: string;
+};
+
+type NormalizedIdentifier = {
+  type: "EMAIL" | "MOBILE";
+  value: string;
 };
 
 /**
@@ -96,6 +105,16 @@ export async function handleVerifyRegister(request: Request) {
   return verifySignupOtp(parsedBody.data, getRequestContext(request));
 }
 
+export async function handleCheckIdentifier(request: Request) {
+  const parsedBody = await parseJsonBody(request, checkIdentifierSchema);
+
+  if (parsedBody.error) {
+    return parsedBody.error;
+  }
+
+  return checkIdentifier(parsedBody.data);
+}
+
 /**
  * Sends a login OTP to an existing active user.
  */
@@ -120,6 +139,16 @@ export async function handleVerifyLogin(request: Request) {
   }
 
   return verifyLoginOtp(parsedBody.data, getRequestContext(request));
+}
+
+export async function handleResendOtp(request: Request) {
+  const parsedBody = await parseJsonBody(request, resendOtpSchema);
+
+  if (parsedBody.error) {
+    return parsedBody.error;
+  }
+
+  return resendOtp(parsedBody.data, getRequestContext(request));
 }
 
 /**
@@ -269,6 +298,80 @@ export async function handleRevokeSession(request: Request, sessionId: string) {
   });
 }
 
+async function checkIdentifier(input: CheckIdentifierInput) {
+  const identifier = normalizeIdentifier(input.identifier);
+  const user = await getDb().user.findFirst({
+    select: {
+      id: true,
+      isActive: true,
+    },
+    where: userIdentifierWhere(identifier),
+  });
+
+  const exists = Boolean(user);
+  const canContinue =
+    input.purpose === "SIGNUP" ? !exists : Boolean(user?.isActive);
+
+  return authJson({
+    code:
+      input.purpose === "SIGNUP"
+        ? exists
+          ? AUTH_CODES.IDENTIFIER_EXISTS
+          : AUTH_CODES.IDENTIFIER_AVAILABLE
+        : AUTH_CODES.IDENTIFIER_CHECKED,
+    data: {
+      available: input.purpose === "SIGNUP" ? !exists : undefined,
+      canContinue,
+      exists: input.purpose === "LOGIN" ? exists : undefined,
+      identifier: identifier.value,
+      type: identifier.type,
+    },
+    message:
+      input.purpose === "SIGNUP"
+        ? exists
+          ? AUTH_MESSAGES.IDENTIFIER_EXISTS
+          : AUTH_MESSAGES.IDENTIFIER_AVAILABLE
+        : AUTH_MESSAGES.IDENTIFIER_CHECKED,
+    status: HTTP_STATUS.OK,
+    success: true,
+  });
+}
+
+async function resendOtp(input: ResendOtpInput, context: RequestContext) {
+  const identifier = normalizeIdentifier(input.identifier);
+
+  if (input.purpose === AUTH_OTP_CONFIG.PURPOSE_LOGIN) {
+    return startLoginOtp({ identifier: identifier.value }, context);
+  }
+
+  try {
+    const signupContext = await resolveSignupResendInput(identifier);
+
+    if (!signupContext) {
+      return authError({
+        code: AUTH_CODES.OTP_NOT_FOUND,
+        message: AUTH_MESSAGES.OTP_NOT_FOUND,
+        status: HTTP_STATUS.GONE,
+      });
+    }
+
+    return startSignupOtp(signupContext, context, AUTH_SOURCES.OTP_RESEND_ENDPOINT);
+  } catch (error) {
+    console.error(AUTH_CODES.OTP_RESEND_FAILED, {
+      error,
+      handler: "resendOtp",
+      identifier: identifier.value,
+      purpose: input.purpose,
+    });
+
+    return authError({
+      code: AUTH_CODES.OTP_RESEND_FAILED,
+      message: AUTH_MESSAGES.OTP_RESEND_FAILED,
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+    });
+  }
+}
+
 /**
  * Starts mobile-first registration by creating a signup OTP.
  *
@@ -278,6 +381,7 @@ export async function handleRevokeSession(request: Request, sessionId: string) {
 async function startSignupOtp(
   input: RegisterInput,
   context: RequestContext,
+  source: string = AUTH_SOURCES.REGISTER_ENDPOINT,
 ) {
   const db = getDb();
   const email = input.email || null;
@@ -290,9 +394,12 @@ async function startSignupOtp(
 
   try {
     const otpRecord = await db.$transaction(async (tx) => {
-      const existingUser = await tx.user.findUnique({
+      const existingUser = await tx.user.findFirst({
         where: {
-          mobile: input.mobile,
+          OR: [
+            { mobile: input.mobile },
+            ...(email ? [{ email }] : []),
+          ],
         },
       });
 
@@ -352,7 +459,7 @@ async function startSignupOtp(
           metadata: {
             email,
             name: input.name ?? null,
-            source: AUTH_SOURCES.REGISTER_ENDPOINT,
+            source,
           },
           mobile: input.mobile,
           otpHash: hashOtp(input.mobile, otp, otpSecret),
@@ -375,7 +482,7 @@ async function startSignupOtp(
             email,
             name: input.name ?? null,
             otpId: createdOtp.id,
-            source: AUTH_SOURCES.REGISTER_ENDPOINT,
+            source,
           },
           mobile: input.mobile,
           type: "SIGNUP_STARTED",
@@ -706,6 +813,7 @@ async function verifySignupOtp(
  */
 async function startLoginOtp(input: LoginInput, context: RequestContext) {
   const db = getDb();
+  const identifier = normalizeIdentifier(input.identifier);
   const otp = generateOtp();
   const otpSecret = getAuthSecret();
   const now = new Date();
@@ -715,15 +823,14 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
 
   try {
     const result = await db.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
+      const user = await tx.user.findFirst({
         select: {
+          email: true,
           id: true,
           isActive: true,
           mobile: true,
         },
-        where: {
-          mobile: input.mobile,
-        },
+        where: userIdentifierWhere(identifier),
       });
 
       if (!user) {
@@ -754,8 +861,9 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
               now.getTime() - AUTH_OTP_CONFIG.RETRY_AFTER_SECONDS * 1000,
             ),
           },
-          mobile: input.mobile,
+          mobile: user.mobile,
           purpose: AUTH_OTP_CONFIG.PURPOSE_LOGIN,
+          userId: user.id,
           verifiedAt: null,
         },
       });
@@ -775,8 +883,9 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
           expiresAt: {
             gt: now,
           },
-          mobile: input.mobile,
+          mobile: user.mobile,
           purpose: AUTH_OTP_CONFIG.PURPOSE_LOGIN,
+          userId: user.id,
           verifiedAt: null,
         },
       });
@@ -786,10 +895,12 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
           expiresAt,
           ipAddress: context.ipAddress,
           metadata: {
+            identifier: identifier.value,
+            identifierType: identifier.type,
             source: AUTH_SOURCES.LOGIN_ENDPOINT,
           },
-          mobile: input.mobile,
-          otpHash: hashOtp(input.mobile, otp, otpSecret),
+          mobile: user.mobile,
+          otpHash: hashOtp(identifier.value, otp, otpSecret),
           purpose: AUTH_OTP_CONFIG.PURPOSE_LOGIN,
           retryAfter: AUTH_OTP_CONFIG.RETRY_AFTER_SECONDS,
           userAgent: context.userAgent,
@@ -808,9 +919,11 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
           ipAddress: context.ipAddress,
           metadata: {
             otpId: createdOtp.id,
+            identifier: identifier.value,
+            identifierType: identifier.type,
             source: AUTH_SOURCES.LOGIN_ENDPOINT,
           },
-          mobile: input.mobile,
+          mobile: user.mobile,
           type: "OTP_REQUESTED",
           userAgent: context.userAgent,
           userId: user.id,
@@ -844,6 +957,7 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
         code: AUTH_CODES.OTP_RETRY_LATER,
         data: {
           expiresAt: result.recentOtp.expiresAt,
+          identifier: identifier.value,
           mobile: result.recentOtp.mobile,
           retryAfter: getRetryAfterSeconds(result.recentOtp.createdAt, now),
         },
@@ -858,6 +972,7 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
       data: {
         devOtp: process.env.NODE_ENV === "production" ? undefined : otp,
         expiresAt: result.otp.expiresAt,
+        identifier: identifier.value,
         mobile: result.otp.mobile,
         retryAfter: result.otp.retryAfter,
       },
@@ -869,7 +984,7 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
     console.error(AUTH_CODES.LOGIN_OTP_FAILED, {
       error,
       handler: "startLoginOtp",
-      mobile: input.mobile,
+      identifier: identifier.value,
     });
 
     return authError({
@@ -895,10 +1010,11 @@ async function verifyLoginOtp(
   const otpSecret = getAuthSecret();
   const tokens = generateAuthTokens();
   const sessionExpiresAt = getSessionExpiry(now);
+  const identifier = normalizeIdentifier(input.identifier);
 
   try {
     const result = await db.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
+      const user = await tx.user.findFirst({
         select: {
           branchId: true,
           email: true,
@@ -909,9 +1025,7 @@ async function verifyLoginOtp(
           name: true,
           role: true,
         },
-        where: {
-          mobile: input.mobile,
-        },
+        where: userIdentifierWhere(identifier),
       });
 
       if (!user) {
@@ -931,7 +1045,7 @@ async function verifyLoginOtp(
           createdAt: "desc",
         },
         where: {
-          mobile: input.mobile,
+          mobile: user.mobile,
           purpose: AUTH_OTP_CONFIG.PURPOSE_LOGIN,
           userId: user.id,
         },
@@ -955,7 +1069,7 @@ async function verifyLoginOtp(
         };
       }
 
-      const submittedOtpHash = hashOtp(input.mobile, input.otp, otpSecret);
+      const submittedOtpHash = hashOtp(identifier.value, input.otp, otpSecret);
 
       if (submittedOtpHash !== otpRecord.otpHash) {
         const attemptCount = otpRecord.attemptCount + 1;
@@ -980,10 +1094,12 @@ async function verifyLoginOtp(
             ipAddress: context.ipAddress,
             metadata: {
               attemptCount,
+              identifier: identifier.value,
+              identifierType: identifier.type,
               otpId: otpRecord.id,
               source: AUTH_SOURCES.LOGIN_VERIFY_ENDPOINT,
             },
-            mobile: input.mobile,
+            mobile: user.mobile,
             type: "OTP_FAILED",
             userAgent: context.userAgent,
             userId: user.id,
@@ -1036,9 +1152,11 @@ async function verifyLoginOtp(
             ipAddress: context.ipAddress,
             metadata: {
               otpId: otpRecord.id,
+              identifier: identifier.value,
+              identifierType: identifier.type,
               source: AUTH_SOURCES.LOGIN_VERIFY_ENDPOINT,
             },
-            mobile: input.mobile,
+            mobile: user.mobile,
             type: "OTP_VERIFIED",
             userAgent: context.userAgent,
             userId: user.id,
@@ -1047,9 +1165,11 @@ async function verifyLoginOtp(
             ipAddress: context.ipAddress,
             metadata: {
               sessionId: session.id,
+              identifier: identifier.value,
+              identifierType: identifier.type,
               source: AUTH_SOURCES.LOGIN_VERIFY_ENDPOINT,
             },
-            mobile: input.mobile,
+            mobile: user.mobile,
             type: "LOGIN_COMPLETED",
             userAgent: context.userAgent,
             userId: user.id,
@@ -1097,7 +1217,7 @@ async function verifyLoginOtp(
     console.error(AUTH_CODES.LOGIN_VERIFY_FAILED, {
       error,
       handler: "verifyLoginOtp",
-      mobile: input.mobile,
+      identifier: identifier.value,
     });
 
     return authError({
@@ -1513,6 +1633,72 @@ function getRetryAfterSeconds(createdAt: Date, now: Date) {
         1000,
     ),
   );
+}
+
+function normalizeIdentifier(identifier: string): NormalizedIdentifier {
+  const value = identifier.trim().toLowerCase();
+
+  return value.includes("@")
+    ? { type: "EMAIL", value }
+    : { type: "MOBILE", value };
+}
+
+function userIdentifierWhere(identifier: NormalizedIdentifier) {
+  return identifier.type === "EMAIL"
+    ? { email: identifier.value }
+    : { mobile: identifier.value };
+}
+
+async function resolveSignupResendInput(identifier: NormalizedIdentifier) {
+  if (identifier.type === "MOBILE") {
+    const latestOtp = await getDb().authOtp.findFirst({
+      orderBy: { createdAt: "desc" },
+      where: {
+        mobile: identifier.value,
+        purpose: AUTH_OTP_CONFIG.PURPOSE_SIGNUP,
+        verifiedAt: null,
+      },
+    });
+
+    if (!latestOtp) {
+      return null;
+    }
+
+    const metadata = getSignupOtpMetadata(latestOtp.metadata);
+
+    return {
+      email: metadata.email ?? "",
+      mobile: latestOtp.mobile,
+      name: metadata.name ?? undefined,
+    };
+  }
+
+  const candidateOtps = await getDb().authOtp.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    where: {
+      purpose: AUTH_OTP_CONFIG.PURPOSE_SIGNUP,
+      verifiedAt: null,
+    },
+  });
+
+  const matchingOtp = candidateOtps.find((otp) => {
+    const metadata = getSignupOtpMetadata(otp.metadata);
+
+    return metadata.email === identifier.value;
+  });
+
+  if (!matchingOtp) {
+    return null;
+  }
+
+  const metadata = getSignupOtpMetadata(matchingOtp.metadata);
+
+  return {
+    email: metadata.email ?? "",
+    mobile: matchingOtp.mobile,
+    name: metadata.name ?? undefined,
+  };
 }
 
 /**

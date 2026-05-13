@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Phone, User } from "lucide-react";
+import { IdentifierCheckField } from "@/components/auth/identifier-check-field";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
@@ -78,8 +79,9 @@ const RegisterForm = () => {
         />
 
         {/* ── Email ── */}
-        <InputField
+        <IdentifierCheckField
           name="email"
+          purpose="SIGNUP"
           label="Email"
           placeholder="you@example.com"
           type="email"
@@ -89,8 +91,9 @@ const RegisterForm = () => {
         />
 
         {/* ── Mobile ── */}
-        <InputField
+        <IdentifierCheckField
           name="mobile"
+          purpose="SIGNUP"
           label="Mobile Number"
           placeholder="9876543210"
           type="tel"

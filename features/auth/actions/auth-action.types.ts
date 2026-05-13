@@ -2,10 +2,15 @@
 // This intentionally excludes access/refresh tokens because tokens belong in
 // HttpOnly cookies, not in client component state.
 export type AuthActionData = {
+  available?: boolean;
+  canContinue?: boolean;
   devOtp?: string;
+  exists?: boolean;
+  identifier?: string;
   mobile?: string;
   redirectTo?: string;
   retryAfter?: number;
+  type?: string;
 };
 
 export type AuthUser = {

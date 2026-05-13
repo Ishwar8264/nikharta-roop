@@ -3,10 +3,12 @@
 import { cookies, headers } from "next/headers";
 
 import {
+  handleCheckIdentifier,
   handleLogin,
   handleLogout,
   handleMe,
   handleRegister,
+  handleResendOtp,
   handleVerifyLogin,
   handleVerifyRegister,
 } from "@/features/auth/handlers/auth.handlers";
@@ -24,14 +26,19 @@ type AuthResponsePayload = {
   code?: string;
   data?: {
     accessToken?: string;
+    available?: boolean;
+    canContinue?: boolean;
     devOtp?: string;
     expiresAt?: string;
+    exists?: boolean;
+    identifier?: string;
     mobile?: string;
     refreshToken?: string;
     retryAfter?: number;
     session?: {
       expiresAt?: string;
     };
+    type?: string;
     user?: AuthUser;
   } | null;
   message?: string;
@@ -92,7 +99,7 @@ export async function startSigninAction(
   formData: FormData,
 ): Promise<AuthActionState> {
   const response = await callAuthHandler(handleLogin, {
-    mobile: getFormString(formData, "mobile"),
+    identifier: getAuthIdentifier(formData),
   });
 
   return toActionState(response, "/signin/verify-signin-otp");
@@ -109,7 +116,7 @@ export async function verifySigninAction(
   formData: FormData,
 ): Promise<AuthActionState> {
   const response = await callAuthHandler(handleVerifyLogin, {
-    mobile: getFormString(formData, "mobile"),
+    identifier: getAuthIdentifier(formData),
     otp: getFormString(formData, "otp"),
   });
 
@@ -154,6 +161,40 @@ export async function verifySignupAction(
   await persistAuthCookies(response);
 
   return toActionState(response, "/account");
+}
+
+export async function checkIdentifierAction(
+  formData: FormData,
+): Promise<AuthActionState> {
+  const response = await callAuthHandler(handleCheckIdentifier, {
+    identifier: getAuthIdentifier(formData),
+    purpose: getFormString(formData, "purpose") || "SIGNUP",
+  });
+
+  return {
+    code: response.payload?.code,
+    data: {
+      available: response.payload?.data?.available,
+      canContinue: response.payload?.data?.canContinue,
+      exists: response.payload?.data?.exists,
+      identifier: response.payload?.data?.identifier,
+      mobile: response.payload?.data?.mobile,
+      type: response.payload?.data?.type,
+    },
+    message: response.payload?.message ?? DEFAULT_ERROR_MESSAGE,
+    success: response.payload?.success === true && response.status < 400,
+  };
+}
+
+export async function resendOtpAction(
+  formData: FormData,
+): Promise<AuthActionState> {
+  const response = await callAuthHandler(handleResendOtp, {
+    identifier: getAuthIdentifier(formData),
+    purpose: getFormString(formData, "purpose"),
+  });
+
+  return toActionState(response, getOtpRedirectPath(getFormString(formData, "purpose")));
 }
 
 /**
@@ -301,9 +342,11 @@ function toActionState(
 ): AuthActionState {
   const payload = response.payload;
   const mobile = payload?.data?.mobile;
+  const identifier = payload?.data?.identifier ?? mobile;
   const redirectTo = payload?.success
     ? buildRedirectUrl(redirectPath, {
         devOtp: payload.data?.devOtp,
+        identifier,
         mobile,
       })
     : undefined;
@@ -312,6 +355,7 @@ function toActionState(
     code: payload?.code,
     data: {
       devOtp: payload?.data?.devOtp,
+      identifier,
       mobile,
       redirectTo,
       retryAfter: payload?.data?.retryAfter,
@@ -333,6 +377,18 @@ function getFormString(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function getAuthIdentifier(formData: FormData) {
+  return (
+    getFormString(formData, "identifier") ||
+    getFormString(formData, "mobile") ||
+    getFormString(formData, "email")
+  );
+}
+
+function getOtpRedirectPath(purpose: string) {
+  return purpose === "SIGNUP" ? "/signup/verify-otp" : "/signin/verify-signin-otp";
+}
+
 /**
  * Builds the next page URL after OTP start or verification.
  *
@@ -344,6 +400,7 @@ function buildRedirectUrl(
   path: string,
   params: {
     devOtp?: string;
+    identifier?: string;
     mobile?: string;
   },
 ) {
@@ -351,6 +408,10 @@ function buildRedirectUrl(
 
   if (params.mobile) {
     searchParams.set("mobile", params.mobile);
+  }
+
+  if (params.identifier) {
+    searchParams.set("identifier", params.identifier);
   }
 
   if (params.devOtp) {
