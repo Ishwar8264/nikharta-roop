@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Phone, ShieldCheck } from "lucide-react";
+import { AtSign, ShieldCheck } from "lucide-react";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,7 @@ import {
   showSuccess,
 } from "@/components/ui/shared/toast/custom-toast";
 import {
+  resendOtpAction,
   verifySigninAction,
   verifySignupAction,
 } from "@/features/auth/actions/auth.actions";
@@ -19,6 +20,7 @@ interface VerifyOtpFormProps {
   title?: string;
   subtitle?: string;
   submitButtonLabel?: string;
+  defaultIdentifier?: string;
   defaultMobile?: string;
   devOtp?: string;
   disableMobile?: boolean;
@@ -30,6 +32,7 @@ const VerifyOtpForm = ({
   title = "Verify OTP",
   subtitle = "Enter the OTP sent to your mobile number",
   submitButtonLabel = "Verify",
+  defaultIdentifier,
   defaultMobile = "",
   devOtp,
   disableMobile = false,
@@ -38,7 +41,12 @@ const VerifyOtpForm = ({
 }: VerifyOtpFormProps) => {
   const router = useRouter();
   const [state, setState] = React.useState<AuthActionState | null>(null);
+  const [resendState, setResendState] = React.useState<AuthActionState | null>(null);
   const [isPending, startTransition] = React.useTransition();
+  const [isResending, startResendTransition] = React.useTransition();
+  const identifierValue = defaultIdentifier || defaultMobile;
+  const identifierFieldName = mode === "signin" ? "identifier" : "mobile";
+  const purpose = mode === "signin" ? "LOGIN" : "SIGNUP";
 
   // The same OTP component serves signin and signup. Mode picks the correct
   // Server Action while keeping the UI reusable.
@@ -65,6 +73,32 @@ const VerifyOtpForm = ({
     });
   }
 
+  function handleResend(event: React.MouseEvent<HTMLButtonElement>) {
+    const form = event.currentTarget.form;
+
+    if (!form) {
+      return;
+    }
+
+    const formData = new FormData(form);
+    formData.set("purpose", purpose);
+
+    startResendTransition(async () => {
+      const result = await resendOtpAction(formData);
+      setResendState(result);
+
+      if (result.success) {
+        showSuccess("OTP resent", result.message);
+      } else {
+        showError("Resend failed", result.message);
+      }
+
+      if (result.success && result.data?.redirectTo) {
+        router.replace(result.data.redirectTo);
+      }
+    });
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -77,23 +111,28 @@ const VerifyOtpForm = ({
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
 
-        {/* ── Mobile ── */}
+        <input type="hidden" name="purpose" value={purpose} />
+
         {/* Disabled inputs are not submitted by browsers, so a hidden input
-            carries the mobile value when the visible field is locked. */}
+            carries the identifier value when the visible field is locked. */}
         {disableMobile ? (
-          <input type="hidden" name="mobile" value={defaultMobile} />
+          <input type="hidden" name={identifierFieldName} value={identifierValue} />
         ) : null}
         <InputField
-          name={disableMobile ? undefined : "mobile"}
-          label="Mobile Number"
-          placeholder="9876543210"
-          type="tel"
-          autoComplete="tel"
+          name={disableMobile ? undefined : identifierFieldName}
+          label={mode === "signin" ? "Mobile Number or Email" : "Mobile Number"}
+          placeholder={mode === "signin" ? "9876543210 or you@example.com" : "9876543210"}
+          type="text"
+          autoComplete="one-time-code"
           required
           disabled={disableMobile}
-          defaultValue={defaultMobile}
-          leftIcon={<Phone className="h-4 w-4" />}
-          helperText="10-digit Indian mobile number"
+          defaultValue={identifierValue}
+          leftIcon={<AtSign className="h-4 w-4" />}
+          helperText={
+            mode === "signin"
+              ? "Registered mobile number or email"
+              : "10-digit Indian mobile number"
+          }
         />
 
         {/* ── OTP ── */}
@@ -119,6 +158,9 @@ const VerifyOtpForm = ({
         {state && !state.success ? (
           <p className="text-sm text-destructive">{state.message}</p>
         ) : null}
+        {resendState && !resendState.success ? (
+          <p className="text-sm text-destructive">{resendState.message}</p>
+        ) : null}
 
         {/* ── Submit ── */}
         <Button type="submit" className="w-full" disabled={isPending}>
@@ -131,8 +173,10 @@ const VerifyOtpForm = ({
           <button
             type="button"
             className="font-medium text-primary underline-offset-4 hover:underline"
+            disabled={isResending}
+            onClick={handleResend}
           >
-            Resend OTP
+            {isResending ? "Resending..." : "Resend OTP"}
           </button>
         </p>
       </div>

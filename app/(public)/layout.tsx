@@ -1,4 +1,4 @@
-import { getCurrentUserFromRequest } from "@/features/auth/helpers/auth-session.server";
+import { getSessionUserInfo } from "@/features/auth/helpers/session-user-info.server";
 import { PublicNavbar } from "@/features/navigation/components/public-navbar";
 
 export default async function PublicLayout({
@@ -6,11 +6,11 @@ export default async function PublicLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUserFromRequest();
+  const session = await getSessionUserInfo();
 
   return (
     <main className="min-h-screen bg-[#fffaf6] text-stone-950">
-      <PublicNavbar user={user} />
+      <PublicNavbar session={session} />
       {children}
     </main>
   );

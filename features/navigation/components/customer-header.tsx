@@ -8,7 +8,7 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/shared/logo/logo";
-import type { AuthUser } from "@/features/auth/actions/auth-action.types";
+import type { SessionUserInfo } from "@/features/auth/helpers/session-user-info.types";
 import {
   Sheet,
   SheetClose,
@@ -21,10 +21,10 @@ import { publicNavItems } from "../navigation.config";
 import { NavLinkItem } from "./nav-link-item";
 
 type CustomerHeaderProps = {
-  user: AuthUser;
+  session: SessionUserInfo;
 };
 
-export function CustomerHeader({ user }: CustomerHeaderProps) {
+export function CustomerHeader({ session }: CustomerHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-rose-100/80 bg-[#fffaf6]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -51,7 +51,7 @@ export function CustomerHeader({ user }: CustomerHeaderProps) {
               <Bell className="size-4" />
             </Link>
           </Button>
-          <UserMenu user={user} />
+          <UserMenu session={session} />
         </div>
 
         <Sheet>

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getCurrentUserFromRequest } from "@/features/auth/helpers/auth-session.server";
+import { getSessionUserInfo } from "@/features/auth/helpers/session-user-info.server";
 import { CustomerHeader } from "@/features/navigation/components/customer-header";
 import { CustomerBottomNav } from "@/features/navigation/components/customer-bottom-nav";
 
@@ -9,15 +9,15 @@ export default async function CustomerAppLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUserFromRequest();
+  const session = await getSessionUserInfo();
 
-  if (!user) {
+  if (!session.user) {
     redirect("/signin");
   }
 
   return (
     <div className="min-h-screen bg-[#fffaf6] pb-20 text-stone-950 md:pb-0">
-      <CustomerHeader user={user} />
+      <CustomerHeader session={session} />
       <main>{children}</main>
       <CustomerBottomNav />
     </div>
