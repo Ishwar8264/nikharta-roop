@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getCurrentUserFromRequest } from "@/features/auth/helpers/auth-session.server";
+import { getSessionUserInfo } from "@/features/auth/helpers/session-user-info.server";
 import { DashboardMobileHeader } from "@/features/navigation/components/dashboard-mobile-header";
 import { DashboardSidebar } from "@/features/navigation/components/dashboard-sidebar";
 
@@ -9,13 +9,13 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUserFromRequest();
+  const session = await getSessionUserInfo();
 
-  if (!user) {
+  if (!session.user) {
     redirect("/signin");
   }
 
-  if (!["ADMIN", "SUPER_ADMIN"].includes(user.role ?? "")) {
+  if (!session.isAdmin) {
     redirect("/account");
   }
 

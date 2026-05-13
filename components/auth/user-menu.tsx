@@ -15,22 +15,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getCurrentUserAction } from "@/features/auth/actions/auth.actions";
-import type { AuthUser } from "@/features/auth/actions/auth-action.types";
+import { buildSessionUserInfo } from "@/features/auth/helpers/session-user-info.shared";
+import type { SessionUserInfo } from "@/features/auth/helpers/session-user-info.types";
 import { cn } from "@/lib/utils";
 
 type UserMenuProps = {
   className?: string;
-  user: AuthUser;
+  session: SessionUserInfo;
 };
 
-export function UserMenu({ className, user: initialUser }: UserMenuProps) {
-  const [user, setUser] = React.useState<AuthUser | null>(initialUser);
+export function UserMenu({ className, session: initialSession }: UserMenuProps) {
+  const [session, setSession] = React.useState(initialSession);
 
   // User identity is passed from the protected account layout. This fallback
   // keeps the component resilient if it is reused somewhere that cannot provide
   // a server-loaded user yet.
   React.useEffect(() => {
-    if (initialUser) {
+    if (initialSession.user) {
       return;
     }
 
@@ -38,18 +39,17 @@ export function UserMenu({ className, user: initialUser }: UserMenuProps) {
 
     getCurrentUserAction().then((result) => {
       if (isMounted && result.success) {
-        setUser(result.user);
+        setSession(buildSessionUserInfo(result.user));
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [initialUser]);
+  }, [initialSession.user]);
 
-  const displayName = user?.name || user?.mobile || "Account";
-  const subtitle = user?.mobile || user?.email || "Signed in";
-  const initials = getInitials(displayName);
+  const { displayName, email, initials, mobile } = session;
+  const subtitle = mobile || email || "Signed in";
 
   return (
     <DropdownMenu>
@@ -101,20 +101,4 @@ export function UserMenu({ className, user: initialUser }: UserMenuProps) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-function getInitials(value: string) {
-  const cleanedValue = value.trim();
-
-  if (!cleanedValue) {
-    return "NR";
-  }
-
-  const words = cleanedValue.split(/\s+/).filter(Boolean);
-
-  if (words.length >= 2) {
-    return `${words[0][0]}${words[1][0]}`.toUpperCase();
-  }
-
-  return cleanedValue.slice(0, 2).toUpperCase();
 }
