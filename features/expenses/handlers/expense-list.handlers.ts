@@ -21,7 +21,13 @@ export async function handleListExpenses(request: Request) {
   if (!auth.success) return auth.error;
   const query = parseExpenseQuery(request, listExpensesQuerySchema);
   if (!query.success) return query.error;
-  return listExpenses(query.data, auth.session.user);
+  return listExpenses(
+    {
+      ...query.data,
+      limit: query.data.limit ?? 50,
+    },
+    auth.session.user,
+  );
 }
 
 /**

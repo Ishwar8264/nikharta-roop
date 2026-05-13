@@ -21,7 +21,13 @@ export async function handleListAuthEvents(request: Request) {
   if (!auth.success) return auth.error;
   const query = parseAuthEventQuery(request, listAuthEventsQuerySchema);
   if (!query.success) return query.error;
-  return listAuthEvents(query.data, auth.session.user);
+  return listAuthEvents(
+    {
+      ...query.data,
+      limit: query.data.limit ?? 50,
+    },
+    auth.session.user,
+  );
 }
 
 /**

@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -16,7 +16,7 @@ const optionalIdSchema = z.preprocess(
  */
 export const listMyLoyaltyTransactionsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  type: z.enum(LoyaltyTransactionType).optional(),
+  type: z.nativeEnum(LoyaltyTransactionType).optional(),
 });
 
 /**
@@ -25,7 +25,7 @@ export const listMyLoyaltyTransactionsQuerySchema = z.object({
 export const listLoyaltyTransactionsQuerySchema = z.object({
   branchId: optionalIdSchema,
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  type: z.enum(LoyaltyTransactionType).optional(),
+  type: z.nativeEnum(LoyaltyTransactionType).optional(),
   userId: optionalIdSchema,
 });
 
@@ -37,16 +37,22 @@ export const createLoyaltyTransactionSchema = z.object({
   expiresAt: z.coerce.date().nullable().optional(),
   points: z.coerce.number().int().min(1).max(100000),
   reasonHi: z.string().trim().max(500).nullable().optional(),
-  type: z.enum(LoyaltyTransactionType),
+  type: z.nativeEnum(LoyaltyTransactionType),
   userId: idSchema,
 });
 
 export type CreateLoyaltyTransactionInput = z.infer<
   typeof createLoyaltyTransactionSchema
 >;
-export type ListLoyaltyTransactionsQueryInput = z.infer<
-  typeof listLoyaltyTransactionsQuerySchema
->;
-export type ListMyLoyaltyTransactionsQueryInput = z.infer<
-  typeof listMyLoyaltyTransactionsQuerySchema
->;
+export type ListLoyaltyTransactionsQueryInput = Omit<
+  z.infer<typeof listLoyaltyTransactionsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
+export type ListMyLoyaltyTransactionsQueryInput = Omit<
+  z.infer<typeof listMyLoyaltyTransactionsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};

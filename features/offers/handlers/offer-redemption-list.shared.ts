@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { OFFER_CODES, OFFER_MESSAGES } from "@/features/offers/constants/offer.constants";
 import type { OfferRedemptionRow } from "@/features/offers/helpers/offer.mapper";
@@ -9,9 +9,14 @@ import { HTTP_STATUS } from "@/lib/constants/http-status";
 /**
  * Parses offer redemption query strings with feature-owned validation errors.
  */
-export function parseOfferRedemptionQuery<T>(request: Request, schema: ZodType<T>) {
+export function parseOfferRedemptionQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
-  if (parsed.success) return { data: parsed.data, success: true as const };
+  if (parsed.success) {
+    return { data: parsed.data as z.output<TSchema>, success: true as const };
+  }
   return {
     error: offerError({
       code: OFFER_CODES.VALIDATION_ERROR,

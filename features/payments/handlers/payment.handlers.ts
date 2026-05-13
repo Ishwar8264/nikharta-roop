@@ -5,7 +5,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import type { ZodError, ZodType } from "zod";
+import { z, type ZodError } from "zod";
 
 import { getDb } from "@/db";
 import {
@@ -531,7 +531,10 @@ async function createRefund(
 /**
  * Parses JSON bodies with payment-owned validation error codes.
  */
-async function parsePaymentBody<T>(request: Request, schema: ZodType<T>) {
+async function parsePaymentBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const body = await readJsonBody(request);
   const parsed = schema.safeParse(body);
 
@@ -547,7 +550,7 @@ async function parsePaymentBody<T>(request: Request, schema: ZodType<T>) {
   }
 
   return {
-    data: parsed.data,
+    data: parsed.data as z.output<TSchema>,
     error: null,
   };
 }

@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
 import { readJsonBody } from "@/features/auth/helpers/auth.route-helpers";
@@ -34,7 +34,10 @@ export async function requireMediaAdmin(request: Request) {
 /**
  * Parses JSON bodies with media-owned validation errors.
  */
-export async function parseMediaBody<T>(request: Request, schema: ZodType<T>) {
+export async function parseMediaBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(await readJsonBody(request));
   if (!parsed.success) {
     return {
@@ -46,7 +49,7 @@ export async function parseMediaBody<T>(request: Request, schema: ZodType<T>) {
       }),
     };
   }
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**

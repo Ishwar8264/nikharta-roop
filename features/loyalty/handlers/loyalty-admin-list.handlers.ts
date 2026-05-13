@@ -20,14 +20,14 @@ export async function handleListAdminLoyaltyTransactions(request: Request) {
     const transactions = await getDb().loyaltyTransaction.findMany({
       orderBy: [{ createdAt: "desc" }],
       select: loyaltyTransactionSelect(),
-      take: query.data.limit,
+      take: query.data.limit ?? 50,
       where: {
         type: query.data.type,
         ...(branchId ? { user: { branchId } } : {}),
         userId: query.data.userId,
       },
     });
-    return loyaltyTransactionListResponse(transactions, query.data.limit);
+    return loyaltyTransactionListResponse(transactions, query.data.limit ?? 50);
   } catch (error) {
     return handleLoyaltyError(error, {
       code: LOYALTY_CODES.TRANSACTIONS_LOAD_FAILED,

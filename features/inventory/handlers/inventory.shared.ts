@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
 import { readJsonBody } from "@/features/auth/helpers/auth.route-helpers";
@@ -37,7 +37,10 @@ export async function requireInventoryAdmin(request: Request) {
 /**
  * Parses JSON bodies with inventory-owned validation errors.
  */
-export async function parseInventoryBody<T>(request: Request, schema: ZodType<T>) {
+export async function parseInventoryBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(await readJsonBody(request));
   if (!parsed.success) {
     return {
@@ -49,7 +52,7 @@ export async function parseInventoryBody<T>(request: Request, schema: ZodType<T>
       }),
     };
   }
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**

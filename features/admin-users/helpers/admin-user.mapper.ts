@@ -1,23 +1,10 @@
-import type { Prisma, UserRole } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
-export type AdminUserRow = {
-  avatarUrl: string | null;
-  branch: Record<string, unknown> | null;
-  branchId: string | null;
-  createdAt: Date;
-  email: string | null;
-  id: string;
-  isActive: boolean;
-  lastLoginAt: Date | null;
-  loyaltyPoints: number;
-  mobile: string;
-  mobileVerifiedAt: Date | null;
-  name: string | null;
-  notificationPreferences: Prisma.JsonValue;
-  profileCompletedAt: Date | null;
-  role: UserRole;
-  updatedAt: Date;
-};
+import { adminUserSelect } from "./admin-user.selectors";
+
+export type AdminUserRow = Prisma.UserGetPayload<{
+  select: ReturnType<typeof adminUserSelect>;
+}>;
 
 /**
  * Normalizes one admin user row for API responses.

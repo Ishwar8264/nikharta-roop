@@ -1,21 +1,10 @@
-type DecimalLike = { toString(): string };
+import type { Prisma } from "@prisma/client";
 
-export type ExpenseRow = {
-  amount: DecimalLike;
-  branch: Record<string, unknown>;
-  branchId: string;
-  category: string;
-  createdAt: Date;
-  createdBy: Record<string, unknown> | null;
-  createdById: string | null;
-  expenseDate: Date;
-  id: string;
-  notes: string | null;
-  receiptUrl: string | null;
-  titleHi: string;
-  updatedAt: Date;
-  vendorName: string | null;
-};
+import { expenseSelect } from "./expense.selectors";
+
+export type ExpenseRow = Prisma.ExpenseGetPayload<{
+  select: ReturnType<typeof expenseSelect>;
+}>;
 
 /**
  * Converts an expense row into the admin API shape.

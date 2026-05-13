@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { LOYALTY_CODES, LOYALTY_MESSAGES } from "@/features/loyalty/constants/loyalty.constants";
 import type { LoyaltyTransactionRow } from "@/features/loyalty/helpers/loyalty.mapper";
@@ -9,9 +9,14 @@ import { HTTP_STATUS } from "@/lib/constants/http-status";
 /**
  * Parses loyalty query strings with feature-owned validation errors.
  */
-export function parseLoyaltyQuery<T>(request: Request, schema: ZodType<T>) {
+export function parseLoyaltyQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
-  if (parsed.success) return { data: parsed.data, success: true as const };
+  if (parsed.success) {
+    return { data: parsed.data as z.output<TSchema>, success: true as const };
+  }
   return {
     error: loyaltyError({
       code: LOYALTY_CODES.VALIDATION_ERROR,

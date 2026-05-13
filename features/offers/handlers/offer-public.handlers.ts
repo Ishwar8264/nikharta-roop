@@ -24,7 +24,7 @@ export async function handleListOffers(request: Request) {
     const offers = await getDb().offer.findMany({
       orderBy: [{ validUntil: "asc" }, { titleHi: "asc" }],
       select: offerSelect(),
-      take: query.data.limit,
+      take: query.data.limit ?? 20,
       where: {
         isActive: true,
         OR: query.data.branchId
@@ -36,7 +36,7 @@ export async function handleListOffers(request: Request) {
     });
     return offerJson({
       code: OFFER_CODES.OFFERS_LISTED,
-      data: { limit: query.data.limit, offers: offers.map(toPublicOffer) },
+      data: { limit: query.data.limit ?? 20, offers: offers.map(toPublicOffer) },
       message: OFFER_MESSAGES.OFFERS_LISTED,
       status: HTTP_STATUS.OK,
       success: true,

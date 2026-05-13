@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { BLOG_CODES, BLOG_MESSAGES } from "@/features/blogs/constants/blog.constants";
 import type {
@@ -15,11 +15,16 @@ import { HTTP_STATUS } from "@/lib/constants/http-status";
 /**
  * Parses blog list query strings with feature-owned errors.
  */
-export function parseBlogQuery<T>(request: Request, schema: ZodType<T>) {
+export function parseBlogQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(
     Object.fromEntries(new URL(request.url).searchParams),
   );
-  if (parsed.success) return { data: parsed.data, success: true as const };
+  if (parsed.success) {
+    return { data: parsed.data as z.output<TSchema>, success: true as const };
+  }
   return {
     error: blogError({
       code: BLOG_CODES.VALIDATION_ERROR,

@@ -6,12 +6,12 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
 
-const optionalMobileSchema = z.preprocess(
+const optionalMobileSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   z.string().trim().regex(/^\d{10}$/).optional(),
 );
@@ -22,8 +22,13 @@ export const listAuthEventsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   mobile: optionalMobileSchema,
   to: z.string().trim().date().optional(),
-  type: z.enum(AuthEventType).optional(),
+  type: z.nativeEnum(AuthEventType).optional(),
   userId: optionalIdSchema,
 });
 
-export type ListAuthEventsQueryInput = z.infer<typeof listAuthEventsQuerySchema>;
+export type ListAuthEventsQueryInput = Omit<
+  z.infer<typeof listAuthEventsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};

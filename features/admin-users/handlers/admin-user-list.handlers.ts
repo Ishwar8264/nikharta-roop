@@ -21,7 +21,13 @@ export async function handleListAdminUsers(request: Request) {
   if (!auth.success) return auth.error;
   const query = parseAdminUserQuery(request, listAdminUsersQuerySchema);
   if (!query.success) return query.error;
-  return listAdminUsers(query.data, auth.session.user);
+  return listAdminUsers(
+    {
+      ...query.data,
+      limit: query.data.limit ?? 50,
+    },
+    auth.session.user,
+  );
 }
 
 /**

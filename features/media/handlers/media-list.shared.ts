@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { MEDIA_CODES, MEDIA_MESSAGES } from "@/features/media/constants/media.constants";
 import type { MediaRow } from "@/features/media/helpers/media.mapper";
@@ -10,11 +10,16 @@ import type { HttpStatus } from "@/lib/constants/http-status";
 /**
  * Parses media query strings with feature-owned validation errors.
  */
-export function parseMediaQuery<T>(request: Request, schema: ZodType<T>) {
+export function parseMediaQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(
     Object.fromEntries(new URL(request.url).searchParams),
   );
-  if (parsed.success) return { data: parsed.data, success: true as const };
+  if (parsed.success) {
+    return { data: parsed.data as z.output<TSchema>, success: true as const };
+  }
   return {
     error: mediaError({
       code: MEDIA_CODES.VALIDATION_ERROR,

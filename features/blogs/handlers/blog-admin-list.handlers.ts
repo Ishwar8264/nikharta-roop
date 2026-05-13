@@ -28,12 +28,12 @@ export async function handleListAdminBlogs(request: Request) {
   const posts = await getDb().blogPost.findMany({
     orderBy: [{ updatedAt: "desc" }],
     select: blogPostSelect(),
-    take: query.data.limit,
+    take: query.data.limit ?? 50,
     where: {
       category: { slug: query.data.categorySlug },
       categoryId: query.data.categoryId,
       status: query.data.status,
     },
   });
-  return blogListResponse(posts, query.data.limit);
+  return blogListResponse(posts, query.data.limit ?? 50);
 }

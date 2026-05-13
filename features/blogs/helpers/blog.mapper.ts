@@ -1,32 +1,14 @@
-export type BlogCategoryRow = {
-  createdAt: Date;
-  description: string | null;
-  id: string;
-  isActive: boolean;
-  nameEn: string | null;
-  nameHi: string;
-  slug: string;
-  sortOrder: number;
-  updatedAt: Date;
-};
+import type { Prisma } from "@prisma/client";
 
-export type BlogPostRow = {
-  author: { id: string; name: string | null } | null;
-  authorId: string | null;
-  category: BlogCategoryRow;
-  categoryId: string;
-  contentHi: string;
-  coverImageUrl: string | null;
-  createdAt: Date;
-  excerptHi: string | null;
-  id: string;
-  publishedAt: Date | null;
-  slug: string;
-  status: string;
-  titleEn: string | null;
-  titleHi: string;
-  updatedAt: Date;
-};
+import { blogCategorySelect, blogPostSelect } from "./blog.selectors";
+
+export type BlogCategoryRow = Prisma.BlogCategoryGetPayload<{
+  select: ReturnType<typeof blogCategorySelect>;
+}>;
+
+export type BlogPostRow = Prisma.BlogPostGetPayload<{
+  select: ReturnType<typeof blogPostSelect>;
+}>;
 
 /**
  * Converts a blog category row into the public API shape.

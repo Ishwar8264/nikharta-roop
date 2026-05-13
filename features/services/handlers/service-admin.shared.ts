@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { getDb } from "@/db";
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
@@ -20,7 +20,10 @@ import type {
 /**
  * Parses admin JSON bodies with service-owned validation error codes.
  */
-export async function parseServiceJsonBody<T>(request: Request, schema: ZodType<T>) {
+export async function parseServiceJsonBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const body = await readJsonBody(request);
   const parsed = schema.safeParse(body);
 
@@ -36,7 +39,7 @@ export async function parseServiceJsonBody<T>(request: Request, schema: ZodType<
   }
 
   return {
-    data: parsed.data,
+    data: parsed.data as z.output<TSchema>,
     error: null,
   };
 }
@@ -362,4 +365,3 @@ export class ServiceVisibleError extends Error {
     super(message);
   }
 }
-

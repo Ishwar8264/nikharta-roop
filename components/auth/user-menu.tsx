@@ -3,6 +3,7 @@
 import * as React from "react";
 import { UserRound } from "lucide-react";
 
+import { CustomerAccountLinks } from "@/components/auth/customer-account-links";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,8 @@ export function UserMenu({ className, user: initialUser }: UserMenuProps) {
           </div>
         </DropdownMenuLabel>
 
+        <DropdownMenuSeparator />
+        <CustomerAccountLinks />
         <DropdownMenuSeparator />
         <div className="p-1">
           <LogoutButton />

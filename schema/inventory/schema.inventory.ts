@@ -6,21 +6,24 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
 
-const relationIdSchema = z.preprocess(
+const relationIdSchema: z.ZodType<string | null | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.nullable().optional(),
 );
 
-const booleanQuerySchema = z.preprocess((value) => {
-  if (value === "true") return true;
-  if (value === "false") return false;
-  return value;
-}, z.boolean().optional());
+const booleanQuerySchema: z.ZodType<boolean | undefined, z.ZodTypeDef, unknown> = z.preprocess(
+  (value) => {
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return value;
+  },
+  z.boolean().optional(),
+);
 
 /**
  * Validates decimal quantities and costs used by inventory rows.
@@ -40,7 +43,7 @@ export const listInventoryTransactionsQuerySchema = z.object({
   branchId: optionalIdSchema,
   inventoryItemId: optionalIdSchema,
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  type: z.enum(InventoryTransactionType).optional(),
+  type: z.nativeEnum(InventoryTransactionType).optional(),
 });
 
 const inventoryBodySchema = z.object({
@@ -67,14 +70,29 @@ export const adjustInventorySchema = z.object({
   quantityChange: quantitySchema.refine((value) => value !== 0, {
     message: "Quantity change cannot be zero.",
   }),
-  type: z.enum(InventoryTransactionType).default(InventoryTransactionType.ADJUSTMENT),
+  type: z
+    .nativeEnum(InventoryTransactionType)
+    .default(InventoryTransactionType.ADJUSTMENT),
   unitCost: costSchema.nullable().optional(),
 });
 
-export type AdjustInventoryInput = z.infer<typeof adjustInventorySchema>;
+export type AdjustInventoryInput = Omit<
+  z.infer<typeof adjustInventorySchema>,
+  "type"
+> & {
+  type: InventoryTransactionType;
+};
 export type CreateInventoryInput = z.infer<typeof createInventorySchema>;
-export type ListInventoryQueryInput = z.infer<typeof listInventoryQuerySchema>;
-export type ListInventoryTransactionsQueryInput = z.infer<
-  typeof listInventoryTransactionsQuerySchema
->;
+export type ListInventoryQueryInput = Omit<
+  z.infer<typeof listInventoryQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
+export type ListInventoryTransactionsQueryInput = Omit<
+  z.infer<typeof listInventoryTransactionsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type UpdateInventoryInput = z.infer<typeof updateInventorySchema>;

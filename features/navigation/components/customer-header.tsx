@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Bell, Menu, Sparkles } from "lucide-react";
 
+import { CustomerAccountLinks } from "@/components/auth/customer-account-links";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { UserMenu } from "@/components/auth/user-menu";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,12 @@ export function CustomerHeader({ user }: CustomerHeaderProps) {
                 </SheetClose>
               ))}
             </nav>
+            <div className="mt-4 border-t border-rose-100 px-4 pt-4">
+              <p className="px-3 pb-2 text-xs font-semibold uppercase text-stone-400">
+                Account
+              </p>
+              <CustomerAccountLinks variant="sheet" />
+            </div>
             <div className="mt-auto grid gap-2 p-4">
               <Button asChild className="bg-rose-900 text-white hover:bg-rose-800">
                 <Link href="/account/book">Book Now</Link>

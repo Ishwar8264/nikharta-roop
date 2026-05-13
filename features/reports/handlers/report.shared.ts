@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
 import {
@@ -36,11 +36,16 @@ export async function requireReportAdmin(request: Request) {
 /**
  * Parses report query strings with report-owned validation errors.
  */
-export function parseReportQuery<T>(request: Request, schema: ZodType<T>) {
+export function parseReportQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(
     Object.fromEntries(new URL(request.url).searchParams),
   );
-  if (parsed.success) return { data: parsed.data, success: true as const };
+  if (parsed.success) {
+    return { data: parsed.data as z.output<TSchema>, success: true as const };
+  }
   return {
     error: reportError({
       code: REPORT_CODES.VALIDATION_ERROR,

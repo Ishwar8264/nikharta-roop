@@ -17,7 +17,7 @@ import {
   updateBranchSchema,
   type UpdateBranchInput,
 } from "@/schema/branches/schema.branch";
-import type { ZodError, ZodType } from "zod";
+import { z, type ZodError } from "zod";
 
 /**
  * Handles public active branch listing for discovery screens.
@@ -416,7 +416,10 @@ async function updateBranch(
 /**
  * Parses branch request JSON with branch-owned validation error codes.
  */
-async function parseBranchJsonBody<T>(request: Request, schema: ZodType<T>) {
+async function parseBranchJsonBody<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const body = await readJsonBody(request);
   const parsed = schema.safeParse(body);
 
@@ -432,7 +435,7 @@ async function parseBranchJsonBody<T>(request: Request, schema: ZodType<T>) {
   }
 
   return {
-    data: parsed.data,
+    data: parsed.data as z.output<TSchema>,
     error: null,
   };
 }

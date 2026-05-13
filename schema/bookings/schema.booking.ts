@@ -10,7 +10,7 @@ const idSchema = z.string().trim().cuid();
 /**
  * Allows optional CUID fields to be omitted or sent as an empty string.
  */
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -86,10 +86,15 @@ export type ListBookingSlotsQueryInput = z.infer<
  */
 export const listBookingsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
-  status: z.enum(BookingStatus).optional(),
+  status: z.nativeEnum(BookingStatus).optional(),
 });
 
-export type ListBookingsQueryInput = z.infer<typeof listBookingsQuerySchema>;
+export type ListBookingsQueryInput = Omit<
+  z.infer<typeof listBookingsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 
 /**
  * Query schema for GET /api/v1/admin/bookings.
@@ -98,12 +103,15 @@ export const adminListBookingsQuerySchema = z.object({
   branchId: optionalIdSchema,
   date: bookingDateSchema.optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(50),
-  status: z.enum(BookingStatus).optional(),
+  status: z.nativeEnum(BookingStatus).optional(),
 });
 
-export type AdminListBookingsQueryInput = z.infer<
-  typeof adminListBookingsQuerySchema
->;
+export type AdminListBookingsQueryInput = Omit<
+  z.infer<typeof adminListBookingsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 
 /**
  * Request schema for POST /api/v1/bookings.

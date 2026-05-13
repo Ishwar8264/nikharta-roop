@@ -29,7 +29,13 @@ export async function handleCreateAdminOffer(request: Request) {
   if (!auth.success) return auth.error;
   const body = await parseOfferBody(request, createOfferSchema);
   if (body.error) return body.error;
-  return createAdminOffer(body.data, auth.session.user);
+  return createAdminOffer(
+    {
+      ...body.data,
+      serviceIds: body.data.serviceIds ?? [],
+    },
+    auth.session.user,
+  );
 }
 
 /**

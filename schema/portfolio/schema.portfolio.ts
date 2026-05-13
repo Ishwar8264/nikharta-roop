@@ -5,17 +5,17 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
 
-const relationIdSchema = z.preprocess(
+const relationIdSchema: z.ZodType<string | null | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.nullable().optional(),
 );
 
-const booleanQuerySchema = z.preprocess((value) => {
+const booleanQuerySchema: z.ZodType<boolean | undefined, z.ZodTypeDef, unknown> = z.preprocess((value) => {
   if (value === "true") return true;
   if (value === "false") return false;
   return value;

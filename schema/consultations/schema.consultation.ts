@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 const idSchema = z.string().trim().cuid();
 
-const optionalIdSchema = z.preprocess(
+const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z.preprocess(
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
@@ -46,7 +46,7 @@ const consultationTimeSchema = z
  */
 export const listMyConsultationsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
-  status: z.enum(ConsultationStatus).optional(),
+  status: z.nativeEnum(ConsultationStatus).optional(),
 });
 
 /**
@@ -56,7 +56,7 @@ export const adminListConsultationsQuerySchema = z.object({
   branchId: optionalIdSchema,
   date: consultationDateSchema.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
-  status: z.enum(ConsultationStatus).optional(),
+  status: z.nativeEnum(ConsultationStatus).optional(),
 });
 
 /**
@@ -82,19 +82,25 @@ export const updateConsultationSchema = z
     preferredDate: consultationDateSchema.optional(),
     preferredTime: consultationTimeSchema.optional(),
     staffId: optionalIdSchema,
-    status: z.enum(ConsultationStatus).optional(),
+    status: z.nativeEnum(ConsultationStatus).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "Send at least one consultation field to update.",
   });
 
-export type AdminListConsultationsQueryInput = z.infer<
-  typeof adminListConsultationsQuerySchema
->;
+export type AdminListConsultationsQueryInput = Omit<
+  z.infer<typeof adminListConsultationsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type CreateConsultationInput = z.infer<typeof createConsultationSchema>;
-export type ListMyConsultationsQueryInput = z.infer<
-  typeof listMyConsultationsQuerySchema
->;
+export type ListMyConsultationsQueryInput = Omit<
+  z.infer<typeof listMyConsultationsQuerySchema>,
+  "limit"
+> & {
+  limit: number;
+};
 export type UpdateConsultationInput = z.infer<
   typeof updateConsultationSchema
 >;

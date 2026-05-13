@@ -1,35 +1,17 @@
-type DecimalLike = { toString(): string };
+import type { Prisma } from "@prisma/client";
 
-export type InventoryRow = {
-  branch: Record<string, unknown>;
-  branchId: string;
-  costPerUnit: DecimalLike | null;
-  createdAt: Date;
-  id: string;
-  isActive: boolean;
-  nameEn: string | null;
-  nameHi: string;
-  product: Record<string, unknown> | null;
-  productId: string | null;
-  quantityOnHand: DecimalLike;
-  reorderLevel: DecimalLike | null;
-  sku: string | null;
-  unit: string;
-  updatedAt: Date;
-};
+import {
+  inventorySelect,
+  inventoryTransactionSelect,
+} from "./inventory.selectors";
 
-export type InventoryTransactionRow = {
-  bookingId: string | null;
-  createdAt: Date;
-  id: string;
-  inventoryItem: Record<string, unknown>;
-  inventoryItemId: string;
-  notes: string | null;
-  productSaleItemId: string | null;
-  quantityChange: DecimalLike;
-  type: string;
-  unitCost: DecimalLike | null;
-};
+export type InventoryRow = Prisma.InventoryItemGetPayload<{
+  select: ReturnType<typeof inventorySelect>;
+}>;
+
+export type InventoryTransactionRow = Prisma.InventoryTransactionGetPayload<{
+  select: ReturnType<typeof inventoryTransactionSelect>;
+}>;
 
 /**
  * Converts an inventory row into the admin API shape.

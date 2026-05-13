@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import { getDb } from "@/db";
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
@@ -38,9 +38,9 @@ export async function requireBranchHolidayAdmin(request: Request) {
 /**
  * Parses JSON bodies with branch-owned validation error codes.
  */
-export async function parseBranchHolidayBody<T>(
+export async function parseBranchHolidayBody<TSchema extends z.ZodTypeAny>(
   request: Request,
-  schema: ZodType<T>,
+  schema: TSchema,
 ) {
   const parsed = schema.safeParse(await readJsonBody(request));
   if (!parsed.success) {
@@ -53,7 +53,7 @@ export async function parseBranchHolidayBody<T>(
       }),
     };
   }
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**

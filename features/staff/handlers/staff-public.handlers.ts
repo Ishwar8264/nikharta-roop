@@ -1,4 +1,4 @@
-import type { ZodError, ZodType } from "zod";
+import { z, type ZodError } from "zod";
 
 import { getDb } from "@/db";
 import { STAFF_CODES, STAFF_MESSAGES } from "@/features/staff/constants/staff.constants";
@@ -115,7 +115,10 @@ async function getStaff(staffId: string, input: GetStaffQueryInput) {
 /**
  * Parses query parameters with staff-owned validation error codes.
  */
-function parseStaffQuery<T>(request: Request, schema: ZodType<T>) {
+function parseStaffQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
 
   if (!parsed.success) {
@@ -129,7 +132,7 @@ function parseStaffQuery<T>(request: Request, schema: ZodType<T>) {
     };
   }
 
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**

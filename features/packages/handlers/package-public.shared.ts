@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import { z } from "zod";
 
 import {
   PACKAGE_CODES,
@@ -10,7 +10,10 @@ import { HTTP_STATUS } from "@/lib/constants/http-status";
 /**
  * Parses public package query parameters.
  */
-export function parsePackageQuery<T>(request: Request, schema: ZodType<T>) {
+export function parsePackageQuery<TSchema extends z.ZodTypeAny>(
+  request: Request,
+  schema: TSchema,
+) {
   const parsed = schema.safeParse(
     Object.fromEntries(new URL(request.url).searchParams),
   );
@@ -25,7 +28,7 @@ export function parsePackageQuery<T>(request: Request, schema: ZodType<T>) {
       }),
     };
   }
-  return { data: parsed.data, error: null };
+  return { data: parsed.data as z.output<TSchema>, error: null };
 }
 
 /**
