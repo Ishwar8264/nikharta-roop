@@ -4,10 +4,15 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Phone, User } from "lucide-react";
+import {
+  AuthFormHeader,
+  authButtonClassName,
+  authFormClassName,
+  authInputClassName,
+} from "@/components/auth/auth-ui";
 import { IdentifierCheckField } from "@/components/auth/identifier-check-field";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/shared/logo/logo";
 import {
   showError,
   showSuccess,
@@ -49,25 +54,14 @@ const RegisterForm = () => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-md rounded-2xl border border-gray-200 bg-white px-8 pt-6 pb-8 shadow-sm"
+      className={authFormClassName}
     >
-      {/* ── Logo & Header grouped tightly ── */}
-      <div className="flex flex-col items-center space-y-2">
-        <Logo size="lg" />
+      <AuthFormHeader
+        title="Create Account"
+        subtitle="Fill in the details to get started"
+      />
 
-        <div className="text-center">
-          <h2 className="text-xl font-semibold tracking-tight">
-            Create Account
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Fill in the details to get started
-          </p>
-        </div>
-      </div>
-
-      {/* ── Form Fields ── */}
-      <div className="mt-6 space-y-5">
-        {/* ── Name ── */}
+      <div className="mt-7 space-y-5">
         <InputField
           name="name"
           label="Name"
@@ -75,10 +69,10 @@ const RegisterForm = () => {
           type="text"
           autoComplete="name"
           leftIcon={<User className="h-4 w-4" />}
+          inputClassName={authInputClassName}
           helperText="2–100 characters"
         />
 
-        {/* ── Email ── */}
         <IdentifierCheckField
           name="email"
           purpose="SIGNUP"
@@ -87,10 +81,10 @@ const RegisterForm = () => {
           type="email"
           autoComplete="email"
           leftIcon={<Mail className="h-4 w-4" />}
+          inputClassName={authInputClassName}
           helperText="Optional — but we'll send updates here"
         />
 
-        {/* ── Mobile ── */}
         <IdentifierCheckField
           name="mobile"
           purpose="SIGNUP"
@@ -100,6 +94,7 @@ const RegisterForm = () => {
           autoComplete="tel"
           required
           leftIcon={<Phone className="h-4 w-4" />}
+          inputClassName={authInputClassName}
           helperText="10-digit Indian mobile number"
         />
 
@@ -107,14 +102,16 @@ const RegisterForm = () => {
           <p className="text-sm text-destructive">{state.message}</p>
         ) : null}
 
-        {/* ── Submit ── */}
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <Button
+          type="submit"
+          className={`w-full ${authButtonClassName}`}
+          disabled={isPending}
+        >
           {isPending ? "Sending OTP..." : "Register"}
         </Button>
       </div>
 
-      {/* ── Login Link ── */}
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-7 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link
           href="/signin"

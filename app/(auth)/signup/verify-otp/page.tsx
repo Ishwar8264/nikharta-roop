@@ -1,5 +1,5 @@
+import { AuthPageShell } from "@/components/auth/auth-ui";
 import { VerifyOtpForm } from "@/components/auth/otp/form";
-import React from "react";
 
 const VerifyRegisterPage = async ({
   searchParams,
@@ -11,7 +11,7 @@ const VerifyRegisterPage = async ({
   const { devOtp, mobile = "" } = await searchParams;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <AuthPageShell>
       <VerifyOtpForm
         mode="signup"
         title="Verify Registration"
@@ -21,7 +21,7 @@ const VerifyRegisterPage = async ({
         devOtp={devOtp}
         disableMobile
       />
-    </div>
+    </AuthPageShell>
   );
 };
 

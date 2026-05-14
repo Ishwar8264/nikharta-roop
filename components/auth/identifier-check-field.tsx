@@ -7,16 +7,20 @@ import { checkIdentifierAction } from "@/features/auth/actions/auth.actions";
 import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
 
 type IdentifierCheckFieldProps = Omit<InputFieldProps, "error" | "success"> & {
+  clientError?: string;
   purpose: "LOGIN" | "SIGNUP";
+  shouldCheck?: (value: string) => boolean;
 };
 
 const CHECK_DELAY_MS = 450;
 
 export function IdentifierCheckField({
+  clientError,
   helperText,
   name = "identifier",
   onChange,
   purpose,
+  shouldCheck,
   ...props
 }: IdentifierCheckFieldProps) {
   const [value, setValue] = React.useState(String(props.defaultValue ?? ""));
@@ -26,8 +30,7 @@ export function IdentifierCheckField({
   React.useEffect(() => {
     const trimmedValue = value.trim();
 
-    if (!trimmedValue) {
-      setResult(null);
+    if (!trimmedValue || shouldCheck?.(trimmedValue) === false) {
       return;
     }
 
@@ -43,22 +46,25 @@ export function IdentifierCheckField({
     }, CHECK_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [purpose, value]);
+  }, [purpose, shouldCheck, value]);
 
-  const canContinue = result?.data?.canContinue;
-  const error = result && !canContinue ? result.message : undefined;
-  const success = result && canContinue ? result.message : undefined;
+  const visibleResult = value.trim() && !clientError ? result : null;
+  const canContinue = visibleResult?.data?.canContinue;
+  const error =
+    clientError ||
+    (visibleResult && !canContinue ? visibleResult.message : undefined);
+  const success = visibleResult && canContinue ? visibleResult.message : undefined;
 
   return (
     <InputField
       {...props}
       name={name}
-      helperText={isPending ? "Checking..." : helperText}
+      helperText={isPending && !clientError ? "Checking..." : helperText}
       error={error}
       success={success}
       onChange={(event) => {
-        setValue(event.currentTarget.value);
         onChange?.(event);
+        setValue(event.currentTarget.value);
       }}
     />
   );
