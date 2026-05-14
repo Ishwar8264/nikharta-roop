@@ -1,7 +1,35 @@
-import { Users } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { listPublicBranches } from "@/features/branches/queries/branch.query";
+import { ProfileForm } from "@/features/users/components/profile-form";
+import { getMyProfile } from "@/features/users/queries/user-profile.query";
 
-import { ComingSoon } from "@/components/layout/coming-soon";
+export default async function CustomerProfilePage() {
+  const [{ branches }, profile] = await Promise.all([
+    listPublicBranches(),
+    getMyProfile(),
+  ]);
 
-export default function CustomerProfilePage() {
-  return <ComingSoon icon={Users} title="Profile is coming soon." />;
+  return (
+    <section className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mb-5">
+        <p className="text-sm font-medium text-rose-700">Profile</p>
+        <h1 className="font-heading text-2xl font-semibold">
+          Manage your account details
+        </h1>
+      </div>
+
+      <Card className="bg-white/80">
+        <CardHeader>
+          <CardTitle>Personal information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {profile.user ? (
+            <ProfileForm branches={branches} user={profile.user} />
+          ) : (
+            <p className="text-sm text-destructive">{profile.error}</p>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
 }
