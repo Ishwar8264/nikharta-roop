@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { UserRound } from "lucide-react";
 
 type AvatarPreviewProps = {
@@ -11,13 +12,15 @@ export function AvatarPreview({ avatarUrl, name }: AvatarPreviewProps) {
 
   return (
     <div className="flex items-center gap-4">
-      <div className="grid size-20 place-items-center overflow-hidden rounded-full bg-rose-100 text-lg font-semibold text-rose-900 ring-1 ring-rose-200">
+      <div className="relative grid size-20 place-items-center overflow-hidden rounded-full bg-rose-100 text-lg font-semibold text-rose-900 ring-1 ring-rose-200">
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             alt={name ? `${name} avatar` : "Profile avatar"}
-            className="size-full object-cover"
+            className="object-cover object-center"
+            fill
+            sizes="80px"
             src={avatarUrl}
+            unoptimized
           />
         ) : (
           <span className="flex items-center gap-1">

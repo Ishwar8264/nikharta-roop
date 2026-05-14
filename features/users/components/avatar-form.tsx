@@ -4,6 +4,7 @@ import * as React from "react";
 import { LinkIcon } from "lucide-react";
 
 import { InputField } from "@/components/ui/shared/input/generic-input";
+import { MediaUploaderDialog } from "@/features/media/components/media-uploader-dialog";
 import {
   removeAvatarAction,
   updateAvatarAction,
@@ -11,7 +12,7 @@ import {
 import { AvatarPreview } from "@/features/users/components/avatar-preview";
 import { AvatarRemoveButton } from "@/features/users/components/avatar-remove-button";
 import { AvatarSaveButton } from "@/features/users/components/avatar-save-button";
-import { AvatarUploadField } from "@/features/users/components/avatar-upload-field";
+import { useAvatarMediaUpload } from "@/features/users/components/use-avatar-media-upload";
 import type { UserProfile } from "@/features/users/types/user-profile.types";
 
 type AvatarFormProps = {
@@ -21,7 +22,9 @@ type AvatarFormProps = {
 // URL-based avatar manager wired to POST/DELETE /users/me/avatar.
 export function AvatarForm({ user }: AvatarFormProps) {
   const avatarUrlRef = React.useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = React.useState(user.avatarUrl);
+  const media = useAvatarMediaUpload(user, (avatarUrl) => {
+    if (avatarUrlRef.current) avatarUrlRef.current.value = avatarUrl;
+  });
   const [saveState, saveAction] = React.useActionState(updateAvatarAction, {
     message: "",
     success: false,
@@ -33,17 +36,20 @@ export function AvatarForm({ user }: AvatarFormProps) {
 
   return (
     <div className="space-y-4">
-      <AvatarPreview avatarUrl={previewUrl} name={user.name} />
+      <AvatarPreview avatarUrl={media.previewUrl} name={user.name} />
 
       <form action={saveAction} className="space-y-3">
-        <AvatarUploadField
-          onUploaded={(avatarUrl) => {
-            setPreviewUrl(avatarUrl);
-
-            if (avatarUrlRef.current) {
-              avatarUrlRef.current.value = avatarUrl;
-            }
-          }}
+        <MediaUploaderDialog
+          accept="image/jpeg,image/png,image/webp"
+          buttonLabel="Upload or choose avatar"
+          description="Upload a new avatar or choose the current uploaded image."
+          helperText="JPG, PNG, or WebP up to 2MB."
+          initialItems={media.initialItems}
+          onOpen={media.loadAvatarItems}
+          onSelect={media.selectAvatar}
+          onUpload={media.uploadAvatar}
+          selectedUrl={media.previewUrl}
+          title="Avatar media"
         />
 
         <InputField

@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 
 // Cloudinary signs sorted non-empty params as query pairs plus API secret.
 export function signCloudinaryParams(
-  params: Record<string, number | string | undefined>,
+  params: Record<string, boolean | number | string | undefined>,
   apiSecret: string,
 ) {
   const payload = Object.entries(params)

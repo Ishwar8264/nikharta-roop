@@ -1,13 +1,11 @@
 "use server";
 
 import { getCurrentUserFromRequest } from "@/features/auth/helpers/auth-session.server";
+import type { MediaUploaderItem } from "@/features/media/types/media-uploader.types";
 import {
-  AVATAR_UPLOAD_LIMIT_BYTES,
-  AVATAR_UPLOAD_TYPES,
-  getAvatarEagerTransformations,
-  getCloudinaryConfig,
-} from "@/features/media/config/cloudinary.config";
-import { signCloudinaryParams } from "@/features/media/helpers/cloudinary-signature";
+  createAvatarUploadSignature,
+  listAvatarCloudinaryItems,
+} from "@/features/users/helpers/avatar-cloudinary.server";
 
 export type AvatarUploadSignatureState =
   | {
@@ -29,11 +27,26 @@ export type AvatarUploadSignatureState =
       uploadTypes: string[];
     };
 
+type AvatarListState =
+  | {
+      items: MediaUploaderItem[];
+      message: string;
+      success: true;
+    }
+  | {
+      items: [];
+      message: string;
+      success: false;
+    };
+
 // Creates a short-lived signed Cloudinary upload contract for this user.
-export async function createAvatarUploadSignatureAction(): Promise<AvatarUploadSignatureState> {
+export async function createAvatarUploadSignatureAction(
+  fileHash?: string,
+): Promise<AvatarUploadSignatureState> {
   const user = await getCurrentUserFromRequest();
 
   if (!user) {
+    // Do not expose Cloudinary signing to anonymous requests.
     return {
       message: "Please login again before uploading an avatar.",
       success: false,
@@ -41,34 +54,37 @@ export async function createAvatarUploadSignatureAction(): Promise<AvatarUploadS
   }
 
   try {
-    const config = getCloudinaryConfig();
-    const timestamp = Math.floor(Date.now() / 1000);
-    const folder = `nikharta-roop/users/${user.id}/avatar`;
-    const publicId = `avatar-${timestamp}`;
-    const eager = getAvatarEagerTransformations();
-    const signature = signCloudinaryParams(
-      { eager, folder, public_id: publicId, timestamp },
-      config.apiSecret,
-    );
+    const signature = createAvatarUploadSignature(user.id, fileHash);
 
     return {
-      apiKey: config.apiKey,
-      cloudName: config.cloudName,
-      eager,
-      folder,
-      maxBytes: AVATAR_UPLOAD_LIMIT_BYTES,
+      ...signature,
       message: "Upload signature created.",
-      publicId,
-      signature,
       success: true,
-      timestamp,
-      uploadUrl: `https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`,
-      uploadTypes: AVATAR_UPLOAD_TYPES,
     };
   } catch {
     return {
       message: "Avatar upload is not configured.",
       success: false,
     };
+  }
+}
+
+// Loads existing avatar uploads from this user's Cloudinary avatar folder.
+export async function listAvatarUploadsAction(): Promise<AvatarListState> {
+  const user = await getCurrentUserFromRequest();
+
+  if (!user) {
+    // The media library is user-scoped, so logged-out users get an empty list.
+    return { items: [], message: "Please login again.", success: false };
+  }
+
+  try {
+    return {
+      items: await listAvatarCloudinaryItems(user.id),
+      message: "Avatar media loaded.",
+      success: true,
+    };
+  } catch {
+    return { items: [], message: "Avatar media is not configured.", success: false };
   }
 }

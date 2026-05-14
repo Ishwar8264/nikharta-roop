@@ -14,6 +14,33 @@ export type AvatarUploadResult = {
   avatarUrl: string;
 };
 
+// Stable content hash lets Cloudinary reuse the same public_id for duplicates.
+export async function createAvatarFileHash(file: File) {
+  const buffer = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+
+  // Short hash is enough for stable public ids while keeping Cloudinary names readable.
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 32);
+}
+
+// Client-side guard avoids sending invalid files to Cloudinary.
+export function validateAvatarFile(
+  file: File,
+  allowedTypes: string[],
+  maxBytes: number,
+) {
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error("Upload JPG, PNG, or WebP image only.");
+  }
+
+  if (file.size > maxBytes) {
+    throw new Error("Avatar image must be 2MB or smaller.");
+  }
+}
+
 // Uploads directly to Cloudinary using a server-signed contract.
 export async function uploadAvatarToCloudinary(
   file: File,
@@ -21,6 +48,7 @@ export async function uploadAvatarToCloudinary(
 ): Promise<AvatarUploadResult> {
   const formData = new FormData();
 
+  // Only signed fields from the server are sent with the user-selected file.
   formData.set("api_key", signature.apiKey);
   formData.set("eager", signature.eager);
   formData.set("file", file);
@@ -39,6 +67,7 @@ export async function uploadAvatarToCloudinary(
     throw new Error(payload.error?.message ?? "Cloudinary upload failed.");
   }
 
+  // Prefer the eager avatar transform so saved URLs render consistently.
   const avatarUrl = payload.eager?.[0]?.secure_url ?? payload.secure_url;
 
   if (!avatarUrl) {
