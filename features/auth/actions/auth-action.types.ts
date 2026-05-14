@@ -14,6 +14,7 @@ export type AuthActionData = {
 };
 
 export type AuthUser = {
+  avatarUrl?: string | null;
   email?: string | null;
   id: string;
   mobile: string;

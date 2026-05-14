@@ -24,6 +24,7 @@ type PublicNavbarProps = {
 };
 
 const guestSession: SessionUserInfo = {
+  avatarUrl: null,
   branchId: null,
   displayName: "Account",
   email: null,

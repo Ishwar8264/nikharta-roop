@@ -47,6 +47,7 @@ type RequestContext = {
 };
 
 type PublicUserRow = {
+  avatarUrl: string | null;
   branchId: string | null;
   email: string | null;
   id: string;
@@ -655,6 +656,7 @@ async function verifySignupOtp(
           role: "USER",
         },
         select: {
+          avatarUrl: true,
           branchId: true,
           email: true,
           id: true,
@@ -1016,6 +1018,7 @@ async function verifyLoginOtp(
     const result = await db.$transaction(async (tx) => {
       const user = await tx.user.findFirst({
         select: {
+          avatarUrl: true,
           branchId: true,
           email: true,
           id: true,
@@ -1517,6 +1520,7 @@ function getSessionExpiry(now: Date) {
  */
 function publicUserSelect() {
   return {
+    avatarUrl: true,
     branchId: true,
     email: true,
     id: true,
@@ -1533,6 +1537,7 @@ function publicUserSelect() {
  */
 function toPublicUser(user: PublicUserRow) {
   return {
+    avatarUrl: user.avatarUrl,
     // Admin APIs use branchId for branch-scoped authorization checks.
     branchId: user.branchId,
     email: user.email,

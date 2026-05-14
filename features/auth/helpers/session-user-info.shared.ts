@@ -8,6 +8,7 @@ export function buildSessionUserInfo(user: AuthUser | null): SessionUserInfo {
   const displayName = user?.name?.trim() || user?.mobile || "Account";
 
   return {
+    avatarUrl: user?.avatarUrl ?? null,
     branchId: null,
     displayName,
     email: user?.email ?? null,

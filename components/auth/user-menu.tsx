@@ -5,7 +5,7 @@ import { UserRound } from "lucide-react";
 
 import { CustomerAccountLinks } from "@/components/auth/customer-account-links";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/auth/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,7 +48,7 @@ export function UserMenu({ className, session: initialSession }: UserMenuProps) 
     };
   }, [initialSession.user]);
 
-  const { displayName, email, initials, mobile } = session;
+  const { avatarUrl, displayName, email, initials, mobile } = session;
   const subtitle = mobile || email || "Signed in";
 
   return (
@@ -63,11 +63,7 @@ export function UserMenu({ className, session: initialSession }: UserMenuProps) 
           type="button"
           variant="ghost"
         >
-          <Avatar size="sm">
-            <AvatarFallback className="bg-rose-100 text-rose-900">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar avatarUrl={avatarUrl} displayName={displayName} initials={initials} size="sm" />
           <span className="hidden sr-only max-w-28 truncate text-sm sm:inline">
             {displayName}
           </span>
@@ -77,11 +73,7 @@ export function UserMenu({ className, session: initialSession }: UserMenuProps) 
       <DropdownMenuContent align="end" className="w-72 p-2">
         <DropdownMenuLabel className="p-0">
           <div className="flex items-center gap-3 rounded-lg bg-[#fffaf6] p-3">
-            <Avatar size="lg">
-              <AvatarFallback className="bg-rose-100 text-rose-900">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar avatarUrl={avatarUrl} displayName={displayName} initials={initials} size="lg" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-stone-950">
                 {displayName}
