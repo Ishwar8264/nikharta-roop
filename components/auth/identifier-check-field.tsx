@@ -19,6 +19,7 @@ type IdentifierCheckResult = {
 
 const CHECK_DELAY_MS = 450;
 
+// Debounced identifier availability field used by login and signup.
 export function IdentifierCheckField({
   clientError,
   helperText,
@@ -40,6 +41,7 @@ export function IdentifierCheckField({
       return;
     }
 
+    // Delay avoids firing the server action on every keystroke.
     const timeoutId = window.setTimeout(() => {
       const formData = new FormData();
       formData.set("identifier", trimmedValue);
@@ -47,6 +49,7 @@ export function IdentifierCheckField({
 
       startTransition(async () => {
         const response = await checkIdentifierAction(formData);
+        // Keep the checked value so stale responses never affect new input.
         setCheckResult({
           result: response,
           value: trimmedValue,
