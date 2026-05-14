@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listPublicBranches } from "@/features/branches/queries/branch.query";
+import { AvatarForm } from "@/features/users/components/avatar-form";
 import { ProfileForm } from "@/features/users/components/profile-form";
 import { getMyProfile } from "@/features/users/queries/user-profile.query";
 
@@ -18,18 +19,33 @@ export default async function CustomerProfilePage() {
         </h1>
       </div>
 
-      <Card className="bg-white/80">
-        <CardHeader>
-          <CardTitle>Personal information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {profile.user ? (
-            <ProfileForm branches={branches} user={profile.user} />
-          ) : (
+      {profile.user ? (
+        <div className="space-y-4">
+          <Card className="bg-white/80">
+            <CardHeader>
+              <CardTitle>Profile photo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AvatarForm user={profile.user} />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/80">
+            <CardHeader>
+              <CardTitle>Personal information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProfileForm branches={branches} user={profile.user} />
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card className="bg-white/80">
+          <CardContent className="pt-4">
             <p className="text-sm text-destructive">{profile.error}</p>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }
