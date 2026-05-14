@@ -1,3 +1,5 @@
+import type { BranchFormValues } from "@/features/branches/types/branch-form.types";
+
 // Converts admin branch forms into the branch API request shape.
 export function toBranchBody(formData: FormData) {
   return {
@@ -14,6 +16,22 @@ export function toBranchBody(formData: FormData) {
     phone: getFormString(formData, "phone"),
     placeId: getOptionalString(formData, "placeId"),
   };
+}
+
+// Bridges React Hook Form values back into server action FormData.
+export function toBranchFormData(values: BranchFormValues) {
+  const formData = new FormData();
+
+  Object.entries(values).forEach(([key, value]) => {
+    if (key === "isActive") {
+      if (value) formData.set(key, "on");
+      return;
+    }
+
+    formData.set(key, String(value));
+  });
+
+  return formData;
 }
 
 function getFormString(formData: FormData, key: string) {

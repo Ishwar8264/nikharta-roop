@@ -1,3 +1,5 @@
+import type { UseFormRegisterReturn } from "react-hook-form";
+
 import { Input } from "@/components/ui/input";
 import { BranchFieldError } from "@/features/branches/components/branch-field-error";
 import type {
@@ -9,7 +11,10 @@ type BranchTextFieldProps = {
   errors: BranchFormErrors;
   label: string;
   name: keyof BranchFormValues;
+  onBlur?: (name: keyof BranchFormValues) => void;
   onChange: (name: keyof BranchFormValues, value: string) => void;
+  placeholder?: string;
+  registration?: UseFormRegisterReturn;
   required?: boolean;
   type?: string;
   value: string;
@@ -20,7 +25,10 @@ export function BranchTextField({
   errors,
   label,
   name,
+  onBlur,
   onChange,
+  placeholder,
+  registration,
   required,
   type = "text",
   value,
@@ -35,8 +43,18 @@ export function BranchTextField({
         aria-invalid={Boolean(error)}
         className="h-11 bg-white"
         name={name}
-        onChange={(event) => onChange(name, event.currentTarget.value)}
+        onBlur={(event) => {
+          registration?.onBlur(event);
+          onBlur?.(name);
+        }}
+        onChange={(event) => {
+          registration?.onChange(event);
+          onChange(name, event.currentTarget.value);
+        }}
+        placeholder={placeholder}
+        ref={registration?.ref}
         required={required}
+        spellCheck={false}
         step={type === "number" ? "any" : undefined}
         type={type}
         value={value}
