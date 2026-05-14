@@ -27,7 +27,7 @@ export function AccountBranchSummary({ branch }: AccountBranchSummaryProps) {
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link href={branch ? "/account/profile" : "/branches"}>
+          <Link href={branch ? "/account/profile/edit" : "/branches"}>
             {branch ? "Change branch" : "View branches"}
           </Link>
         </Button>

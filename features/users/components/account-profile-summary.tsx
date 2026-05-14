@@ -42,7 +42,7 @@ export function AccountProfileSummary({
         </div>
 
         <Button asChild variant="outline">
-          <Link href="/account/profile">Edit profile</Link>
+          <Link href="/account/profile/edit">Edit profile</Link>
         </Button>
       </CardContent>
     </Card>

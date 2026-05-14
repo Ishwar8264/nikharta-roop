@@ -59,6 +59,7 @@ async function toAvatarState(response: Response, fallbackMessage: string) {
   if (response.ok && payload?.success === true) {
     revalidatePath("/account");
     revalidatePath("/account/profile");
+    revalidatePath("/account/profile/edit");
   }
 
   return {

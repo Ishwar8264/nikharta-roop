@@ -32,6 +32,7 @@ export async function updateProfileAction(
   if (response.ok && payload?.success === true) {
     revalidatePath("/account");
     revalidatePath("/account/profile");
+    revalidatePath("/account/profile/edit");
   }
 
   return {
