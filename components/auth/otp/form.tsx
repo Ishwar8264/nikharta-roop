@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AtSign, ShieldCheck } from "lucide-react";
+import { Mail, Phone, ShieldCheck } from "lucide-react";
 import {
   AuthFormHeader,
   authButtonClassName,
@@ -54,6 +54,16 @@ const VerifyOtpForm = ({
   const identifierValue = defaultIdentifier || defaultMobile;
   const identifierFieldName = mode === "signin" ? "identifier" : "mobile";
   const purpose = mode === "signin" ? "LOGIN" : "SIGNUP";
+  const isEmailIdentifier = identifierValue.includes("@");
+  const IdentifierIcon = isEmailIdentifier ? Mail : Phone;
+  const identifierLabel =
+    mode === "signin" && isEmailIdentifier ? "Email Address" : "Mobile Number";
+  const identifierHelperText =
+    mode === "signin" && isEmailIdentifier
+      ? "Registered email address"
+      : "Registered mobile number";
+  const identifierPlaceholder =
+    mode === "signin" && isEmailIdentifier ? "you@example.com" : "9876543210";
 
   // The same OTP component serves signin and signup. Mode picks the correct
   // Server Action while keeping the UI reusable.
@@ -119,22 +129,20 @@ const VerifyOtpForm = ({
         {disableMobile ? (
           <input type="hidden" name={identifierFieldName} value={identifierValue} />
         ) : null}
+        {/* OTP pages receive the identifier from the previous step, so the
+            locked field mirrors that identifier instead of using a generic icon. */}
         <InputField
           name={disableMobile ? undefined : identifierFieldName}
-          label={mode === "signin" ? "Mobile Number or Email" : "Mobile Number"}
-          placeholder={mode === "signin" ? "9876543210 or you@example.com" : "9876543210"}
+          label={identifierLabel}
+          placeholder={identifierPlaceholder}
           type="text"
           autoComplete="one-time-code"
           required
           disabled={disableMobile}
           defaultValue={identifierValue}
-          leftIcon={<AtSign className="h-4 w-4" />}
+          leftIcon={<IdentifierIcon className="h-4 w-4" />}
           inputClassName={authInputClassName}
-          helperText={
-            mode === "signin"
-              ? "Registered mobile number or email"
-              : "10-digit Indian mobile number"
-          }
+          helperText={identifierHelperText}
         />
 
         <InputField

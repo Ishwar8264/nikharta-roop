@@ -2,7 +2,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Eye, EyeOff, AlertCircle, Check } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, CircleCheck } from "lucide-react";
 
 export interface InputFieldProps extends React.ComponentProps<"input"> {
   // Label Props
@@ -232,7 +232,7 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
               {shouldShowSuccessIcon && (
                 <div className={cn("shrink-0", successIconClassName)}>
                   {customSuccessIcon || (
-                    <Check className="h-4 w-4 text-green-500" />
+                    <CircleCheck className="h-4 w-4 text-green-500" />
                   )}
                 </div>
               )}
