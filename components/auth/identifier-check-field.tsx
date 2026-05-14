@@ -12,6 +12,11 @@ type IdentifierCheckFieldProps = Omit<InputFieldProps, "error" | "success"> & {
   shouldCheck?: (value: string) => boolean;
 };
 
+type IdentifierCheckResult = {
+  result: AuthActionState;
+  value: string;
+};
+
 const CHECK_DELAY_MS = 450;
 
 export function IdentifierCheckField({
@@ -24,7 +29,8 @@ export function IdentifierCheckField({
   ...props
 }: IdentifierCheckFieldProps) {
   const [value, setValue] = React.useState(String(props.defaultValue ?? ""));
-  const [result, setResult] = React.useState<AuthActionState | null>(null);
+  const [checkResult, setCheckResult] =
+    React.useState<IdentifierCheckResult | null>(null);
   const [isPending, startTransition] = React.useTransition();
 
   React.useEffect(() => {
@@ -41,14 +47,21 @@ export function IdentifierCheckField({
 
       startTransition(async () => {
         const response = await checkIdentifierAction(formData);
-        setResult(response);
+        setCheckResult({
+          result: response,
+          value: trimmedValue,
+        });
       });
     }, CHECK_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);
   }, [purpose, shouldCheck, value]);
 
-  const visibleResult = value.trim() && !clientError ? result : null;
+  const trimmedValue = value.trim();
+  const visibleResult =
+    trimmedValue && !clientError && checkResult?.value === trimmedValue
+      ? checkResult.result
+      : null;
   const canContinue = visibleResult?.data?.canContinue;
   const error =
     clientError ||

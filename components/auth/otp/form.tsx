@@ -40,6 +40,14 @@ function getSafeCooldown(value: number) {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
+function getOtpError(value: string) {
+  if (!value) {
+    return "Enter the OTP";
+  }
+
+  return /^\d{6}$/.test(value) ? null : "Enter a valid 6-digit OTP";
+}
+
 const VerifyOtpForm = ({
   title = "Verify OTP",
   subtitle = "Enter the OTP sent to your mobile number",
@@ -55,6 +63,7 @@ const VerifyOtpForm = ({
   const router = useRouter();
   const [state, setState] = React.useState<AuthActionState | null>(null);
   const [resendState, setResendState] = React.useState<AuthActionState | null>(null);
+  const [otpError, setOtpError] = React.useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = React.useState(
     getSafeCooldown(initialRetryAfter),
   );
@@ -92,6 +101,17 @@ const VerifyOtpForm = ({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const otp = String(formData.get("otp") ?? "").trim();
+    const validationError = getOtpError(otp);
+
+    if (validationError) {
+      setOtpError(validationError);
+      showError("Verification failed", validationError);
+      return;
+    }
+
+    formData.set("otp", otp);
+
     const action = mode === "signin" ? verifySigninAction : verifySignupAction;
 
     startTransition(async () => {
@@ -148,6 +168,22 @@ const VerifyOtpForm = ({
     });
   }
 
+  function handleOtpChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const nextValue = event.currentTarget.value.replace(/\D/g, "").slice(0, 6);
+
+    event.currentTarget.value = nextValue;
+    setOtpError(nextValue ? getOtpError(nextValue) : null);
+    setState(null);
+  }
+
+  function handleOtpBeforeInput(event: React.FormEvent<HTMLInputElement>) {
+    const inputEvent = event.nativeEvent as InputEvent;
+
+    if (inputEvent.data && /\D/.test(inputEvent.data)) {
+      event.preventDefault();
+    }
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -183,10 +219,16 @@ const VerifyOtpForm = ({
           placeholder="123456"
           type="text"
           inputMode="numeric"
+          maxLength={6}
+          pattern="[0-9]{6}"
           required
           leftIcon={<ShieldCheck className="h-4 w-4" />}
           inputClassName={authInputClassName}
+          error={otpError ?? undefined}
           helperText="6-digit one-time password"
+          onBeforeInput={handleOtpBeforeInput}
+          onChange={handleOtpChange}
+          title="Enter a valid 6-digit OTP"
         />
 
         {devOtp ? (
