@@ -11,6 +11,7 @@ export type PublicBranch = {
   nameHi: string;
   openTime: string;
   phone: string;
+  placeId?: string | null;
 };
 
 export type BranchListResult = {

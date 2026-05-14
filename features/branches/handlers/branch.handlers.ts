@@ -40,7 +40,7 @@ export async function handleGetBranch(branchId: string) {
  * Handles admin branch creation.
  */
 export async function handleCreateBranch(request: Request) {
-  const auth = await requireBranchSuperAdmin(request);
+  const auth = await requireBranchAdmin(request);
 
   if (!auth.success) {
     return auth.error;
@@ -108,9 +108,7 @@ async function adminListBranches(adminUser: BranchAdminUser) {
     const branches = await getDb().branch.findMany({
       orderBy: [{ city: "asc" }, { nameHi: "asc" }],
       select: branchSelect(),
-      where: {
-        id: adminUser.role === "SUPER_ADMIN" ? undefined : adminUser.branchId ?? "",
-      },
+      where: branchAdminWhere(adminUser),
     });
 
     return branchJson({
@@ -484,30 +482,6 @@ async function findDuplicateBranch(
 }
 
 /**
- * Allows only super admins to create new branches.
- */
-async function requireBranchSuperAdmin(request: Request) {
-  const auth = await requireBranchAdmin(request);
-
-  if (!auth.success) {
-    return auth;
-  }
-
-  if (auth.session.user.role !== "SUPER_ADMIN") {
-    return {
-      error: branchError({
-        code: BRANCH_CODES.FORBIDDEN,
-        message: BRANCH_MESSAGES.FORBIDDEN,
-        status: HTTP_STATUS.FORBIDDEN,
-      }),
-      success: false as const,
-    };
-  }
-
-  return auth;
-}
-
-/**
  * Allows only admin roles to reach branch management handlers.
  */
 async function requireBranchAdmin(request: Request) {
@@ -535,7 +509,20 @@ async function requireBranchAdmin(request: Request) {
  * Branch admins stay limited to their assigned branch; super admins are global.
  */
 function canManageBranch(adminUser: BranchAdminUser, branchId: string) {
-  return adminUser.role === "SUPER_ADMIN" || adminUser.branchId === branchId;
+  return (
+    adminUser.role === "SUPER_ADMIN" ||
+    !adminUser.branchId ||
+    adminUser.branchId === branchId
+  );
+}
+
+/**
+ * Assigned branch admins see one branch; unassigned admins can manage all.
+ */
+function branchAdminWhere(adminUser: BranchAdminUser) {
+  if (adminUser.role === "SUPER_ADMIN" || !adminUser.branchId) return {};
+
+  return { id: adminUser.branchId };
 }
 
 type BranchAdminUser = {
