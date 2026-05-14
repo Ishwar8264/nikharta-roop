@@ -1,120 +1,51 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Mail, Phone, User } from "lucide-react";
-import { IdentifierCheckField } from "@/components/auth/identifier-check-field";
-import { InputField } from "@/components/ui/shared/input/generic-input";
+
+import {
+  AuthFormHeader,
+  authButtonClassName,
+  authFormClassName,
+} from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/shared/logo/logo";
-import {
-  showError,
-  showSuccess,
-} from "@/components/ui/shared/toast/custom-toast";
-import {
-  startSignupAction,
-} from "@/features/auth/actions/auth.actions";
-import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
+import { RegisterFields } from "./register-fields";
+import { useRegisterForm } from "./use-register-form";
 
 const RegisterForm = () => {
-  const router = useRouter();
-  const [state, setState] = React.useState<AuthActionState | null>(null);
-  const [isPending, startTransition] = React.useTransition();
-
-  // Signup starts on the server. The browser submits form data to a Server
-  // Action, and the action reuses the existing auth handler to create the OTP.
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-
-    startTransition(async () => {
-      const result = await startSignupAction(formData);
-      setState(result);
-
-      if (result.success) {
-        showSuccess("OTP sent", result.message);
-      } else {
-        showError("Signup failed", result.message);
-      }
-
-      // Redirect destination comes from the action so the client does not need
-      // to know auth flow details beyond rendering the next screen.
-      if (result.success && result.data?.redirectTo) {
-        router.push(result.data.redirectTo);
-      }
-    });
-  }
+  const form = useRegisterForm();
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="w-full max-w-md rounded-2xl border border-gray-200 bg-white px-8 pt-6 pb-8 shadow-sm"
-    >
-      {/* ── Logo & Header grouped tightly ── */}
-      <div className="flex flex-col items-center space-y-2">
-        <Logo size="lg" />
+    <form onSubmit={form.handleSubmit} className={authFormClassName}>
+      <AuthFormHeader
+        title="Create Account"
+        subtitle="Fill in the details to get started"
+      />
 
-        <div className="text-center">
-          <h2 className="text-xl font-semibold tracking-tight">
-            Create Account
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Fill in the details to get started
-          </p>
-        </div>
-      </div>
-
-      {/* ── Form Fields ── */}
-      <div className="mt-6 space-y-5">
-        {/* ── Name ── */}
-        <InputField
-          name="name"
-          label="Name"
-          placeholder="Enter your name"
-          type="text"
-          autoComplete="name"
-          leftIcon={<User className="h-4 w-4" />}
-          helperText="2–100 characters"
+      <div className="mt-7 space-y-5">
+        <RegisterFields
+          emailError={form.emailError ?? undefined}
+          mobileError={form.mobileError ?? undefined}
+          onEmailChange={form.handleEmailChange}
+          onMobileBeforeInput={form.handleMobileBeforeInput}
+          onMobileChange={form.handleMobileChange}
+          shouldCheckEmail={form.shouldCheckEmail}
+          shouldCheckMobile={form.shouldCheckMobile}
         />
 
-        {/* ── Email ── */}
-        <IdentifierCheckField
-          name="email"
-          purpose="SIGNUP"
-          label="Email"
-          placeholder="you@example.com"
-          type="email"
-          autoComplete="email"
-          leftIcon={<Mail className="h-4 w-4" />}
-          helperText="Optional — but we'll send updates here"
-        />
-
-        {/* ── Mobile ── */}
-        <IdentifierCheckField
-          name="mobile"
-          purpose="SIGNUP"
-          label="Mobile Number"
-          placeholder="9876543210"
-          type="tel"
-          autoComplete="tel"
-          required
-          leftIcon={<Phone className="h-4 w-4" />}
-          helperText="10-digit Indian mobile number"
-        />
-
-        {state && !state.success ? (
-          <p className="text-sm text-destructive">{state.message}</p>
+        {form.state && !form.state.success ? (
+          <p className="text-sm text-destructive">{form.state.message}</p>
         ) : null}
 
-        {/* ── Submit ── */}
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Sending OTP..." : "Register"}
+        <Button
+          type="submit"
+          className={`w-full ${authButtonClassName}`}
+          disabled={form.isPending}
+        >
+          {form.isPending ? "Sending OTP..." : "Register"}
         </Button>
       </div>
 
-      {/* ── Login Link ── */}
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-7 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link
           href="/signin"

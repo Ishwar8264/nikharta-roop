@@ -1,31 +1,24 @@
 "use client";
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import { AtSign, ShieldCheck } from "lucide-react";
-import { InputField } from "@/components/ui/shared/input/generic-input";
+import { AuthFormHeader, authButtonClassName, authFormClassName } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
-import {
-  showError,
-  showSuccess,
-} from "@/components/ui/shared/toast/custom-toast";
-import {
-  resendOtpAction,
-  verifySigninAction,
-  verifySignupAction,
-} from "@/features/auth/actions/auth.actions";
-import type { AuthActionState } from "@/features/auth/actions/auth-action.types";
+import { cn } from "@/lib/utils";
+import { OtpCodeField } from "./otp-code-field";
+import { OtpIdentifierField } from "./otp-identifier-field";
+import { ResendOtpControl } from "./resend-otp-control";
+import { useVerifyOtpForm } from "./use-verify-otp-form";
 
 interface VerifyOtpFormProps {
-  title?: string;
-  subtitle?: string;
-  submitButtonLabel?: string;
+  containerClassName?: string;
   defaultIdentifier?: string;
   defaultMobile?: string;
   devOtp?: string;
   disableMobile?: boolean;
-  containerClassName?: string;
+  initialRetryAfter?: number;
   mode: "signin" | "signup";
+  submitButtonLabel?: string;
+  subtitle?: string;
+  title?: string;
 }
 
 const VerifyOtpForm = ({
@@ -36,149 +29,65 @@ const VerifyOtpForm = ({
   defaultMobile = "",
   devOtp,
   disableMobile = false,
+  initialRetryAfter = 0,
   containerClassName,
   mode,
 }: VerifyOtpFormProps) => {
-  const router = useRouter();
-  const [state, setState] = React.useState<AuthActionState | null>(null);
-  const [resendState, setResendState] = React.useState<AuthActionState | null>(null);
-  const [isPending, startTransition] = React.useTransition();
-  const [isResending, startResendTransition] = React.useTransition();
+  const purpose = mode === "signin" ? "LOGIN" : "SIGNUP";
   const identifierValue = defaultIdentifier || defaultMobile;
   const identifierFieldName = mode === "signin" ? "identifier" : "mobile";
-  const purpose = mode === "signin" ? "LOGIN" : "SIGNUP";
-
-  // The same OTP component serves signin and signup. Mode picks the correct
-  // Server Action while keeping the UI reusable.
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const action = mode === "signin" ? verifySigninAction : verifySignupAction;
-
-    startTransition(async () => {
-      const result = await action(formData);
-      setState(result);
-
-      if (result.success) {
-        showSuccess("Verification complete", result.message);
-      } else {
-        showError("Verification failed", result.message);
-      }
-
-      // On success the action has already set HttpOnly cookies server-side.
-      // The client only navigates to the returned route.
-      if (result.success && result.data?.redirectTo) {
-        router.push(result.data.redirectTo);
-      }
-    });
-  }
-
-  function handleResend(event: React.MouseEvent<HTMLButtonElement>) {
-    const form = event.currentTarget.form;
-
-    if (!form) {
-      return;
-    }
-
-    const formData = new FormData(form);
-    formData.set("purpose", purpose);
-
-    startResendTransition(async () => {
-      const result = await resendOtpAction(formData);
-      setResendState(result);
-
-      if (result.success) {
-        showSuccess("OTP resent", result.message);
-      } else {
-        showError("Resend failed", result.message);
-      }
-
-      if (result.success && result.data?.redirectTo) {
-        router.replace(result.data.redirectTo);
-      }
-    });
-  }
+  const form = useVerifyOtpForm({ initialRetryAfter, mode, purpose });
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={containerClassName}
-    >
-      <div className="w-full max-w-md space-y-5 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        {/* Header */}
-        <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        </div>
+    <form onSubmit={form.handleSubmit} className={cn(authFormClassName, containerClassName)}>
+      <AuthFormHeader title={title} subtitle={subtitle} />
 
+      <div className="mt-7 space-y-5">
         <input type="hidden" name="purpose" value={purpose} />
 
-        {/* Disabled inputs are not submitted by browsers, so a hidden input
-            carries the identifier value when the visible field is locked. */}
-        {disableMobile ? (
-          <input type="hidden" name={identifierFieldName} value={identifierValue} />
-        ) : null}
-        <InputField
-          name={disableMobile ? undefined : identifierFieldName}
-          label={mode === "signin" ? "Mobile Number or Email" : "Mobile Number"}
-          placeholder={mode === "signin" ? "9876543210 or you@example.com" : "9876543210"}
-          type="text"
-          autoComplete="one-time-code"
-          required
-          disabled={disableMobile}
+        {disableMobile ? <input type="hidden" name={identifierFieldName} value={identifierValue} /> : null}
+        {/* Locked field mirrors the identifier chosen in the previous step. */}
+        <OtpIdentifierField
           defaultValue={identifierValue}
-          leftIcon={<AtSign className="h-4 w-4" />}
-          helperText={
-            mode === "signin"
-              ? "Registered mobile number or email"
-              : "10-digit Indian mobile number"
-          }
+          disabled={disableMobile}
+          fieldName={identifierFieldName}
+          isEmail={identifierValue.includes("@")}
+          mode={mode}
         />
 
-        {/* ── OTP ── */}
-        <InputField
-          name="otp"
-          label="OTP"
-          placeholder="123456"
-          type="text"
-          inputMode="numeric"
-          required
-          leftIcon={<ShieldCheck className="h-4 w-4" />}
-          helperText="6-digit one-time password"
+        <OtpCodeField
+          error={form.otpError ?? undefined}
+          onBeforeInput={form.handleOtpBeforeInput}
+          onChange={form.handleOtpChange}
         />
 
-        {/* Local development only: handlers omit devOtp in production, so this
-            helper never appears for real users. */}
         {devOtp ? (
           <p className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
             Dev OTP: {devOtp}
           </p>
         ) : null}
 
-        {state && !state.success ? (
-          <p className="text-sm text-destructive">{state.message}</p>
+        {form.state && !form.state.success ? (
+          <p className="text-sm text-destructive">{form.state.message}</p>
         ) : null}
-        {resendState && !resendState.success ? (
-          <p className="text-sm text-destructive">{resendState.message}</p>
-        ) : null}
+        {form.resendState && !form.resendState.success
+          ? <p className="text-sm text-destructive">{form.resendState.message}</p>
+          : null}
 
-        {/* ── Submit ── */}
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Verifying..." : submitButtonLabel}
+        <Button
+          type="submit"
+          className={`w-full ${authButtonClassName}`}
+          disabled={form.isPending}
+        >
+          {form.isPending ? "Verifying..." : submitButtonLabel}
         </Button>
 
-        {/* ── Resend OTP ── */}
-        <p className="text-center text-sm text-muted-foreground">
-          Didn&apos;t receive the code?{" "}
-          <button
-            type="button"
-            className="font-medium text-primary underline-offset-4 hover:underline"
-            disabled={isResending}
-            onClick={handleResend}
-          >
-            {isResending ? "Resending..." : "Resend OTP"}
-          </button>
-        </p>
+        <ResendOtpControl
+          canResend={form.canResendOtp}
+          cooldown={form.cooldown}
+          isResending={form.isResending}
+          onResend={form.handleResend}
+        />
       </div>
     </form>
   );

@@ -1,11 +1,11 @@
+import { AuthPageShell } from "@/components/auth/auth-ui";
 import { RegisterForm } from "@/components/auth/singup/form";
-import React from "react";
 
 const SignUpPage = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <AuthPageShell>
       <RegisterForm />
-    </div>
+    </AuthPageShell>
   );
 };
 
