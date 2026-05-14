@@ -31,8 +31,13 @@ interface VerifyOtpFormProps {
   defaultMobile?: string;
   devOtp?: string;
   disableMobile?: boolean;
+  initialRetryAfter?: number;
   containerClassName?: string;
   mode: "signin" | "signup";
+}
+
+function getSafeCooldown(value: number) {
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
 const VerifyOtpForm = ({
@@ -43,12 +48,16 @@ const VerifyOtpForm = ({
   defaultMobile = "",
   devOtp,
   disableMobile = false,
+  initialRetryAfter = 0,
   containerClassName,
   mode,
 }: VerifyOtpFormProps) => {
   const router = useRouter();
   const [state, setState] = React.useState<AuthActionState | null>(null);
   const [resendState, setResendState] = React.useState<AuthActionState | null>(null);
+  const [resendCooldown, setResendCooldown] = React.useState(
+    getSafeCooldown(initialRetryAfter),
+  );
   const [isPending, startTransition] = React.useTransition();
   const [isResending, startResendTransition] = React.useTransition();
   const identifierValue = defaultIdentifier || defaultMobile;
@@ -64,6 +73,19 @@ const VerifyOtpForm = ({
       : "Registered mobile number";
   const identifierPlaceholder =
     mode === "signin" && isEmailIdentifier ? "you@example.com" : "9876543210";
+  const canResendOtp = resendCooldown <= 0 && !isResending;
+
+  React.useEffect(() => {
+    if (resendCooldown <= 0) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setResendCooldown((currentCooldown) => Math.max(0, currentCooldown - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [resendCooldown]);
 
   // The same OTP component serves signin and signup. Mode picks the correct
   // Server Action while keeping the UI reusable.
@@ -91,6 +113,10 @@ const VerifyOtpForm = ({
   }
 
   function handleResend(event: React.MouseEvent<HTMLButtonElement>) {
+    if (!canResendOtp) {
+      return;
+    }
+
     const form = event.currentTarget.form;
 
     if (!form) {
@@ -108,6 +134,12 @@ const VerifyOtpForm = ({
         showSuccess("OTP resent", result.message);
       } else {
         showError("Resend failed", result.message);
+      }
+
+      // The API returns the next resend window, and the UI mirrors it so users
+      // get immediate feedback without repeatedly hitting the server.
+      if (result.data?.retryAfter) {
+        setResendCooldown(result.data.retryAfter);
       }
 
       if (result.success && result.data?.redirectTo) {
@@ -183,10 +215,14 @@ const VerifyOtpForm = ({
           <button
             type="button"
             className="font-medium text-primary underline-offset-4 hover:underline"
-            disabled={isResending}
+            disabled={!canResendOtp}
             onClick={handleResend}
           >
-            {isResending ? "Resending..." : "Resend OTP"}
+            {isResending
+              ? "Resending..."
+              : resendCooldown > 0
+                ? `Resend OTP in ${resendCooldown}s`
+                : "Resend OTP"}
           </button>
         </p>
       </div>

@@ -348,6 +348,7 @@ function toActionState(
         devOtp: payload.data?.devOtp,
         identifier,
         mobile,
+        retryAfter: payload.data?.retryAfter,
       })
     : undefined;
 
@@ -402,6 +403,7 @@ function buildRedirectUrl(
     devOtp?: string;
     identifier?: string;
     mobile?: string;
+    retryAfter?: number;
   },
 ) {
   const searchParams = new URLSearchParams();
@@ -416,6 +418,10 @@ function buildRedirectUrl(
 
   if (params.devOtp) {
     searchParams.set("devOtp", params.devOtp);
+  }
+
+  if (params.retryAfter) {
+    searchParams.set("retryAfter", String(params.retryAfter));
   }
 
   const query = searchParams.toString();

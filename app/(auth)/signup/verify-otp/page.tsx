@@ -4,11 +4,11 @@ import { VerifyOtpForm } from "@/components/auth/otp/form";
 const VerifyRegisterPage = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ devOtp?: string; mobile?: string }>;
+  searchParams: Promise<{ devOtp?: string; mobile?: string; retryAfter?: string }>;
 }) => {
   // The previous Server Action sends mobile/devOtp in the URL so this page can
   // render as a Server Component while the OTP form stays interactive.
-  const { devOtp, mobile = "" } = await searchParams;
+  const { devOtp, mobile = "", retryAfter } = await searchParams;
 
   return (
     <AuthPageShell>
@@ -20,6 +20,7 @@ const VerifyRegisterPage = async ({
         defaultMobile={mobile}
         devOtp={devOtp}
         disableMobile
+        initialRetryAfter={Number(retryAfter ?? 0)}
       />
     </AuthPageShell>
   );
