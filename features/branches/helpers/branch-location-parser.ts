@@ -9,21 +9,21 @@ const CITY_COMPONENTS = [
   "administrative_area_level_2",
 ];
 
-// Converts Google place details into the branch fields saved in the database.
+// Converts modern Google Place details into the branch fields saved in the database.
 export function parseGooglePlace(
-  place: google.maps.places.PlaceResult,
+  place: google.maps.places.Place,
 ): BranchLocationValue | null {
-  const point = getPlacePoint(place);
+  const point = getModernPlacePoint(place);
 
   if (!point) return null;
 
   return {
-    address: place.formatted_address ?? place.name ?? "",
-    city: getCity(place.address_components),
-    googleMapsUrl: place.url ?? buildGoogleMapsUrl(point, place.place_id),
+    address: place.formattedAddress ?? place.displayName ?? "",
+    city: getPlaceCity(place.addressComponents),
+    googleMapsUrl: place.googleMapsURI ?? buildGoogleMapsUrl(point, place.id),
     latitude: String(point.lat),
     longitude: String(point.lng),
-    placeId: place.place_id ?? "",
+    placeId: place.id,
   };
 }
 
@@ -37,7 +37,7 @@ export function parseGoogleGeocoderResult(
 
   return {
     address: result.formatted_address,
-    city: getCity(result.address_components),
+    city: getGeocoderCity(result.address_components),
     googleMapsUrl: buildGoogleMapsUrl(point, result.place_id),
     latitude: String(point.lat),
     longitude: String(point.lng),
@@ -56,20 +56,28 @@ export function getBranchLocationPoint(
   return { lat, lng };
 }
 
-function getPlacePoint(place: google.maps.places.PlaceResult) {
-  const location = place.geometry?.location;
+function getModernPlacePoint(place: google.maps.places.Place) {
+  const location = place.location;
 
   if (!location) return null;
 
   return { lat: location.lat(), lng: location.lng() };
 }
 
-function getCity(components?: google.maps.GeocoderAddressComponent[]) {
+function getGeocoderCity(components?: google.maps.GeocoderAddressComponent[]) {
   const city = components?.find((component) =>
     component.types.some((type) => CITY_COMPONENTS.includes(type)),
   );
 
   return city?.long_name ?? "";
+}
+
+function getPlaceCity(components?: google.maps.places.AddressComponent[]) {
+  const city = components?.find((component) =>
+    component.types.some((type) => CITY_COMPONENTS.includes(type)),
+  );
+
+  return city?.longText ?? "";
 }
 
 function buildGoogleMapsUrl(point: BranchMapPoint, placeId?: string) {
