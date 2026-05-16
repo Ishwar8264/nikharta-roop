@@ -7,7 +7,7 @@ import { useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Input } from "@/components/ui/input";
 
 type BranchLocationSearchProps = {
-  onSelectPlace: (placeId: string) => void;
+  onSelectPlace: (prediction: google.maps.places.PlacePrediction) => void;
 };
 
 // Uses Google Places predictions while keeping the UI controlled by our form.
@@ -15,34 +15,37 @@ export function BranchLocationSearch({ onSelectPlace }: BranchLocationSearchProp
   const places = useMapsLibrary("places");
   const [query, setQuery] = React.useState("");
   const [predictions, setPredictions] = React.useState<
-    google.maps.places.AutocompletePrediction[]
+    google.maps.places.PlacePrediction[]
   >([]);
-  const service = React.useMemo(
-    () => places && new places.AutocompleteService(),
-    [places],
-  );
+  const sessionToken =
+    React.useRef<google.maps.places.AutocompleteSessionToken | null>(null);
 
   React.useEffect(() => {
-    if (!service || query.trim().length < 3) return;
+    if (!places || query.trim().length < 3) return;
 
     const timer = window.setTimeout(() => {
-      service.getPlacePredictions(
-        {
-          componentRestrictions: { country: "in" },
-          input: query,
-          types: ["establishment", "geocode"],
-        },
-        (results) => setPredictions(results ?? []),
-      );
+      sessionToken.current ??= new places.AutocompleteSessionToken();
+      places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        includedRegionCodes: ["in"],
+        input: query,
+        sessionToken: sessionToken.current,
+      }).then(({ suggestions }) => {
+        setPredictions(
+          suggestions.flatMap((suggestion) =>
+            suggestion.placePrediction ? [suggestion.placePrediction] : [],
+          ),
+        );
+      });
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [query, service]);
+  }, [places, query]);
 
-  function handleSelect(prediction: google.maps.places.AutocompletePrediction) {
-    setQuery(prediction.description);
+  function handleSelect(prediction: google.maps.places.PlacePrediction) {
+    setQuery(prediction.text.toString());
     setPredictions([]);
-    onSelectPlace(prediction.place_id);
+    onSelectPlace(prediction);
+    sessionToken.current = null;
   }
 
   function handleQueryChange(value: string) {
@@ -65,11 +68,11 @@ export function BranchLocationSearch({ onSelectPlace }: BranchLocationSearchProp
           {predictions.map((prediction) => (
             <button
               className="block w-full px-3 py-2 text-left text-sm hover:bg-muted"
-              key={prediction.place_id}
+              key={prediction.placeId}
               onClick={() => handleSelect(prediction)}
               type="button"
             >
-              {prediction.description}
+              {prediction.text.toString()}
             </button>
           ))}
         </div>

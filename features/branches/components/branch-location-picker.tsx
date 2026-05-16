@@ -18,12 +18,12 @@ type BranchLocationPickerProps = {
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 const PLACE_DETAIL_FIELDS = [
-  "address_components",
-  "formatted_address",
-  "geometry",
-  "name",
-  "place_id",
-  "url",
+  "addressComponents",
+  "displayName",
+  "formattedAddress",
+  "googleMapsURI",
+  "id",
+  "location",
 ];
 
 // Top-level provider keeps Google Maps setup isolated from the branch form.
@@ -50,21 +50,16 @@ function BranchLocationPickerContent({
   const places = useMapsLibrary("places");
   const selectedPoint = getBranchLocationPoint(value);
 
-  function handleSelectPlace(placeId: string) {
+  async function handleSelectPlace(prediction: google.maps.places.PlacePrediction) {
     if (!places) return;
 
-    const service = new places.PlacesService(document.createElement("div"));
+    const place = prediction.toPlace();
 
-    service.getDetails(
-      { fields: PLACE_DETAIL_FIELDS, placeId },
-      (place, status) => {
-        if (status !== places.PlacesServiceStatus.OK || !place) return;
+    await place.fetchFields({ fields: PLACE_DETAIL_FIELDS });
 
-        const location = parseGooglePlace(place);
+    const location = parseGooglePlace(place);
 
-        if (location) onChange(location);
-      },
-    );
+    if (location) onChange(location);
   }
 
   return (

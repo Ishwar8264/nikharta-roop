@@ -1,7 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Map, Marker, useMapsLibrary } from "@vis.gl/react-google-maps";
+import {
+  AdvancedMarker,
+  Map,
+  useMapsLibrary,
+} from "@vis.gl/react-google-maps";
 
 import {
   getBranchLocationPoint,
@@ -25,6 +29,8 @@ type MapClickEvent = {
 };
 
 const DEFAULT_CENTER = { lat: 28.4595, lng: 77.0266 };
+const GOOGLE_MAPS_MAP_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? "DEMO_MAP_ID";
 
 // Displays the selectable Google Map and reverse-geocodes clicked locations.
 export function BranchLocationMap({
@@ -61,12 +67,17 @@ export function BranchLocationMap({
         center={center}
         defaultZoom={14}
         gestureHandling="greedy"
+        mapId={GOOGLE_MAPS_MAP_ID}
         mapTypeControl={false}
         onClick={(event: MapClickEvent) => handlePointSelect(event.detail.latLng)}
         streetViewControl={false}
       >
         {center ? (
-          <Marker draggable onDragEnd={handleMarkerDragEnd} position={center} />
+          <AdvancedMarker
+            draggable
+            onDragEnd={handleMarkerDragEnd}
+            position={center}
+          />
         ) : null}
       </Map>
     </div>
