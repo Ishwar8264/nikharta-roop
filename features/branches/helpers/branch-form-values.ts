@@ -1,7 +1,7 @@
 import type { BranchFormValues } from "@/features/branches/types/branch-form.types";
 import type { PublicBranch } from "@/features/branches/types/branch.types";
 
-// Builds stable defaults for create and edit branch drafts.
+// Builds stable defaults for create and edit branch forms.
 export function getBranchFormValues(branch?: PublicBranch): BranchFormValues {
   return {
     address: branch?.address ?? "",
@@ -17,12 +17,4 @@ export function getBranchFormValues(branch?: PublicBranch): BranchFormValues {
     phone: branch?.phone ?? "",
     placeId: branch?.placeId ?? "",
   };
-}
-
-// Keeps stored drafts compatible when new fields are added later.
-export function mergeBranchDraft(
-  defaults: BranchFormValues,
-  draft: Partial<BranchFormValues>,
-) {
-  return { ...defaults, ...draft };
 }

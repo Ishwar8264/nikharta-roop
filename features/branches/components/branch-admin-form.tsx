@@ -1,21 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 
 import type { BranchActionState } from "@/features/branches/actions/branch-admin.actions";
+import { UnsavedChangesDialog } from "@/components/ui/shared/alertbox/unsaved-changes-dialog";
 import { BranchFormActions } from "@/features/branches/components/branch-form-actions";
 import { BranchFormFields } from "@/features/branches/components/branch-form-fields";
 import { BranchLocationPicker } from "@/features/branches/components/branch-location-picker";
-import { useBranchFormDraft } from "@/features/branches/components/use-branch-form-draft";
+import { useBranchFormController } from "@/features/branches/components/use-branch-form-controller";
 import { toBranchFormData } from "@/features/branches/helpers/branch-form-data";
 import { getVisibleBranchFormErrors } from "@/features/branches/helpers/branch-form-rhf";
-import { branchFormSchema } from "@/features/branches/helpers/branch-form-validation";
 import { getBranchLocationValue } from "@/features/branches/helpers/branch-location-value";
 import type { BranchLocationValue } from "@/features/branches/types/branch-location.types";
 import type { BranchFormValues } from "@/features/branches/types/branch-form.types";
 import type { PublicBranch } from "@/features/branches/types/branch.types";
+import { useUnsavedChangesGuard } from "@/features/forms/hooks/use-unsaved-changes-guard";
 
 type BranchAdminFormProps = {
   action: (
@@ -26,15 +25,13 @@ type BranchAdminFormProps = {
   submitLabel: string;
 };
 
-// React Hook Form owns validation while local draft keeps typed data safe.
+// Client shell coordinates RHF, location selection, submit state, and navigation guard.
 export function BranchAdminForm({ action, branch, submitLabel }: BranchAdminFormProps) {
   const [state, setState] = React.useState<BranchActionState>({ message: "", success: false });
-  const { syncNameField, updateField, values } = useBranchFormDraft(branch);
-  const form = useForm<BranchFormValues>({
-    mode: "onChange",
-    resolver: zodResolver(branchFormSchema),
-    values,
-  });
+  const { form, syncNameField, updateField, values } = useBranchFormController(branch);
+  const guard = useUnsavedChangesGuard(
+    form.formState.isDirty && !form.formState.isSubmitting,
+  );
   const visibleErrors = getVisibleBranchFormErrors(
     form.formState.errors,
     form.formState.touchedFields,
@@ -44,30 +41,14 @@ export function BranchAdminForm({ action, branch, submitLabel }: BranchAdminForm
 
   function handleChange(name: keyof BranchFormValues, value: string | boolean) {
     updateField(name, value);
-    form.setValue(name, value as never, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
   }
 
-  function handleNameBlur(name: keyof BranchFormValues) {
-    const syncedValues = syncNameField(name);
-
-    form.setValue("nameHi", syncedValues.nameHi, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    form.setValue("nameEn", syncedValues.nameEn, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-  }
-
+  // Server actions still receive FormData while RHF owns the browser form state.
   async function handleValidSubmit(data: BranchFormValues) {
     setState(await action(state, toBranchFormData(data)));
   }
 
+  // Google Maps selection updates every persisted branch location field together.
   function handleLocationChange(location: BranchLocationValue) {
     Object.entries(location).forEach(([name, value]) => {
       handleChange(name as keyof BranchFormValues, value);
@@ -82,7 +63,7 @@ export function BranchAdminForm({ action, branch, submitLabel }: BranchAdminForm
       />
       <BranchFormFields
         errors={visibleErrors}
-        onBlurName={handleNameBlur}
+        onBlurName={syncNameField}
         onChange={handleChange}
         register={form.register}
         values={values}
@@ -91,6 +72,11 @@ export function BranchAdminForm({ action, branch, submitLabel }: BranchAdminForm
       <BranchFormActions
         disabled={form.formState.isSubmitting}
         submitLabel={submitLabel}
+      />
+      <UnsavedChangesDialog
+        onDiscard={guard.discardChanges}
+        onOpenChange={guard.setIsDialogOpen}
+        open={guard.isDialogOpen}
       />
     </form>
   );
