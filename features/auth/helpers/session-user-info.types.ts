@@ -1,6 +1,7 @@
 import type { AuthUser } from "@/features/auth/actions/auth-action.types";
 
 export type SessionUserInfo = {
+  avatarUrl: string | null;
   branchId: string | null;
   displayName: string;
   email: string | null;
