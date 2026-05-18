@@ -1,3 +1,8 @@
+/**
+ * Purpose: Service API validation schemas and inferred request types.
+ * Responsibilities: normalize route/query payloads before handlers touch business logic.
+ * Important notes: empty optional IDs are treated as omitted so form-driven URLs stay forgiving.
+ */
 import { z } from "zod";
 
 /**
@@ -120,6 +125,22 @@ export const listServicesQuerySchema = z
   });
 
 /**
+ * Query schema for GET /api/v1/admin/services.
+ */
+export const listAdminServicesQuerySchema = z.object({
+  branchId: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    idSchema.optional(),
+  ),
+  categoryId: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    idSchema.optional(),
+  ),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  status: z.enum(["active", "inactive", "all"]).default("all"),
+});
+
+/**
  * Query schema for GET /api/v1/services/:serviceId.
  */
 export const getServiceQuerySchema = z.object({
@@ -183,6 +204,9 @@ export const updateServiceAddOnSchema = serviceAddOnBodySchema
   });
 
 export type GetServiceQueryInput = z.infer<typeof getServiceQuerySchema>;
+export type ListAdminServicesQueryInput = z.infer<
+  typeof listAdminServicesQuerySchema
+>;
 export type ListServiceCategoriesQueryInput = z.infer<
   typeof listServiceCategoriesQuerySchema
 >;

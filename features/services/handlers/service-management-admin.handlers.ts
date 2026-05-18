@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin handlers for listing, creating, and updating service records.
+ * Responsibilities: enforce branch scope, validate payloads, and return API-safe service shapes.
+ * Important notes: branch admins stay locked to their assigned branch while super admins can filter globally.
+ */
 import { getDb } from "@/db";
 import {
   SERVICE_CODES,
@@ -13,6 +18,8 @@ import { HTTP_STATUS } from "@/lib/constants/http-status";
 import {
   createServiceSchema,
   type CreateServiceInput,
+  listAdminServicesQuerySchema,
+  type ListAdminServicesQueryInput,
   updateServiceSchema,
   type UpdateServiceInput,
 } from "@/schema/services/schema.service";
@@ -27,6 +34,25 @@ import {
   toServiceUpdateData,
   type ServiceAdminUser,
 } from "./service-admin.shared";
+
+/**
+ * Handles admin service listing for management screens.
+ */
+export async function handleListAdminServices(request: Request) {
+  const auth = await requireServiceAdmin(request);
+
+  if (!auth.success) {
+    return auth.error;
+  }
+
+  const parsedQuery = parseAdminServiceListQuery(request);
+
+  if (parsedQuery.error) {
+    return parsedQuery.error;
+  }
+
+  return listAdminServices(parsedQuery.data, auth.session.user);
+}
 
 /**
  * Handles admin service creation.
@@ -67,6 +93,50 @@ export async function handleUpdateAdminService(
   }
 
   return updateAdminService(serviceId, parsedBody.data, auth.session.user);
+}
+
+/**
+ * Lists services inside the authenticated admin user's branch scope.
+ */
+async function listAdminServices(
+  input: ListAdminServicesQueryInput,
+  adminUser: ServiceAdminUser,
+) {
+  try {
+    const scopedBranchId = resolveAdminListBranchId(input.branchId, adminUser);
+
+    const services = await getDb().service.findMany({
+      orderBy: [
+        { branch: { city: "asc" } },
+        { category: { sortOrder: "asc" } },
+        { nameHi: "asc" },
+      ],
+      select: serviceDetailSelect(false),
+      take: input.limit,
+      where: {
+        branchId: scopedBranchId,
+        categoryId: input.categoryId,
+        isActive: input.status === "inactive" ? false : input.status === "active" ? true : undefined,
+      },
+    });
+
+    return serviceJson({
+      code: SERVICE_CODES.SERVICES_LISTED,
+      data: {
+        limit: input.limit,
+        services: services.map(toPublicServiceDetail),
+      },
+      message: SERVICE_MESSAGES.SERVICES_LISTED,
+      status: HTTP_STATUS.OK,
+      success: true,
+    });
+  } catch (error) {
+    return handleServiceWriteError(error, {
+      failureCode: SERVICE_CODES.SERVICES_LOAD_FAILED,
+      failureMessage: SERVICE_MESSAGES.SERVICES_LOAD_FAILED,
+      handler: "listAdminServices",
+    });
+  }
 }
 
 /**
@@ -129,6 +199,45 @@ async function createAdminService(
       handler: "createAdminService",
     });
   }
+}
+
+/**
+ * Parses admin list query strings with service-owned validation messages.
+ */
+function parseAdminServiceListQuery(request: Request) {
+  const parsed = listAdminServicesQuerySchema.safeParse(
+    Object.fromEntries(new URL(request.url).searchParams),
+  );
+
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: serviceError({
+        code: SERVICE_CODES.VALIDATION_ERROR,
+        message:
+          parsed.error.issues[0]?.message ?? SERVICE_MESSAGES.VALIDATION_ERROR,
+        status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+      }),
+    };
+  }
+
+  return { data: parsed.data, error: null };
+}
+
+/**
+ * Resolves the branch filter while matching branch management's admin scope behavior.
+ */
+function resolveAdminListBranchId(
+  requestedBranchId: string | undefined,
+  adminUser: ServiceAdminUser,
+) {
+  if (adminUser.role === "SUPER_ADMIN" || !adminUser.branchId) {
+    return requestedBranchId;
+  }
+
+  assertCanManageBranch(adminUser, requestedBranchId ?? adminUser.branchId ?? null);
+
+  return adminUser.branchId;
 }
 
 /**
