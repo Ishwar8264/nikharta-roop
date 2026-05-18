@@ -2,6 +2,8 @@ import "server-only";
 
 export const AVATAR_UPLOAD_LIMIT_BYTES = 2 * 1024 * 1024;
 export const AVATAR_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp"];
+export const SERVICE_IMAGE_UPLOAD_LIMIT_BYTES = 4 * 1024 * 1024;
+export const SERVICE_IMAGE_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export type CloudinaryConfig = {
   apiKey: string;
@@ -31,5 +33,13 @@ export function getAvatarEagerTransformations() {
   return [
     "c_fill,g_face,w_240,h_240,q_auto",
     "c_fill,g_face,w_100,h_100,q_auto",
+  ].join("|");
+}
+
+// Server-owned transformations keep service catalog images consistent.
+export function getServiceImageEagerTransformations() {
+  return [
+    "c_fill,w_900,h_650,q_auto",
+    "c_fill,w_360,h_260,q_auto",
   ].join("|");
 }

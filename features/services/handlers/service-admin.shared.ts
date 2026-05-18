@@ -77,7 +77,7 @@ export async function requireServiceAdmin(request: Request) {
 }
 
 /**
- * Branch admins stay limited to their assigned branch; super admins are global.
+ * Branch admins with an assigned branch stay limited; unassigned admins mirror branch management and can manage all.
  */
 export function assertCanManageBranch(
   adminUser: ServiceAdminUser,
@@ -85,6 +85,7 @@ export function assertCanManageBranch(
 ) {
   if (
     adminUser.role === "SUPER_ADMIN" ||
+    !adminUser.branchId ||
     (branchId && adminUser.branchId === branchId)
   ) {
     return;
@@ -98,22 +99,14 @@ export function assertCanManageBranch(
 }
 
 /**
- * Resolves category branch scope while blocking global writes by branch admins.
+ * Resolves category branch scope while matching branch management's admin scope behavior.
  */
 export function resolveAdminBranchId(
   requestedBranchId: string | null,
   adminUser: ServiceAdminUser,
 ) {
-  if (adminUser.role === "SUPER_ADMIN") {
+  if (adminUser.role === "SUPER_ADMIN" || !adminUser.branchId) {
     return requestedBranchId;
-  }
-
-  if (!adminUser.branchId) {
-    throw new ServiceVisibleError(
-      SERVICE_CODES.FORBIDDEN,
-      SERVICE_MESSAGES.FORBIDDEN,
-      HTTP_STATUS.FORBIDDEN,
-    );
   }
 
   if (requestedBranchId && requestedBranchId !== adminUser.branchId) {

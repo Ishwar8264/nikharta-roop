@@ -1,3 +1,8 @@
+/**
+ * Purpose: Central navigation configuration for public, customer, and admin layouts.
+ * Responsibilities: define stable route labels, icons, and dashboard sections.
+ * Important notes: admin catalog links include service category creation entry points used by service workflows.
+ */
 import {
   BadgeIndianRupee,
   Bell,
@@ -23,6 +28,7 @@ import {
   Sparkles,
   Star,
   Store,
+  Tags,
   UserCog,
   Users,
   WalletCards,
@@ -70,6 +76,11 @@ export const adminNavSections: NavSection[] = [
     label: "Catalog",
     items: [
       { href: "/admin/services", icon: Scissors, label: "Services" },
+      {
+        href: "/admin/services/categories/new",
+        icon: Tags,
+        label: "Service Categories",
+      },
       { href: "/admin/packages", icon: PackageCheck, label: "Packages" },
       { href: "/admin/offers", icon: Gift, label: "Offers" },
     ],
