@@ -9,6 +9,7 @@ import * as React from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { UnsavedChangesDialog } from "@/components/ui/shared/alertbox/unsaved-changes-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,6 +26,7 @@ import type { ServiceActionState } from "@/features/services/actions/service-adm
 import type { PublicBranch } from "@/features/branches/types/branch.types";
 import { useServiceImageUpload } from "@/features/services/components/use-service-image-upload";
 import type { PublicServiceCategory } from "@/features/services/types/service.types";
+import { useUnsavedChangesGuard } from "@/features/forms/hooks/use-unsaved-changes-guard";
 
 type ServiceFormShellProps = {
   action: (
@@ -48,6 +50,7 @@ export function ServiceFormShell({
     success: false,
   });
   const [isPending, startTransition] = React.useTransition();
+  const [isDirty, setIsDirty] = React.useState(false);
   const initialBranchId = branches[0]?.id ?? "";
   const [branchId, setBranchId] = React.useState(initialBranchId);
   const [categoryId, setCategoryId] = React.useState(
@@ -57,7 +60,9 @@ export function ServiceFormShell({
   const imageUrlRef = React.useRef<HTMLInputElement>(null);
   const media = useServiceImageUpload(null, (imageUrl) => {
     if (imageUrlRef.current) imageUrlRef.current.value = imageUrl;
+    setIsDirty(true);
   });
+  const guard = useUnsavedChangesGuard(isDirty && !isPending);
   const categories = categoriesByBranch[branchId] ?? [];
 
   /**
@@ -76,12 +81,41 @@ export function ServiceFormShell({
    * Switches branch and chooses the first valid category for that branch.
    */
   function handleBranchChange(nextBranchId: string) {
+    setIsDirty(true);
     setBranchId(nextBranchId);
     setCategoryId(categoriesByBranch[nextBranchId]?.[0]?.id ?? "");
   }
 
+  /**
+   * Marks form state dirty when users edit uncontrolled text and number fields.
+   */
+  function handleFieldChange() {
+    setIsDirty(true);
+  }
+
+  /**
+   * Updates category selection while enabling the unsaved changes prompt.
+   */
+  function handleCategoryChange(nextCategoryId: string) {
+    setIsDirty(true);
+    setCategoryId(nextCategoryId);
+  }
+
+  /**
+   * Updates active status while enabling the unsaved changes prompt.
+   */
+  function handleActiveChange(nextIsActive: boolean) {
+    setIsDirty(true);
+    setIsActive(nextIsActive);
+  }
+
   return (
-    <form className="grid gap-5" noValidate onSubmit={handleSubmit}>
+    <form
+      className="grid gap-5"
+      noValidate
+      onChangeCapture={handleFieldChange}
+      onSubmit={handleSubmit}
+    >
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Branch" htmlFor="branchId">
           <Select name="branchId" onValueChange={handleBranchChange} value={branchId}>
@@ -102,7 +136,7 @@ export function ServiceFormShell({
           <Select
             disabled={categories.length === 0}
             name="categoryId"
-            onValueChange={setCategoryId}
+            onValueChange={handleCategoryChange}
             value={categoryId}
           >
             <SelectTrigger className="w-full">
@@ -234,7 +268,7 @@ export function ServiceFormShell({
           checked={isActive}
           id="isActive"
           name="isActive"
-          onCheckedChange={setIsActive}
+          onCheckedChange={handleActiveChange}
         />
       </div>
 
@@ -243,6 +277,11 @@ export function ServiceFormShell({
       <Button disabled={isPending || !branchId || !categoryId} type="submit">
         {isPending ? "Creating..." : "Create service"}
       </Button>
+      <UnsavedChangesDialog
+        onDiscard={guard.discardChanges}
+        onOpenChange={guard.setIsDialogOpen}
+        open={guard.isDialogOpen}
+      />
     </form>
   );
 }
