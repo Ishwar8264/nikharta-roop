@@ -1,3 +1,8 @@
+/**
+ * Purpose: Staff mapper utilities for API-safe response shapes.
+ * Responsibilities: convert Prisma rows into serializable public/admin staff objects.
+ * Important notes: Prisma Decimal and @db.Time fields are converted to strings for UI use.
+ */
 type DecimalLike = {
   toString(): string;
 };
@@ -5,6 +10,12 @@ type DecimalLike = {
 type StaffRow = {
   bioEn: string | null;
   bioHi: string | null;
+  branch: {
+    city: string;
+    id: string;
+    nameEn: string | null;
+    nameHi: string;
+  };
   branchId: string;
   createdAt: Date;
   experienceYears: number | null;
@@ -37,6 +48,7 @@ export function toPublicStaff(staff: StaffRow) {
   return {
     bioEn: staff.bioEn,
     bioHi: staff.bioHi,
+    branch: staff.branch,
     branchId: staff.branchId,
     createdAt: staff.createdAt,
     experienceYears: staff.experienceYears,

@@ -1,3 +1,8 @@
+/**
+ * Purpose: Staff API validation schemas and inferred request types.
+ * Responsibilities: normalize public/admin staff queries, create payloads, assignments, and leave records.
+ * Important notes: time fields accept HH:mm or HH:mm:ss because browser time inputs submit HH:mm.
+ */
 import { z } from "zod";
 
 /**
@@ -29,6 +34,16 @@ const workDaysSchema = z.array(z.number().int().min(0).max(6)).max(7).optional()
 export const listStaffQuerySchema = z.object({
   branchId: idSchema,
   serviceId: optionalIdSchema,
+});
+
+/**
+ * Query schema for GET /api/v1/admin/staff.
+ */
+export const listAdminStaffQuerySchema = z.object({
+  branchId: optionalIdSchema,
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  serviceId: optionalIdSchema,
+  status: z.enum(["available", "unavailable", "all"]).default("all"),
 });
 
 /**
@@ -107,6 +122,7 @@ export type AssignStaffServiceInput = z.infer<typeof assignStaffServiceSchema>;
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
 export type CreateStaffLeaveInput = z.infer<typeof createStaffLeaveSchema>;
 export type GetStaffQueryInput = z.infer<typeof getStaffQuerySchema>;
+export type ListAdminStaffQueryInput = z.infer<typeof listAdminStaffQuerySchema>;
 export type ListStaffQueryInput = z.infer<typeof listStaffQuerySchema>;
 export type UpdateStaffInput = z.infer<typeof updateStaffSchema>;
 export type UpdateStaffLeaveInput = z.infer<typeof updateStaffLeaveSchema>;

@@ -1,3 +1,8 @@
+/**
+ * Purpose: Prisma select helpers for staff API responses.
+ * Responsibilities: keep public and admin staff field selection consistent.
+ * Important notes: branch and service names are included so UI cards do not need extra lookups.
+ */
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -7,6 +12,14 @@ export function staffSelect() {
   return {
     bioEn: true,
     bioHi: true,
+    branch: {
+      select: {
+        city: true,
+        id: true,
+        nameEn: true,
+        nameHi: true,
+      },
+    },
     branchId: true,
     createdAt: true,
     experienceYears: true,
