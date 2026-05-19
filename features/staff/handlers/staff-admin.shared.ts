@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared authorization, validation, and error helpers for admin staff handlers.
+ * Responsibilities: enforce admin roles, branch scope, JSON parsing, and user-safe write errors.
+ * Important notes: unassigned admins mirror branch management and can manage every branch.
+ */
 import { z, type ZodError } from "zod";
 
 import { getDb } from "@/db";
@@ -55,11 +60,26 @@ export async function parseStaffJsonBody<TSchema extends z.ZodTypeAny>(
 }
 
 /**
- * Ensures branch admins only manage their assigned branch.
+ * Ensures assigned branch admins only manage their branch while unassigned admins can manage all.
  */
 export function assertCanManageBranch(admin: StaffAdminUser, branchId: string) {
-  if (admin.role === "SUPER_ADMIN" || admin.branchId === branchId) return;
+  if (admin.role === "SUPER_ADMIN" || !admin.branchId || admin.branchId === branchId) return;
   throw new StaffVisibleError(STAFF_CODES.FORBIDDEN, STAFF_MESSAGES.FORBIDDEN, HTTP_STATUS.FORBIDDEN);
+}
+
+/**
+ * Resolves an optional admin branch filter into the visible branch scope.
+ */
+export function resolveAdminBranchFilter(
+  requestedBranchId: string | undefined,
+  admin: StaffAdminUser,
+) {
+  if (admin.role === "SUPER_ADMIN" || !admin.branchId) return requestedBranchId;
+  if (requestedBranchId && requestedBranchId !== admin.branchId) {
+    throw new StaffVisibleError(STAFF_CODES.FORBIDDEN, STAFF_MESSAGES.FORBIDDEN, HTTP_STATUS.FORBIDDEN);
+  }
+
+  return admin.branchId;
 }
 
 /**
