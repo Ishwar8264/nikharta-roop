@@ -9,7 +9,10 @@ import { UserRole } from "@prisma/client";
 
 import { getDb } from "@/db";
 import { createServerApiHeaders } from "@/features/api/server-api-headers";
-import { handleListAdminStaff } from "@/features/staff/handlers/staff-admin.handlers";
+import {
+  handleGetAdminStaff,
+  handleListAdminStaff,
+} from "@/features/staff/handlers/staff-admin.handlers";
 import type {
   PublicStaff,
   StaffListResult,
@@ -20,6 +23,14 @@ import type {
 type StaffListPayload = {
   data?: {
     staff?: PublicStaff[];
+  };
+  message?: string;
+  success?: boolean;
+};
+
+type StaffDetailPayload = {
+  data?: {
+    staff?: PublicStaff;
   };
   message?: string;
   success?: boolean;
@@ -54,6 +65,34 @@ export async function listAdminStaff(
   );
 
   return readStaffListPayload(response, "Could not load admin staff.");
+}
+
+/**
+ * Loads one admin staff profile through the protected detail handler.
+ */
+export async function getAdminStaff(staffId: string) {
+  const response = await handleGetAdminStaff(
+    new Request(`http://nikharta-roop.local/api/v1/admin/staff/${staffId}`, {
+      headers: await createServerApiHeaders(),
+      method: "GET",
+    }),
+    staffId,
+  );
+  const payload = (await response.json().catch(() => null)) as
+    | StaffDetailPayload
+    | null;
+
+  if (!response.ok || payload?.success !== true || !payload.data?.staff) {
+    return {
+      error: payload?.message ?? "Could not load staff profile.",
+      staff: null,
+    };
+  }
+
+  return {
+    error: null,
+    staff: payload.data.staff,
+  };
 }
 
 /**
