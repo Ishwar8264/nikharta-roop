@@ -1,3 +1,8 @@
+/**
+ * Purpose: Package API validation schemas and inferred request types.
+ * Responsibilities: normalize public/admin package queries, write payloads, and package-service assignments.
+ * Important notes: package services must belong to the same branch as the package.
+ */
 import { z } from "zod";
 
 /**
@@ -69,6 +74,15 @@ export const listPackagesQuerySchema = z
   });
 
 /**
+ * Query schema for GET /api/v1/admin/packages.
+ */
+export const listAdminPackagesQuerySchema = z.object({
+  branchId: optionalIdSchema,
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  status: z.enum(["active", "inactive", "all"]).default("all"),
+});
+
+/**
  * Query schema for GET /api/v1/packages/:packageId.
  */
 export const getPackageQuerySchema = z.object({
@@ -100,5 +114,8 @@ export type AssignPackageServiceInput = z.infer<
 >;
 export type CreatePackageInput = z.infer<typeof createPackageSchema>;
 export type GetPackageQueryInput = z.infer<typeof getPackageQuerySchema>;
+export type ListAdminPackagesQueryInput = z.infer<
+  typeof listAdminPackagesQuerySchema
+>;
 export type ListPackagesQueryInput = z.infer<typeof listPackagesQuerySchema>;
 export type UpdatePackageInput = z.infer<typeof updatePackageSchema>;

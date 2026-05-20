@@ -6,6 +6,9 @@ export {
   handleCreateAdminPackage,
 } from "./package-admin-create.handlers";
 export {
+  handleListAdminPackages,
+} from "./package-admin-list.handlers";
+export {
   handleUpdateAdminPackage,
 } from "./package-admin-update.handlers";
 export {
