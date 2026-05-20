@@ -7,13 +7,17 @@ import { HTTP_STATUS } from "@/lib/constants/http-status";
 import { OfferVisibleError, type OfferAdminUser } from "./offer.shared";
 
 /**
- * Branch admins stay limited to their branch; super admins can manage global offers.
+ * Branch admins with an assigned branch stay limited; unassigned admins can manage all offers.
  */
 export function assertCanManageOfferBranch(
   admin: OfferAdminUser,
   branchId: string | null,
 ) {
-  if (admin.role === "SUPER_ADMIN" || (branchId && admin.branchId === branchId)) {
+  if (
+    admin.role === "SUPER_ADMIN" ||
+    !admin.branchId ||
+    (branchId && admin.branchId === branchId)
+  ) {
     return;
   }
   throw new OfferVisibleError(
@@ -30,9 +34,8 @@ export function resolveOfferBranchId(
   requestedBranchId: string | undefined,
   admin: OfferAdminUser,
 ) {
-  if (admin.role === "SUPER_ADMIN") return requestedBranchId ?? null;
+  if (admin.role === "SUPER_ADMIN" || !admin.branchId) return requestedBranchId ?? null;
   if (
-    !admin.branchId ||
     (requestedBranchId && requestedBranchId !== admin.branchId)
   ) {
     throw new OfferVisibleError(
@@ -41,6 +44,25 @@ export function resolveOfferBranchId(
       HTTP_STATUS.FORBIDDEN,
     );
   }
+  return admin.branchId;
+}
+
+/**
+ * Resolves an optional admin branch filter into the visible branch scope.
+ */
+export function resolveOfferAdminBranchFilter(
+  requestedBranchId: string | undefined,
+  admin: OfferAdminUser,
+) {
+  if (admin.role === "SUPER_ADMIN" || !admin.branchId) return requestedBranchId;
+  if (requestedBranchId && requestedBranchId !== admin.branchId) {
+    throw new OfferVisibleError(
+      OFFER_CODES.FORBIDDEN,
+      OFFER_MESSAGES.FORBIDDEN,
+      HTTP_STATUS.FORBIDDEN,
+    );
+  }
+
   return admin.branchId;
 }
 

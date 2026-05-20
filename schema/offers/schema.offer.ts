@@ -1,3 +1,8 @@
+/**
+ * Purpose: Offer API validation schemas and inferred request types.
+ * Responsibilities: normalize public/admin offer queries, coupon validation payloads, and admin writes.
+ * Important notes: coupon codes are normalized to uppercase before handlers touch business logic.
+ */
 import { DiscountType } from "@prisma/client";
 import { z } from "zod";
 
@@ -33,6 +38,15 @@ const offerCodeSchema = z
 export const listOffersQuerySchema = z.object({
   branchId: optionalIdSchema,
   limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+/**
+ * Query schema for GET /api/v1/admin/offers.
+ */
+export const listAdminOffersQuerySchema = z.object({
+  branchId: optionalIdSchema,
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  status: z.enum(["active", "inactive", "all"]).default("all"),
 });
 
 /**
@@ -109,6 +123,7 @@ export type CreateOfferInput = Omit<
 > & {
   serviceIds: string[];
 };
+export type ListAdminOffersQueryInput = z.infer<typeof listAdminOffersQuerySchema>;
 export type ListOffersQueryInput = Omit<
   z.infer<typeof listOffersQuerySchema>,
   "limit"
