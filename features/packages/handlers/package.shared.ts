@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared authorization, validation, and branch-scope helpers for package admin handlers.
+ * Responsibilities: parse JSON bodies, enforce admin access, and convert expected errors into package responses.
+ * Important notes: unassigned admins mirror branch management and can manage packages across branches.
+ */
 import { z } from "zod";
 
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";
@@ -57,13 +62,17 @@ export async function requirePackageAdmin(request: Request) {
 }
 
 /**
- * Branch admins stay limited to their assigned branch; super admins are global.
+ * Branch admins with an assigned branch stay limited; unassigned admins can manage all.
  */
 export function assertCanManagePackageBranch(
   admin: PackageAdminUser,
   branchId: string | null,
 ) {
-  if (admin.role === "SUPER_ADMIN" || (branchId && admin.branchId === branchId)) {
+  if (
+    admin.role === "SUPER_ADMIN" ||
+    !admin.branchId ||
+    (branchId && admin.branchId === branchId)
+  ) {
     return;
   }
   throw new PackageVisibleError(
@@ -71,6 +80,26 @@ export function assertCanManagePackageBranch(
     PACKAGE_MESSAGES.FORBIDDEN,
     HTTP_STATUS.FORBIDDEN,
   );
+}
+
+/**
+ * Resolves an optional admin branch filter into the visible branch scope.
+ */
+export function resolvePackageAdminBranchFilter(
+  requestedBranchId: string | undefined,
+  admin: PackageAdminUser,
+) {
+  if (admin.role === "SUPER_ADMIN" || !admin.branchId) return requestedBranchId;
+
+  if (requestedBranchId && requestedBranchId !== admin.branchId) {
+    throw new PackageVisibleError(
+      PACKAGE_CODES.FORBIDDEN,
+      PACKAGE_MESSAGES.FORBIDDEN,
+      HTTP_STATUS.FORBIDDEN,
+    );
+  }
+
+  return admin.branchId;
 }
 
 /**

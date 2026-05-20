@@ -10,6 +10,10 @@ import { redirect } from "next/navigation";
 
 import { createServerApiHeaders } from "@/features/api/server-api-headers";
 import { handleCreateStaff } from "@/features/staff/handlers/staff-admin.handlers";
+import {
+  handleAssignStaffService,
+  handleRemoveStaffService,
+} from "@/features/staff/handlers/staff-service-admin.handlers";
 
 export type StaffActionState = {
   message: string;
@@ -36,7 +40,77 @@ export async function createStaffAction(
     }),
   );
 
-  return handleStaffActionResponse(response, "Staff profile created.");
+  return handleStaffActionResponse(response, {
+    fallbackMessage: "Staff profile created.",
+    redirectPath: "/admin/staff",
+    revalidatePaths: ["/admin/staff"],
+  });
+}
+
+/**
+ * Assigns one active branch service to a staff profile.
+ */
+export async function assignStaffServiceAction(
+  staffId: string,
+  _previousState: StaffActionState,
+  formData: FormData,
+): Promise<StaffActionState> {
+  const response = await handleAssignStaffService(
+    new Request(`http://nikharta-roop.local/api/v1/admin/staff/${staffId}/services`, {
+      body: JSON.stringify({
+        serviceId: stringValue(formData.get("serviceId")),
+      }),
+      headers: await createServerApiHeaders(),
+      method: "POST",
+    }),
+    staffId,
+  );
+
+  return handleStaffActionResponse(response, {
+    fallbackMessage: "Staff service assigned.",
+    redirectPath: `/admin/staff/${staffId}`,
+    revalidatePaths: ["/admin/staff", `/admin/staff/${staffId}`],
+  });
+}
+
+/**
+ * Form-action wrapper for server-rendered assignment forms.
+ */
+export async function assignStaffServiceFormAction(
+  staffId: string,
+  formData: FormData,
+) {
+  await assignStaffServiceAction(
+    staffId,
+    { message: "", success: false },
+    formData,
+  );
+}
+
+/**
+ * Removes one assigned service from a staff profile.
+ */
+export async function removeStaffServiceAction(
+  staffId: string,
+  serviceId: string,
+) {
+  const response = await handleRemoveStaffService(
+    new Request(
+      `http://nikharta-roop.local/api/v1/admin/staff/${staffId}/services/${serviceId}`,
+      {
+        headers: await createServerApiHeaders(),
+        method: "DELETE",
+      },
+    ),
+    staffId,
+    serviceId,
+  );
+
+  await handleStaffActionResponse(response, {
+    fallbackMessage: "Staff service removed.",
+    redirectPath: `/admin/staff/${staffId}`,
+    revalidatePaths: ["/admin/staff", `/admin/staff/${staffId}`],
+  });
 }
 
 /**
@@ -64,19 +138,23 @@ function toCreateStaffBody(formData: FormData) {
  */
 async function handleStaffActionResponse(
   response: Response,
-  fallbackMessage: string,
+  input: {
+    fallbackMessage: string;
+    redirectPath: string;
+    revalidatePaths: string[];
+  },
 ) {
   const payload = (await response.json().catch(() => null)) as
     | StaffActionPayload
     | null;
 
   if (response.ok && payload?.success === true) {
-    revalidatePath("/admin/staff");
-    redirect("/admin/staff");
+    input.revalidatePaths.forEach((path) => revalidatePath(path));
+    redirect(input.redirectPath);
   }
 
   return {
-    message: payload?.message ?? fallbackMessage,
+    message: payload?.message ?? input.fallbackMessage,
     success: false,
   };
 }

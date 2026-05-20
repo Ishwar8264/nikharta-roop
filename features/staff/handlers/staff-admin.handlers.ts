@@ -43,6 +43,15 @@ export async function handleListAdminStaff(request: Request) {
 }
 
 /**
+ * Handles admin staff detail loading including unavailable staff.
+ */
+export async function handleGetAdminStaff(request: Request, staffId: string) {
+  const auth = await requireStaffAdmin(request);
+  if (!auth.success) return auth.error;
+  return getAdminStaff(staffId, auth.session.user);
+}
+
+/**
  * Handles admin staff creation.
  */
 export async function handleCreateStaff(request: Request) {
@@ -62,6 +71,37 @@ export async function handleUpdateStaff(request: Request, staffId: string) {
   const body = await parseStaffJsonBody(request, updateStaffSchema);
   if (body.error) return body.error;
   return updateStaff(staffId, body.data, auth.session.user);
+}
+
+/**
+ * Loads one staff profile after admin branch-scope checks.
+ */
+async function getAdminStaff(staffId: string, admin: StaffAdminUser) {
+  try {
+    await assertManageableStaff(staffId, admin);
+    const staff = await getDb().staff.findUnique({
+      select: staffSelect(),
+      where: { id: staffId },
+    });
+
+    if (!staff) {
+      throw new StaffVisibleError(
+        STAFF_CODES.STAFF_NOT_FOUND,
+        STAFF_MESSAGES.STAFF_NOT_FOUND,
+        HTTP_STATUS.NOT_FOUND,
+      );
+    }
+
+    return staffJson({
+      code: STAFF_CODES.STAFF_LOADED,
+      data: { staff: toPublicStaff(staff) },
+      message: STAFF_MESSAGES.STAFF_LOADED,
+      status: HTTP_STATUS.OK,
+      success: true,
+    });
+  } catch (error) {
+    return handleStaffWriteError(error, STAFF_CODES.STAFF_LOAD_FAILED, STAFF_MESSAGES.STAFF_LOAD_FAILED);
+  }
 }
 
 /**
