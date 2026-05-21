@@ -1,3 +1,8 @@
+/**
+ * Purpose: Client wrapper that mounts Swagger UI for the generated OpenAPI spec.
+ * Responsibilities: lazy-load swagger-ui-dist, attach reset controls, and clean up DOM observers.
+ * Important notes: global style rules are injected with a plain style tag to avoid styled-jsx props.
+ */
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -99,10 +104,16 @@ export function ApiSwaggerUi({ specUrl }: ApiSwaggerUiProps) {
     let observer: MutationObserver | undefined;
     const container = containerRef.current;
 
+    if (!container) {
+      return;
+    }
+
     void (async () => {
+      // The second mount guard must run after the lazy import to avoid mounting after unmount.
+      // react-doctor-disable-next-line react-doctor/async-defer-await
       const SwaggerModule = await import("swagger-ui-dist");
 
-      if (!isMounted || !container) {
+      if (!isMounted) {
         return;
       }
 
@@ -169,7 +180,7 @@ export function ApiSwaggerUi({ specUrl }: ApiSwaggerUiProps) {
         className="min-h-[70vh] overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-[0_24px_80px_-44px_rgba(136,14,79,0.45)]"
       />
 
-      <style jsx global>{`
+      <style>{`
         .swagger-ui .try-out.btn-group {
           align-items: center;
           gap: 0.75rem;

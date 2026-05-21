@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin booking action handlers for staff assignment and cancellation.
+ * Responsibilities: authenticate admins, validate action payloads, enforce booking scope, and mutate booking status.
+ * Important notes: assignment writes intentionally wait for booking and staff validation.
+ */
 import { BookingStatus } from "@prisma/client";
 
 import { getDb } from "@/db";
@@ -39,6 +44,8 @@ export async function handleAdminCancelBooking(request: Request, bookingId: stri
 
 async function assignStaff(bookingId: string, staffId: string, admin: { id: string; branchId?: string | null; role: string }) {
   try {
+    // The booking update must wait until scope and staff-service validation both pass.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     const bookingScope = await assertManageableBooking(bookingId, admin);
     await assertStaffCanServe(staffId, bookingScope.branchId, bookingId);
     const booking = await getDb().booking.update({

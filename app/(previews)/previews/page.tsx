@@ -1,9 +1,25 @@
+/**
+ * Purpose: Internal component preview route for shared form, search, logo, and toast experiments.
+ * Responsibilities: expose metadata and render sample UI states for quick visual checks.
+ * Important notes: this route is a preview-only surface and does not persist form data.
+ */
+import type { Metadata } from "next";
+import { FilterIcon, Lock, Mail, Phone } from "lucide-react";
+
 import { TestComponent } from "@/components/tost";
 import { InputField } from "@/components/ui/shared/input/generic-input";
 import { SearchInput } from "@/components/ui/shared/input/search-input";
 import { Logo } from "@/components/ui/shared/logo/logo";
-import { FilterIcon, Lock, Mail, Phone } from "lucide-react";
 
+export const metadata: Metadata = {
+  title: "Component Previews | Nikharta Roop",
+  description:
+    "Internal preview page for Nikharta Roop shared UI components and form states.",
+};
+
+/**
+ * Renders visual samples for reusable UI components.
+ */
 const PreviewsPage = () => {
   return (
     <div className="max-w-2xl mx-auto ">
@@ -13,7 +29,7 @@ const PreviewsPage = () => {
           label="Email Address"
           type="email"
           required
-          leftIcon={<Mail className="h-4 w-4" />}
+          leftIcon={<Mail className="size-4" />}
           placeholder="you@example.com"
           helperText="We'll never share your email"
         />
@@ -23,7 +39,7 @@ const PreviewsPage = () => {
           type="password"
           required
           showPasswordToggle
-          leftIcon={<Lock className="h-4 w-4" />}
+          leftIcon={<Lock className="size-4" />}
           //   error={errors.password}
           inputClassName="font-mono"
         />
@@ -31,7 +47,7 @@ const PreviewsPage = () => {
         <InputField
           label="Phone Number"
           type="tel"
-          leftIcon={<Phone className="h-4 w-4" />}
+          leftIcon={<Phone className="size-4" />}
           success="Phone number verified"
           containerClassName="col-span-2"
           className="rounded-sm py-4"
@@ -103,10 +119,10 @@ const PreviewsPage = () => {
         />
       </div>
       {/* logo  */}
-      <div className="bg-black">
-        {/* // Normal — clickable, links to / */}
+      <div className="bg-stone-950">
+        {/* // Normal ,  clickable, links to / */}
         <Logo size="lg" className="" />
-        {/* // Disabled — no link, just image, faded */}
+        {/* // Disabled ,  no link, just image, faded */}
         <Logo disabled />
         {/* // Disabled + custom size */}
         <Logo disabled size="lg" />

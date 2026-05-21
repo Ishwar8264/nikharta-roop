@@ -6,6 +6,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,11 +179,12 @@ export function PackageAdminForm({
         <div className="flex flex-col gap-3 rounded-md border bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             {media.previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 alt="Selected package"
                 className="h-16 w-20 rounded-md object-cover"
+                height={64}
                 src={media.previewUrl}
+                width={80}
               />
             ) : (
               <div className="flex h-16 w-20 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">

@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin inventory create/update handlers.
+ * Responsibilities: authenticate admins, validate branch/product scope, and persist inventory items.
+ * Important notes: independent branch and product checks run together before writes.
+ */
 import { getDb } from "@/db";
 import {
   INVENTORY_CODES,
@@ -48,8 +53,10 @@ export async function handleUpdateInventory(request: Request, inventoryItemId: s
 async function createInventory(input: CreateInventoryInput, admin: InventoryAdminUser) {
   try {
     assertCanManageInventoryBranch(admin, input.branchId);
-    await assertActiveInventoryBranch(input.branchId);
-    await assertInventoryProduct(input.productId, input.branchId);
+    await Promise.all([
+      assertActiveInventoryBranch(input.branchId),
+      assertInventoryProduct(input.productId, input.branchId),
+    ]);
     const item = await getDb().inventoryItem.create({
       data: input,
       select: inventorySelect(),
@@ -76,8 +83,10 @@ async function updateInventory(
     const current = await loadManageableInventory(inventoryItemId, admin);
     const branchId = input.branchId ?? current.branchId;
     assertCanManageInventoryBranch(admin, branchId);
-    await assertActiveInventoryBranch(branchId);
-    await assertInventoryProduct(input.productId, branchId);
+    await Promise.all([
+      assertActiveInventoryBranch(branchId),
+      assertInventoryProduct(input.productId, branchId),
+    ]);
     const item = await getDb().inventoryItem.update({
       data: input,
       select: inventorySelect(),

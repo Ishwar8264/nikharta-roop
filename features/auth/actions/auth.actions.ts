@@ -1,3 +1,8 @@
+/**
+ * Purpose: Browser-facing Server Actions for authentication forms and session UI.
+ * Responsibilities: reuse auth route handlers, persist HttpOnly cookies, and return serializable form state.
+ * Important notes: signin/signup actions are public by design and rely on OTP validation plus handler rate guards.
+ */
 "use server";
 
 import { cookies, headers } from "next/headers";
@@ -54,6 +59,8 @@ const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
  * Server Action for a safe user object, and the action reuses the same handler
  * that powers the API route.
  */
+// Safe public session probe: the handler returns null/error for anonymous users without exposing data.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function getCurrentUserAction(): Promise<AuthUserActionState> {
   const response = await callAuthHandler(handleMe, {});
   const user = response.payload?.data?.user ?? null;
@@ -73,6 +80,8 @@ export async function getCurrentUserAction(): Promise<AuthUserActionState> {
  * revoked in the database, then clears the same cookies through Next's cookies
  * API to guarantee the browser receives expiry Set-Cookie headers.
  */
+// Safe public logout endpoint: anonymous calls only clear browser cookies and return the signin route.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function logoutAction(): Promise<AuthActionState> {
   const response = await callAuthHandler(handleLogout, {});
 
@@ -95,6 +104,8 @@ export async function logoutAction(): Promise<AuthActionState> {
  * Action creates a server-side Request and reuses the existing auth handler so
  * validation, OTP creation, audit logging, and response shape stay consistent.
  */
+// Public auth entry point: login starts before a session exists and is validated by the auth handler.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function startSigninAction(
   formData: FormData,
 ): Promise<AuthActionState> {
@@ -112,6 +123,8 @@ export async function startSigninAction(
  * sessions should use HttpOnly cookies. `persistAuthCookies` mirrors the token
  * response into cookies on the server before the client is redirected.
  */
+// Public auth entry point: OTP verification creates the session after handler validation succeeds.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function verifySigninAction(
   formData: FormData,
 ): Promise<AuthActionState> {
@@ -132,6 +145,8 @@ export async function verifySigninAction(
  * a SIGNUP OTP record and stores profile details in OTP metadata until the OTP
  * is verified.
  */
+// Public auth entry point: signup must be available to users without an existing session.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function startSignupAction(
   formData: FormData,
 ): Promise<AuthActionState> {
@@ -150,6 +165,8 @@ export async function startSignupAction(
  * Successful verification creates the user, creates the auth session, and this
  * action stores the returned tokens as HttpOnly cookies for the browser.
  */
+// Public auth entry point: successful OTP verification creates the first browser session.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function verifySignupAction(
   formData: FormData,
 ): Promise<AuthActionState> {
@@ -163,6 +180,11 @@ export async function verifySignupAction(
   return toActionState(response, "/account");
 }
 
+/**
+ * Checks whether an identifier can continue through the selected auth flow.
+ */
+// Public auth lookup: the handler validates input and returns only availability flags.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function checkIdentifierAction(
   formData: FormData,
 ): Promise<AuthActionState> {
@@ -186,6 +208,11 @@ export async function checkIdentifierAction(
   };
 }
 
+/**
+ * Resends an OTP for the active auth flow after handler-side cooldown checks.
+ */
+// Public auth entry point: resend runs before login but is cooldown-limited by the handler.
+// react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function resendOtpAction(
   formData: FormData,
 ): Promise<AuthActionState> {
@@ -234,8 +261,10 @@ async function callAuthHandler(
  * such as refresh/logout without exposing cookie values to client JavaScript.
  */
 async function createForwardedHeaders() {
-  const incomingHeaders = await headers();
-  const cookieStore = await cookies();
+  const [incomingHeaders, cookieStore] = await Promise.all([
+    headers(),
+    cookies(),
+  ]);
   const forwardedHeaders = new Headers();
 
   forwardedHeaders.set("content-type", "application/json");

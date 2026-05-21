@@ -1,3 +1,8 @@
+/**
+ * Purpose: Public staff discovery handlers.
+ * Responsibilities: validate query params, list active staff, and return public staff details.
+ * Important notes: local 404 helper names avoid Next.js special notFound detection in try/catch blocks.
+ */
 import { z, type ZodError } from "zod";
 
 import { getDb } from "@/db";
@@ -45,7 +50,7 @@ export async function handleGetStaff(request: Request, staffId: string) {
 async function listStaff(input: ListStaffQueryInput) {
   try {
     if (!(await activeBranchExists(input.branchId))) {
-      return notFound(STAFF_CODES.BRANCH_NOT_FOUND, STAFF_MESSAGES.BRANCH_NOT_FOUND);
+      return staffNotFoundResponse(STAFF_CODES.BRANCH_NOT_FOUND, STAFF_MESSAGES.BRANCH_NOT_FOUND);
     }
 
     const staff = await getDb().staff.findMany({
@@ -91,7 +96,7 @@ async function getStaff(staffId: string, input: GetStaffQueryInput) {
     });
 
     if (!staff) {
-      return notFound(STAFF_CODES.STAFF_NOT_FOUND, STAFF_MESSAGES.STAFF_NOT_FOUND);
+      return staffNotFoundResponse(STAFF_CODES.STAFF_NOT_FOUND, STAFF_MESSAGES.STAFF_NOT_FOUND);
     }
 
     return staffJson({
@@ -150,7 +155,7 @@ async function activeBranchExists(branchId: string) {
 /**
  * Creates a standard not-found staff response.
  */
-function notFound(code: string, message: string) {
+function staffNotFoundResponse(code: string, message: string) {
   return staffError({ code, message, status: HTTP_STATUS.NOT_FOUND });
 }
 

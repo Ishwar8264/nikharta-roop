@@ -1,6 +1,22 @@
+/**
+ * Purpose: Public branch discovery route.
+ * Responsibilities: load active branches, expose route metadata, and render branch cards for customers.
+ * Important notes: errors are shown inline so partial public discovery can fail gracefully.
+ */
+import type { Metadata } from "next";
+
 import { BranchList } from "@/features/branches/components/branch-list";
 import { listPublicBranches } from "@/features/branches/queries/branch.query";
 
+export const metadata: Metadata = {
+  title: "Branches | Nikharta Roop",
+  description:
+    "Find nearby Nikharta Roop beauty parlour branches for appointments and consultations.",
+};
+
+/**
+ * Loads and renders public branch cards.
+ */
 export default async function BranchesPage() {
   const { branches, error } = await listPublicBranches();
 

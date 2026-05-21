@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin offer update handler.
+ * Responsibilities: authenticate admins, validate patches, preserve branch scope, and update offers.
+ * Important notes: independent branch/service checks run together after current offer scope is known.
+ */
 import { getDb } from "@/db";
 import {
   OFFER_CODES,
@@ -59,8 +64,10 @@ async function updateAdminOffer(
       input.validFrom ?? current.validFrom,
       input.validUntil ?? current.validUntil,
     );
-    await assertActiveOfferBranch(branchId);
-    await assertExistingOfferServicesMatchBranch(offerId, branchId);
+    await Promise.all([
+      assertActiveOfferBranch(branchId),
+      assertExistingOfferServicesMatchBranch(offerId, branchId),
+    ]);
     const offer = await getDb().offer.update({
       data: toOfferUpdateData(input, branchId),
       select: offerSelect(),

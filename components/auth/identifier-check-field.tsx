@@ -1,3 +1,8 @@
+/**
+ * Purpose: Debounced identifier availability field for auth forms.
+ * Responsibilities: track local input, validate whether checks should run, and display server feedback.
+ * Important notes: server calls are delayed so typing does not trigger a request per keypress.
+ */
 "use client";
 
 import * as React from "react";
@@ -19,7 +24,9 @@ type IdentifierCheckResult = {
 
 const CHECK_DELAY_MS = 450;
 
-// Debounced identifier availability field used by login and signup.
+/**
+ * Renders an input field that checks email/mobile availability for login or signup flows.
+ */
 export function IdentifierCheckField({
   clientError,
   helperText,
@@ -33,11 +40,12 @@ export function IdentifierCheckField({
   const [checkResult, setCheckResult] =
     React.useState<IdentifierCheckResult | null>(null);
   const [isPending, startTransition] = React.useTransition();
+  const trimmedValue = value.trim();
+  const shouldRunIdentifierCheck =
+    Boolean(trimmedValue) && shouldCheck?.(trimmedValue) !== false;
 
   React.useEffect(() => {
-    const trimmedValue = value.trim();
-
-    if (!trimmedValue || shouldCheck?.(trimmedValue) === false) {
+    if (!shouldRunIdentifierCheck) {
       return;
     }
 
@@ -58,9 +66,8 @@ export function IdentifierCheckField({
     }, CHECK_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [purpose, shouldCheck, value]);
+  }, [purpose, shouldRunIdentifierCheck, trimmedValue]);
 
-  const trimmedValue = value.trim();
   const visibleResult =
     trimmedValue && !clientError && checkResult?.value === trimmedValue
       ? checkResult.result

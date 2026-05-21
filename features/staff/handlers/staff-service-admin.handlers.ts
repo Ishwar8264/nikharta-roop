@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin staff-service assignment handlers.
+ * Responsibilities: authenticate staff admins, validate service links, and return refreshed staff records.
+ * Important notes: writes wait for staff ownership and service availability checks.
+ */
 import { getDb } from "@/db";
 import { STAFF_CODES, STAFF_MESSAGES } from "@/features/staff/constants/staff.constants";
 import { toPublicStaff } from "@/features/staff/helpers/staff.mapper";
@@ -30,6 +35,8 @@ export async function handleRemoveStaffService(request: Request, staffId: string
 
 async function assignStaffService(staffId: string, serviceId: string, admin: StaffAdminUser) {
   try {
+    // Service assignment writes must wait until staff scope and service eligibility pass.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     const staff = await assertManageableStaff(staffId, admin);
     await assertService(staff.branchId, serviceId);
     await getDb().staffService.upsert({

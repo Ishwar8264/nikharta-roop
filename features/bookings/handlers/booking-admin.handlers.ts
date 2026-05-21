@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin booking list/detail/status handlers.
+ * Responsibilities: authenticate booking admins, enforce branch scope, list bookings, and transition statuses.
+ * Important notes: helper names avoid Next.js special redirect/notFound primitives inside try/catch blocks.
+ */
 import { BookingStatus } from "@prisma/client";
 
 import { getDb } from "@/db";
@@ -78,7 +83,7 @@ async function listAdminBookings(
     const branchId =
       admin.role === "SUPER_ADMIN" ? input.branchId : (admin.branchId ?? undefined);
     if (!branchId && admin.role !== "SUPER_ADMIN") {
-      throw forbidden();
+      throw branchScopeForbiddenError();
     }
 
     const bookings = await getDb().booking.findMany({
@@ -168,7 +173,10 @@ async function transitionBooking(
   }
 }
 
-function forbidden() {
+/**
+ * Builds the visible error used when a branch admin has no manageable branch scope.
+ */
+function branchScopeForbiddenError() {
   return new BookingAdminError(
     BOOKING_CODES.INVALID_STATUS_TRANSITION,
     BOOKING_MESSAGES.INVALID_STATUS_TRANSITION,

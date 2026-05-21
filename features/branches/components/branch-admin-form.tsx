@@ -1,3 +1,8 @@
+/**
+ * Purpose: Client shell for branch create/edit admin forms.
+ * Responsibilities: coordinate RHF state, location picker values, Server Action submission, and navigation guards.
+ * Important notes: Server Actions receive FormData while React Hook Form owns browser validation state.
+ */
 "use client";
 
 import * as React from "react";
@@ -25,7 +30,9 @@ type BranchAdminFormProps = {
   submitLabel: string;
 };
 
-// Client shell coordinates RHF, location selection, submit state, and navigation guard.
+/**
+ * Renders the branch admin form and submits validated values to the supplied action.
+ */
 export function BranchAdminForm({ action, branch, submitLabel }: BranchAdminFormProps) {
   const [state, setState] = React.useState<BranchActionState>({ message: "", success: false });
   const { form, syncNameField, updateField, values } = useBranchFormController(branch);
@@ -39,19 +46,26 @@ export function BranchAdminForm({ action, branch, submitLabel }: BranchAdminForm
     form.formState.isSubmitted,
   );
 
-  function handleChange(name: keyof BranchFormValues, value: string | boolean) {
+  /**
+   * Updates one branch field from either the form inputs or the location picker.
+   */
+  function updateBranchField(name: keyof BranchFormValues, value: string | boolean) {
     updateField(name, value);
   }
 
-  // Server actions still receive FormData while RHF owns the browser form state.
+  /**
+   * Sends validated RHF values to the Server Action as FormData.
+   */
   async function handleValidSubmit(data: BranchFormValues) {
     setState(await action(state, toBranchFormData(data)));
   }
 
-  // Google Maps selection updates every persisted branch location field together.
+  /**
+   * Applies every persisted Google Maps location field together.
+   */
   function handleLocationChange(location: BranchLocationValue) {
     Object.entries(location).forEach(([name, value]) => {
-      handleChange(name as keyof BranchFormValues, value);
+      updateBranchField(name as keyof BranchFormValues, value);
     });
   }
 
@@ -64,7 +78,7 @@ export function BranchAdminForm({ action, branch, submitLabel }: BranchAdminForm
       <BranchFormFields
         errors={visibleErrors}
         onBlurName={syncNameField}
-        onChange={handleChange}
+        onChange={updateBranchField}
         register={form.register}
         values={values}
       />

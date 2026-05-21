@@ -10,6 +10,12 @@ type AdminServiceListProps = {
   services: PublicServiceDetail[];
 };
 
+const INR_PRICE_FORMATTER = new Intl.NumberFormat("en-IN", {
+  currency: "INR",
+  maximumFractionDigits: 0,
+  style: "currency",
+});
+
 /**
  * Renders services visible to the authenticated admin.
  */
@@ -57,9 +63,5 @@ function formatAdminMeta(service: PublicServiceDetail) {
  * Formats stored decimal strings for admin cards.
  */
 function formatPrice(price: string) {
-  return new Intl.NumberFormat("en-IN", {
-    currency: "INR",
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(Number(price));
+  return INR_PRICE_FORMATTER.format(Number(price));
 }

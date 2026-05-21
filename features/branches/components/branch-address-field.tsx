@@ -1,3 +1,8 @@
+/**
+ * Purpose: Controlled address field for branch admin forms.
+ * Responsibilities: connect RHF registration, local value updates, and inline validation feedback.
+ * Important notes: the textarea keeps a stable id so its label and error text stay accessible.
+ */
 import type { UseFormRegisterReturn } from "react-hook-form";
 
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +15,9 @@ type BranchAddressFieldProps = {
   value: string;
 };
 
-// Controlled address field with realtime validation feedback.
+/**
+ * Renders the branch address textarea with realtime validation feedback.
+ */
 export function BranchAddressField({
   error,
   onChange,
@@ -18,12 +25,13 @@ export function BranchAddressField({
   value,
 }: BranchAddressFieldProps) {
   return (
-    <label className="grid gap-1.5 text-sm font-medium">
+    <label className="grid gap-1.5 text-sm font-medium" htmlFor="address">
       Address
       <Textarea
         aria-describedby={error ? "address-error" : undefined}
         aria-invalid={Boolean(error)}
         className="min-h-24 bg-white"
+        id="address"
         name="address"
         onBlur={registration?.onBlur}
         onChange={(event) => {

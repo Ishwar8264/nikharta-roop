@@ -1,3 +1,8 @@
+/**
+ * Purpose: Customer account dropdown menu for authenticated layouts.
+ * Responsibilities: show avatar/profile shortcuts, customer account links, and logout control.
+ * Important notes: server-provided session data is preferred, with a client fallback for reused contexts.
+ */
 "use client";
 
 import * as React from "react";
@@ -24,8 +29,12 @@ type UserMenuProps = {
   session: SessionUserInfo;
 };
 
+/**
+ * Renders the authenticated user menu and lazily recovers missing user data when needed.
+ */
 export function UserMenu({ className, session: initialSession }: UserMenuProps) {
-  const [session, setSession] = React.useState(initialSession);
+  const [fetchedSession, setFetchedSession] =
+    React.useState<SessionUserInfo | null>(null);
 
   // User identity is passed from the protected account layout. This fallback
   // keeps the component resilient if it is reused somewhere that cannot provide
@@ -39,7 +48,7 @@ export function UserMenu({ className, session: initialSession }: UserMenuProps) 
 
     getCurrentUserAction().then((result) => {
       if (isMounted && result.success) {
-        setSession(buildSessionUserInfo(result.user));
+        setFetchedSession(buildSessionUserInfo(result.user));
       }
     });
 
@@ -48,6 +57,7 @@ export function UserMenu({ className, session: initialSession }: UserMenuProps) 
     };
   }, [initialSession.user]);
 
+  const session = initialSession.user ? initialSession : (fetchedSession ?? initialSession);
   const { avatarUrl, displayName, email, initials, mobile } = session;
   const subtitle = mobile || email || "Signed in";
 

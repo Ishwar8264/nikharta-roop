@@ -1,3 +1,8 @@
+/**
+ * Purpose: Active signin identifier field for phone or email login.
+ * Responsibilities: render the correct input mode and wire server availability checks.
+ * Important notes: both variants submit through the same backend field name.
+ */
 "use client";
 
 import * as React from "react";
@@ -18,7 +23,9 @@ type LoginIdentifierFieldProps = {
   shouldCheck: (value: string) => boolean;
 };
 
-// Renders the active login identifier while preserving one backend field name.
+/**
+ * Renders the active login identifier while preserving one backend field name.
+ */
 export function LoginIdentifierField({
   Icon,
   error,
@@ -41,7 +48,7 @@ export function LoginIdentifierField({
       maxLength={isMobileMode ? 10 : 254}
       pattern={isMobileMode ? "[6-9][0-9]{9}" : undefined}
       required
-      leftIcon={<Icon className="h-4 w-4" />}
+      leftIcon={<Icon className="size-4" />}
       clientError={error}
       inputClassName={authInputClassName}
       onBeforeInput={onBeforeInput}

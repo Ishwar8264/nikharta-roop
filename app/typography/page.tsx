@@ -1,4 +1,11 @@
+/**
+ * Purpose: Internal typography and brand token preview route.
+ * Responsibilities: expose metadata and render color, text, spacing, link, and code examples.
+ * Important notes: this is a UI preview page, not customer-facing marketing content.
+ */
+import type { Metadata } from "next";
 import Link from "next/link";
+
 import { ColorSwatch } from "@/components/typography/color-swatch";
 import { BrandCard } from "@/components/typography/brand-card";
 import {
@@ -9,6 +16,15 @@ import {
 } from "@/components/typography/typography-preview";
 import { SpacingHierarchyExamples } from "@/components/typography/spacing-hierarchy";
 
+export const metadata: Metadata = {
+  title: "Typography Preview | Nikharta Roop",
+  description:
+    "Internal Nikharta Roop typography, color, spacing, and UI text preview.",
+};
+
+/**
+ * Renders the internal typography and brand system preview.
+ */
 export default function TypographyBrandGuidePage() {
   return (
     <main className="min-h-screen bg-[#fffaf6] px-5 py-10 sm:px-8 lg:px-12">
@@ -89,7 +105,7 @@ export default function TypographyBrandGuidePage() {
           </div>
 
           <BrandCard>
-            <blockquote className="mt-3 rounded-2xl border-l-4 border-rose-500 bg-white/70 p-4">
+            <blockquote className="mt-3 rounded-2xl border border-rose-100 bg-white/70 p-4 shadow-[inset_4px_0_0_#f43f5e]">
               <p className="text-base leading-7 text-stone-700">
                 “Typography ka goal: readability, hierarchy, aur consistent
                 spacing.”
@@ -133,7 +149,7 @@ export function greet(user: User) {
 
         <footer className="mt-12">
           <p className="text-sm text-stone-600">
-            Note: Ye page UI-only hai—content/styling sirf typography preview ke
+            Note: Ye page UI-only hai, content/styling sirf typography preview ke
             liye.
           </p>
         </footer>

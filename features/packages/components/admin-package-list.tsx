@@ -10,6 +10,12 @@ type AdminPackageListProps = {
   packages: PublicPackageDetail[];
 };
 
+const INR_PRICE_FORMATTER = new Intl.NumberFormat("en-IN", {
+  currency: "INR",
+  maximumFractionDigits: 0,
+  style: "currency",
+});
+
 /**
  * Renders packages visible to the authenticated admin.
  */
@@ -46,9 +52,5 @@ export function AdminPackageList({ packages }: AdminPackageListProps) {
  * Formats API decimal strings as Indian rupee values.
  */
 function formatPrice(price: string) {
-  return new Intl.NumberFormat("en-IN", {
-    currency: "INR",
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(Number(price));
+  return INR_PRICE_FORMATTER.format(Number(price));
 }

@@ -1,3 +1,8 @@
+/**
+ * Purpose: Server-only helpers for loading the current authenticated user from request cookies.
+ * Responsibilities: forward cookies to auth handlers and return profile-safe user data for Server Components.
+ * Important notes: this helper only reads cookies because layouts cannot write refreshed auth cookies.
+ */
 import "server-only";
 
 import { cookies, headers } from "next/headers";
@@ -66,8 +71,10 @@ async function getCurrentUserOnce() {
  * forwarded because auth handlers use them for session device metadata.
  */
 async function createAuthRequestHeaders() {
-  const incomingHeaders = await headers();
-  const cookieStore = await cookies();
+  const [incomingHeaders, cookieStore] = await Promise.all([
+    headers(),
+    cookies(),
+  ]);
   const requestHeaders = new Headers();
 
   const cookieHeader = cookieStore

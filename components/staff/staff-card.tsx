@@ -18,6 +18,8 @@ type StaffCardProps = {
   workHours?: string;
 };
 
+const EMPTY_STAFF_SERVICES: string[] = [];
+
 /**
  * Renders a compact staff summary card.
  */
@@ -27,7 +29,7 @@ export function StaffCard({
   isAvailable,
   name,
   photoUrl,
-  services = [],
+  services = EMPTY_STAFF_SERVICES,
   specialization,
   workHours,
 }: StaffCardProps) {
@@ -84,8 +86,7 @@ export function StaffCard({
 function getAvatarFallback(name: string) {
   const initials = name
     .split(" ")
-    .map((part) => part[0])
-    .filter(Boolean)
+    .flatMap((part) => (part[0] ? [part[0]] : []))
     .join("")
     .slice(0, 2)
     .toUpperCase();

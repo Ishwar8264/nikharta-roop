@@ -1,3 +1,8 @@
+/**
+ * Purpose: Readonly OTP identifier field for verification screens.
+ * Responsibilities: display the phone or email that requested the OTP with matching iconography.
+ * Important notes: disabled fields omit the name so browser submissions do not duplicate values.
+ */
 "use client";
 
 import { Mail, Phone } from "lucide-react";
@@ -15,7 +20,9 @@ type OtpIdentifierFieldProps = {
   mode: "signin" | "signup";
 };
 
-// Shows the same identifier used to request OTP, with matching phone/email icon.
+/**
+ * Shows the same identifier used to request OTP, with matching phone/email icon.
+ */
 export function OtpIdentifierField({
   defaultValue,
   disabled,
@@ -36,7 +43,7 @@ export function OtpIdentifierField({
       required
       disabled={disabled}
       defaultValue={defaultValue}
-      leftIcon={<Icon className="h-4 w-4" />}
+      leftIcon={<Icon className="size-4" />}
       inputClassName={authInputClassName}
       helperText={
         isSigninEmail ? "Registered email address" : "Registered mobile number"

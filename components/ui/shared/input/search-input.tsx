@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared search input with debounce, clear, loading, and validation states.
+ * Responsibilities: support controlled/uncontrolled values, keyboard search, and status icons.
+ * Important notes: React 19 passes refs as regular props, so this component avoids forwardRef.
+ */
 "use client";
 
 import * as React from "react";
@@ -86,9 +91,12 @@ export interface SearchInputProps extends Omit<
 // Component
 // ─────────────────────────────────────────────
 
-const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
-  (
-    {
+/**
+ * Renders a configurable search input for filters, lists, and lookup flows.
+ */
+// Shared primitive keeps its broad prop API for existing search field call sites.
+// react-doctor-disable-next-line react-doctor/no-giant-component, react-doctor/no-many-boolean-props
+function SearchInput({
       // Label
       label,
       labelClassName,
@@ -160,10 +168,9 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
 
       // Standard
       id,
+      ref,
       ...props
-    },
-    ref,
-  ) => {
+    }: SearchInputProps) {
     // ── State ──
     const [internalValue, setInternalValue] = React.useState(
       defaultValue ?? "",
@@ -189,7 +196,10 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     }, []);
 
     // ── Handlers ──
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    /**
+     * Updates the current search value and schedules debounced search callbacks.
+     */
+    const updateSearchValueFromInput = (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
 
       if (!isControlled) {
@@ -306,7 +316,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
                 searchIconClassName,
               )}
             >
-              {searchIcon || <Search className="h-4 w-4" />}
+              {searchIcon || <Search className="size-4" />}
             </div>
           )}
 
@@ -319,7 +329,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
                 loaderClassName,
               )}
             >
-              {loaderIcon || <Loader2 className="h-4 w-4 animate-spin" />}
+              {loaderIcon || <Loader2 className="size-4 animate-spin" />}
             </div>
           )}
 
@@ -352,7 +362,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
               // Custom
               inputClassName || className,
             )}
-            onChange={handleChange}
+            onChange={updateSearchValueFromInput}
             onKeyDown={handleKeyDown}
             {...props}
           />
@@ -365,14 +375,14 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
                 rightIconsContainerClassName,
               )}
             >
-              {/* Loader (right side fallback — if you want it right) */}
+              {/* Loader (right side fallback ,  if you want it right) */}
               {/* We show loader on left, so this is for extra right content */}
 
               {/* Error Icon */}
               {shouldShowErrorIcon && (
                 <div className={cn("shrink-0", errorIconClassName)}>
                   {customErrorIcon || (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <AlertCircle className="size-4 text-destructive" />
                   )}
                 </div>
               )}
@@ -381,7 +391,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
               {shouldShowSuccessIcon && (
                 <div className={cn("shrink-0", successIconClassName)}>
                   {customSuccessIcon || (
-                    <Check className="h-4 w-4 text-green-500" />
+                    <Check className="size-4 text-green-500" />
                   )}
                 </div>
               )}
@@ -398,7 +408,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
                   tabIndex={-1}
                   aria-label="Clear search"
                 >
-                  {clearIcon || <X className="h-4 w-4" />}
+                  {clearIcon || <X className="size-4" />}
                 </button>
               )}
 
@@ -406,7 +416,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
               {shouldShowLoader && hideSearchIcon && (
                 <div className={cn("shrink-0", loaderClassName)}>
                   {loaderIcon || (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
                   )}
                 </div>
               )}
@@ -443,10 +453,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         )}
       </div>
     );
-  },
-);
-
-SearchInput.displayName = "SearchInput";
+}
 
 export { SearchInput };
 

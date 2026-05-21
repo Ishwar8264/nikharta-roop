@@ -1,3 +1,8 @@
+/**
+ * Purpose: Segmented control for choosing signin identifier type.
+ * Responsibilities: show phone/email options and notify the parent when mode changes.
+ * Important notes: options stay data-driven so future identifier modes are localized.
+ */
 "use client";
 
 import * as React from "react";
@@ -23,13 +28,14 @@ const identifierOptions: Array<{
   },
 ];
 
-// Kept data-driven so adding another identifier type stays localized.
 type IdentifierModeSwitchProps = {
   mode: IdentifierMode;
   onModeChange: (mode: IdentifierMode) => void;
 };
 
-// Compact segmented control for choosing phone or email login.
+/**
+ * Renders the compact phone/email login mode switch.
+ */
 export function IdentifierModeSwitch({
   mode,
   onModeChange,
@@ -55,7 +61,7 @@ export function IdentifierModeSwitch({
                   : "text-muted-foreground hover:text-stone-950",
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="size-4" />
               {option.label}
             </button>
           );

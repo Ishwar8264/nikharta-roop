@@ -8,6 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requireAuth } from "@/features/api/server-action-auth";
 import { createServerApiHeaders } from "@/features/api/server-api-headers";
 import { handleCreateStaff } from "@/features/staff/handlers/staff-admin.handlers";
 import {
@@ -32,6 +33,12 @@ export async function createStaffAction(
   _previousState: StaffActionState,
   formData: FormData,
 ): Promise<StaffActionState> {
+  const auth = await requireAuth();
+
+  if (!auth.success) {
+    return { message: auth.message, success: false };
+  }
+
   const response = await handleCreateStaff(
     new Request("http://nikharta-roop.local/api/v1/admin/staff", {
       body: JSON.stringify(toCreateStaffBody(formData)),
@@ -55,6 +62,12 @@ export async function assignStaffServiceAction(
   _previousState: StaffActionState,
   formData: FormData,
 ): Promise<StaffActionState> {
+  const auth = await requireAuth();
+
+  if (!auth.success) {
+    return { message: auth.message, success: false };
+  }
+
   const response = await handleAssignStaffService(
     new Request(`http://nikharta-roop.local/api/v1/admin/staff/${staffId}/services`, {
       body: JSON.stringify({
@@ -80,6 +93,12 @@ export async function assignStaffServiceFormAction(
   staffId: string,
   formData: FormData,
 ) {
+  const auth = await requireAuth();
+
+  if (!auth.success) {
+    return;
+  }
+
   await assignStaffServiceAction(
     staffId,
     { message: "", success: false },
@@ -94,6 +113,12 @@ export async function removeStaffServiceAction(
   staffId: string,
   serviceId: string,
 ) {
+  const auth = await requireAuth();
+
+  if (!auth.success) {
+    return;
+  }
+
   const response = await handleRemoveStaffService(
     new Request(
       `http://nikharta-roop.local/api/v1/admin/staff/${staffId}/services/${serviceId}`,
@@ -190,6 +215,9 @@ function optionalNumber(value: FormDataEntryValue | null) {
 function splitCsv(value: FormDataEntryValue | null) {
   return stringValue(value)
     .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
+    .flatMap((part) => {
+      const text = part.trim();
+
+      return text ? [text] : [];
+    });
 }

@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin inventory stock adjustment handlers.
+ * Responsibilities: authenticate admins, validate inventory scope, adjust stock, and record movement history.
+ * Important notes: item update and transaction logging run together inside one database transaction.
+ */
 import { Prisma } from "@prisma/client";
 
 import { getDb } from "@/db";
@@ -50,21 +55,24 @@ async function adjustInventory(
     const current = await loadManageableInventory(inventoryItemId, admin);
     assertNonNegativeQuantity(current.quantityOnHand, input.quantityChange);
     const result = await getDb().$transaction(async (tx) => {
-      const item = await tx.inventoryItem.update({
-        data: { quantityOnHand: { increment: input.quantityChange } },
-        select: inventorySelect(),
-        where: { id: inventoryItemId },
-      });
-      const transaction = await tx.inventoryTransaction.create({
-        data: {
-          inventoryItemId,
-          notes: input.notes,
-          quantityChange: input.quantityChange,
-          type: input.type,
-          unitCost: input.unitCost,
-        },
-        select: inventoryTransactionSelect(),
-      });
+      const [item, transaction] = await Promise.all([
+        tx.inventoryItem.update({
+          data: { quantityOnHand: { increment: input.quantityChange } },
+          select: inventorySelect(),
+          where: { id: inventoryItemId },
+        }),
+        tx.inventoryTransaction.create({
+          data: {
+            inventoryItemId,
+            notes: input.notes,
+            quantityChange: input.quantityChange,
+            type: input.type,
+            unitCost: input.unitCost,
+          },
+          select: inventoryTransactionSelect(),
+        }),
+      ]);
+
       return { item, transaction };
     });
     return inventoryJson({

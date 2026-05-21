@@ -1,5 +1,13 @@
+/**
+ * Purpose: Color swatch component for the internal typography and brand guide.
+ * Responsibilities: show a token name, hex value, and visual color chip.
+ * Important notes: the color chip receives raw hex values from the preview page.
+ */
 import * as React from "react";
 
+/**
+ * Renders one labeled brand color sample.
+ */
 export function ColorSwatch({
   name,
   hex,
@@ -25,7 +33,7 @@ export function ColorSwatch({
         </div>
         <div className="rounded-2xl border border-stone-200 bg-white/60 p-2">
           <div
-            className="h-10 w-10 rounded-xl border border-black/5"
+            className="size-10 rounded-xl border border-black/5"
             style={{ background: hex }}
           />
         </div>

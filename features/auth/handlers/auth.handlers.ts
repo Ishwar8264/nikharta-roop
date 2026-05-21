@@ -1,3 +1,8 @@
+/**
+ * Purpose: Core authentication route handlers and session helpers.
+ * Responsibilities: validate auth requests, manage OTP flows, create/revoke sessions, and return auth responses.
+ * Important notes: OTP expiry writes intentionally precede new OTP creation to avoid expiring fresh records.
+ */
 import { getDb } from "@/db";
 import {
   AUTH_CODES,
@@ -439,6 +444,8 @@ async function startSignupOtp(
         };
       }
 
+      // Existing OTPs must expire before the replacement OTP is inserted.
+      // react-doctor-disable-next-line react-doctor/async-parallel
       await tx.authOtp.updateMany({
         data: {
           expiresAt: now,
@@ -877,6 +884,8 @@ async function startLoginOtp(input: LoginInput, context: RequestContext) {
         };
       }
 
+      // Existing login OTPs must expire before the replacement OTP is inserted.
+      // react-doctor-disable-next-line react-doctor/async-parallel
       await tx.authOtp.updateMany({
         data: {
           expiresAt: now,
@@ -1114,23 +1123,26 @@ async function verifyLoginOtp(
         };
       }
 
-      await tx.authOtp.update({
-        data: {
-          verifiedAt: now,
-        },
-        where: {
-          id: otpRecord.id,
-        },
-      });
-
-      await tx.user.update({
-        data: {
-          lastLoginAt: now,
-        },
-        where: {
-          id: user.id,
-        },
-      });
+      // Session event logging needs the created session id, so the writes cannot all race.
+      // react-doctor-disable-next-line react-doctor/async-parallel
+      await Promise.all([
+        tx.authOtp.update({
+          data: {
+            verifiedAt: now,
+          },
+          where: {
+            id: otpRecord.id,
+          },
+        }),
+        tx.user.update({
+          data: {
+            lastLoginAt: now,
+          },
+          where: {
+            id: user.id,
+          },
+        }),
+      ]);
 
       const session = await tx.authSession.create({
         data: {

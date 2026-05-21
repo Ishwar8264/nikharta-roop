@@ -1,3 +1,8 @@
+/**
+ * Purpose: Client logout button for account menus and compact controls.
+ * Responsibilities: call the logout Server Action, show toast feedback, and navigate to signin.
+ * Important notes: cookie clearing happens server-side; this component only refreshes client routing.
+ */
 "use client";
 
 import * as React from "react";
@@ -18,11 +23,14 @@ type LogoutButtonProps = {
   compact?: boolean;
 };
 
+/**
+ * Renders a full-width or icon-only logout trigger.
+ */
 export function LogoutButton({
   className,
   compact = false,
 }: LogoutButtonProps) {
-  const router = useRouter();
+  const { refresh, replace } = useRouter();
   const [state, setState] = React.useState<AuthActionState | null>(null);
   const [isPending, startTransition] = React.useTransition();
 
@@ -41,8 +49,8 @@ export function LogoutButton({
       }
 
       if (result.data?.redirectTo) {
-        router.replace(result.data.redirectTo);
-        router.refresh();
+        replace(result.data.redirectTo);
+        refresh();
       }
     });
   }

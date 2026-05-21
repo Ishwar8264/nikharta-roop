@@ -1,3 +1,8 @@
+/**
+ * Purpose: Typography preview components for the internal brand guide.
+ * Responsibilities: render heading, body, weight, and inline label examples.
+ * Important notes: examples are static so visual changes stay easy to compare.
+ */
 import * as React from "react";
 import { BrandCard } from "./brand-card";
 
@@ -67,7 +72,7 @@ export function BodyTextStyles() {
                 Large body
               </p>
               <p className="mt-2 text-lg leading-8 text-stone-800">
-                Large body text for main descriptions—readable line height with
+                Large body text for main descriptions, readable line height with
                 a premium calm.
               </p>
             </div>
@@ -121,7 +126,7 @@ export function FontWeightPreview() {
     {
       label: "Light",
       weightClass: "font-light",
-      sample: "Soft & airy—perfect for premium headings.",
+      sample: "Soft & airy, perfect for premium headings.",
     },
     {
       label: "Regular",
@@ -131,17 +136,17 @@ export function FontWeightPreview() {
     {
       label: "Medium",
       weightClass: "font-medium",
-      sample: "Noticeable emphasis—great for section titles.",
+      sample: "Noticeable emphasis, great for section titles.",
     },
     {
       label: "Semibold",
       weightClass: "font-semibold",
-      sample: "Strong hierarchy—use sparingly for impact.",
+      sample: "Strong hierarchy, use sparingly for impact.",
     },
     {
       label: "Bold",
       weightClass: "font-bold",
-      sample: "High emphasis—CTA-like emphasis & highlights.",
+      sample: "High emphasis, CTA-like emphasis & highlights.",
     },
   ];
 

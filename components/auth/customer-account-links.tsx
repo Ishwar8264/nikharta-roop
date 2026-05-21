@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared customer account navigation links for dropdown and sheet layouts.
+ * Responsibilities: render account destinations with icons and variant-specific spacing.
+ * Important notes: link data stays local because the customer nav is short and static.
+ */
 import Link from "next/link";
 import {
   Bell,
@@ -32,6 +37,9 @@ type CustomerAccountLinksProps = {
   variant?: "dropdown" | "sheet";
 };
 
+/**
+ * Renders customer account links in dropdown or sheet navigation contexts.
+ */
 export function CustomerAccountLinks({
   className,
   variant = "dropdown",
@@ -47,7 +55,7 @@ export function CustomerAccountLinks({
 
           return (
             <Link
-              className="inline-flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-rose-50 hover:text-rose-900"
+              className="inline-flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-rose-950 transition-colors hover:bg-rose-50 hover:text-rose-900"
               href={item.href}
               key={item.href}
             >
@@ -66,7 +74,7 @@ export function CustomerAccountLinks({
         const Icon = item.icon;
 
         return (
-          <DropdownMenuItem asChild className="cursor-pointer px-2 py-2" key={item.href}>
+          <DropdownMenuItem asChild className="cursor-pointer p-2" key={item.href}>
             <Link href={item.href}>
               <Icon className="size-4 text-stone-500" />
               <span>{item.label}</span>

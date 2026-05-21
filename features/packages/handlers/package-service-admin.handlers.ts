@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin package-service assignment handlers.
+ * Responsibilities: authenticate package admins, validate service assignment payloads, and update package composition.
+ * Important notes: writes wait for package ownership and service-branch validation.
+ */
 import { getDb } from "@/db";
 import {
   PACKAGE_CODES,
@@ -28,6 +33,8 @@ export async function handleAssignPackageService(
   if (body.error) return body.error;
 
   try {
+    // Upserting service composition must wait until package ownership and service scope are confirmed.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     const pkg = await loadManageablePackage(packageId, auth.session.user);
     await assertPackageServices([body.data], pkg.branchId);
     const updated = await getDb().package.update({

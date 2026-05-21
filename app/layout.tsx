@@ -1,3 +1,8 @@
+/**
+ * Purpose: Root application layout for all Nikharta Roop routes.
+ * Responsibilities: configure global fonts, metadata, body styling, and the shared toaster.
+ * Important notes: selection colors should maintain contrast on rose backgrounds.
+ */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -19,6 +24,9 @@ export const metadata: Metadata = {
     "Nikharta Roop is a refined beauty studio for bridal, occasion, and everyday glow services.",
 };
 
+/**
+ * Wraps every route in the global HTML/body shell and shared toast surface.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,7 +37,7 @@ export default function RootLayout({
       lang="en-IN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#fffaf6] text-stone-950 selection:bg-rose-200 selection:text-stone-950">
+      <body className="min-h-full bg-[#fffaf6] text-stone-950 selection:bg-stone-900 selection:text-white">
         {children}
         <Toaster richColors position="top-center" />
       </body>

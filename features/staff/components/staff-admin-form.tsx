@@ -38,6 +38,21 @@ type StaffAdminFormProps = {
   userOptions: StaffUserOption[];
 };
 
+type StaffFormState = {
+  actionState: StaffActionState;
+  branchId: string;
+  isAvailable: boolean;
+  isDirty: boolean;
+  userId: string;
+};
+
+type StaffFormAction =
+  | { state: StaffActionState; type: "setActionState" }
+  | { type: "markDirty" }
+  | { branchId: string; type: "selectBranch" }
+  | { type: "selectUser"; userId: string }
+  | { isAvailable: boolean; type: "setAvailability" };
+
 const WORK_DAY_OPTIONS = [
   { label: "Sun", value: 0 },
   { label: "Mon", value: 1 },
@@ -49,6 +64,43 @@ const WORK_DAY_OPTIONS = [
 ];
 
 /**
+ * Builds initial staff form state from branch and user options.
+ */
+function createInitialStaffFormState(input: {
+  branches: PublicBranch[];
+  userOptions: StaffUserOption[];
+}): StaffFormState {
+  return {
+    actionState: { message: "", success: false },
+    branchId: input.branches[0]?.id ?? "",
+    isAvailable: true,
+    isDirty: false,
+    userId: input.userOptions[0]?.id ?? "",
+  };
+}
+
+/**
+ * Groups staff form state updates so dirty and selected values move together.
+ */
+function staffFormReducer(
+  state: StaffFormState,
+  action: StaffFormAction,
+): StaffFormState {
+  switch (action.type) {
+    case "setActionState":
+      return { ...state, actionState: action.state };
+    case "markDirty":
+      return { ...state, isDirty: true };
+    case "selectBranch":
+      return { ...state, branchId: action.branchId, isDirty: true };
+    case "selectUser":
+      return { ...state, isDirty: true, userId: action.userId };
+    case "setAvailability":
+      return { ...state, isAvailable: action.isAvailable, isDirty: true };
+  }
+}
+
+/**
  * Renders the create staff form with branch-scoped service choices.
  */
 export function StaffAdminForm({
@@ -57,18 +109,15 @@ export function StaffAdminForm({
   serviceOptions,
   userOptions,
 }: StaffAdminFormProps) {
-  const [state, setState] = React.useState<StaffActionState>({
-    message: "",
-    success: false,
-  });
+  const [formState, dispatchFormState] = React.useReducer(
+    staffFormReducer,
+    { branches, userOptions },
+    createInitialStaffFormState,
+  );
   const [isPending, startTransition] = React.useTransition();
-  const [isDirty, setIsDirty] = React.useState(false);
-  const [branchId, setBranchId] = React.useState(branches[0]?.id ?? "");
-  const [userId, setUserId] = React.useState(userOptions[0]?.id ?? "");
-  const [isAvailable, setIsAvailable] = React.useState(true);
-  const guard = useUnsavedChangesGuard(isDirty && !isPending);
+  const guard = useUnsavedChangesGuard(formState.isDirty && !isPending);
   const visibleServices = serviceOptions.filter(
-    (service) => service.branchId === branchId,
+    (service) => service.branchId === formState.branchId,
   );
 
   /**
@@ -79,7 +128,10 @@ export function StaffAdminForm({
     const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {
-      setState(await action(state, formData));
+      dispatchFormState({
+        state: await action(formState.actionState, formData),
+        type: "setActionState",
+      });
     });
   }
 
@@ -87,31 +139,31 @@ export function StaffAdminForm({
    * Marks uncontrolled text, number, time, and checkbox changes as dirty.
    */
   function handleFieldChange() {
-    setIsDirty(true);
+    dispatchFormState({ type: "markDirty" });
   }
 
   /**
    * Updates branch scope and enables the unsaved changes prompt.
    */
   function handleBranchChange(nextBranchId: string) {
-    setIsDirty(true);
-    setBranchId(nextBranchId);
+    dispatchFormState({ branchId: nextBranchId, type: "selectBranch" });
   }
 
   /**
    * Updates selected user and enables the unsaved changes prompt.
    */
   function handleUserChange(nextUserId: string) {
-    setIsDirty(true);
-    setUserId(nextUserId);
+    dispatchFormState({ type: "selectUser", userId: nextUserId });
   }
 
   /**
    * Updates availability and enables the unsaved changes prompt.
    */
   function handleAvailabilityChange(nextIsAvailable: boolean) {
-    setIsDirty(true);
-    setIsAvailable(nextIsAvailable);
+    dispatchFormState({
+      isAvailable: nextIsAvailable,
+      type: "setAvailability",
+    });
   }
 
   return (
@@ -123,7 +175,7 @@ export function StaffAdminForm({
     >
       <div className="grid gap-4 md:grid-cols-2">
         <Field htmlFor="branchId" label="Branch">
-          <Select name="branchId" onValueChange={handleBranchChange} value={branchId}>
+          <Select name="branchId" onValueChange={handleBranchChange} value={formState.branchId}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select branch" />
             </SelectTrigger>
@@ -142,7 +194,7 @@ export function StaffAdminForm({
             disabled={userOptions.length === 0}
             name="userId"
             onValueChange={handleUserChange}
-            value={userId}
+            value={formState.userId}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select user" />
@@ -256,16 +308,18 @@ export function StaffAdminForm({
           </p>
         </div>
         <Switch
-          checked={isAvailable}
+          checked={formState.isAvailable}
           id="isAvailable"
           name="isAvailable"
           onCheckedChange={handleAvailabilityChange}
         />
       </div>
 
-      {state.message ? <p className="text-sm text-destructive">{state.message}</p> : null}
+      {formState.actionState.message ? (
+        <p className="text-sm text-destructive">{formState.actionState.message}</p>
+      ) : null}
 
-      <Button disabled={isPending || !branchId || !userId} type="submit">
+      <Button disabled={isPending || !formState.branchId || !formState.userId} type="submit">
         {isPending ? "Creating..." : "Create staff"}
       </Button>
       <UnsavedChangesDialog
