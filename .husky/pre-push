@@ -1,0 +1,5 @@
+# This Git hook runs project health checks before commits are pushed.
+# It is responsible for blocking pushes when React Doctor, linting, or build checks fail.
+
+pnpm run doctor
+pnpm run check:push

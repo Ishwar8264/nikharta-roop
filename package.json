@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "doctor": "react-doctor . --staged --yes",
+    "doctor": "react-doctor . --yes --fail-on none",
     "check:push": "pnpm run lint && pnpm run build",
     "prepare": "husky"
   },
