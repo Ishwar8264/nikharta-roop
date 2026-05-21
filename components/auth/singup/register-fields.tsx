@@ -1,3 +1,8 @@
+/**
+ * Purpose: Signup form field group for name, email, and mobile inputs.
+ * Responsibilities: wire auth styling, identifier availability checks, and parent validation callbacks.
+ * Important notes: mobile remains required while email stays optional for signup.
+ */
 "use client";
 
 import * as React from "react";
@@ -19,7 +24,9 @@ type RegisterFieldsProps = {
   shouldCheckMobile: (value: string) => boolean;
 };
 
-// Groups signup inputs only; validation and server checks stay in the hook.
+/**
+ * Groups signup inputs only; validation and server checks stay in the parent hook.
+ */
 export function RegisterFields({
   emailError,
   mobileError,
@@ -37,7 +44,7 @@ export function RegisterFields({
         placeholder="Enter your name"
         type="text"
         autoComplete="name"
-        leftIcon={<User className="h-4 w-4" />}
+        leftIcon={<User className="size-4" />}
         inputClassName={authInputClassName}
         helperText="2-100 characters"
       />
@@ -49,7 +56,7 @@ export function RegisterFields({
         placeholder="you@example.com"
         type="email"
         autoComplete="email"
-        leftIcon={<Mail className="h-4 w-4" />}
+        leftIcon={<Mail className="size-4" />}
         clientError={emailError}
         inputClassName={authInputClassName}
         onChange={onEmailChange}
@@ -69,7 +76,7 @@ export function RegisterFields({
         maxLength={10}
         pattern="[6-9][0-9]{9}"
         required
-        leftIcon={<Phone className="h-4 w-4" />}
+        leftIcon={<Phone className="size-4" />}
         clientError={mobileError}
         inputClassName={authInputClassName}
         onBeforeInput={onMobileBeforeInput}

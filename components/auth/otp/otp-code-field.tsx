@@ -1,3 +1,8 @@
+/**
+ * Purpose: OTP code input for signin and signup verification screens.
+ * Responsibilities: enforce numeric OTP input attributes and shared auth styling.
+ * Important notes: validation stays parent-owned so server errors can be displayed inline.
+ */
 "use client";
 
 import * as React from "react";
@@ -14,7 +19,9 @@ type OtpCodeFieldProps = {
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
-// Small OTP input wrapper keeps verification screens visually consistent.
+/**
+ * Renders the six-digit OTP input with a verification icon.
+ */
 export function OtpCodeField({
   error,
   onBeforeInput,
@@ -30,7 +37,7 @@ export function OtpCodeField({
       maxLength={6}
       pattern="[0-9]{6}"
       required
-      leftIcon={<ShieldCheck className="h-4 w-4" />}
+      leftIcon={<ShieldCheck className="size-4" />}
       inputClassName={authInputClassName}
       error={error}
       helperText="6-digit one-time password"

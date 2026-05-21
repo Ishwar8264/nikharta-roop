@@ -1,6 +1,11 @@
+/**
+ * Purpose: Server actions for current-user avatar upload contracts and media listing.
+ * Responsibilities: authenticate users, create Cloudinary signatures, and list user-scoped avatar uploads.
+ * Important notes: signatures are short-lived and never exposed to anonymous requests.
+ */
 "use server";
 
-import { getCurrentUserFromRequest } from "@/features/auth/helpers/auth-session.server";
+import { requireAuth } from "@/features/api/server-action-auth";
 import type { MediaUploaderItem } from "@/features/media/types/media-uploader.types";
 import {
   createAvatarUploadSignature,
@@ -39,13 +44,15 @@ type AvatarListState =
       success: false;
     };
 
-// Creates a short-lived signed Cloudinary upload contract for this user.
+/**
+ * Creates a short-lived signed Cloudinary upload contract for this user.
+ */
 export async function createAvatarUploadSignatureAction(
   fileHash?: string,
 ): Promise<AvatarUploadSignatureState> {
-  const user = await getCurrentUserFromRequest();
+  const auth = await requireAuth();
 
-  if (!user) {
+  if (!auth.success) {
     // Do not expose Cloudinary signing to anonymous requests.
     return {
       message: "Please login again before uploading an avatar.",
@@ -54,7 +61,7 @@ export async function createAvatarUploadSignatureAction(
   }
 
   try {
-    const signature = createAvatarUploadSignature(user.id, fileHash);
+    const signature = createAvatarUploadSignature(auth.user.id, fileHash);
 
     return {
       ...signature,
@@ -69,18 +76,20 @@ export async function createAvatarUploadSignatureAction(
   }
 }
 
-// Loads existing avatar uploads from this user's Cloudinary avatar folder.
+/**
+ * Loads existing avatar uploads from this user's Cloudinary avatar folder.
+ */
 export async function listAvatarUploadsAction(): Promise<AvatarListState> {
-  const user = await getCurrentUserFromRequest();
+  const auth = await requireAuth();
 
-  if (!user) {
+  if (!auth.success) {
     // The media library is user-scoped, so logged-out users get an empty list.
     return { items: [], message: "Please login again.", success: false };
   }
 
   try {
     return {
-      items: await listAvatarCloudinaryItems(user.id),
+      items: await listAvatarCloudinaryItems(auth.user.id),
       message: "Avatar media loaded.",
       success: true,
     };

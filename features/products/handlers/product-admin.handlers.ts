@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin product create/update handlers.
+ * Responsibilities: authenticate admins, validate product branch/category scope, and persist products.
+ * Important notes: independent branch and category checks run together before writes.
+ */
 import { getDb } from "@/db";
 import {
   PRODUCT_CODES,
@@ -52,8 +57,10 @@ export async function handleUpdateProduct(request: Request, productId: string) {
 async function createProduct(input: CreateProductInput, admin: ProductAdminUser) {
   try {
     assertCanManageProductBranch(admin, input.branchId);
-    await assertActiveProductBranch(input.branchId);
-    await assertProductCategory(input.categoryId, input.branchId);
+    await Promise.all([
+      assertActiveProductBranch(input.branchId),
+      assertProductCategory(input.categoryId, input.branchId),
+    ]);
     const product = await getDb().product.create({
       data: input,
       select: productSelect(),
@@ -80,8 +87,10 @@ async function updateProduct(
     const current = await loadManageableProduct(productId, admin);
     const branchId = input.branchId ?? current.branchId;
     assertCanManageProductBranch(admin, branchId);
-    await assertActiveProductBranch(branchId);
-    await assertProductCategory(input.categoryId, branchId);
+    await Promise.all([
+      assertActiveProductBranch(branchId),
+      assertProductCategory(input.categoryId, branchId),
+    ]);
     const product = await getDb().product.update({
       data: input,
       select: productSelect(),

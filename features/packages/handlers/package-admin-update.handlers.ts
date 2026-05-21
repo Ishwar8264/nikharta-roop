@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin package update handler.
+ * Responsibilities: authenticate admins, validate package patches, preserve branch scope, and update packages.
+ * Important notes: independent package basics and existing service checks run together before the write.
+ */
 import { getDb } from "@/db";
 import {
   PACKAGE_CODES,
@@ -48,8 +53,10 @@ async function updateAdminPackage(
     const categoryId = input.categoryId ?? current.categoryId ?? undefined;
     const slug = input.slug ?? current.slug;
     assertCanManagePackageBranch(admin, branchId);
-    await assertPackageBasics(branchId, categoryId, slug, packageId);
-    await assertExistingPackageServicesMatchBranch(packageId, branchId);
+    await Promise.all([
+      assertPackageBasics(branchId, categoryId, slug, packageId),
+      assertExistingPackageServicesMatchBranch(packageId, branchId),
+    ]);
     const pkg = await getDb().package.update({
       data: toPackageUpdateData(input),
       select: packageDetailSelect(false),

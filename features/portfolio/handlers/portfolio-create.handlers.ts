@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin portfolio creation handler.
+ * Responsibilities: authenticate admins, validate branch/relation scope, and create portfolio items.
+ * Important notes: independent branch and relation checks run together before writing.
+ */
 import { getDb } from "@/db";
 import {
   PORTFOLIO_CODES,
@@ -43,8 +48,10 @@ async function createAdminPortfolio(
 ) {
   try {
     assertCanManagePortfolioBranch(admin, input.branchId);
-    await assertActivePortfolioBranch(input.branchId);
-    await assertPortfolioRelations(input, input.branchId);
+    await Promise.all([
+      assertActivePortfolioBranch(input.branchId),
+      assertPortfolioRelations(input, input.branchId),
+    ]);
     const item = await getDb().portfolioItem.create({
       data: input,
       select: portfolioSelect(),

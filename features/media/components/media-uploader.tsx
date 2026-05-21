@@ -1,3 +1,8 @@
+/**
+ * Purpose: Reusable media upload and library picker.
+ * Responsibilities: upload files, merge newly uploaded items with initial library items, and notify selections.
+ * Important notes: the caller owns upload signing and final selected URL persistence.
+ */
 "use client";
 
 import * as React from "react";
@@ -8,13 +13,20 @@ import { MediaLibraryList } from "@/features/media/components/media-library-list
 import { MediaUploadProgress } from "@/features/media/components/media-upload-progress";
 import { MediaUploadDropzone } from "@/features/media/components/media-upload-dropzone";
 import { mergeMediaItems } from "@/features/media/helpers/media-uploader-items";
-import type { MediaUploaderProps } from "@/features/media/types/media-uploader.types";
+import type {
+  MediaUploaderItem,
+  MediaUploaderProps,
+} from "@/features/media/types/media-uploader.types";
 
-// Reusable upload + library picker for avatars and future media modules.
+const EMPTY_MEDIA_ITEMS: MediaUploaderItem[] = [];
+
+/**
+ * Renders a tabbed uploader with upload progress and reusable library selection.
+ */
 export function MediaUploader({
   accept = "image/*",
   helperText,
-  initialItems = [],
+  initialItems = EMPTY_MEDIA_ITEMS,
   onSelect,
   onSelectComplete,
   onUploadComplete,
@@ -30,7 +42,9 @@ export function MediaUploader({
     [initialItems, uploadedItems],
   );
 
-  // Upload stays inside a transition so the dialog remains responsive.
+  /**
+   * Uploads one file and selects the uploaded item when the caller succeeds.
+   */
   function handleFile(file: File) {
     startUploadTransition(async () => {
       try {
@@ -46,7 +60,9 @@ export function MediaUploader({
     });
   }
 
-  // Library selection is separate from upload completion so dialogs can close faster.
+  /**
+   * Selects an existing library item without treating it as a new upload.
+   */
   function handleLibrarySelect(item: (typeof items)[number]) {
     onSelect?.(item);
     onSelectComplete?.(item);

@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin staff commission write handlers.
+ * Responsibilities: authenticate admins, validate staff/source ownership, and create or update commission records.
+ * Important notes: commission creation waits for staff and source checks before writing money records.
+ */
 import { getDb } from "@/db";
 import {
   STAFF_COMMISSION_CODES,
@@ -54,6 +59,8 @@ async function createStaffCommission(
   admin: StaffCommissionAdminUser,
 ) {
   try {
+    // Commission writes must wait until staff branch and source ownership validation pass.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     const staff = await loadManageableCommissionStaff(input.staffId, admin);
     await assertCommissionSource({ ...input, branchId: staff.branchId });
     const commission = await getDb().staffCommission.create({

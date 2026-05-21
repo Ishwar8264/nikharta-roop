@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin portfolio update handler.
+ * Responsibilities: authenticate admins, validate branch/relation scope, and update portfolio items.
+ * Important notes: independent branch and relation checks run together once the final branch is known.
+ */
 import { getDb } from "@/db";
 import {
   PORTFOLIO_CODES,
@@ -49,8 +54,10 @@ async function updateAdminPortfolio(
     const current = await loadManageablePortfolioItem(portfolioItemId, admin);
     if (!current) throwPortfolioNotFound();
     const branchId = input.branchId ?? current.branchId;
-    await assertActivePortfolioBranch(branchId);
-    await assertPortfolioRelations(input, branchId);
+    await Promise.all([
+      assertActivePortfolioBranch(branchId),
+      assertPortfolioRelations(input, branchId),
+    ]);
     const item = await getDb().portfolioItem.update({
       data: input,
       select: portfolioSelect(),

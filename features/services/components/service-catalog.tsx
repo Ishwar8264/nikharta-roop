@@ -22,6 +22,12 @@ type ServiceCatalogProps = {
   services: PublicServiceDetail[];
 };
 
+const INR_PRICE_FORMATTER = new Intl.NumberFormat("en-IN", {
+  currency: "INR",
+  maximumFractionDigits: 0,
+  style: "currency",
+});
+
 /**
  * Renders the public catalog with stable server-rendered filters.
  */
@@ -163,9 +169,5 @@ function formatServiceMeta(service: PublicServiceDetail) {
  * Formats API decimal strings as Indian rupee values for catalog cards.
  */
 function formatPrice(price: string) {
-  return new Intl.NumberFormat("en-IN", {
-    currency: "INR",
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(Number(price));
+  return INR_PRICE_FORMATTER.format(Number(price));
 }

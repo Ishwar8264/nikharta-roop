@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared assertions for admin package writes.
+ * Responsibilities: verify branch existence, optional category scope, and slug uniqueness.
+ * Important notes: optional category checks are skipped before awaiting so empty categories stay fast.
+ */
 import {
   PACKAGE_CODES,
   PACKAGE_MESSAGES,
@@ -26,7 +31,10 @@ export async function assertPackageBasics(
       HTTP_STATUS.NOT_FOUND,
     );
   }
-  await assertPackageCategory(categoryId, branchId);
+  if (categoryId) {
+    await assertPackageCategory(categoryId, branchId);
+  }
+
   if (!(await canUsePackageSlug(branchId, slug, ignoredPackageId))) {
     throw new PackageVisibleError(
       PACKAGE_CODES.PACKAGE_DUPLICATE,

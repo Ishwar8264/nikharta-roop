@@ -1,4 +1,10 @@
+/**
+ * Purpose: Shared input field with labels, icons, password toggle, and validation messages.
+ * Responsibilities: wrap the base shadcn Input with consistent accessibility and status UI.
+ * Important notes: React 19 passes refs as regular props, so this component avoids forwardRef.
+ */
 "use client";
+
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -54,9 +60,12 @@ export interface InputFieldProps extends React.ComponentProps<"input"> {
   onPasswordToggle?: (isVisible: boolean) => void;
 }
 
-const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
-  (
-    {
+/**
+ * Renders a labeled input with optional icons and validation affordances.
+ */
+// Shared primitive keeps boolean toggles for backward-compatible call sites.
+// react-doctor-disable-next-line react-doctor/no-many-boolean-props
+function InputField({
       // Label Props
       label,
       labelClassName,
@@ -104,10 +113,9 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
       disabled,
       type,
       id,
+      ref,
       ...props
-    },
-    ref,
-  ) => {
+    }: InputFieldProps) {
     const [showPassword, setShowPassword] = React.useState(false);
 
     // call useId unconditionally (React Hook rules)
@@ -223,7 +231,7 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
               {shouldShowErrorIcon && (
                 <div className={cn("shrink-0", errorIconClassName)}>
                   {customErrorIcon || (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <AlertCircle className="size-4 text-destructive" />
                   )}
                 </div>
               )}
@@ -232,7 +240,7 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
               {shouldShowSuccessIcon && (
                 <div className={cn("shrink-0", successIconClassName)}>
                   {customSuccessIcon || (
-                    <CircleCheck className="h-4 w-4 text-green-500" />
+                    <CircleCheck className="size-4 text-green-500" />
                   )}
                 </div>
               )}
@@ -252,9 +260,9 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
                 >
                   {showPassword
                     ? customPasswordIcons?.hide || (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff className="size-4" />
                       )
-                    : customPasswordIcons?.show || <Eye className="h-4 w-4" />}
+                    : customPasswordIcons?.show || <Eye className="size-4" />}
                 </button>
               )}
 
@@ -290,9 +298,6 @@ const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
         )}
       </div>
     );
-  },
-);
-
-InputField.displayName = "InputField";
+}
 
 export { InputField };

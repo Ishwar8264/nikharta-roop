@@ -1,7 +1,7 @@
 /**
  * Purpose: Admin handlers for staff listing, creation, and profile updates.
  * Responsibilities: validate payloads, enforce branch scope, connect users/services, and return public-safe staff data.
- * Important notes: staff creation promotes the linked user to STAFF after the profile is created.
+ * Important notes: staff creation checks independent parent records together before writing.
  */
 import { Prisma, UserRole } from "@prisma/client";
 import type { ZodError } from "zod";
@@ -145,14 +145,20 @@ async function createStaff(input: CreateStaffInput, admin: StaffAdminUser) {
   try {
     assertCanManageBranch(admin, input.branchId);
     await assertStaffCreateParents(input);
-    const staff = await getDb().staff.create({
-      data: {
-        ...toStaffData(input),
-        services: { create: input.serviceIds.map((serviceId) => ({ serviceId })) },
-      },
-      select: staffSelect(),
-    });
-    await getDb().user.update({ data: { role: UserRole.STAFF }, where: { id: input.userId } });
+    // Keep staff creation and user role promotion atomic so partial writes cannot leave a customer promoted without a staff profile.
+    const [staff] = await getDb().$transaction((tx) =>
+      Promise.all([
+        tx.staff.create({
+          data: {
+            ...toStaffData(input),
+            services: { create: input.serviceIds.map((serviceId) => ({ serviceId })) },
+          },
+          select: staffSelect(),
+        }),
+        tx.user.update({ data: { role: UserRole.STAFF }, where: { id: input.userId } }),
+      ]),
+    );
+
     return staffJson({
       code: STAFF_CODES.STAFF_CREATED,
       data: { staff: toPublicStaff(staff) },
@@ -194,10 +200,15 @@ async function updateStaff(staffId: string, input: UpdateStaffInput, admin: Staf
  * Verifies staff creation dependencies before writing the profile.
  */
 async function assertStaffCreateParents(input: CreateStaffInput) {
-  await assertBranch(input.branchId);
-  const user = await getDb().user.findFirst({ select: { id: true }, where: { id: input.userId, isActive: true } });
+  const [user] = await Promise.all([
+    getDb().user.findFirst({ select: { id: true }, where: { id: input.userId, isActive: true } }),
+    assertBranch(input.branchId),
+    Promise.all(
+      input.serviceIds.map((serviceId) => assertService(input.branchId, serviceId)),
+    ),
+  ]);
+
   if (!user) throw new StaffVisibleError(STAFF_CODES.USER_NOT_FOUND, STAFF_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
-  for (const serviceId of input.serviceIds) await assertService(input.branchId, serviceId);
 }
 
 /**

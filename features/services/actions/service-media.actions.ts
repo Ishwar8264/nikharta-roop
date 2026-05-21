@@ -5,7 +5,7 @@
  */
 "use server";
 
-import { getCurrentUserFromRequest } from "@/features/auth/helpers/auth-session.server";
+import { requireAuth } from "@/features/api/server-action-auth";
 import type { MediaUploaderItem } from "@/features/media/types/media-uploader.types";
 import {
   createServiceImageUploadSignature,
@@ -50,9 +50,9 @@ type ServiceImageListState =
 export async function createServiceImageUploadSignatureAction(
   fileHash?: string,
 ): Promise<ServiceUploadSignatureState> {
-  const user = await getAdminUser();
+  const auth = await requireAuth();
 
-  if (!user) {
+  if (!auth.success || !isAdminRole(auth.user.role)) {
     return {
       message: "Please login as an admin before uploading service images.",
       success: false,
@@ -79,9 +79,9 @@ export async function createServiceImageUploadSignatureAction(
  * Loads reusable service images from the shared service media folder.
  */
 export async function listServiceImageUploadsAction(): Promise<ServiceImageListState> {
-  const user = await getAdminUser();
+  const auth = await requireAuth();
 
-  if (!user) {
+  if (!auth.success || !isAdminRole(auth.user.role)) {
     return { items: [], message: "Please login as an admin.", success: false };
   }
 
@@ -97,14 +97,8 @@ export async function listServiceImageUploadsAction(): Promise<ServiceImageListS
 }
 
 /**
- * Returns the current admin user or null for unauthorized media access.
+ * Checks whether a user role can manage service media.
  */
-async function getAdminUser() {
-  const user = await getCurrentUserFromRequest();
-
-  if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role ?? "")) {
-    return null;
-  }
-
-  return user;
+function isAdminRole(role: string | undefined) {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
 }

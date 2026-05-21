@@ -1,3 +1,8 @@
+/**
+ * Purpose: Stock mutation helpers for product sale completion.
+ * Responsibilities: verify available stock and decrement product quantities inside a transaction.
+ * Important notes: stock writes intentionally wait for the shortage check to prevent invalid decrements.
+ */
 import { Prisma } from "@prisma/client";
 
 import {
@@ -14,6 +19,8 @@ export async function decrementSaleStock(
   tx: Prisma.TransactionClient,
   saleId: string,
 ) {
+  // The decrement writes must wait until all sale items are loaded and stock is verified.
+  // react-doctor-disable-next-line react-doctor/async-parallel
   const items = await tx.productSaleItem.findMany({
     select: { productId: true, quantity: true },
     where: { saleId },

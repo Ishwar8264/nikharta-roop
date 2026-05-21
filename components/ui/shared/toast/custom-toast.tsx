@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared Sonner toast wrappers with Nikharta Roop visual variants.
+ * Responsibilities: render dismissible custom toast content and expose convenience helpers.
+ * Important notes: helper functions keep toast calls consistent across client components.
+ */
 "use client";
 
 import { toast } from "sonner";
@@ -48,14 +53,14 @@ export function CustomToast({
       <button
         onClick={() => toast.dismiss(id)}
         className={cn(
-          "mt-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+          "mt-1.5 flex size-7 shrink-0 items-center justify-center rounded-full",
           "border border-border/50 bg-transparent text-muted-foreground",
           "transition-all hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10",
           "focus:outline-none focus:ring-2 focus:ring-ring",
         )}
         aria-label="Close"
       >
-        <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+        <X className="size-3.5" strokeWidth={2.5} />
       </button>
 
       {/* ── Text Content ── */}

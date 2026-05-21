@@ -3,6 +3,8 @@
  * Responsibilities: show package identity, branch, pricing, duration, services, and optional status.
  * Important notes: package service lists may be absent on public list responses, so services are optional.
  */
+import Image from "next/image";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -18,6 +20,8 @@ type PackageCardProps = {
   services?: string[];
 };
 
+const EMPTY_PACKAGE_SERVICES: string[] = [];
+
 /**
  * Renders a compact package summary card.
  */
@@ -30,13 +34,19 @@ export function PackageCard({
   nameEn,
   nameHi,
   price,
-  services = [],
+  services = EMPTY_PACKAGE_SERVICES,
 }: PackageCardProps) {
   return (
     <Card className="h-full overflow-hidden bg-white">
       {imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img alt={nameHi} className="h-40 w-full object-cover" src={imageUrl} />
+        <Image
+          alt={nameHi}
+          className="h-40 w-full object-cover"
+          height={160}
+          sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+          src={imageUrl}
+          width={640}
+        />
       ) : null}
       <CardHeader className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">

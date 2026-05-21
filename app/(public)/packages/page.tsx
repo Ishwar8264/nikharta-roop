@@ -3,6 +3,8 @@
  * Responsibilities: choose a branch, load active packages, and render package catalog UI.
  * Important notes: branch selection stays in search params for stable server rendering.
  */
+import type { Metadata } from "next";
+
 import { listPublicBranches } from "@/features/branches/queries/branch.query";
 import { PackageCatalog } from "@/features/packages/components/package-catalog";
 import { listPublicPackages } from "@/features/packages/queries/package.query";
@@ -11,12 +13,20 @@ type PackagesPageProps = {
   searchParams: Promise<{ branchId?: string }>;
 };
 
+export const metadata: Metadata = {
+  title: "Packages | Nikharta Roop",
+  description:
+    "Explore Nikharta Roop beauty packages with bundled services, prices, and branch filters.",
+};
+
 /**
  * Loads and renders public packages for the selected branch.
  */
 export default async function PackagesPage({ searchParams }: PackagesPageProps) {
-  const { branchId } = await searchParams;
-  const { branches, error: branchError } = await listPublicBranches();
+  const [{ branchId }, { branches, error: branchError }] = await Promise.all([
+    searchParams,
+    listPublicBranches(),
+  ]);
   const selectedBranchId = resolveSelectedBranchId(branchId, branches);
   const packageResult = selectedBranchId
     ? await listPublicPackages({ branchId: selectedBranchId, limit: 50 })

@@ -3,6 +3,8 @@
  * Responsibilities: choose a branch, load service categories/services, and render branch-aware catalog UI.
  * Important notes: filters stay in search params so the page can remain a Server Component.
  */
+import type { Metadata } from "next";
+
 import { ServiceCatalog } from "@/features/services/components/service-catalog";
 import { listPublicBranches } from "@/features/branches/queries/branch.query";
 import {
@@ -17,12 +19,20 @@ type ServicesPageProps = {
   }>;
 };
 
+export const metadata: Metadata = {
+  title: "Services | Nikharta Roop",
+  description:
+    "Browse Nikharta Roop beauty services by branch, category, price, and duration.",
+};
+
 /**
  * Loads and renders the public service catalog for the selected branch.
  */
 export default async function ServicesPage({ searchParams }: ServicesPageProps) {
-  const { branchId, category } = await searchParams;
-  const { branches, error: branchError } = await listPublicBranches();
+  const [{ branchId, category }, { branches, error: branchError }] = await Promise.all([
+    searchParams,
+    listPublicBranches(),
+  ]);
   const selectedBranchId = resolveSelectedBranchId(branchId, branches);
 
   const [categoryResult, serviceResult] = selectedBranchId

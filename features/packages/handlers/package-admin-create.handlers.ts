@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin package creation handler.
+ * Responsibilities: authenticate admins, validate package input, verify related records, and create packages.
+ * Important notes: branch/category/slug checks and service checks run together before writing.
+ */
 import { getDb } from "@/db";
 import {
   PACKAGE_CODES,
@@ -41,8 +46,10 @@ async function createAdminPackage(
 ) {
   try {
     assertCanManagePackageBranch(admin, input.branchId);
-    await assertPackageBasics(input.branchId, input.categoryId, input.slug);
-    await assertPackageServices(input.services, input.branchId);
+    await Promise.all([
+      assertPackageBasics(input.branchId, input.categoryId, input.slug),
+      assertPackageServices(input.services, input.branchId),
+    ]);
     const pkg = await getDb().package.create({
       data: toPackageCreateData(input),
       select: packageDetailSelect(false),

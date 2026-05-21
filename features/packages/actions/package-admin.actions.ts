@@ -8,6 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requireAuth } from "@/features/api/server-action-auth";
 import { createServerApiHeaders } from "@/features/api/server-api-headers";
 import { handleCreateAdminPackage } from "@/features/packages/handlers/package.handlers";
 
@@ -28,6 +29,12 @@ export async function createPackageAction(
   _previousState: PackageActionState,
   formData: FormData,
 ): Promise<PackageActionState> {
+  const auth = await requireAuth();
+
+  if (!auth.success) {
+    return { message: auth.message, success: false };
+  }
+
   const response = await handleCreateAdminPackage(
     new Request("http://nikharta-roop.local/api/v1/admin/packages", {
       body: JSON.stringify(toCreatePackageBody(formData)),

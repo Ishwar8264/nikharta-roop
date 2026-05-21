@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin offer creation handler.
+ * Responsibilities: authenticate admins, validate offer input, check branch/service scope, and create offers.
+ * Important notes: independent branch and service checks run together before the write.
+ */
 import { getDb } from "@/db";
 import {
   OFFER_CODES,
@@ -44,8 +49,10 @@ export async function handleCreateAdminOffer(request: Request) {
 async function createAdminOffer(input: CreateOfferInput, admin: OfferAdminUser) {
   try {
     const branchId = resolveOfferBranchId(input.branchId, admin);
-    await assertActiveOfferBranch(branchId);
-    await assertOfferServices(input.serviceIds, branchId);
+    await Promise.all([
+      assertActiveOfferBranch(branchId),
+      assertOfferServices(input.serviceIds, branchId),
+    ]);
     const offer = await getDb().offer.create({
       data: toOfferCreateData(input, branchId),
       select: offerSelect(),

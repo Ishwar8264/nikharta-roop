@@ -1,3 +1,8 @@
+/**
+ * Purpose: OpenAPI document route for Swagger UI and API consumers.
+ * Responsibilities: assemble route schemas, response examples, tags, and security metadata.
+ * Important notes: the document is generated per request only to bind the current origin.
+ */
 import { NextResponse } from "next/server";
 
 import {
@@ -139,7 +144,7 @@ function successResponse(input: {
         example: input.messageExample,
       },
       data: input.dataSchema,
-    },
+    }
   };
 }
 
@@ -2512,7 +2517,7 @@ function jsonEndpoint(input: {
           },
         },
       },
-    },
+    }
   };
 }
 
@@ -2564,8 +2569,18 @@ function reportQueryParameters(): OpenApiRecord[] {
 export function GET(request: Request) {
   const origin = new URL(request.url).origin;
 
-  return NextResponse.json(
-    {
+  return NextResponse.json(createOpenApiDocument(origin), {
+    headers: {
+      "cache-control": "no-store",
+    },
+  });
+}
+
+/**
+ * Builds the OpenAPI document from the current request origin.
+ */
+function createOpenApiDocument(origin: string): OpenApiRecord {
+  return {
       openapi: "3.1.0",
       info: {
         title: "Nikharta Roop API",
@@ -6923,11 +6938,5 @@ export function GET(request: Request) {
           successStatus: HTTP_STATUS.OK,
         }),
       },
-    },
-    {
-      headers: {
-        "cache-control": "no-store",
-      },
-    },
-  );
+  };
 }

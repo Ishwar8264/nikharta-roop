@@ -8,6 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requireAuth } from "@/features/api/server-action-auth";
 import { createServerApiHeaders } from "@/features/api/server-api-headers";
 import {
   handleCreateAdminService,
@@ -31,6 +32,12 @@ export async function createServiceCategoryAction(
   _previousState: ServiceActionState,
   formData: FormData,
 ): Promise<ServiceActionState> {
+  const auth = await requireAuth();
+
+  if (!auth.success) {
+    return { message: auth.message, success: false };
+  }
+
   const response = await handleCreateServiceCategory(
     new Request("http://nikharta-roop.local/api/v1/admin/services/categories", {
       body: JSON.stringify(toCreateServiceCategoryBody(formData)),
@@ -53,6 +60,12 @@ export async function createServiceAction(
   _previousState: ServiceActionState,
   formData: FormData,
 ): Promise<ServiceActionState> {
+  const auth = await requireAuth();
+
+  if (!auth.success) {
+    return { message: auth.message, success: false };
+  }
+
   const response = await handleCreateAdminService(
     new Request("http://nikharta-roop.local/api/v1/admin/services", {
       body: JSON.stringify(toCreateServiceBody(formData)),

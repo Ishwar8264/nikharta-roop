@@ -3,6 +3,8 @@
  * Responsibilities: choose a branch, load active offers, and render offer catalog UI.
  * Important notes: branch-specific and global offers are both returned by the public offer API.
  */
+import type { Metadata } from "next";
+
 import { listPublicBranches } from "@/features/branches/queries/branch.query";
 import { OfferCatalog } from "@/features/offers/components/offer-catalog";
 import { listPublicOffers } from "@/features/offers/queries/offer.query";
@@ -11,12 +13,20 @@ type OffersPageProps = {
   searchParams: Promise<{ branchId?: string }>;
 };
 
+export const metadata: Metadata = {
+  title: "Offers | Nikharta Roop",
+  description:
+    "Browse active Nikharta Roop beauty offers, coupon codes, discounts, and validity.",
+};
+
 /**
  * Loads and renders public offers for the selected branch.
  */
 export default async function OffersPage({ searchParams }: OffersPageProps) {
-  const { branchId } = await searchParams;
-  const { branches, error: branchError } = await listPublicBranches();
+  const [{ branchId }, { branches, error: branchError }] = await Promise.all([
+    searchParams,
+    listPublicBranches(),
+  ]);
   const selectedBranchId = resolveSelectedBranchId(branchId, branches);
   const offerResult = await listPublicOffers({
     branchId: selectedBranchId,

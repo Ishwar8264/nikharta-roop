@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin handlers for service variant and add-on management.
+ * Responsibilities: authenticate service admins, validate option payloads, and return refreshed service details.
+ * Important notes: option creation reloads service detail after writes so the response includes new options.
+ */
 import { Prisma } from "@prisma/client";
 
 import { getDb } from "@/db";
@@ -153,6 +158,8 @@ async function createServiceVariant(
   adminUser: ServiceAdminUser,
 ) {
   try {
+    // The detail reload must wait for the option write so the response includes the new variant.
+    // react-doctor-disable-next-line react-doctor/async-parallel
     const manageableService = await assertManageableService(serviceId, adminUser);
     await getDb().serviceVariant.create({
       data: {

@@ -6,6 +6,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,65 @@ type ServiceFormShellProps = {
   categoriesByBranch: Record<string, PublicServiceCategory[]>;
 };
 
+type ServiceFormState = {
+  actionState: ServiceActionState;
+  branchId: string;
+  categoryId: string;
+  isActive: boolean;
+  isDirty: boolean;
+};
+
+type ServiceFormAction =
+  | { state: ServiceActionState; type: "setActionState" }
+  | { type: "markDirty" }
+  | { branchId: string; categoryId: string; type: "selectBranch" }
+  | { categoryId: string; type: "selectCategory" }
+  | { isActive: boolean; type: "setActive" };
+
+/**
+ * Builds initial reducer state from branch and category props.
+ */
+function createInitialServiceFormState(input: {
+  branches: PublicBranch[];
+  categoriesByBranch: Record<string, PublicServiceCategory[]>;
+}): ServiceFormState {
+  const branchId = input.branches[0]?.id ?? "";
+
+  return {
+    actionState: { message: "", success: false },
+    branchId,
+    categoryId: input.categoriesByBranch[branchId]?.[0]?.id ?? "",
+    isActive: true,
+    isDirty: false,
+  };
+}
+
+/**
+ * Keeps related service form state changes together for predictable updates.
+ */
+function serviceFormReducer(
+  state: ServiceFormState,
+  action: ServiceFormAction,
+): ServiceFormState {
+  switch (action.type) {
+    case "setActionState":
+      return { ...state, actionState: action.state };
+    case "markDirty":
+      return { ...state, isDirty: true };
+    case "selectBranch":
+      return {
+        ...state,
+        branchId: action.branchId,
+        categoryId: action.categoryId,
+        isDirty: true,
+      };
+    case "selectCategory":
+      return { ...state, categoryId: action.categoryId, isDirty: true };
+    case "setActive":
+      return { ...state, isActive: action.isActive, isDirty: true };
+  }
+}
+
 /**
  * Renders a service create form with controlled branch/category selectors.
  */
@@ -45,25 +105,19 @@ export function ServiceFormShell({
   branches,
   categoriesByBranch,
 }: ServiceFormShellProps) {
-  const [state, setState] = React.useState<ServiceActionState>({
-    message: "",
-    success: false,
-  });
-  const [isPending, startTransition] = React.useTransition();
-  const [isDirty, setIsDirty] = React.useState(false);
-  const initialBranchId = branches[0]?.id ?? "";
-  const [branchId, setBranchId] = React.useState(initialBranchId);
-  const [categoryId, setCategoryId] = React.useState(
-    categoriesByBranch[initialBranchId]?.[0]?.id ?? "",
+  const [formState, dispatchFormState] = React.useReducer(
+    serviceFormReducer,
+    { branches, categoriesByBranch },
+    createInitialServiceFormState,
   );
-  const [isActive, setIsActive] = React.useState(true);
+  const [isPending, startTransition] = React.useTransition();
   const imageUrlRef = React.useRef<HTMLInputElement>(null);
   const media = useServiceImageUpload(null, (imageUrl) => {
     if (imageUrlRef.current) imageUrlRef.current.value = imageUrl;
-    setIsDirty(true);
+    dispatchFormState({ type: "markDirty" });
   });
-  const guard = useUnsavedChangesGuard(isDirty && !isPending);
-  const categories = categoriesByBranch[branchId] ?? [];
+  const guard = useUnsavedChangesGuard(formState.isDirty && !isPending);
+  const categories = categoriesByBranch[formState.branchId] ?? [];
 
   /**
    * Sends FormData to the server action while preserving inline API errors.
@@ -73,7 +127,10 @@ export function ServiceFormShell({
     const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {
-      setState(await action(state, formData));
+      dispatchFormState({
+        state: await action(formState.actionState, formData),
+        type: "setActionState",
+      });
     });
   }
 
@@ -81,32 +138,32 @@ export function ServiceFormShell({
    * Switches branch and chooses the first valid category for that branch.
    */
   function handleBranchChange(nextBranchId: string) {
-    setIsDirty(true);
-    setBranchId(nextBranchId);
-    setCategoryId(categoriesByBranch[nextBranchId]?.[0]?.id ?? "");
+    dispatchFormState({
+      branchId: nextBranchId,
+      categoryId: categoriesByBranch[nextBranchId]?.[0]?.id ?? "",
+      type: "selectBranch",
+    });
   }
 
   /**
    * Marks form state dirty when users edit uncontrolled text and number fields.
    */
   function handleFieldChange() {
-    setIsDirty(true);
+    dispatchFormState({ type: "markDirty" });
   }
 
   /**
    * Updates category selection while enabling the unsaved changes prompt.
    */
   function handleCategoryChange(nextCategoryId: string) {
-    setIsDirty(true);
-    setCategoryId(nextCategoryId);
+    dispatchFormState({ categoryId: nextCategoryId, type: "selectCategory" });
   }
 
   /**
    * Updates active status while enabling the unsaved changes prompt.
    */
   function handleActiveChange(nextIsActive: boolean) {
-    setIsDirty(true);
-    setIsActive(nextIsActive);
+    dispatchFormState({ isActive: nextIsActive, type: "setActive" });
   }
 
   return (
@@ -118,7 +175,7 @@ export function ServiceFormShell({
     >
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Branch" htmlFor="branchId">
-          <Select name="branchId" onValueChange={handleBranchChange} value={branchId}>
+          <Select name="branchId" onValueChange={handleBranchChange} value={formState.branchId}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select branch" />
             </SelectTrigger>
@@ -137,7 +194,7 @@ export function ServiceFormShell({
             disabled={categories.length === 0}
             name="categoryId"
             onValueChange={handleCategoryChange}
-            value={categoryId}
+            value={formState.categoryId}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select category" />
@@ -227,11 +284,12 @@ export function ServiceFormShell({
         <div className="flex flex-col gap-3 rounded-md border bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             {media.previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 alt="Selected service"
                 className="h-16 w-20 rounded-md object-cover"
+                height={64}
                 src={media.previewUrl}
+                width={80}
               />
             ) : (
               <div className="flex h-16 w-20 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
@@ -265,16 +323,18 @@ export function ServiceFormShell({
           </p>
         </div>
         <Switch
-          checked={isActive}
+            checked={formState.isActive}
           id="isActive"
           name="isActive"
           onCheckedChange={handleActiveChange}
         />
       </div>
 
-      {state.message ? <p className="text-sm text-destructive">{state.message}</p> : null}
+      {formState.actionState.message ? (
+        <p className="text-sm text-destructive">{formState.actionState.message}</p>
+      ) : null}
 
-      <Button disabled={isPending || !branchId || !categoryId} type="submit">
+      <Button disabled={isPending || !formState.branchId || !formState.categoryId} type="submit">
         {isPending ? "Creating..." : "Create service"}
       </Button>
       <UnsavedChangesDialog

@@ -22,6 +22,18 @@ type OfferCardProps = {
   validUntil: Date | string;
 };
 
+const EMPTY_OFFER_SERVICES: string[] = [];
+const INR_PRICE_FORMATTER = new Intl.NumberFormat("en-IN", {
+  currency: "INR",
+  maximumFractionDigits: 0,
+  style: "currency",
+});
+const OFFER_DATE_FORMATTER = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
 /**
  * Renders a compact offer summary card.
  */
@@ -33,7 +45,7 @@ export function OfferCard({
   discountValue,
   isActive,
   minOrder,
-  services = [],
+  services = EMPTY_OFFER_SERVICES,
   titleEn,
   titleHi,
   validUntil,
@@ -91,20 +103,12 @@ function formatDiscount(type: DiscountType, value: string) {
  * Formats API decimal strings as Indian rupee values.
  */
 function formatPrice(price: string) {
-  return new Intl.NumberFormat("en-IN", {
-    currency: "INR",
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(Number(price));
+  return INR_PRICE_FORMATTER.format(Number(price));
 }
 
 /**
  * Formats date-like API values for compact card text.
  */
 function formatDate(value: Date | string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
+  return OFFER_DATE_FORMATTER.format(new Date(value));
 }

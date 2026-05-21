@@ -9,6 +9,7 @@ import { DiscountType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requireAuth } from "@/features/api/server-action-auth";
 import { createServerApiHeaders } from "@/features/api/server-api-headers";
 import { handleCreateAdminOffer } from "@/features/offers/handlers/offer.handlers";
 
@@ -29,6 +30,12 @@ export async function createOfferAction(
   _previousState: OfferActionState,
   formData: FormData,
 ): Promise<OfferActionState> {
+  const auth = await requireAuth();
+
+  if (!auth.success) {
+    return { message: auth.message, success: false };
+  }
+
   const response = await handleCreateAdminOffer(
     new Request("http://nikharta-roop.local/api/v1/admin/offers", {
       body: JSON.stringify(toCreateOfferBody(formData)),
