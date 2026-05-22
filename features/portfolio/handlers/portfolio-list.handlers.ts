@@ -1,3 +1,8 @@
+/**
+ * Purpose: Portfolio list handlers for public and admin APIs.
+ * Responsibilities: validate list filters, enforce admin branch scope, and return mapped gallery rows.
+ * Important notes: unassigned admins can browse all branches while assigned admins stay branch-scoped.
+ */
 import { getDb } from "@/db";
 import {
   PORTFOLIO_CODES,
@@ -97,7 +102,7 @@ function resolveAdminPortfolioBranch(
   requestedBranchId: string | undefined,
   admin: { branchId?: string | null; id: string; role: string },
 ) {
-  if (admin.role === "SUPER_ADMIN") return requestedBranchId;
+  if (admin.role === "SUPER_ADMIN" || !admin.branchId) return requestedBranchId;
   if (admin.branchId && (!requestedBranchId || requestedBranchId === admin.branchId)) {
     assertCanManagePortfolioBranch(admin, admin.branchId);
     return admin.branchId;
