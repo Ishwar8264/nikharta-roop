@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared calendar wrapper around react-day-picker.
+ * Responsibilities: provide project styling, navigation icons, and focused-day behavior.
+ * Important notes: focus is applied through a callback ref so event-driven focus does not live in an effect.
+ */
 "use client"
 
 import * as React from "react"
@@ -189,14 +194,16 @@ function CalendarDayButton({
 }: React.ComponentProps<typeof DayButton> & { locale?: Partial<Locale> }) {
   const defaultClassNames = getDefaultClassNames()
 
-  const ref = React.useRef<HTMLButtonElement>(null)
-  React.useEffect(() => {
-    if (modifiers.focused) ref.current?.focus()
-  }, [modifiers.focused])
+  const focusDayButton = React.useCallback(
+    (node: HTMLButtonElement | null) => {
+      if (modifiers.focused) node?.focus()
+    },
+    [modifiers.focused],
+  )
 
   return (
     <Button
-      ref={ref}
+      ref={focusDayButton}
       variant="ghost"
       size="icon"
       data-day={day.date.toLocaleDateString(locale?.code)}
