@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "doctor": "react-doctor . --yes --fail-on none",
-    "check:push": "pnpm run lint && pnpm run build",
+    "typecheck": "tsc --noEmit",
+    "doctor": "react-doctor . --full --offline --fail-on warning",
+    "check:commit": "pnpm run doctor && pnpm run lint && pnpm run typecheck && pnpm run build",
+    "check:push": "pnpm run check:commit",
     "prepare": "husky"
   },
   "dependencies": {
