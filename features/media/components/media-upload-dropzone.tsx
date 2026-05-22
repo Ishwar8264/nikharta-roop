@@ -42,6 +42,7 @@ export function MediaUploadDropzone({
         </span>
       </span>
       <input
+        aria-label="Upload media file"
         accept={accept}
         className="sr-only"
         disabled={disabled}

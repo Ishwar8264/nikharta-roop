@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "doctor": "react-doctor . --full --offline --fail-on warning",
+    "doctor": "react-doctor . --full --fail-on warning",
     "check:commit": "pnpm run doctor && pnpm run lint && pnpm run typecheck && pnpm run build",
     "check:push": "pnpm run check:commit",
     "prepare": "husky"
