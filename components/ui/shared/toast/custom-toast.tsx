@@ -51,6 +51,7 @@ export function CustomToast({
     >
       {/* ── Close Button (Left Side) ── */}
       <button
+        type="button"
         onClick={() => toast.dismiss(id)}
         className={cn(
           "mt-1.5 flex size-7 shrink-0 items-center justify-center rounded-full",

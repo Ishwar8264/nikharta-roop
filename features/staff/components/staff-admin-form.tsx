@@ -261,6 +261,7 @@ export function StaffAdminForm({
               key={day.value}
             >
               <input
+                aria-label={`Work on ${day.label}`}
                 defaultChecked={day.value >= 1 && day.value <= 6}
                 name="workDays"
                 type="checkbox"
@@ -280,7 +281,12 @@ export function StaffAdminForm({
                 className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm"
                 key={service.id}
               >
-                <input name="serviceIds" type="checkbox" value={service.id} />
+                <input
+                  aria-label={`Assign ${service.nameHi} to staff`}
+                  name="serviceIds"
+                  type="checkbox"
+                  value={service.id}
+                />
                 {service.nameHi}
               </label>
             ))}

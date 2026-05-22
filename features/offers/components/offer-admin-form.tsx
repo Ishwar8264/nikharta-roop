@@ -181,7 +181,12 @@ export function OfferAdminForm({
                 className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm"
                 key={service.id}
               >
-                <input name="serviceIds" type="checkbox" value={service.id} />
+                <input
+                  aria-label={`Restrict offer to ${service.nameHi}`}
+                  name="serviceIds"
+                  type="checkbox"
+                  value={service.id}
+                />
                 {service.nameHi}
               </label>
             ))}

@@ -1,5 +1,5 @@
-# This workflow runs React Doctor in GitHub for pushes and pull requests.
-# It is responsible for PR diagnostics and uses diff mode against main for focused feedback.
+# This workflow runs the repository-pinned React Doctor script in GitHub.
+# It is responsible for matching local diagnostics so PR checks and Husky gates agree.
 
 name: React Doctor
 
@@ -19,7 +19,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: millionco/react-doctor@main
+      - uses: pnpm/action-setup@v4
         with:
-          diff: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: 10.33.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run doctor

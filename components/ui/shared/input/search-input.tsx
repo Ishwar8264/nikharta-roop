@@ -186,14 +186,24 @@ function SearchInput({
       null,
     );
 
-    // Cleanup on unmount
+    /**
+     * Clears any pending debounced search callback before replacing it or unmounting.
+     */
+    const clearDebounceTimer = React.useCallback(() => {
+      const debounceTimer = debounceTimerRef.current;
+
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimerRef.current = null;
+      }
+    }, []);
+
+    // Cleanup on unmount keeps the latest scheduled debounce from firing late.
     React.useEffect(() => {
       return () => {
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
+        clearDebounceTimer();
       };
-    }, []);
+    }, [clearDebounceTimer]);
 
     // ── Handlers ──
     /**
@@ -210,9 +220,7 @@ function SearchInput({
 
       // Debounced search callback
       if (onSearchDebounced) {
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
+        clearDebounceTimer();
 
         debounceTimerRef.current = setTimeout(() => {
           if (val.length >= minLength) {
@@ -227,9 +235,7 @@ function SearchInput({
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter" && searchOnEnter) {
         // Flush any pending debounce
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
+        clearDebounceTimer();
 
         if (currentValue.length >= minLength) {
           onSearch?.(currentValue);
