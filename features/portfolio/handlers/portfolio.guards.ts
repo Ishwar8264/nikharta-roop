@@ -1,3 +1,8 @@
+/**
+ * Purpose: Guard helpers for portfolio write and detail operations.
+ * Responsibilities: enforce branch ownership, active branch checks, and manageable item lookups.
+ * Important notes: SUPER_ADMIN and unassigned admins may manage portfolio across active branches.
+ */
 import { getDb } from "@/db";
 import {
   PORTFOLIO_CODES,
@@ -10,13 +15,13 @@ import {
 } from "./portfolio.shared";
 
 /**
- * Ensures branch admins only manage their assigned branch.
+ * Ensures assigned branch admins stay scoped while unassigned admins can manage all branches.
  */
 export function assertCanManagePortfolioBranch(
   admin: PortfolioAdminUser,
   branchId: string,
 ) {
-  if (admin.role === "SUPER_ADMIN" || admin.branchId === branchId) return;
+  if (admin.role === "SUPER_ADMIN" || !admin.branchId || admin.branchId === branchId) return;
   throw new PortfolioVisibleError(
     PORTFOLIO_CODES.FORBIDDEN,
     PORTFOLIO_MESSAGES.FORBIDDEN,
