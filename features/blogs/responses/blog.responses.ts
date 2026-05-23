@@ -1,3 +1,8 @@
+/**
+ * Purpose: Blog API response helpers.
+ * Responsibility: Build consistent JSON success and error responses.
+ * Important Notes: Uses shared API response contract fields.
+ */
 import type { ApiJsonInput } from "@/types/auth/auth.types";
 
 import { HTTP_STATUS, type HttpStatus } from "@/lib/constants/http-status";

@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin blog list handlers.
+ * Responsibility: Authenticate admin reads and load blog posts/categories.
+ * Important Notes: Response mapping stays shared with public blog list handlers.
+ */
 import { getDb } from "@/db";
 import { blogCategorySelect, blogPostSelect } from "@/features/blogs/helpers/blog.selectors";
 import { adminListBlogsQuerySchema } from "@/schema/blogs/schema.blog";

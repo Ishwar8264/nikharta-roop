@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin blog category write handlers.
+ * Responsibility: Authenticate, validate, create, update, and delete blog categories.
+ * Important Notes: Errors are converted to stable blog API responses.
+ */
 import { getDb } from "@/db";
 import { BLOG_CODES, BLOG_MESSAGES } from "@/features/blogs/constants/blog.constants";
 import { toPublicBlogCategory } from "@/features/blogs/helpers/blog.mapper";
@@ -34,6 +39,15 @@ export async function handleUpdateBlogCategory(request: Request, categoryId: str
   const body = await parseBlogBody(request, updateBlogCategorySchema);
   if (body.error) return body.error;
   return updateBlogCategory(categoryId, body.data);
+}
+
+/**
+ * Handles admin blog category delete requests.
+ */
+export async function handleDeleteBlogCategory(request: Request, categoryId: string) {
+  const auth = await requireBlogAdmin(request);
+  if (!auth.success) return auth.error;
+  return deleteBlogCategory(categoryId);
 }
 
 /**
@@ -87,6 +101,29 @@ async function updateBlogCategory(
       code: BLOG_CODES.BLOG_CATEGORY_UPDATE_FAILED,
       handler: "updateBlogCategory",
       message: BLOG_MESSAGES.BLOG_CATEGORY_UPDATE_FAILED,
+    });
+  }
+}
+
+/**
+ * Deletes one blog category after confirming it exists.
+ */
+async function deleteBlogCategory(categoryId: string) {
+  try {
+    await assertBlogCategoryExists(categoryId);
+    await getDb().blogCategory.delete({ where: { id: categoryId } });
+    return blogJson({
+      code: BLOG_CODES.BLOG_CATEGORY_DELETED,
+      data: { categoryId },
+      message: BLOG_MESSAGES.BLOG_CATEGORY_DELETED,
+      status: HTTP_STATUS.OK,
+      success: true,
+    });
+  } catch (error) {
+    return handleBlogError(error, {
+      code: BLOG_CODES.BLOG_CATEGORY_DELETE_FAILED,
+      handler: "deleteBlogCategory",
+      message: BLOG_MESSAGES.BLOG_CATEGORY_DELETE_FAILED,
     });
   }
 }

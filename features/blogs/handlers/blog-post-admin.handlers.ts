@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin blog post write handlers.
+ * Responsibility: Authenticate, validate, create, and update blog posts.
+ * Important Notes: Publishing auto-stamps a publish date when one is not provided.
+ */
 import { BlogPostStatus } from "@prisma/client";
 
 import { getDb } from "@/db";

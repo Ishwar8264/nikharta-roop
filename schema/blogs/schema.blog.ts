@@ -1,3 +1,8 @@
+/**
+ * Purpose: Blog request validation schemas.
+ * Responsibility: Validate public/admin blog queries and write payloads.
+ * Important Notes: Browser form blank optional fields are normalized for API-safe nullable values.
+ */
 import { BlogPostStatus } from "@prisma/client";
 import { z } from "zod";
 
@@ -10,6 +15,19 @@ const optionalIdSchema: z.ZodType<string | undefined, z.ZodTypeDef, unknown> = z
   (value) => (value === "" ? undefined : value),
   idSchema.optional(),
 );
+
+const urlValueSchema = z.string().trim().url().max(1000);
+
+const optionalNullableUrlSchema = z
+  .string()
+  .trim()
+  .max(1000)
+  .nullable()
+  .optional()
+  .refine((value) => !value || urlValueSchema.safeParse(value).success, {
+    message: "Enter a valid URL.",
+  })
+  .transform((value) => (value === "" ? null : value));
 
 /**
  * Normalizes URL slugs used by public blog routes.
@@ -56,7 +74,7 @@ const blogCategoryBodySchema = z.object({
 const blogPostBodySchema = z.object({
   categoryId: idSchema,
   contentHi: z.string().trim().min(10).max(100000),
-  coverImageUrl: z.string().trim().url().max(1000).nullable().optional(),
+  coverImageUrl: optionalNullableUrlSchema,
   excerptHi: z.string().trim().max(1000).nullable().optional(),
   publishedAt: z.coerce.date().nullable().optional(),
   slug: slugSchema,
