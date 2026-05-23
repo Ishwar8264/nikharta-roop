@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared blog list handler helpers.
+ * Responsibility: Parse list queries and wrap collection responses.
+ * Important Notes: Keeps public and admin list response shapes aligned.
+ */
 import { z } from "zod";
 
 import { BLOG_CODES, BLOG_MESSAGES } from "@/features/blogs/constants/blog.constants";

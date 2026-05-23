@@ -1,3 +1,8 @@
+/**
+ * Purpose: Admin blog post delete handler.
+ * Responsibility: Authenticate and delete one blog post.
+ * Important Notes: Linked media cleanup is handled by database cascade rules.
+ */
 import { getDb } from "@/db";
 import { BLOG_CODES, BLOG_MESSAGES } from "@/features/blogs/constants/blog.constants";
 import { blogJson } from "@/features/blogs/responses/blog.responses";

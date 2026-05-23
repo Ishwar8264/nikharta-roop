@@ -18,6 +18,7 @@ export {
  */
 export {
   handleCreateBlogCategory,
+  handleDeleteBlogCategory,
   handleUpdateBlogCategory,
 } from "./blog-category-admin.handlers";
 /**

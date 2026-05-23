@@ -1,3 +1,8 @@
+/**
+ * Purpose: Blog error normalization.
+ * Responsibility: Convert expected and unexpected failures into stable API responses.
+ * Important Notes: Unique slug conflicts are returned as user-safe conflict errors.
+ */
 import { Prisma } from "@prisma/client";
 
 import { BLOG_CODES, BLOG_MESSAGES } from "@/features/blogs/constants/blog.constants";

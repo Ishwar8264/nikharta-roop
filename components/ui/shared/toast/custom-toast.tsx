@@ -84,11 +84,16 @@ export const showToast = (
   description?: string,
   variant: keyof typeof variants = "default",
 ) => {
-  return toast(
-    <CustomToast title={title} description={description} variant={variant} />,
-    {
-      unstyled: true,
-    },
+  return toast.custom(
+    (id) => (
+      <CustomToast
+        description={description}
+        id={id}
+        title={title}
+        variant={variant}
+      />
+    ),
+    { unstyled: true },
   );
 };
 

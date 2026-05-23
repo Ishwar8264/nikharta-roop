@@ -1,3 +1,8 @@
+/**
+ * Purpose: Shared blog handler utilities.
+ * Responsibility: Authenticate admins, parse JSON bodies, and carry visible errors.
+ * Important Notes: Blog handlers use these helpers to keep response contracts consistent.
+ */
 import type { ZodType } from "zod";
 
 import { getAuthenticatedSession } from "@/features/auth/handlers/auth.handlers";

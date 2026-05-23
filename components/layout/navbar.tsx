@@ -1,3 +1,8 @@
+/**
+ * Purpose: Public top navigation.
+ * Responsibility: Link customers to primary public routes.
+ * Important Notes: Blog route uses the plural public route segment.
+ */
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +16,7 @@ export function Navbar() {
       <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
         <Link href="/services">सेवाएं</Link>
         <Link href="/branches">ब्रांच</Link>
-        <Link href="/blog">ब्लॉग</Link>
+        <Link href="/blogs">ब्लॉग</Link>
       </nav>
       <Button asChild>
         <Link href="/login">लॉगिन</Link>

@@ -1,3 +1,8 @@
+/**
+ * Purpose: Blog handler guards.
+ * Responsibility: Assert blog posts and categories exist before writes.
+ * Important Notes: Throws BlogVisibleError for expected not-found responses.
+ */
 import { getDb } from "@/db";
 import { BLOG_CODES, BLOG_MESSAGES } from "@/features/blogs/constants/blog.constants";
 import { HTTP_STATUS } from "@/lib/constants/http-status";

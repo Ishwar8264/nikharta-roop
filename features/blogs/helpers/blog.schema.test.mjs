@@ -1,3 +1,8 @@
+/**
+ * Purpose: Blog schema regression tests.
+ * Responsibility: Validate blog schema parsing behavior.
+ * Important Notes: Runs as a lightweight Node test module.
+ */
 import assert from "node:assert/strict";
 import test from "node:test";
 

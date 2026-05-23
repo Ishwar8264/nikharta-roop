@@ -1,3 +1,8 @@
+/**
+ * Purpose: Blog API mappers.
+ * Responsibility: Convert selected database rows into public API payloads.
+ * Important Notes: Selectors define the database shape consumed by these mappers.
+ */
 import type { Prisma } from "@prisma/client";
 
 import { blogCategorySelect, blogPostSelect } from "./blog.selectors";

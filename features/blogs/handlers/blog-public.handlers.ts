@@ -1,3 +1,8 @@
+/**
+ * Purpose: Public blog handlers.
+ * Responsibility: List active categories, list published posts, and load published details.
+ * Important Notes: Public reads only expose published posts in active categories.
+ */
 import { BlogPostStatus } from "@prisma/client";
 
 import { getDb } from "@/db";

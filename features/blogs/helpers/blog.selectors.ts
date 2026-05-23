@@ -1,3 +1,8 @@
+/**
+ * Purpose: Blog Prisma selectors.
+ * Responsibility: Define fields exposed by blog API handlers.
+ * Important Notes: Shared by public and admin handlers to keep payloads consistent.
+ */
 import type { Prisma } from "@prisma/client";
 
 /**
