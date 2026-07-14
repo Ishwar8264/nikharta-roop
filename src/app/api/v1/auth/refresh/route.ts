@@ -38,6 +38,7 @@ import { ApiResponse } from "@/src/lib/response";
 import { refreshTokenService } from "@/src/services/auth/auth.service";
 import { refreshTokenSchema } from "@/src/validations/auth/auth.validation";
 import { AppError } from "@/src/lib/errors";
+import { getAuthRequestContext } from "@/src/helpers/auth-request";
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,10 +46,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = refreshTokenSchema.parse(body);
 
-    // 2. Call the service layer to generate new tokens
-    const result = await refreshTokenService(validated.refreshToken);
+    // 2. Capture request metadata for the rotated replacement session.
+    const context = getAuthRequestContext(req);
 
-    // 3. Return the new tokens to the client
+    // 3. Call the service layer to rotate the valid refresh session.
+    const result = await refreshTokenService(validated.refreshToken, context);
+
+    // 4. Return the new tokens to the client
     return ApiResponse.success(result);
   } catch (error) {
     // TypeScript automatically infers 'error' as 'unknown'. We safely narrow the type below.

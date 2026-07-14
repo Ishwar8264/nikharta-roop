@@ -1,133 +1,276 @@
 /**
- * ========================================================
- * AUTH DATA ACCESS LAYER (REPOSITORY)
- * All direct Prisma database queries for authentication go here.
- * This keeps the business logic (service layer) clean and testable.
- * ========================================================
+ * Authentication data access layer.
+ * All direct Prisma calls stay here so routes and services remain focused.
  */
+
+import {
+  AuthOtpChannel,
+  AuthOtpPurpose,
+  Prisma,
+  UserRole,
+} from "@prisma/client";
 
 import { prisma } from "@/src/lib/prisma";
-import { AuthOtpPurpose, UserRole } from "@prisma/client";
 
-/**
- * Fetch a user record by their unique mobile number.
- * Used during login and signup flows to check if the user exists.
- */
-export const findUserByMobile = (mobile: string) => {
-  return prisma.user.findUnique({ where: { mobile } });
+// Build one reusable database filter for a normalized mobile or email identity.
+const getUserIdentityWhere = (
+  identifier: string,
+  channel: AuthOtpChannel,
+): Prisma.UserWhereInput => {
+  // Match the unique email field for email authentication.
+  if (channel === "EMAIL") {
+    return { email: identifier };
+  }
+
+  // Match the existing unique mobile field for mobile authentication.
+  return { mobile: identifier };
 };
 
-/**
- * Create a new user in the database.
- * By default, assigns the 'USER' role if no specific role is provided.
- */
+// Find any user by identity, including inactive records needed for uniqueness checks.
+export const findUserByIdentifier = (
+  identifier: string,
+  channel: AuthOtpChannel,
+) => {
+  // Query one record because both supported identity fields are unique.
+  return prisma.user.findFirst({
+    where: getUserIdentityWhere(identifier, channel),
+  });
+};
+
+// Find an account that is currently allowed to authenticate.
+export const findActiveUserByIdentifier = (
+  identifier: string,
+  channel: AuthOtpChannel,
+) => {
+  // Exclude disabled and soft-deleted accounts from every login channel.
+  return prisma.user.findFirst({
+    where: {
+      ...getUserIdentityWhere(identifier, channel),
+      isActive: true,
+      deletedAt: null,
+    },
+  });
+};
+
+// Create the existing mobile-first user record during successful signup.
 export const createUser = (mobile: string, role: UserRole = "USER") => {
+  // Let Prisma enforce mobile uniqueness at the database boundary.
   return prisma.user.create({ data: { mobile, role } });
 };
 
-/**
- * Create or replace an OTP entry for a specific mobile number and purpose.
- * Steps:
- * 1. Deletes any previously generated, unverified OTPs for this mobile to avoid clutter.
- * 2. Creates a fresh OTP record with the hashed value, expiry, and attempt counter set to 0.
- */
-export const upsertOtp = async (
-  mobile: string,
-  otpHash: string,
+// Find the newest OTP request for resend-cooldown enforcement.
+export const findLatestOtp = (
+  identifier: string,
+  channel: AuthOtpChannel,
   purpose: AuthOtpPurpose,
-  expiresAt: Date,
 ) => {
-  // Delete previous unverified OTPs for this mobile and purpose to keep the table clean
-  await prisma.authOtp.deleteMany({
-    where: { mobile, purpose, verifiedAt: null },
-  });
-
-  // Insert the new OTP record
-  return prisma.authOtp.create({
-    data: { mobile, otpHash, purpose, expiresAt, attemptCount: 0 },
-  });
-};
-
-/**
- * Find the most recent, active, unverified OTP for a given mobile and purpose.
- * Active means: not yet verified, and the expiry time is in the future.
- */
-export const findActiveOtp = (mobile: string, purpose: AuthOtpPurpose) => {
+  // Include verified and expired records because cooldown is based on request time.
   return prisma.authOtp.findFirst({
-    where: { mobile, purpose, verifiedAt: null, expiresAt: { gt: new Date() } },
+    where: { identifier, channel, purpose },
     orderBy: { createdAt: "desc" },
   });
 };
 
-/**
- * Increment the attempt counter for a specific OTP record.
- * Used to enforce brute-force protection (e.g., lock account after 5 failed attempts).
- */
-export const updateOtpAttempt = (id: string) => {
-  return prisma.authOtp.update({
-    where: { id },
-    data: { attemptCount: { increment: 1 } },
+// Count recent OTP requests from one IP to limit automated abuse.
+export const countRecentOtpRequestsByIp = (
+  ipAddress: string,
+  createdAfter: Date,
+) => {
+  // Count database-backed requests so limits survive application restarts.
+  return prisma.authOtp.count({
+    where: { ipAddress, createdAt: { gte: createdAfter } },
   });
 };
 
-/**
- * Mark an OTP record as successfully verified by setting the verification timestamp.
- * This prevents the same OTP from being reused.
- */
-export const markOtpVerified = (id: string) => {
+// Replace older unverified OTPs with one fresh single-use record.
+export const replaceOtp = async (input: {
+  userId?: string;
+  identifier: string;
+  channel: AuthOtpChannel;
+  purpose: AuthOtpPurpose;
+  otpHash: string;
+  expiresAt: Date;
+  retryAfter: number;
+  ipAddress?: string;
+  userAgent?: string;
+}) => {
+  // Remove active predecessors so only the newest code can be accepted.
+  await prisma.authOtp.deleteMany({
+    where: {
+      identifier: input.identifier,
+      channel: input.channel,
+      purpose: input.purpose,
+      verifiedAt: null,
+    },
+  });
+
+  // Store only the secure OTP hash and request audit metadata.
+  return prisma.authOtp.create({
+    data: {
+      userId: input.userId,
+      identifier: input.identifier,
+      channel: input.channel,
+      purpose: input.purpose,
+      otpHash: input.otpHash,
+      expiresAt: input.expiresAt,
+      retryAfter: input.retryAfter,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+      attemptCount: 0,
+    },
+  });
+};
+
+// Delete an OTP that could not be delivered to prevent accepting an unseen code.
+export const deleteOtp = (id: string) => {
+  // Remove only the failed delivery record by its primary key.
+  return prisma.authOtp.delete({ where: { id } });
+};
+
+// Find the newest unexpired and unverified OTP for one identity and purpose.
+export const findActiveOtp = (
+  identifier: string,
+  channel: AuthOtpChannel,
+  purpose: AuthOtpPurpose,
+) => {
+  // Require expiry to be in the future so the one-minute policy is enforced by DB time.
+  return prisma.authOtp.findFirst({
+    where: {
+      identifier,
+      channel,
+      purpose,
+      verifiedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+// Record one failed OTP attempt and lock the record at the configured threshold.
+export const recordFailedOtpAttempt = (
+  id: string,
+  shouldLock: boolean,
+  lockedUntil: Date,
+) => {
+  // Increment atomically so concurrent invalid attempts cannot overwrite each other.
   return prisma.authOtp.update({
     where: { id },
+    data: {
+      attemptCount: { increment: 1 },
+      lockedUntil: shouldLock ? lockedUntil : undefined,
+    },
+  });
+};
+
+// Atomically claim a verified OTP so concurrent requests cannot reuse it.
+export const claimOtp = (id: string) => {
+  // Update only an unclaimed record and use the affected count as the race winner.
+  return prisma.authOtp.updateMany({
+    where: { id, verifiedAt: null },
     data: { verifiedAt: new Date() },
   });
 };
 
-/**
- * Create a new authentication session for a logged-in user.
- * Note: We store the SHA-256 hash of the raw JWT tokens (access and refresh)
- * in the database for security. The raw tokens are only sent to the client.
- */
-export const createSession = (
-  userId: string,
-  tokenId: string,
-  refreshTokenId: string,
-  expiresAt: Date,
-) => {
-  return prisma.authSession.create({
-    data: { userId, tokenId, refreshTokenId, expiresAt },
-  });
+// Persist successful login metadata and its session in one transaction.
+export const completeLoginAndCreateSession = async (input: {
+  userId: string;
+  channel: AuthOtpChannel;
+  tokenId: string;
+  refreshTokenId: string;
+  expiresAt: Date;
+  ipAddress?: string;
+  userAgent?: string;
+}) => {
+  // Reuse one timestamp for verification and last-login audit fields.
+  const authenticatedAt = new Date();
+
+  // Mark only the identity channel that the user successfully proved.
+  const verificationData: Prisma.UserUpdateInput =
+    input.channel === "EMAIL"
+      ? { emailVerifiedAt: authenticatedAt }
+      : { mobileVerifiedAt: authenticatedAt };
+
+  // Commit account metadata and session creation together to avoid partial login state.
+  return prisma.$transaction([
+    prisma.user.update({
+      where: { id: input.userId },
+      data: { ...verificationData, lastLoginAt: authenticatedAt },
+    }),
+    prisma.authSession.create({
+      data: {
+        userId: input.userId,
+        tokenId: input.tokenId,
+        refreshTokenId: input.refreshTokenId,
+        expiresAt: input.expiresAt,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      },
+    }),
+  ]);
 };
 
-/**
- * Find a valid session using the hashed refresh token.
- * A valid session means: not revoked, and not expired.
- * Also fetches the associated user data (needed for generating new tokens).
- */
+// Create a replacement session during refresh-token rotation.
+export const createSession = (input: {
+  userId: string;
+  tokenId: string;
+  refreshTokenId: string;
+  expiresAt: Date;
+  ipAddress?: string;
+  userAgent?: string;
+}) => {
+  // Persist only token hashes so raw JWT values never reach the database.
+  return prisma.authSession.create({ data: input });
+};
+
+// Find an active session using a hashed refresh token.
 export const findSessionByRefreshToken = (refreshTokenId: string) => {
+  // Include the user so refresh can reject inactive or deleted accounts.
   return prisma.authSession.findUnique({
-    where: { refreshTokenId, revokedAt: null, expiresAt: { gt: new Date() } },
+    where: {
+      refreshTokenId,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
     include: { user: true },
   });
 };
 
-/**
- * Revoke an active session.
- * Used when a user logs out, or during token rotation (old refresh token is invalidated).
- */
-export const revokeSession = (sessionId: string) => {
-  return prisma.authSession.update({
-    where: { id: sessionId },
-    data: { revokedAt: new Date(), revokeReason: "user_logout" },
+// Find an active session using a hashed access token.
+export const findSessionByAccessToken = (tokenId: string) => {
+  // Check session revocation on every protected request so logout takes effect immediately.
+  return prisma.authSession.findUnique({
+    where: {
+      tokenId,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    include: { user: true },
   });
 };
 
-/**
- * Fetch a user record by their unique ID.
- * Used by the /me endpoint to get the logged-in user's profile.
- */
+// Atomically claim one refresh session before issuing replacement tokens.
+export const claimSessionForRotation = (sessionId: string) => {
+  // Update only a still-active session so concurrent refresh requests cannot both win.
+  return prisma.authSession.updateMany({
+    where: { id: sessionId, revokedAt: null },
+    data: { revokedAt: new Date(), revokeReason: "token_rotation" },
+  });
+};
+
+// Revoke one session with an accurate audit reason.
+export const revokeSession = (sessionId: string, revokeReason: string) => {
+  // Keep the session record for auditing while preventing further use.
+  return prisma.authSession.update({
+    where: { id: sessionId },
+    data: { revokedAt: new Date(), revokeReason },
+  });
+};
+
+// Fetch the safe profile fields returned by the authenticated /me endpoint.
 export const findUserById = (id: string) => {
+  // Exclude authentication, payment, and other sensitive relations from the response.
   return prisma.user.findUnique({
     where: { id },
-    // Select only the fields we want to send to the frontend (exclude sensitive relations)
     select: {
       id: true,
       mobile: true,
@@ -139,9 +282,9 @@ export const findUserById = (id: string) => {
       dateOfBirth: true,
       isActive: true,
       mobileVerifiedAt: true,
+      emailVerifiedAt: true,
       onboardingStep: true,
       createdAt: true,
-      // Do NOT include authOtps, authSessions, payments, etc. for security
     },
   });
 };

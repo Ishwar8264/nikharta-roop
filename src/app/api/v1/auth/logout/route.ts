@@ -41,8 +41,11 @@ export const POST = withAuth(async (req: NextRequest) => {
   // Extract token from the Authorization header
   const authHeader = req.headers.get("authorization")!;
 
+  // Remove the validated Bearer prefix before session lookup.
+  const accessToken = authHeader.slice("Bearer ".length);
+
   // Call the service to revoke the session
-  await logoutService(authHeader);
+  await logoutService(accessToken);
 
   // Return success response
   return ApiResponse.success({ message: "Logged out successfully" });
