@@ -7,1187 +7,785 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ====================================================================
+// ENUMS – Shared enum types used across multiple models
+// ====================================================================
+
+// Who the user is in the system
 enum UserRole {
-  GUEST
-  USER
-  STAFF
-  ADMIN
-  SUPER_ADMIN
+  USER // Regular customer who books appointments
+  STAFF // Salon employee (barber, stylist, etc.)
+  ADMIN // Branch manager / salon admin
+  SUPER_ADMIN // Full system access (owner level)
 }
 
+// What the OTP was requested for
 enum AuthOtpPurpose {
-  LOGIN
-  SIGNUP
-  PHONE_VERIFICATION
+  LOGIN // OTP for logging into existing account
+  SIGNUP // OTP for creating a new account
 }
 
-enum AuthEventType {
-  OTP_REQUESTED
-  OTP_VERIFIED
-  OTP_FAILED
-  SIGNUP_STARTED
-  SIGNUP_COMPLETED
-  LOGIN_COMPLETED
-  LOGOUT_COMPLETED
-  TOKEN_REVOKED
-  ACCOUNT_SUSPENDED
-}
-
+// Current state of a customer's appointment
 enum BookingStatus {
-  PENDING
-  CONFIRMED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  NO_SHOW
+  PENDING // Just created, waiting for confirmation
+  CONFIRMED // Staff assigned & booking is locked
+  COMPLETED // Service has been delivered
+  CANCELLED // Cancelled by customer or admin
+  NO_SHOW // Customer didn't show up at appointment time
 }
 
+// Payment lifecycle states
 enum PaymentStatus {
-  CREATED
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-  PARTIALLY_REFUNDED
+  CREATED // Payment record created, awaiting action
+  PARTIALLY_PAID // Advance paid, remaining is due
+  PAID // Fully paid
+  FAILED // Payment attempt failed
+  REFUNDED // Money returned to customer
 }
 
-enum PaymentProvider {
-  RAZORPAY
-  CASH
-  UPI_OFFLINE
-}
-
-enum DiscountType {
-  PERCENTAGE
-  FLAT_AMOUNT
-}
-
-enum NotificationChannel {
-  WHATSAPP
-  SMS
-  EMAIL
-  PUSH
-}
-
-enum NotificationStatus {
-  QUEUED
-  SENT
-  FAILED
-  FALLBACK_SENT
-}
-
-enum NotificationTrigger {
-  OTP_REQUEST
-  BOOKING_CREATED
-  BOOKING_CONFIRMED
-  BOOKING_REMINDER
-  BOOKING_CANCELLED_BY_USER
-  BOOKING_CANCELLED_BY_ADMIN
-  SERVICE_COMPLETED
-  REVIEW_REQUEST
-  OFFER_LAUNCHED
-  LOYALTY_MILESTONE
-  NO_SHOW_DETECTED
-}
-
-enum LoyaltyTransactionType {
-  EARNED
-  REDEEMED
-  ADJUSTED
-  DEDUCTED
-}
-
-enum BlogPostStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-enum ProductSaleStatus {
-  DRAFT
-  COMPLETED
-  CANCELLED
-  REFUNDED
-}
-
-enum ConsultationStatus {
-  REQUESTED
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-}
-
+// Refund processing states
 enum RefundStatus {
-  REQUESTED
-  PROCESSING
-  SUCCEEDED
-  FAILED
+  PENDING // Refund request raised, yet to process
+  PROCESSED // Refund has been completed
+  FAILED // Refund attempt failed (bank issue, etc.)
 }
 
-enum InventoryTransactionType {
-  PURCHASE
-  SERVICE_USAGE
-  PRODUCT_SALE
-  ADJUSTMENT
-  WASTAGE
-  RETURN
+// Which payment method was used
+enum PaymentProvider {
+  RAZORPAY // Online payment via Razorpay gateway
+  CASH // Cash payment at the salon counter
 }
 
-enum ExpenseCategory {
-  RENT
-  SALARY
-  PRODUCT_PURCHASE
-  UTILITIES
-  MARKETING
-  MAINTENANCE
-  REFUND_COST
+// How the notification is delivered to the customer
+enum NotificationChannel {
+  SMS // Text message on mobile
+  WHATSAPP // WhatsApp message
+}
+
+// Delivery status of a notification
+enum NotificationStatus {
+  QUEUED // Waiting to be sent
+  SENT // Successfully delivered
+  FAILED // Delivery failed
+}
+
+// Blog post lifecycle for SEO content
+enum BlogPostStatus {
+  DRAFT // Not visible to public
+  PUBLISHED // Live on website
+  ARCHIVED // Removed from public view but kept in DB
+}
+
+// ====================================================================
+// AUTH & USER – Core identity and authentication system
+// ====================================================================
+
+// Customer's gender (optional, used for personalized service recommendations)
+enum Gender {
+  MALE
+  FEMALE
   OTHER
+  PREFER_NOT_TO_SAY
 }
 
-enum StaffCommissionStatus {
-  PENDING
-  APPROVED
-  PAID
-  CANCELLED
-}
-
-enum MediaOwnerType {
-  SERVICE
-  PACKAGE
-  STAFF
-  PORTFOLIO
-  REVIEW
-  BLOG_POST
-  PRODUCT
-  BRANCH
-}
-
+// Registered customer, staff member, or admin in the system
 model User {
-  id                      String    @id @default(cuid())
-  mobile                  String    @unique @db.VarChar(10)
-  name                    String?   @db.VarChar(100)
-  email                   String?   @db.VarChar(150)
-  role                    UserRole  @default(USER)
-  branchId                String?
-  avatarUrl               String?
-  loyaltyPoints           Int       @default(0)
-  isActive                Boolean   @default(true)
-  mobileVerifiedAt        DateTime?
-  profileCompletedAt      DateTime?
-  notificationPreferences Json      @default("{}")
-  lastLoginAt             DateTime?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  mobile      String    @unique @db.VarChar(10) // Indian mobile (10 digits)
+  name        String?   @db.VarChar(100)
+  email       String?   @db.VarChar(150)
+  gender      Gender?
+  dateOfBirth DateTime?
+  role        UserRole  @default(USER)
+  avatarUrl   String?
+  isActive    Boolean   @default(true)
 
-  branch                 Branch?                @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  staffProfile           Staff?
-  bookings               Booking[]              @relation("CustomerBookings")
-  createdBookings        Booking[]              @relation("CreatedBookings")
-  reviews                Review[]
-  payments               Payment[]
-  offerRedemptions       OfferRedemption[]
-  loyaltyTransactions    LoyaltyTransaction[]
-  notifications          Notification[]
-  blogPosts              BlogPost[]             @relation("BlogAuthor")
-  authSessions           AuthSession[]
-  authOtps               AuthOtp[]
-  authEvents             AuthEvent[]
-  changedBookingStatuses BookingStatusHistory[]
-  productSales           ProductSale[]
-  addresses              CustomerAddress[]
-  consultations          Consultation[]
-  expensesCreated        Expense[]              @relation("ExpenseCreatedBy")
+  // Social Login IDs – used when customer logs in via Google or Apple
+  googleId String? @unique
+  appleId  String? @unique
 
-  @@index([branchId])
-  @@index([role, isActive])
+  // Verification – timestamps of when mobile/email were confirmed
+  mobileVerifiedAt DateTime?
+  emailVerifiedAt  DateTime?
+  lastLoginAt      DateTime?
+
+  // Onboarding – tracks signup flow completion for better user activation
+  onboardingStep        Int       @default(0) // 0=not_started, 1=profile, 2=preferences, 3=first_booking, 99=completed
+  onboardingStartedAt   DateTime?
+  onboardingCompletedAt DateTime?
+  onboardingAbandonedAt DateTime? // When user left without completing
+  abandonedAtStep       Int? // Which step the user abandoned at (helps fix drop-offs)
+
+  // Preferences – how user found us & their default branch
+  referralSource    String? @db.VarChar(100) // e.g. GOOGLE, FRIEND, INSTAGRAM, WALK_IN, WHATSAPP
+  preferredBranchId String?
+
+  deletedAt DateTime? // Soft delete: user remains in DB but flagged as deleted
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations – linking user to all their activity in the system
+  bookings          Booking[]
+  reviews           Review[]
+  likes             Like[] // Generic likes on reviews, services, staff, etc.
+  comments          Comment[] // Generic comments on reviews, services, staff, etc.
+  payments          Payment[]
+  authOtps          AuthOtp[]
+  authSessions      AuthSession[]
+  blogPosts         BlogPost[]
+  notifications     Notification[]
+  staffProfile      Staff? // If user is also a staff member, their staff profile
+  preferredBranch   Branch?               @relation(fields: [preferredBranchId], references: [id], onDelete: SetNull)
+  onboardingActions OnboardingAction[] // Detailed step-by-step onboarding log
+  favoriteServices  UserFavoriteService[] // Services user has marked as favourite
 }
 
+// ====================================================================
+// ONBOARDING TRACKING – Step-by-step analytics of user registration flow
+// ====================================================================
+
+// Types of events recorded during the onboarding process
+enum OnboardingActionType {
+  STEP_STARTED // User began a particular step
+  STEP_COMPLETED // User finished a particular step
+  STEP_SKIPPED // User chose to skip a step
+  ONBOARDING_STARTED // User began the onboarding process
+  ONBOARDING_COMPLETED // User finished all steps
+  ONBOARDING_ABANDONED // User left without completing
+  ONBOARDING_RESUMED // User came back later to continue
+}
+
+// Detailed log of every action a user takes during onboarding
+// Helps answer: "At which step do users drop off? How long does each step take?"
+model OnboardingAction {
+  id        String               @id @default(cuid())
+  userId    String
+  step      Int // Which step number (1, 2, 3, etc.)
+  action    OnboardingActionType // What happened at this step
+  metadata  Json? // Extra info like {"filledFields": ["name", "gender"], "timeSpentSeconds": 45}
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, step, action])
+  @@index([userId, createdAt])
+  // Analytics index: find all abandoned actions quickly to compute drop-off rates
+  @@index([action, createdAt])
+}
+
+// Many-to-many relationship: which services a user has marked as their favourites
+model UserFavoriteService {
+  userId    String
+  serviceId String
+  sortOrder Int      @default(0) // User's preference order
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, serviceId]) // A user can favourite a service only once
+}
+
+// One-time password record for authentication via mobile/email
+model AuthOtp {
+  id           String         @id @default(cuid())
+  userId       String? // NULL until user is identified (signup flow)
+  mobile       String         @db.VarChar(10)
+  purpose      AuthOtpPurpose @default(LOGIN)
+  otpHash      String // SHA-256 hash of the actual OTP (never store plain OTP)
+  attemptCount Int            @default(0) // How many times verification was attempted
+  maxAttempts  Int            @default(5) // Max allowed attempts before locking
+  expiresAt    DateTime
+  lockedUntil  DateTime? // If too many failed attempts, lock until this time
+  verifiedAt   DateTime? // Set when OTP is successfully verified
+  retryAfter   Int? // Cooldown in seconds before user can request new OTP
+  ipAddress    String? // IP from which OTP was requested (fraud detection)
+  metadata     Json? // Extra context: email, name, source during signup
+  userAgent    String? // Browser/device info for audit
+  createdAt    DateTime       @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([mobile, createdAt]) // Quick lookup: "find recent OTPs for this mobile"
+  @@index([expiresAt]) // Cleanup: "delete all expired OTPs"
+}
+
+// Active login session – allows user to stay logged in across devices
 model AuthSession {
   id             String    @id @default(cuid())
   userId         String
-  tokenId        String    @unique
-  refreshTokenId String?   @unique
-  deviceName     String?
+  tokenId        String    @unique // Hash of the access token (never store raw token)
+  refreshTokenId String?   @unique // Hash of the refresh token (for token rotation)
+  deviceName     String? // e.g. "Chrome on MacOS", "iPhone Safari"
   ipAddress      String?
   userAgent      String?
-  lastUsedAt     DateTime?
+  lastUsedAt     DateTime? // Updated on every API call to keep session alive
   expiresAt      DateTime
-  revokedAt      DateTime?
-  revokeReason   String?
+  revokedAt      DateTime? // Set when user logs out or admin revokes session
+  revokeReason   String? // Why session was revoked: "user_logout", "admin_revoke", "password_change"
   createdAt      DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, expiresAt])
-  @@index([revokedAt])
+  @@index([userId, expiresAt]) // Find all active sessions for a user
+  @@index([revokedAt]) // Cleanup: find sessions that are still active but should be stale
 }
 
-model AuthOtp {
-  id                String         @id @default(cuid())
-  userId            String?
-  mobile            String         @db.VarChar(10)
-  purpose           AuthOtpPurpose @default(LOGIN)
-  otpHash           String
-  attemptCount      Int            @default(0)
-  maxAttempts       Int            @default(3)
-  retryAfter        Int            @default(30)
-  expiresAt         DateTime
-  verifiedAt        DateTime?
-  lockedUntil       DateTime?
-  ipAddress         String?
-  userAgent         String?
-  provider          String?        @db.VarChar(80)
-  providerMessageId String?
-  metadata          Json           @default("{}")
-  createdAt         DateTime       @default(now())
+// ====================================================================
+// BRANCH & MAPS – Salon locations with map integration
+// ====================================================================
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([mobile, purpose, createdAt])
-  @@index([userId])
-  @@index([expiresAt])
-  @@index([lockedUntil])
-}
-
-model AuthEvent {
-  id        String        @id @default(cuid())
-  userId    String?
-  mobile    String?       @db.VarChar(10)
-  type      AuthEventType
-  ipAddress String?
-  userAgent String?
-  metadata  Json          @default("{}")
-  createdAt DateTime      @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId, createdAt])
-  @@index([mobile, createdAt])
-  @@index([type, createdAt])
-}
-
+// A physical salon location that customers can book appointments at
 model Branch {
-  id            String   @id @default(cuid())
-  nameHi        String   @db.VarChar(200)
-  nameEn        String?  @db.VarChar(200)
-  city          String   @db.VarChar(100)
-  address       String
-  googleMapsUrl String?
-  latitude      Decimal? @db.Decimal(10, 7)
-  longitude     Decimal? @db.Decimal(10, 7)
-  placeId       String?  @db.VarChar(200)
-  phone         String   @db.VarChar(10)
-  openTime      DateTime @db.Time(0)
-  closeTime     DateTime @db.Time(0)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(cuid())
+  slug             String   @unique @db.VarChar(220) // URL-friendly: "andheri-west"
+  name             String   @db.VarChar(200) // e.g. "Nikharta Roop – Andheri West"
+  shortDescription String? // Brief tagline for cards
+  description      String? // Full description
+  descriptionJson  Json? // Rich text (JSON from editor)
+  descriptionHtml  String? // Rendered HTML from rich text
+  city             String   @db.VarChar(100)
+  address          String
+  phone            String   @db.VarChar(10)
+  openTime         DateTime @db.Time(0) // Opening time in HH:MM format
+  closeTime        DateTime @db.Time(0) // Closing time in HH:MM format
 
-  users             User[]
-  categories        ServiceCategory[]
-  services          Service[]
-  packages          Package[]
-  staff             Staff[]
-  bookings          Booking[]
-  offers            Offer[]
-  productCategories ProductCategory[]
-  products          Product[]
-  productSales      ProductSale[]
-  consultations     Consultation[]
-  customerAddresses CustomerAddress[]
-  serviceAddOns     ServiceAddOn[]
-  holidays          BranchHoliday[]
-  notifications     Notification[]
-  revenueReports    RevenueSnapshot[]
-  portfolioItems    PortfolioItem[]
-  inventoryItems    InventoryItem[]
-  expenses          Expense[]
-  mediaAssets       MediaAsset[]
+  // Google Maps location – structured JSON for frontend form rendering
+  // Contains: { lat, lng, placeId, formattedAddress, googleMapsUrl, streetNumber, route, locality, administrativeAreaLevel1, country, postalCode }
+  location      Json?
+  googleMapsUrl String? // Deprecated – use location.googleMapsUrl instead
+  placeId       String? // Deprecated – use location.placeId instead
+  latitude      Decimal? @db.Decimal(10, 7) // Deprecated – use location.lat instead
+  longitude     Decimal? @db.Decimal(10, 7) // Deprecated – use location.lng instead
 
-  @@index([city, isActive])
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations – what belongs to this branch
+  staff      Staff[]
+  services   Service[]
+  bookings   Booking[]
+  categories ServiceCategory[]
+  reviews    Review[] // Reviews specific to this branch location
+  holidays   BranchHoliday[] // Days when branch is closed
+  portfolios PortfolioItem[] // Before/after photos portfolio
+  offers     OfferBranch[] // Offers valid at this branch
+
+  // ✅ FIXED: Added inverse relation for User.preferredBranch
+  preferredByUsers User[] // Users who have set this as their preferred branch
 }
 
-model BranchHoliday {
-  id        String   @id @default(cuid())
-  branchId  String
-  date      DateTime @db.Date
-  reasonHi  String?
-  reasonEn  String?
-  isClosed  Boolean  @default(true)
-  createdAt DateTime @default(now())
+// ====================================================================
+// SERVICES & STAFF – What the salon offers and who delivers it
+// ====================================================================
 
-  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-
-  @@unique([branchId, date])
-  @@index([date])
-}
-
+// Grouping for services – e.g. "Haircuts", "Facials", "Manicure"
 model ServiceCategory {
-  id              String   @id @default(cuid())
-  branchId        String?
-  slugScope       String   @default("global") @db.VarChar(120)
-  nameHi          String   @db.VarChar(200)
-  nameEn          String   @db.VarChar(200)
-  slug            String   @db.VarChar(220)
-  description     String?
-  descriptionJson Json?
-  descriptionHtml String?
-  sortOrder       Int      @default(0)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  branchId         String
+  slug             String?  @unique @db.VarChar(220) // URL-friendly: "hair-services"
+  name             String   @db.VarChar(200) // e.g. "Hair Services", "Skin Care"
+  shortDescription String?
+  description      String?
+  descriptionJson  Json?
+  descriptionHtml  String?
+  sortOrder        Int      @default(0) // Display order in the listing
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  branch   Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branch   Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
   services Service[]
-  packages Package[]
-
-  @@unique([branchId, slug])
-  @@unique([slugScope, slug])
-  @@index([branchId, isActive])
-  @@index([sortOrder])
 }
 
+// Which gender this service is typically offered to (affects pricing)
+enum ServiceGender {
+  MALE
+  FEMALE
+  UNISEX // Available for all genders
+}
+
+// A specific service that customers can book – e.g. "Haircut", "Facial Cleanup"
 model Service {
-  id              String   @id @default(cuid())
-  branchId        String
-  categoryId      String
-  nameHi          String   @db.VarChar(200)
-  nameEn          String   @db.VarChar(200)
-  slug            String   @db.VarChar(220)
-  descriptionHi   String
-  descriptionJson Json?
-  descriptionHtml String?
-  descriptionEn   String?
-  price           Decimal  @db.Decimal(10, 2)
-  advanceAmount   Decimal? @db.Decimal(10, 2)
-  durationMinutes Int
-  imageUrl        String?
-  galleryUrls     String[] @default([])
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String        @id @default(cuid())
+  branchId         String
+  categoryId       String?
+  slug             String?       @unique @db.VarChar(220) // URL-friendly: "classic-haircut"
+  name             String        @db.VarChar(200) // e.g. "Classic Haircut", "Gold Facial"
+  shortDescription String?
+  description      String?
+  descriptionJson  Json?
+  descriptionHtml  String?
+  gender           ServiceGender @default(UNISEX)
+  priceMale        Decimal?      @db.Decimal(10, 2) // Price for male customers (if different)
+  priceFemale      Decimal?      @db.Decimal(10, 2) // Price for female customers (if different)
+  price            Decimal       @db.Decimal(10, 2) // Default price / unisex price
+  advanceAmount    Decimal?      @db.Decimal(10, 2) // Advance payment required to confirm booking (NULL = no advance needed)
+  durationMinutes  Int // How long this service takes (for slot calculation)
+  isActive         Boolean       @default(true)
+  deletedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  branch          Branch           @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  category        ServiceCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  bookings        Booking[]
-  reviews         Review[]
-  variants        ServiceVariant[]
-  addOns          ServiceAddOn[]
-  staffServices   StaffService[]
-  offerServices   OfferService[]
-  packageServices PackageService[]
-  portfolioItems  PortfolioItem[]
-  mediaAssets     MediaAsset[]
+  branch          Branch                @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  category        ServiceCategory?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  bookings        Booking[] // All bookings for this service
+  staffSkills     StaffSkill[] // Which staff members can perform this service
+  favoriteByUsers UserFavoriteService[] // Users who have marked this as their favourite
 
-  @@unique([branchId, slug])
-  @@index([categoryId, isActive])
-  @@index([branchId, isActive])
-  @@index([price])
-}
-
-model ServiceVariant {
-  id              String   @id @default(cuid())
-  serviceId       String
-  nameHi          String   @db.VarChar(200)
-  nameEn          String?  @db.VarChar(200)
-  descriptionHi   String?
-  descriptionJson Json?
-  descriptionHtml String?
-  price           Decimal  @db.Decimal(10, 2)
-  advanceAmount   Decimal? @db.Decimal(10, 2)
-  durationMinutes Int
-  sortOrder       Int      @default(0)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  bookings Booking[]
-
-  @@index([serviceId, isActive])
-  @@index([sortOrder])
-}
-
-model ServiceAddOn {
-  id              String   @id @default(cuid())
-  branchId        String
-  serviceId       String?
-  nameHi          String   @db.VarChar(200)
-  nameEn          String?  @db.VarChar(200)
-  descriptionHi   String?
-  descriptionJson Json?
-  descriptionHtml String?
-  price           Decimal  @db.Decimal(10, 2)
-  durationMinutes Int      @default(0)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  branch        Branch         @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  service       Service?       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  bookingAddOns BookingAddOn[]
-
-  @@index([branchId, isActive])
-  @@index([serviceId, isActive])
-}
-
-model Package {
-  id              String   @id @default(cuid())
-  branchId        String
-  categoryId      String?
-  nameHi          String   @db.VarChar(200)
-  nameEn          String?  @db.VarChar(200)
-  slug            String   @db.VarChar(220)
-  descriptionHi   String?
-  descriptionJson Json?
-  descriptionHtml String?
-  descriptionEn   String?
-  price           Decimal  @db.Decimal(10, 2)
-  advanceAmount   Decimal? @db.Decimal(10, 2)
-  durationMinutes Int?
-  imageUrl        String?
-  isCustom        Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  branch         Branch           @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  category       ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  services       PackageService[]
-  bookings       Booking[]
-  consultations  Consultation[]
+  // ✅ FIXED: Added inverse relations for OfferService, PortfolioItem, and Review
+  offerServices  OfferService[]
   portfolioItems PortfolioItem[]
-  mediaAssets    MediaAsset[]
   reviews        Review[]
-
-  @@unique([branchId, slug])
-  @@index([branchId, isActive])
-  @@index([categoryId])
 }
 
-model PackageService {
-  packageId String
-  serviceId String
-  quantity  Int      @default(1)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-
-  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-
-  @@id([packageId, serviceId])
-  @@index([serviceId])
-  @@index([sortOrder])
+// How staff commission is calculated
+enum CommissionType {
+  PERCENTAGE // e.g. 30% of service price
+  FIXED // e.g. ₹200 per service
 }
 
+// A staff member who provides services at the salon
 model Staff {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  branchId        String
-  specialization  String[] @default([])
-  experienceYears Int?
-  bioHi           String?
-  bioJson         Json?
-  bioHtml         String?
-  bioEn           String?
-  photoUrl        String?
-  rating          Decimal  @default(0) @db.Decimal(3, 2)
-  isAvailable     Boolean  @default(true)
-  workDays        Json     @default("{}")
-  workStart       DateTime @db.Time(0)
-  workEnd         DateTime @db.Time(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String          @id @default(cuid())
+  userId           String          @unique // Links to User account (staff can also login)
+  branchId         String
+  slug             String?         @unique @db.VarChar(220) // URL-friendly: "vikram-singh"
+  name             String          @db.VarChar(100)
+  shortDescription String?
+  description      String?
+  descriptionJson  Json?
+  descriptionHtml  String?
+  specialization   String[]        @default([]) // e.g. ["Hair Stylist", "Makeup Artist"]
+  photoUrl         String?
+  rating           Decimal         @default(0) @db.Decimal(3, 2) // Average rating (0.00 to 5.00)
+  commissionType   CommissionType? @default(PERCENTAGE)
+  commissionValue  Decimal?        @db.Decimal(10, 2) // 30 (for 30%) or 200 (for ₹200 fixed)
+  isAvailable      Boolean         @default(true) // Whether staff is currently accepting bookings
+  deletedAt        DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  bookings       Booking[]
-  reviews        Review[]
-  consultations  Consultation[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch      Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  bookings    Booking[] // Appointments assigned to this staff member
+  reviews     Review[] // Customer reviews for this staff member
+  staffSkills StaffSkill[] // Services this staff member is skilled at
+  leaves      StaffLeave[] // Leave & time-off records
+
+  // ✅ FIXED: Added inverse relation for PortfolioItem
   portfolioItems PortfolioItem[]
-  services       StaffService[]
-  leaveRecords   StaffLeave[]
-  commissions    StaffCommission[]
-  mediaAssets    MediaAsset[]
-
-  @@index([branchId, isAvailable])
-  @@index([rating])
 }
 
-model StaffService {
+// Which services each staff member can perform (many-to-many)
+model StaffSkill {
   staffId   String
   serviceId String
-  createdAt DateTime @default(now())
 
   staff   Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
-  @@id([staffId, serviceId])
-  @@index([serviceId])
+  @@id([staffId, serviceId]) // A staff member can have a skill only once
 }
 
-model StaffLeave {
-  id        String   @id @default(cuid())
-  staffId   String
-  startsAt  DateTime
-  endsAt    DateTime
-  reason    String?
-  createdAt DateTime @default(now())
+// ====================================================================
+// OFFERS / COUPONS – Discounts & promotions to attract customers
+// ====================================================================
 
-  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
-
-  @@index([staffId, startsAt, endsAt])
-}
-
-model Booking {
-  id                 String        @id @default(cuid())
-  displayId          String        @unique @db.VarChar(30)
-  userId             String
-  serviceId          String?
-  serviceVariantId   String?
-  packageId          String?
-  staffId            String?
-  branchId           String
-  createdByUserId    String?
-  bookingDate        DateTime      @db.Date
-  slotStart          DateTime      @db.Time(0)
-  slotEnd            DateTime      @db.Time(0)
-  status             BookingStatus @default(PENDING)
-  advanceAmount      Decimal?      @db.Decimal(10, 2)
-  totalAmount        Decimal       @db.Decimal(10, 2)
-  discountAmount     Decimal       @default(0) @db.Decimal(10, 2)
-  cancellationReason String?
-  notes              String?
-  notesJson          Json?
-  notesHtml          String?
-  pendingExpiresAt   DateTime?
-  checkedInAt        DateTime?
-  completedAt        DateTime?
-  cancelledAt        DateTime?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-
-  user                User                   @relation("CustomerBookings", fields: [userId], references: [id], onDelete: Restrict)
-  service             Service?               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  serviceVariant      ServiceVariant?        @relation(fields: [serviceVariantId], references: [id], onDelete: SetNull)
-  package             Package?               @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  staff               Staff?                 @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  branch              Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  createdBy           User?                  @relation("CreatedBookings", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  payments            Payment[]
-  review              Review?
-  offerRedemptions    OfferRedemption[]
-  addOns              BookingAddOn[]
-  notifications       Notification[]
-  statusHistory       BookingStatusHistory[]
-  loyaltyTransactions LoyaltyTransaction[]
-  refunds             Refund[]
-  staffCommissions    StaffCommission[]
-  inventoryUsages     InventoryTransaction[]
-
-  @@index([userId, bookingDate, status])
-  @@index([staffId, bookingDate, slotStart])
-  @@index([branchId, bookingDate])
-  @@index([serviceId])
-  @@index([serviceVariantId])
-  @@index([packageId])
-  @@index([status, pendingExpiresAt])
-}
-
-model BookingAddOn {
-  bookingId String
-  addOnId   String
-  quantity  Int      @default(1)
-  unitPrice Decimal  @db.Decimal(10, 2)
-  lineTotal Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now())
-
-  booking Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  addOn   ServiceAddOn @relation(fields: [addOnId], references: [id], onDelete: Restrict)
-
-  @@id([bookingId, addOnId])
-  @@index([addOnId])
-}
-
-model BookingStatusHistory {
-  id          String         @id @default(cuid())
-  bookingId   String
-  fromStatus  BookingStatus?
-  toStatus    BookingStatus
-  changedById String?
-  reason      String?
-  createdAt   DateTime       @default(now())
-
-  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  changedBy User?   @relation(fields: [changedById], references: [id], onDelete: SetNull)
-
-  @@index([bookingId, createdAt])
-  @@index([changedById])
-}
-
-model Payment {
-  id                String          @id @default(cuid())
-  bookingId         String
-  userId            String
-  provider          PaymentProvider @default(RAZORPAY)
-  providerOrderId   String?         @unique
-  providerPaymentId String?         @unique
-  status            PaymentStatus   @default(CREATED)
-  currency          String          @default("INR") @db.VarChar(3)
-  amount            Decimal         @db.Decimal(10, 2)
-  amountPaid        Decimal         @default(0) @db.Decimal(10, 2)
-  amountRefunded    Decimal         @default(0) @db.Decimal(10, 2)
-  paymentUrl        String?
-  rawWebhookPayload Json?
-  paidAt            DateTime?
-  refundedAt        DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  refunds Refund[]
-
-  @@index([bookingId])
-  @@index([userId, status])
-  @@index([status, createdAt])
-}
-
-model Refund {
-  id                 String       @id @default(cuid())
-  paymentId          String
-  bookingId          String
-  providerRefundId   String?      @unique
-  status             RefundStatus @default(REQUESTED)
-  amount             Decimal      @db.Decimal(10, 2)
-  reasonHi           String?
-  reasonJson         Json?
-  reasonHtml         String?
-  rawProviderPayload Json?
-  requestedAt        DateTime     @default(now())
-  processedAt        DateTime?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-
-  @@index([paymentId, status])
-  @@index([bookingId])
-  @@index([status, requestedAt])
-}
-
-model Review {
-  id          String   @id @default(cuid())
-  userId      String
-  bookingId   String   @unique
-  staffId     String?
-  serviceId   String?
-  packageId   String?
-  rating      Int
-  commentHi   String?
-  commentJson Json?
-  commentHtml String?
-  photoUrls   String[] @default([])
-  isApproved  Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  booking     Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  staff       Staff?       @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  service     Service?     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  package     Package?     @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  mediaAssets MediaAsset[]
-
-  @@index([serviceId, rating])
-  @@index([packageId, rating])
-  @@index([staffId, rating])
-  @@index([isApproved, createdAt])
-}
-
-model Consultation {
-  id            String             @id @default(cuid())
-  userId        String
-  branchId      String
-  staffId       String?
-  packageId     String?
-  preferredDate DateTime?          @db.Date
-  preferredTime DateTime?          @db.Time(0)
-  status        ConsultationStatus @default(REQUESTED)
-  notes         String?
-  notesJson     Json?
-  notesHtml     String?
-  adminNotes    String?
-  completedAt   DateTime?
-  cancelledAt   DateTime?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-
-  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  branch  Branch   @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  staff   Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  package Package? @relation(fields: [packageId], references: [id], onDelete: SetNull)
-
-  @@index([userId, status])
-  @@index([branchId, preferredDate])
-  @@index([staffId, preferredDate])
-  @@index([packageId])
-}
-
-model CustomerAddress {
-  id            String   @id @default(cuid())
-  userId        String
-  branchId      String?
-  label         String?  @db.VarChar(80)
-  recipientName String?  @db.VarChar(100)
-  mobile        String?  @db.VarChar(10)
-  line1         String
-  line2         String?
-  landmark      String?
-  city          String   @db.VarChar(100)
-  state         String?  @db.VarChar(100)
-  postalCode    String?  @db.VarChar(12)
-  latitude      Decimal? @db.Decimal(10, 7)
-  longitude     Decimal? @db.Decimal(10, 7)
-  isDefault     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
-
-  @@index([userId, isDefault])
-  @@index([city])
-}
-
-model PortfolioItem {
-  id              String   @id @default(cuid())
-  branchId        String
-  staffId         String?
-  serviceId       String?
-  packageId       String?
-  titleHi         String?  @db.VarChar(200)
-  descriptionHi   String?
-  descriptionJson Json?
-  descriptionHtml String?
-  beforeImageUrl  String?
-  afterImageUrl   String?
-  imageUrls       String[] @default([])
-  isFeatured      Boolean  @default(false)
-  isPublished     Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  branch      Branch       @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  staff       Staff?       @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  service     Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  package     Package?     @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  mediaAssets MediaAsset[]
-
-  @@index([branchId, isPublished, isFeatured])
-  @@index([staffId])
-  @@index([serviceId])
-  @@index([packageId])
-}
-
+// A discount offer or coupon code that customers can use
 model Offer {
-  id              String       @id @default(cuid())
-  branchId        String?
-  code            String       @unique @db.VarChar(20)
-  titleHi         String       @db.VarChar(200)
-  titleEn         String?      @db.VarChar(200)
-  descriptionHi   String?
-  descriptionJson Json?
-  descriptionHtml String?
-  discountType    DiscountType
-  discountValue   Decimal      @db.Decimal(10, 2)
-  minOrder        Decimal?     @db.Decimal(10, 2)
-  maxDiscount     Decimal?     @db.Decimal(10, 2)
-  validFrom       DateTime
-  validUntil      DateTime
-  usageLimit      Int?
-  usageCount      Int          @default(0)
-  perUserLimit    Int?
-  isActive        Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id               String   @id @default(cuid())
+  slug             String   @unique @db.VarChar(220) // URL-friendly: "flat-20-off-haircut"
+  title            String   @db.VarChar(200) // "Flat 20% Off on Haircut"
+  shortDescription String?
+  description      String?
+  descriptionJson  Json?
+  descriptionHtml  String?
+  discountType     String   @db.VarChar(20) // "PERCENTAGE" or "FIXED"
+  discountValue    Decimal  @db.Decimal(10, 2) // 20 (for 20%) or 200 (for ₹200 off)
+  minOrderAmount   Decimal? @db.Decimal(10, 2) // Minimum booking amount to apply
+  maxDiscount      Decimal? @db.Decimal(10, 2) // Max discount cap (for percentage type)
+  couponCode       String?  @unique @db.VarChar(50) // e.g. "WELCOME20", "FESTIVE50"
+  validFrom        DateTime
+  validUntil       DateTime
+  usageLimit       Int? // Total number of times this offer can be used
+  usedCount        Int      @default(0)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  branch      Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  services    OfferService[]
-  redemptions OfferRedemption[]
-
-  @@index([code, validUntil])
-  @@index([branchId, isActive])
-  @@index([validFrom, validUntil])
+  services OfferService[] // Which services this offer applies to
+  branches OfferBranch[] // Which branches this offer is valid at
 }
 
+// Which services a particular offer applies to (many-to-many)
 model OfferService {
   offerId   String
   serviceId String
-  createdAt DateTime @default(now())
 
   offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@id([offerId, serviceId])
-  @@index([serviceId])
 }
 
-model OfferRedemption {
-  id             String   @id @default(cuid())
-  offerId        String
-  bookingId      String
-  userId         String
-  discountAmount Decimal  @db.Decimal(10, 2)
-  createdAt      DateTime @default(now())
+// Which branches a particular offer is valid at (many-to-many)
+model OfferBranch {
+  offerId  String
+  branchId String
 
-  offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Restrict)
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  offer  Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
-  @@unique([offerId, bookingId])
-  @@index([userId, createdAt])
-  @@index([offerId, createdAt])
+  @@id([offerId, branchId])
 }
 
-model Notification {
-  id                String              @id @default(cuid())
-  userId            String?
-  branchId          String?
-  bookingId         String?
-  channel           NotificationChannel
-  trigger           NotificationTrigger
-  recipient         String
-  templateKey       String?             @db.VarChar(120)
-  messageHi         String
-  provider          String?             @db.VarChar(80)
-  providerMessageId String?
-  status            NotificationStatus  @default(QUEUED)
-  retryCount        Int                 @default(0)
-  scheduledAt       DateTime?
-  sentAt            DateTime?
-  failedAt          DateTime?
-  errorMessage      String?
-  metadata          Json                @default("{}")
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+// ====================================================================
+// PORTFOLIO – Before/After photos showcasing salon work
+// ====================================================================
 
-  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  branch  Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+// A portfolio item showcasing the salon's work – e.g. a haircut transformation
+model PortfolioItem {
+  id               String   @id @default(cuid())
+  branchId         String
+  title            String   @db.VarChar(200) // "Haircut Transformation"
+  shortDescription String?
+  description      String?
+  descriptionJson  Json?
+  descriptionHtml  String?
+  serviceId        String? // Which service was performed
+  staffId          String? // Which staff member did the work
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  @@index([userId, createdAt])
-  @@index([bookingId])
-  @@index([channel, status, scheduledAt])
-  @@index([trigger, createdAt])
+  branch  Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  service Service?         @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  staff   Staff?           @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  images  PortfolioImage[]
 }
 
-model LoyaltyTransaction {
-  id        String                 @id @default(cuid())
-  userId    String
-  bookingId String?
-  type      LoyaltyTransactionType
-  points    Int
-  reasonHi  String?
-  expiresAt DateTime?
-  createdAt DateTime               @default(now())
+// A single photo in a portfolio item (before, after, or gallery)
+model PortfolioImage {
+  id        String   @id @default(cuid())
+  itemId    String
+  url       String // Cloud storage URL
+  type      String   @db.VarChar(20) // "BEFORE", "AFTER", or "GALLERY"
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  item PortfolioItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt])
-  @@index([expiresAt])
+  @@index([itemId])
 }
 
-model RevenueSnapshot {
-  id             String   @id @default(cuid())
-  branchId       String
-  date           DateTime @db.Date
-  bookingCount   Int      @default(0)
-  completedCount Int      @default(0)
-  cancelledCount Int      @default(0)
-  grossRevenue   Decimal  @default(0) @db.Decimal(12, 2)
-  advanceRevenue Decimal  @default(0) @db.Decimal(12, 2)
-  discountTotal  Decimal  @default(0) @db.Decimal(12, 2)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+// ====================================================================
+// STAFF LEAVE & BRANCH HOLIDAYS – Prevents invalid bookings
+// ====================================================================
+
+// Staff time-off – prevents double-booking when staff is unavailable
+model StaffLeave {
+  id        String   @id @default(cuid())
+  staffId   String
+  date      DateTime @db.Date
+  reason    String?
+  status    String   @default("APPROVED") @db.VarChar(20) // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date]) // One leave entry per staff per day
+}
+
+// Branch holiday – prevents bookings when branch is closed
+model BranchHoliday {
+  id        String   @id @default(cuid())
+  branchId  String
+  date      DateTime @db.Date
+  reason    String? // "Diwali", "Maintenance", "New Year", etc.
+  createdAt DateTime @default(now())
 
   branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
-  @@unique([branchId, date])
-  @@index([date])
+  @@unique([branchId, date]) // One holiday entry per branch per day
 }
 
-model ProductCategory {
-  id              String   @id @default(cuid())
-  branchId        String?
-  slugScope       String   @default("global") @db.VarChar(120)
-  nameHi          String   @db.VarChar(200)
-  nameEn          String?  @db.VarChar(200)
-  slug            String   @db.VarChar(220)
-  description     String?
-  descriptionJson Json?
-  descriptionHtml String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+// ====================================================================
+// GENERIC ENGAGEMENT – Likes & Comments that work on any entity
+// ====================================================================
 
-  branch   Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  products Product[]
-
-  @@unique([branchId, slug])
-  @@unique([slugScope, slug])
-  @@index([branchId, isActive])
+// Types of entities that users can "like" (follow / appreciate)
+enum LikeEntityType {
+  REVIEW // Like a customer review
+  SERVICE // Like/upvote a service
+  STAFF // Appreciate a staff member
+  BRANCH // Like a branch location
+  BLOG_POST // Like a blog article
 }
 
-model Product {
-  id              String   @id @default(cuid())
+// Generic like: one model works for ALL entity types
+// No need for separate ReviewLike, ServiceLike, StaffLike tables
+model Like {
+  id         String         @id @default(cuid())
+  userId     String
+  entityType LikeEntityType // What type of thing was liked
+  entityId   String // The ID of that thing (e.g. review_abc123)
+  createdAt  DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId]) // A user can like something only once
+  @@index([entityType, entityId]) // "Find all likes for this entity"
+  @@index([entityType, entityId, createdAt]) // "Get recent likes for this entity"
+}
+
+// Types of entities that users can comment on
+enum CommentEntityType {
+  REVIEW // Comment on a review
+  SERVICE // Ask a question about a service
+  STAFF // Leave feedback about a staff member
+  BRANCH // Comment about a branch
+  BLOG_POST // Discuss a blog article
+}
+
+// Generic comment with reply support (threaded comments)
+model Comment {
+  id         String            @id @default(cuid())
+  userId     String
+  entityType CommentEntityType // What type of thing is being commented on
+  entityId   String // The ID of that thing
+  content    String            @db.VarChar(1000)
+  parentId   String? // If replying to another comment, the parent comment's ID
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReply", fields: [parentId], references: [id], onDelete: SetNull)
+  replies Comment[] @relation("CommentReply") // All replies to this comment
+
+  @@index([entityType, entityId, createdAt]) // "Get all comments for this entity, newest first"
+}
+
+// ====================================================================
+// BOOKING & PAYMENTS – The core appointment & transaction system
+// ====================================================================
+
+// A customer's appointment at a specific branch for a specific service
+model Booking {
+  id              String        @id @default(cuid())
+  displayId       String        @unique @db.VarChar(30) // Human-readable booking ID (e.g. "BK-2026-00123")
+  userId          String
   branchId        String
-  categoryId      String?
-  nameHi          String   @db.VarChar(200)
-  nameEn          String?  @db.VarChar(200)
-  slug            String   @db.VarChar(220)
-  descriptionHi   String?
-  descriptionJson Json?
-  descriptionHtml String?
-  price           Decimal  @db.Decimal(10, 2)
-  stockQuantity   Int      @default(0)
-  imageUrl        String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  staffId         String? // NULL until staff is assigned
+  serviceId       String
+  bookingDate     DateTime      @db.Date
+  slotStart       DateTime      @db.Time(0) // Start time (e.g. 10:30 AM)
+  slotEnd         DateTime      @db.Time(0) // End time (e.g. 11:15 AM)
+  status          BookingStatus @default(PENDING)
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  advanceAmount   Decimal       @default(0) @db.Decimal(10, 2) // Required advance for this booking
+  advancePaid     Decimal       @default(0) @db.Decimal(10, 2) // How much advance has been paid
+  remainingAmount Decimal       @default(0) @db.Decimal(10, 2) // Balance due at salon
+  paymentMode     String?       @db.VarChar(20) // "FULL" = pay full now, "SPLIT" = advance + remaining
+  notes           String? // Customer's special requests or instructions
+  cancelledAt     DateTime?
+  noShowAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  category       ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  saleItems      ProductSaleItem[]
-  inventoryItems InventoryItem[]
-  mediaAssets    MediaAsset[]
-
-  @@unique([branchId, slug])
-  @@index([branchId, isActive])
-  @@index([categoryId])
-}
-
-model ProductSale {
-  id             String            @id @default(cuid())
-  branchId       String
-  userId         String?
-  status         ProductSaleStatus @default(DRAFT)
-  subtotal       Decimal           @db.Decimal(10, 2)
-  discountAmount Decimal           @default(0) @db.Decimal(10, 2)
-  totalAmount    Decimal           @db.Decimal(10, 2)
-  notes          String?
-  notesJson      Json?
-  notesHtml      String?
-  soldAt         DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  branch           Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items            ProductSaleItem[]
-  staffCommissions StaffCommission[]
-
-  @@index([branchId, status, createdAt])
-  @@index([userId, createdAt])
-}
-
-model ProductSaleItem {
-  id        String  @id @default(cuid())
-  saleId    String
-  productId String
-  quantity  Int
-  unitPrice Decimal @db.Decimal(10, 2)
-  lineTotal Decimal @db.Decimal(10, 2)
-
-  sale                  ProductSale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  product               Product                @relation(fields: [productId], references: [id], onDelete: Restrict)
-  inventoryTransactions InventoryTransaction[]
-
-  @@index([saleId])
-  @@index([productId])
-}
-
-model InventoryItem {
-  id             String   @id @default(cuid())
-  branchId       String
-  productId      String?
-  nameHi         String   @db.VarChar(200)
-  nameEn         String?  @db.VarChar(200)
-  sku            String?  @db.VarChar(80)
-  unit           String   @default("piece") @db.VarChar(40)
-  quantityOnHand Decimal  @default(0) @db.Decimal(12, 3)
-  reorderLevel   Decimal? @db.Decimal(12, 3)
-  costPerUnit    Decimal? @db.Decimal(10, 2)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  branch       Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  product      Product?               @relation(fields: [productId], references: [id], onDelete: SetNull)
-  transactions InventoryTransaction[]
-
-  @@unique([branchId, sku])
-  @@index([branchId, isActive])
-  @@index([productId])
-}
-
-model InventoryTransaction {
-  id                String                   @id @default(cuid())
-  inventoryItemId   String
-  bookingId         String?
-  productSaleItemId String?
-  type              InventoryTransactionType
-  quantityChange    Decimal                  @db.Decimal(12, 3)
-  unitCost          Decimal?                 @db.Decimal(10, 2)
-  notes             String?
-  notesJson         Json?
-  notesHtml         String?
-  createdAt         DateTime                 @default(now())
-
-  inventoryItem   InventoryItem    @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-  booking         Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  productSaleItem ProductSaleItem? @relation(fields: [productSaleItemId], references: [id], onDelete: SetNull)
-
-  @@index([inventoryItemId, createdAt])
-  @@index([bookingId])
-  @@index([productSaleItemId])
-  @@index([type, createdAt])
-}
-
-model Expense {
-  id          String          @id @default(cuid())
-  branchId    String
-  createdById String?
-  category    ExpenseCategory
-  titleHi     String          @db.VarChar(200)
-  titleJson   Json?
-  titleHtml   String?
-  amount      Decimal         @db.Decimal(10, 2)
-  expenseDate DateTime        @db.Date
-  vendorName  String?
-  receiptUrl  String?
-  notes       String?
-  notesJson   Json?
-  notesHtml   String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-
-  branch    Branch @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  createdBy User?  @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  @@index([branchId, expenseDate])
-  @@index([category, expenseDate])
-  @@index([createdById])
-}
-
-model StaffCommission {
-  id               String                @id @default(cuid())
-  staffId          String
-  bookingId        String?
-  productSaleId    String?
-  status           StaffCommissionStatus @default(PENDING)
-  baseAmount       Decimal               @db.Decimal(10, 2)
-  commissionRate   Decimal?              @db.Decimal(5, 2)
-  commissionAmount Decimal               @db.Decimal(10, 2)
-  paidAt           DateTime?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-
-  staff       Staff        @relation(fields: [staffId], references: [id], onDelete: Restrict)
-  booking     Booking?     @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  productSale ProductSale? @relation(fields: [productSaleId], references: [id], onDelete: SetNull)
-
-  @@index([staffId, status])
-  @@index([bookingId])
-  @@index([productSaleId])
-  @@index([status, createdAt])
-}
-
-model MediaAsset {
-  id               String         @id @default(cuid())
-  branchId         String?
-  serviceId        String?
-  packageId        String?
-  staffId          String?
-  portfolioItemId  String?
-  reviewId         String?
-  blogPostId       String?
-  productId        String?
-  ownerType        MediaOwnerType
-  url              String
-  provider         String?        @db.VarChar(80)
-  providerPublicId String?
-  altHi            String?
-  altJson          Json?
-  altHtml          String?
-  sortOrder        Int            @default(0)
-  metadata         Json           @default("{}")
-  createdAt        DateTime       @default(now())
-
-  branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  service       Service?       @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  package       Package?       @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch        Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
   staff         Staff?         @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  portfolioItem PortfolioItem? @relation(fields: [portfolioItemId], references: [id], onDelete: Cascade)
-  review        Review?        @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  blogPost      BlogPost?      @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
-  product       Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  service       Service        @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  payments      Payment[]
+  review        Review? // Customer's review for this booking (one review per booking)
+  notifications Notification[]
 
-  @@index([ownerType, createdAt])
-  @@index([branchId])
-  @@index([serviceId])
-  @@index([packageId])
-  @@index([staffId])
-  @@index([portfolioItemId])
-  @@index([reviewId])
-  @@index([blogPostId])
-  @@index([productId])
+  // ✅ FIXED: Added inverse relation for Refund
+  refunds Refund[]
+
+  // Prevents double-booking: same staff cannot have two overlapping appointments
+  @@unique([staffId, bookingDate, slotStart])
 }
 
+// Payment transaction linked to a booking
+model Payment {
+  id                String          @id @default(cuid())
+  bookingId         String
+  userId            String
+  provider          PaymentProvider @default(RAZORPAY)
+  providerOrderId   String?         @unique // Razorpay order ID
+  providerPaymentId String?         @unique // Razorpay payment ID
+  status            PaymentStatus   @default(CREATED)
+  amount            Decimal         @db.Decimal(10, 2) // Total amount for this payment (could be full or partial)
+  amountPaid        Decimal         @default(0) @db.Decimal(10, 2) // Actually paid amount
+  paidAt            DateTime?
+  paymentType       String?         @db.VarChar(20) // "ADVANCE", "REMAINING", or "FULL"
+  createdAt         DateTime        @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  // ✅ FIXED: Added inverse relation for Refund
+  refunds Refund[]
+}
+
+// ====================================================================
+// REVIEWS – Customer feedback with photos and moderation
+// ====================================================================
+
+// Moderation status for customer reviews
+enum ReviewStatus {
+  PENDING // Awaiting admin approval
+  APPROVED // Visible to public
+  REJECTED // Removed by admin with a reason
+}
+
+// Customer's feedback after a completed booking
+model Review {
+  id                 String       @id @default(cuid())
+  bookingId          String       @unique // One review per booking
+  userId             String
+  serviceId          String? // Which service was reviewed
+  branchId           String? // Which branch location
+  staffId            String? // Which staff member (if applicable)
+  title              String?      @db.VarChar(200) // e.g. "Best haircut ever!"
+  rating             Int // 1 to 5 stars
+  status             ReviewStatus @default(APPROVED)
+  isVerifiedPurchase Boolean      @default(true) // TRUE if customer actually booked this service
+
+  // Admin reply – salon owner can publicly respond to the review
+  adminReply     String?
+  adminRepliedAt DateTime?
+  adminRepliedBy String?
+
+  // Moderation – admin can approve, reject, or flag reviews
+  moderatedBy     String?
+  moderatedAt     DateTime?
+  rejectionReason String? // Why the review was rejected
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  branch  Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  staff   Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  images ReviewImage[] // Photo gallery attached to this review
+
+  @@index([status, createdAt])
+  @@index([serviceId, status]) // Show approved reviews for a service
+  @@index([staffId, status]) // Show approved reviews for a staff member
+  @@index([branchId, status]) // Show approved reviews for a branch
+}
+
+// Photos uploaded by customers as part of their review
+model ReviewImage {
+  id        String   @id @default(cuid())
+  reviewId  String
+  url       String // Cloud storage URL (S3 / Cloudinary)
+  sortOrder Int      @default(0) // Display order
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+}
+
+// ====================================================================
+// NOTIFICATIONS – Outbound communication to customers
+// ====================================================================
+
+// Outgoing notification sent to the customer via SMS or WhatsApp
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String?
+  bookingId String? // Which booking this notification is about
+  channel   NotificationChannel // SMS or WhatsApp
+  recipient String // Phone number where the notification was sent
+  subject   String? // Notification title (e.g. "Booking Confirmed")
+  message   String // The actual message content
+  status    NotificationStatus  @default(QUEUED)
+  sentAt    DateTime?
+  failedAt  DateTime?
+  createdAt DateTime            @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt]) // Find queued notifications for processing
+}
+
+// ====================================================================
+// BLOG FOR SEO – Content marketing to drive organic traffic
+// ====================================================================
+
+// Grouping for blog posts (e.g. "Hair Tips", "Bridal Makeup", "Salon News")
 model BlogCategory {
-  id              String   @id @default(cuid())
-  nameHi          String   @db.VarChar(200)
-  nameEn          String?  @db.VarChar(200)
-  slug            String   @unique @db.VarChar(220)
-  description     String?
-  descriptionJson Json?
-  descriptionHtml String?
-  sortOrder       Int      @default(0)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(200)
+  slug        String   @unique @db.VarChar(220) // URL-friendly: "hair-tips"
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   posts BlogPost[]
-
-  @@index([isActive, sortOrder])
 }
 
+// Blog article for SEO & customer education
 model BlogPost {
-  id            String         @id @default(cuid())
-  categoryId    String
-  authorId      String?
-  titleHi       String         @db.VarChar(240)
-  titleEn       String?        @db.VarChar(240)
-  slug          String         @unique @db.VarChar(260)
-  excerptHi     String?
-  excerptJson   Json?
-  excerptHtml   String?
-  contentHi     String
-  contentJson   Json?
-  contentHtml   String?
-  coverImageUrl String?
-  status        BlogPostStatus @default(DRAFT)
-  publishedAt   DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id               String         @id @default(cuid())
+  title            String         @db.VarChar(240) // e.g. "10 Winter Hair Care Tips"
+  slug             String         @unique @db.VarChar(260) // URL-friendly: "10-winter-hair-care-tips"
+  shortDescription String?
+  description      String? // Alias for content
+  descriptionJson  Json? // Rich text JSON from editor (TipTap, Quill, etc.)
+  descriptionHtml  String? // Rendered HTML from rich text
+  excerpt          String? // Short summary shown in blog listings
+  content          String // Full article (HTML or Markdown) – kept for backward compatibility
+  coverImage       String? // Featured image URL
+  metaTitle        String? // SEO title (browser tab text)
+  metaDesc         String? // SEO description (Google snippet)
+  categoryId       String
+  authorId         String? // Staff or admin who wrote the article
+  status           BlogPostStatus @default(DRAFT)
+  publishedAt      DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
-  category    BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  author      User?        @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-  mediaAssets MediaAsset[]
+  category BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author   User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+}
 
-  @@index([categoryId, status])
-  @@index([status, publishedAt])
+// ====================================================================
+// REFUNDS – Money returned to customer when a booking is cancelled
+// ====================================================================
+
+// Refund record linked to a payment and booking
+model Refund {
+  id          String       @id @default(cuid())
+  paymentId   String
+  bookingId   String
+  amount      Decimal      @db.Decimal(10, 2)
+  reason      String? // e.g. "User cancelled before 24hrs", "No Show", "Service not delivered"
+  status      RefundStatus @default(PENDING)
+  processedBy String? // Staff/Admin ID who processed the refund
+  processedAt DateTime?
+  refundType  String?      @db.VarChar(20) // "ADVANCE" (only advance), "FULL" (full amount), "PARTIAL" (partial refund)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId, status]) // Find all refunds for a payment by status
 }
