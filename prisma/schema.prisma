@@ -306,6 +306,55 @@ model StaffSkill {
   @@id([staffId, serviceId])
 }
 
+// ================= GENERIC ENGAGEMENT (LIKES & COMMENTS) =================
+
+enum LikeEntityType {
+  REVIEW
+  SERVICE
+  STAFF
+  BRANCH
+  BLOG_POST
+}
+
+model Like {
+  id         String         @id @default(cuid())
+  userId     String
+  entityType LikeEntityType
+  entityId   String
+  createdAt  DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
+  @@index([entityType, entityId])
+  @@index([entityType, entityId, createdAt])
+}
+
+enum CommentEntityType {
+  REVIEW
+  SERVICE
+  STAFF
+  BRANCH
+  BLOG_POST
+}
+
+model Comment {
+  id         String            @id @default(cuid())
+  userId     String
+  entityType CommentEntityType
+  entityId   String
+  content    String            @db.VarChar(1000)
+  parentId   String?           // Reply to another comment
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReply", fields: [parentId], references: [id], onDelete: SetNull)
+  replies Comment[] @relation("CommentReply")
+
+  @@index([entityType, entityId, createdAt])
+}
+
 // ================= BOOKING & PAYMENTS =================
 
 model Booking {
@@ -360,18 +409,61 @@ model Payment {
   user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Review {
-  id        String   @id @default(cuid())
-  bookingId String   @unique
-  userId    String
-  staffId   String?
-  rating    Int
-  comment   String?
+  id              String       @id @default(cuid())
+  bookingId       String       @unique
+  userId          String
+  serviceId       String?      // Service for review context
+  branchId        String?      // Branch for review context
+  staffId         String?      // Staff for review context
+  title           String?      @db.VarChar(200)
+  rating          Int          // 1-5
+  status          ReviewStatus @default(APPROVED)
+  isVerifiedPurchase Boolean   @default(true)
+
+  // Admin reply
+  adminReply      String?
+  adminRepliedAt  DateTime?
+  adminRepliedBy  String?
+
+  // Moderation
+  moderatedBy     String?
+  moderatedAt     DateTime?
+  rejectionReason String?
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  staff   Staff?  @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  branch  Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  staff   Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  images ReviewImage[]
+
+  @@index([status, createdAt])
+  @@index([serviceId, status])
+  @@index([staffId, status])
+  @@index([branchId, status])
+}
+
+model ReviewImage {
+  id        String   @id @default(cuid())
+  reviewId  String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
 }
 
 // ================= NOTIFICATIONS =================
