@@ -1,92 +1,200 @@
 /* Load Tailwind's theme and utilities globally for every application route. */
 @import "tailwindcss";
 
-/* Define the light theme as the default browser color palette. */
+/* Define the warm salon palette as the default light color scheme. */
 :root {
-  /* Use a soft neutral color for the main page background. */
-  --background: oklch(0.985 0 0);
-  /* Use a near-black neutral color for readable page text. */
-  --foreground: oklch(0.145 0 0);
-  /* Keep raised surfaces clear against the page background. */
-  --card: oklch(1 0 0);
-  /* Keep text on raised surfaces strongly readable. */
-  --card-foreground: oklch(0.145 0 0);
-  /* Keep floating menus visually aligned with light cards. */
-  --popover: oklch(1 0 0);
-  /* Keep text inside floating menus strongly readable. */
-  --popover-foreground: oklch(0.145 0 0);
-  /* Use a subtle background for focused menu options. */
-  --accent: oklch(0.97 0 0);
-  /* Keep focused option text readable on the accent surface. */
-  --accent-foreground: oklch(0.205 0 0);
-  /* Use a subtle neutral color for secondary text. */
-  --muted-foreground: oklch(0.556 0 0);
-  /* Use a soft border that separates controls without visual noise. */
-  --border: oklch(0.922 0 0);
-  /* Use a visible neutral ring for keyboard focus feedback. */
-  --ring: oklch(0.708 0 0);
+  /* Use warm ivory to keep large page areas soft instead of clinical white. */
+  --background: #fff9f6;
+  /* Use deep aubergine for comfortable high-contrast reading. */
+  --foreground: #291b22;
+  /* Keep primary cards clean while preserving the warm page contrast. */
+  --card: #ffffff;
+  /* Use the main text color consistently inside cards. */
+  --card-foreground: #291b22;
+  /* Keep floating menus visually aligned with elevated cards. */
+  --popover: #ffffff;
+  /* Keep menu content readable on the floating white surface. */
+  --popover-foreground: #291b22;
+  /* Use signature plum for booking actions and important links. */
+  --primary: #7a214d;
+  /* Deepen plum on hover to provide clear pointer feedback. */
+  --primary-hover: #63163d;
+  /* Keep primary button labels strongly readable on plum. */
+  --primary-foreground: #ffffff;
+  /* Use dusty rose for softer actions and promotional surfaces. */
+  --secondary: #d7a2a9;
+  /* Keep secondary content readable on the dusty rose surface. */
+  --secondary-foreground: #291b22;
+  /* Use warm blush for alternating sections and grouped content. */
+  --surface-soft: #f7ece8;
+  /* Keep content on soft surfaces aligned with the main text tone. */
+  --surface-soft-foreground: #291b22;
+  /* Use a subtle blush highlight for selected and focused menu items. */
+  --accent: #f1dfe0;
+  /* Keep highlighted menu text readable against the blush accent. */
+  --accent-foreground: #4f1934;
+  /* Use a restrained plum-gray for descriptions and metadata. */
+  --muted-foreground: #6f5e66;
+  /* Use a quiet blush border that separates controls without harsh lines. */
+  --border: #e9d8d2;
+  /* Match input outlines with the shared border system. */
+  --input: #e9d8d2;
+  /* Use visible rose for keyboard focus across both neutral and plum surfaces. */
+  --ring: #9a3e67;
+  /* Keep rose available as a decorative brand token. */
+  --brand-rose: #d7a2a9;
+  /* Pair decorative rose surfaces with the accessible main text color. */
+  --brand-rose-foreground: #291b22;
+  /* Keep champagne gold limited to premium accents and dark-surface details. */
+  --brand-gold: #b78a46;
+  /* Pair filled gold surfaces with dark text instead of low-contrast white. */
+  --brand-gold-foreground: #291b22;
+  /* Use a warm red for destructive actions and validation errors. */
+  --destructive: #b42336;
+  /* Keep destructive labels readable on the deep red surface. */
+  --destructive-foreground: #ffffff;
   /* Tell native browser controls to render with light colors. */
   color-scheme: light;
 }
 
-/* Override semantic colors whenever next-themes activates dark mode. */
+/* Override every semantic token when next-themes activates dark mode. */
 .dark {
-  /* Use a near-black neutral color for the main page background. */
-  --background: oklch(0.145 0 0);
-  /* Use a soft white color for readable page text. */
-  --foreground: oklch(0.985 0 0);
-  /* Lift cards slightly above the dark page background. */
-  --card: oklch(0.205 0 0);
-  /* Keep text on dark cards strongly readable. */
-  --card-foreground: oklch(0.985 0 0);
-  /* Keep floating menus visually aligned with dark cards. */
-  --popover: oklch(0.205 0 0);
-  /* Keep text inside dark floating menus strongly readable. */
-  --popover-foreground: oklch(0.985 0 0);
-  /* Use a visible neutral background for dark focused options. */
-  --accent: oklch(0.269 0 0);
-  /* Keep focused option text readable on the dark accent surface. */
-  --accent-foreground: oklch(0.985 0 0);
-  /* Use a softer gray for secondary dark-mode text. */
-  --muted-foreground: oklch(0.708 0 0);
-  /* Use a translucent border that remains subtle in dark mode. */
-  --border: oklch(1 0 0 / 12%);
-  /* Use a visible neutral ring for dark-mode keyboard focus. */
-  --ring: oklch(0.556 0 0);
+  /* Use near-black aubergine for a warm premium dark canvas. */
+  --background: #1b1116;
+  /* Use warm ivory for comfortable dark-mode reading. */
+  --foreground: #fff7f3;
+  /* Lift cards above the page with a slightly lighter aubergine. */
+  --card: #281820;
+  /* Keep card content strongly readable in dark mode. */
+  --card-foreground: #fff7f3;
+  /* Keep floating menus aligned with dark elevated surfaces. */
+  --popover: #281820;
+  /* Keep dropdown text readable inside dark floating surfaces. */
+  --popover-foreground: #fff7f3;
+  /* Use light rose for high-visibility dark-mode booking actions. */
+  --primary: #e7a1b8;
+  /* Brighten the rose slightly to confirm pointer interaction. */
+  --primary-hover: #f0b2c6;
+  /* Use deep aubergine text on the light rose button. */
+  --primary-foreground: #2a101a;
+  /* Use muted wine for secondary dark-mode actions. */
+  --secondary: #492839;
+  /* Keep secondary button text warm and readable. */
+  --secondary-foreground: #fff7f3;
+  /* Use a distinct dark surface for alternating content sections. */
+  --surface-soft: #35212b;
+  /* Keep soft-surface text readable in dark mode. */
+  --surface-soft-foreground: #fff7f3;
+  /* Use a visible wine highlight for selected dark menu items. */
+  --accent: #492839;
+  /* Keep highlighted option text readable against wine. */
+  --accent-foreground: #fff7f3;
+  /* Use light taupe-rose for supporting dark-mode text. */
+  --muted-foreground: #c9b6bd;
+  /* Use muted wine borders to define controls without glowing edges. */
+  --border: #553440;
+  /* Match dark input outlines with the shared border system. */
+  --input: #553440;
+  /* Use pale rose for an unmistakable keyboard focus indicator. */
+  --ring: #f0a9c2;
+  /* Keep decorative rose slightly brighter against dark surfaces. */
+  --brand-rose: #b86d86;
+  /* Use warm ivory when content sits on the darker rose token. */
+  --brand-rose-foreground: #fff7f3;
+  /* Use brighter champagne gold so premium accents remain visible. */
+  --brand-gold: #d7ae72;
+  /* Use deep aubergine for readable content on filled gold surfaces. */
+  --brand-gold-foreground: #2a101a;
+  /* Use a lighter red so destructive controls remain visible in dark mode. */
+  --destructive: #ef6a78;
+  /* Use deep aubergine to keep labels readable on the lighter red. */
+  --destructive-foreground: #2a101a;
   /* Tell native browser controls to render with dark colors. */
   color-scheme: dark;
 }
 
-/* Expose semantic CSS variables as reusable Tailwind color utilities. */
+/* Expose semantic CSS variables as reusable Tailwind design tokens. */
 @theme inline {
-  /* Generate bg-background and related background utilities. */
+  /* Generate the shared sans font utility from the optimized Manrope variable. */
+  --font-sans: var(--font-manrope);
+  /* Generate font-display for editorial salon headings. */
+  --font-display: var(--font-playfair);
+  /* Generate font-devanagari for deliberate Hindi text rendering. */
+  --font-devanagari: var(--font-noto-devanagari);
+  /* Generate background utilities from the active theme canvas. */
   --color-background: var(--background);
-  /* Generate text-foreground and related text utilities. */
+  /* Generate foreground utilities from the active readable text color. */
   --color-foreground: var(--foreground);
-  /* Generate bg-card and related surface utilities. */
+  /* Generate card utilities for raised application surfaces. */
   --color-card: var(--card);
-  /* Generate text-card-foreground for content placed on cards. */
+  /* Generate card text utilities for raised surfaces. */
   --color-card-foreground: var(--card-foreground);
-  /* Generate bg-popover for floating menus and similar surfaces. */
+  /* Generate popover utilities for menus and floating panels. */
   --color-popover: var(--popover);
-  /* Generate text-popover-foreground for content inside floating menus. */
+  /* Generate readable popover text utilities. */
   --color-popover-foreground: var(--popover-foreground);
-  /* Generate bg-accent for focused and highlighted controls. */
+  /* Generate primary utilities for the main booking action. */
+  --color-primary: var(--primary);
+  /* Generate an explicit primary hover utility for interactive feedback. */
+  --color-primary-hover: var(--primary-hover);
+  /* Generate readable text utilities for primary surfaces. */
+  --color-primary-foreground: var(--primary-foreground);
+  /* Generate secondary utilities for quieter actions. */
+  --color-secondary: var(--secondary);
+  /* Generate readable text utilities for secondary surfaces. */
+  --color-secondary-foreground: var(--secondary-foreground);
+  /* Generate soft surface utilities for alternate content groups. */
+  --color-surface-soft: var(--surface-soft);
+  /* Generate readable text utilities for soft surfaces. */
+  --color-surface-soft-foreground: var(--surface-soft-foreground);
+  /* Generate accent utilities for selections and subtle emphasis. */
   --color-accent: var(--accent);
-  /* Generate text-accent-foreground for content on highlighted controls. */
+  /* Generate readable text utilities for highlighted surfaces. */
   --color-accent-foreground: var(--accent-foreground);
-  /* Generate text-muted-foreground for secondary content. */
+  /* Generate supporting text utilities from the active muted color. */
   --color-muted-foreground: var(--muted-foreground);
-  /* Generate border-border for theme-aware dividers and controls. */
+  /* Generate border utilities from the active separator color. */
   --color-border: var(--border);
-  /* Generate ring-ring for consistent keyboard focus styling. */
+  /* Generate input border utilities for shared form controls. */
+  --color-input: var(--input);
+  /* Generate focus ring utilities for accessible keyboard navigation. */
   --color-ring: var(--ring);
+  /* Generate decorative rose utilities without hardcoded component colors. */
+  --color-brand-rose: var(--brand-rose);
+  /* Generate readable rose-surface text utilities. */
+  --color-brand-rose-foreground: var(--brand-rose-foreground);
+  /* Generate champagne gold utilities for premium accents. */
+  --color-brand-gold: var(--brand-gold);
+  /* Generate readable gold-surface text utilities. */
+  --color-brand-gold-foreground: var(--brand-gold-foreground);
+  /* Generate destructive utilities for errors and irreversible actions. */
+  --color-destructive: var(--destructive);
+  /* Generate readable destructive-surface text utilities. */
+  --color-destructive-foreground: var(--destructive-foreground);
+  /* Provide one restrained elevated shadow for cards and booking panels. */
+  --shadow-salon: 0 24px 70px -32px rgb(72 29 49 / 32%);
 }
 
-/* Apply semantic colors to the complete application document. */
+/* Keep anchor navigation smooth while respecting browser scrolling behavior. */
+html {
+  /* Animate in-page design-system navigation without JavaScript state. */
+  scroll-behavior: smooth;
+}
+
+/* Apply the semantic foundation to the complete application document. */
 body {
   /* Keep every route aligned with the active theme background. */
   background: var(--background);
   /* Keep inherited text aligned with the active theme foreground. */
   color: var(--foreground);
+  /* Use Manrope as the readable default for UI and body content. */
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+
+/* Give selected text a brand-aligned treatment in both themes. */
+::selection {
+  /* Use the active primary color so selection follows the chosen mode. */
+  background: var(--primary);
+  /* Keep selected text readable on the primary selection surface. */
+  color: var(--primary-foreground);
 }
