@@ -272,6 +272,9 @@ model Branch {
   bookings      Booking[]
   categories    ServiceCategory[]
   reviews       Review[] // Reviews specific to this branch location
+  holidays      BranchHoliday[] // Days when branch is closed
+  portfolios    PortfolioItem[] // Before/after photos portfolio
+  offers        OfferBranch[]   // Offers valid at this branch
 }
 
 // ====================================================================
@@ -365,6 +368,7 @@ model Staff {
   bookings   Booking[]    // Appointments assigned to this staff member
   reviews    Review[]     // Customer reviews for this staff member
   staffSkills StaffSkill[] // Services this staff member is skilled at
+  leaves     StaffLeave[]  // Leave & time-off records
 }
 
 // Which services each staff member can perform (many-to-many)
@@ -376,6 +380,128 @@ model StaffSkill {
   service  Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@id([staffId, serviceId]) // A staff member can have a skill only once
+}
+
+// ====================================================================
+// OFFERS / COUPONS – Discounts & promotions to attract customers
+// ====================================================================
+
+// A discount offer or coupon code that customers can use
+model Offer {
+  id                String       @id @default(cuid())
+  slug              String       @unique @db.VarChar(220) // URL-friendly: "flat-20-off-haircut"
+  title             String       @db.VarChar(200) // "Flat 20% Off on Haircut"
+  shortDescription  String?
+  description       String?
+  descriptionJson   Json?
+  descriptionHtml   String?
+  discountType      String       @db.VarChar(20) // "PERCENTAGE" or "FIXED"
+  discountValue     Decimal      @db.Decimal(10, 2) // 20 (for 20%) or 200 (for ₹200 off)
+  minOrderAmount    Decimal?     @db.Decimal(10, 2) // Minimum booking amount to apply
+  maxDiscount       Decimal?     @db.Decimal(10, 2) // Max discount cap (for percentage type)
+  couponCode        String?      @unique @db.VarChar(50) // e.g. "WELCOME20", "FESTIVE50"
+  validFrom         DateTime
+  validUntil        DateTime
+  usageLimit        Int?         // Total number of times this offer can be used
+  usedCount         Int          @default(0)
+  isActive          Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  services   OfferService[] // Which services this offer applies to
+  branches   OfferBranch[]  // Which branches this offer is valid at
+}
+
+// Which services a particular offer applies to (many-to-many)
+model OfferService {
+  offerId   String
+  serviceId String
+
+  offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, serviceId])
+}
+
+// Which branches a particular offer is valid at (many-to-many)
+model OfferBranch {
+  offerId  String
+  branchId String
+
+  offer  Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, branchId])
+}
+
+// ====================================================================
+// PORTFOLIO – Before/After photos showcasing salon work
+// ====================================================================
+
+// A portfolio item showcasing the salon's work – e.g. a haircut transformation
+model PortfolioItem {
+  id                String   @id @default(cuid())
+  branchId          String
+  title             String   @db.VarChar(200) // "Haircut Transformation"
+  shortDescription  String?
+  description       String?
+  descriptionJson   Json?
+  descriptionHtml   String?
+  serviceId         String?  // Which service was performed
+  staffId           String?  // Which staff member did the work
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  staff   Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  images  PortfolioImage[]
+}
+
+// A single photo in a portfolio item (before, after, or gallery)
+model PortfolioImage {
+  id        String   @id @default(cuid())
+  itemId    String
+  url       String   // Cloud storage URL
+  type      String   @db.VarChar(20) // "BEFORE", "AFTER", or "GALLERY"
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  item PortfolioItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+}
+
+// ====================================================================
+// STAFF LEAVE & BRANCH HOLIDAYS – Prevents invalid bookings
+// ====================================================================
+
+// Staff time-off – prevents double-booking when staff is unavailable
+model StaffLeave {
+  id        String   @id @default(cuid())
+  staffId   String
+  date      DateTime @db.Date
+  reason    String?
+  status    String   @db.VarChar(20) @default("APPROVED") // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date]) // One leave entry per staff per day
+}
+
+// Branch holiday – prevents bookings when branch is closed
+model BranchHoliday {
+  id        String   @id @default(cuid())
+  branchId  String
+  date      DateTime @db.Date
+  reason    String?  // "Diwali", "Maintenance", "New Year", etc.
+  createdAt DateTime @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, date]) // One holiday entry per branch per day
 }
 
 // ====================================================================
