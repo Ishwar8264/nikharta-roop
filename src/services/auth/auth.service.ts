@@ -142,11 +142,6 @@ export const sendOtpService = async (
   // Resolve one canonical identity and delivery channel.
   const { identifier, channel } = resolveAuthIdentifier(input);
 
-  // Keep signup mobile-only until the required User.mobile field is redesigned.
-  if (purpose === "SIGNUP" && channel === "EMAIL") {
-    throw new BadRequestError("Email signup is not supported yet");
-  }
-
   // Find any record first so signup uniqueness includes disabled and deleted users.
   const existingUser = await authQuery.findUserByIdentifier(identifier, channel);
 
@@ -223,11 +218,6 @@ export const verifyOtpService = async (
   // Resolve the same canonical identity used while sending the OTP.
   const { identifier, channel } = resolveAuthIdentifier(input);
 
-  // Keep verification aligned with the current mobile-only signup rule.
-  if (purpose === "SIGNUP" && channel === "EMAIL") {
-    throw new BadRequestError("Email signup is not supported yet");
-  }
-
   // Fetch only an unexpired and unclaimed OTP record.
   const otpRecord = await authQuery.findActiveOtp(identifier, channel, purpose);
 
@@ -276,9 +266,9 @@ export const verifyOtpService = async (
   // Find the active login user after proof of identity succeeds.
   let user = await authQuery.findActiveUserByIdentifier(identifier, channel);
 
-  // Create a mobile-first account only after a valid signup OTP is claimed.
-  if (!user && purpose === "SIGNUP" && channel === "MOBILE") {
-    user = await authQuery.createUser(identifier);
+  // Create an account only after its mobile or email signup OTP is claimed.
+  if (!user && purpose === "SIGNUP") {
+    user = await authQuery.createUser(identifier, channel);
   }
 
   // Stop if the account was removed or disabled after OTP delivery.

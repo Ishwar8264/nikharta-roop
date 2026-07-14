@@ -27,7 +27,7 @@
  *       200:
  *         description: Generic OTP request success response
  *       400:
- *         description: Invalid request or unsupported email signup
+ *         description: Invalid request payload
  *       429:
  *         description: OTP request rate limit exceeded
  */

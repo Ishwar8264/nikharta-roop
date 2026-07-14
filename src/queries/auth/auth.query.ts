@@ -52,10 +52,18 @@ export const findActiveUserByIdentifier = (
   });
 };
 
-// Create the existing mobile-first user record during successful signup.
-export const createUser = (mobile: string, role: UserRole = "USER") => {
-  // Let Prisma enforce mobile uniqueness at the database boundary.
-  return prisma.user.create({ data: { mobile, role } });
+// Create a user with the verified mobile or email signup identity.
+export const createUser = (
+  identifier: string,
+  channel: AuthOtpChannel,
+  role: UserRole = "USER",
+) => {
+  // Store only the identity channel that completed signup verification.
+  const identityData =
+    channel === "EMAIL" ? { email: identifier } : { mobile: identifier };
+
+  // Let Prisma enforce mobile and email uniqueness at the database boundary.
+  return prisma.user.create({ data: { ...identityData, role } });
 };
 
 // Find the newest OTP request for resend-cooldown enforcement.

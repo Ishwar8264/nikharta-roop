@@ -97,7 +97,7 @@ enum Gender {
 // Registered customer, staff member, or admin in the system
 model User {
   id          String    @id @default(cuid())
-  mobile      String    @unique @db.VarChar(10) // Indian mobile (10 digits)
+  mobile      String?   @unique @db.VarChar(10) // Optional Indian mobile when email is the signup identity
   name        String?   @db.VarChar(100)
   email       String?   @unique @db.VarChar(150)
   gender      Gender?
