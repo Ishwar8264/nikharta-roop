@@ -64,26 +64,101 @@ enum BlogPostStatus {
 
 // ================= AUTH & USER =================
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
 model User {
-  id        String    @id @default(cuid())
-  mobile    String    @unique @db.VarChar(10)
-  name      String?   @db.VarChar(100)
-  email     String?   @db.VarChar(150)
-  role      UserRole  @default(USER)
-  avatarUrl String?
-  isActive  Boolean   @default(true)
+  id                    String    @id @default(cuid())
+  mobile                String    @unique @db.VarChar(10)
+  name                  String?   @db.VarChar(100)
+  email                 String?   @db.VarChar(150)
+  gender                Gender?
+  dateOfBirth           DateTime?
+  role                  UserRole  @default(USER)
+  avatarUrl             String?
+  isActive              Boolean   @default(true)
+
+  // Social Login IDs
+  googleId              String?   @unique
+  appleId               String?   @unique
+
+  // Verification
+  mobileVerifiedAt      DateTime?
+  emailVerifiedAt       DateTime?
+  lastLoginAt           DateTime?
+
+  // Onboarding
+  onboardingStep        Int       @default(0) // 0=not_started, 1=profile, 2=preferences, 3=first_booking, 99=completed
+  onboardingStartedAt   DateTime?
+  onboardingCompletedAt DateTime?
+  onboardingAbandonedAt DateTime?
+  abandonedAtStep       Int?      // Kis step pe chhod ke gaya
+
+  // Preferences
+  referralSource        String?   @db.VarChar(100) // GOOGLE, FRIEND, INSTAGRAM, WALK_IN, etc.
+  preferredBranchId     String?
+
   deletedAt DateTime? // Soft delete
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  bookings       Booking[]
-  reviews        Review[]
-  payments       Payment[]
-  authOtps       AuthOtp[]
-  authSessions   AuthSession[]
-  blogPosts      BlogPost[]
-  notifications  Notification[]
-  staffProfile   Staff?
+  // Relations
+  bookings             Booking[]
+  reviews              Review[]
+  payments             Payment[]
+  authOtps             AuthOtp[]
+  authSessions         AuthSession[]
+  blogPosts            BlogPost[]
+  notifications        Notification[]
+  staffProfile         Staff?
+  preferredBranch      Branch?        @relation(fields: [preferredBranchId], references: [id], onDelete: SetNull)
+  onboardingActions    OnboardingAction[]
+  favoriteServices     UserFavoriteService[]
+}
+
+// ================= ONBOARDING TRACKING =================
+
+enum OnboardingActionType {
+  STEP_STARTED
+  STEP_COMPLETED
+  STEP_SKIPPED
+  ONBOARDING_STARTED
+  ONBOARDING_COMPLETED
+  ONBOARDING_ABANDONED
+  ONBOARDING_RESUMED
+}
+
+model OnboardingAction {
+  id        String                @id @default(cuid())
+  userId    String
+  step      Int                   // 1, 2, 3, etc.
+  action    OnboardingActionType
+  metadata  Json?                 // Step-specific data (e.g., {"filledFields": ["name", "email"], "timeSpentSeconds": 45})
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime              @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, step, action])
+  @@index([userId, createdAt])
+  @@index([action, createdAt]) // Analytics: "kitne log abandon kare" ke liye
+}
+
+model UserFavoriteService {
+  userId    String
+  serviceId String
+  sortOrder Int     @default(0)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, serviceId])
 }
 
 model AuthOtp {
