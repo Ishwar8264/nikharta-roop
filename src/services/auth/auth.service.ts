@@ -38,6 +38,26 @@ import type {
 // Use one generic success message to avoid revealing whether a login account exists.
 const OTP_SENT_RESPONSE = { message: "OTP sent successfully" } as const;
 
+// Derive simple client flags from the canonical verification timestamps.
+const getVerificationFlags = (
+  user: {
+    mobileVerifiedAt: Date | null;
+    emailVerifiedAt: Date | null;
+  },
+  verifiedChannel?: AuthOtpChannel,
+) => {
+  // Treat the current mobile OTP transaction as verified before returning its response.
+  const isMobileVerified =
+    verifiedChannel === "MOBILE" || Boolean(user.mobileVerifiedAt);
+
+  // Treat the current email OTP transaction as verified before returning its response.
+  const isEmailVerified =
+    verifiedChannel === "EMAIL" || Boolean(user.emailVerifiedAt);
+
+  // Return derived booleans without duplicating verification state in the database.
+  return { isMobileVerified, isEmailVerified };
+};
+
 // Convert validated route input into one normalized service identity.
 const resolveAuthIdentifier = (
   input: AuthIdentifierInput,
@@ -304,6 +324,9 @@ export const verifyOtpService = async (
     userAgent: context.userAgent,
   });
 
+  // Derive verification flags including the identity proved by this OTP.
+  const verificationFlags = getVerificationFlags(user, channel);
+
   // Return both identity fields so clients can render either login channel.
   return {
     accessToken,
@@ -313,6 +336,7 @@ export const verifyOtpService = async (
       mobile: user.mobile,
       email: user.email,
       role: user.role,
+      ...verificationFlags,
     },
   };
 };
@@ -430,6 +454,6 @@ export const getMeService = async (userId: string) => {
     throw new NotFoundError("User not found");
   }
 
-  // Return the safe user projection unchanged.
-  return user;
+  // Add convenient booleans derived from the persisted verification timestamps.
+  return { ...user, ...getVerificationFlags(user) };
 };
