@@ -92,32 +92,34 @@ model User {
   lastLoginAt           DateTime?
 
   // Onboarding
-  onboardingStep        Int       @default(0) // 0=not_started, 1=profile, 2=preferences, 3=first_booking, 99=completed
+  onboardingStep        Int       @default(0)
   onboardingStartedAt   DateTime?
   onboardingCompletedAt DateTime?
   onboardingAbandonedAt DateTime?
-  abandonedAtStep       Int?      // Kis step pe chhod ke gaya
+  abandonedAtStep       Int?
 
   // Preferences
-  referralSource        String?   @db.VarChar(100) // GOOGLE, FRIEND, INSTAGRAM, WALK_IN, etc.
+  referralSource        String?   @db.VarChar(100)
   preferredBranchId     String?
 
-  deletedAt DateTime? // Soft delete
+  deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   // Relations
-  bookings             Booking[]
-  reviews              Review[]
-  payments             Payment[]
-  authOtps             AuthOtp[]
-  authSessions         AuthSession[]
-  blogPosts            BlogPost[]
-  notifications        Notification[]
-  staffProfile         Staff?
-  preferredBranch      Branch?        @relation(fields: [preferredBranchId], references: [id], onDelete: SetNull)
-  onboardingActions    OnboardingAction[]
-  favoriteServices     UserFavoriteService[]
+  bookings           Booking[]
+  reviews            Review[]
+  likes              Like[]
+  comments           Comment[]
+  payments           Payment[]
+  authOtps           AuthOtp[]
+  authSessions       AuthSession[]
+  blogPosts          BlogPost[]
+  notifications      Notification[]
+  staffProfile       Staff?
+  preferredBranch    Branch?           @relation(fields: [preferredBranchId], references: [id], onDelete: SetNull)
+  onboardingActions  OnboardingAction[]
+  favoriteServices   UserFavoriteService[]
 }
 
 // ================= ONBOARDING TRACKING =================
@@ -162,15 +164,21 @@ model UserFavoriteService {
 }
 
 model AuthOtp {
-  id          String         @id @default(cuid())
-  userId      String?
-  mobile      String         @db.VarChar(10)
-  purpose     AuthOtpPurpose @default(LOGIN)
-  otpHash     String
-  attemptCount Int           @default(0)
-  expiresAt   DateTime
-  verifiedAt  DateTime?
-  createdAt   DateTime       @default(now())
+  id           String         @id @default(cuid())
+  userId       String?
+  mobile       String         @db.VarChar(10)
+  purpose      AuthOtpPurpose @default(LOGIN)
+  otpHash      String
+  attemptCount Int            @default(0)
+  maxAttempts  Int            @default(5)
+  expiresAt    DateTime
+  lockedUntil  DateTime?
+  verifiedAt   DateTime?
+  retryAfter   Int?
+  ipAddress    String?
+  metadata     Json?
+  userAgent    String?
+  createdAt    DateTime       @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -189,6 +197,7 @@ model AuthSession {
   lastUsedAt     DateTime?
   expiresAt      DateTime
   revokedAt      DateTime?
+  revokeReason   String?
   createdAt      DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -214,7 +223,7 @@ model Branch {
   longitude     Decimal? @db.Decimal(10, 7)
 
   isActive      Boolean  @default(true)
-  deletedAt     DateTime? // Soft delete
+  deletedAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -222,6 +231,7 @@ model Branch {
   services      Service[]
   bookings      Booking[]
   categories    ServiceCategory[]
+  reviews       Review[]
 }
 
 // ================= SERVICES & STAFF =================
@@ -259,14 +269,15 @@ model Service {
   advanceAmount   Decimal?      @db.Decimal(10, 2)
   durationMinutes Int
   isActive        Boolean       @default(true)
-  deletedAt       DateTime? // Soft delete
+  deletedAt       DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  branch      Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  bookings    Booking[]
-  staffSkills StaffSkill[]
+  branch           Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  category         ServiceCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  bookings         Booking[]
+  staffSkills      StaffSkill[]
+  favoriteByUsers  UserFavoriteService[]
 }
 
 enum CommissionType {
