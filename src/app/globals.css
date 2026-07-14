@@ -1,2 +1,92 @@
 /* Load Tailwind's theme and utilities globally for every application route. */
 @import "tailwindcss";
+
+/* Define the light theme as the default browser color palette. */
+:root {
+  /* Use a soft neutral color for the main page background. */
+  --background: oklch(0.985 0 0);
+  /* Use a near-black neutral color for readable page text. */
+  --foreground: oklch(0.145 0 0);
+  /* Keep raised surfaces clear against the page background. */
+  --card: oklch(1 0 0);
+  /* Keep text on raised surfaces strongly readable. */
+  --card-foreground: oklch(0.145 0 0);
+  /* Keep floating menus visually aligned with light cards. */
+  --popover: oklch(1 0 0);
+  /* Keep text inside floating menus strongly readable. */
+  --popover-foreground: oklch(0.145 0 0);
+  /* Use a subtle background for focused menu options. */
+  --accent: oklch(0.97 0 0);
+  /* Keep focused option text readable on the accent surface. */
+  --accent-foreground: oklch(0.205 0 0);
+  /* Use a subtle neutral color for secondary text. */
+  --muted-foreground: oklch(0.556 0 0);
+  /* Use a soft border that separates controls without visual noise. */
+  --border: oklch(0.922 0 0);
+  /* Use a visible neutral ring for keyboard focus feedback. */
+  --ring: oklch(0.708 0 0);
+  /* Tell native browser controls to render with light colors. */
+  color-scheme: light;
+}
+
+/* Override semantic colors whenever next-themes activates dark mode. */
+.dark {
+  /* Use a near-black neutral color for the main page background. */
+  --background: oklch(0.145 0 0);
+  /* Use a soft white color for readable page text. */
+  --foreground: oklch(0.985 0 0);
+  /* Lift cards slightly above the dark page background. */
+  --card: oklch(0.205 0 0);
+  /* Keep text on dark cards strongly readable. */
+  --card-foreground: oklch(0.985 0 0);
+  /* Keep floating menus visually aligned with dark cards. */
+  --popover: oklch(0.205 0 0);
+  /* Keep text inside dark floating menus strongly readable. */
+  --popover-foreground: oklch(0.985 0 0);
+  /* Use a visible neutral background for dark focused options. */
+  --accent: oklch(0.269 0 0);
+  /* Keep focused option text readable on the dark accent surface. */
+  --accent-foreground: oklch(0.985 0 0);
+  /* Use a softer gray for secondary dark-mode text. */
+  --muted-foreground: oklch(0.708 0 0);
+  /* Use a translucent border that remains subtle in dark mode. */
+  --border: oklch(1 0 0 / 12%);
+  /* Use a visible neutral ring for dark-mode keyboard focus. */
+  --ring: oklch(0.556 0 0);
+  /* Tell native browser controls to render with dark colors. */
+  color-scheme: dark;
+}
+
+/* Expose semantic CSS variables as reusable Tailwind color utilities. */
+@theme inline {
+  /* Generate bg-background and related background utilities. */
+  --color-background: var(--background);
+  /* Generate text-foreground and related text utilities. */
+  --color-foreground: var(--foreground);
+  /* Generate bg-card and related surface utilities. */
+  --color-card: var(--card);
+  /* Generate text-card-foreground for content placed on cards. */
+  --color-card-foreground: var(--card-foreground);
+  /* Generate bg-popover for floating menus and similar surfaces. */
+  --color-popover: var(--popover);
+  /* Generate text-popover-foreground for content inside floating menus. */
+  --color-popover-foreground: var(--popover-foreground);
+  /* Generate bg-accent for focused and highlighted controls. */
+  --color-accent: var(--accent);
+  /* Generate text-accent-foreground for content on highlighted controls. */
+  --color-accent-foreground: var(--accent-foreground);
+  /* Generate text-muted-foreground for secondary content. */
+  --color-muted-foreground: var(--muted-foreground);
+  /* Generate border-border for theme-aware dividers and controls. */
+  --color-border: var(--border);
+  /* Generate ring-ring for consistent keyboard focus styling. */
+  --color-ring: var(--ring);
+}
+
+/* Apply semantic colors to the complete application document. */
+body {
+  /* Keep every route aligned with the active theme background. */
+  background: var(--background);
+  /* Keep inherited text aligned with the active theme foreground. */
+  color: var(--foreground);
+}
