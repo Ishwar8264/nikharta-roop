@@ -1,0 +1,2 @@
+/* Load Tailwind's theme and utilities globally for every application route. */
+@import "tailwindcss";
