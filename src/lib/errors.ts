@@ -60,3 +60,23 @@ export class NotFoundError extends AppError {
     super(message, 404);
   }
 }
+
+/**
+ * Represents a 429 Too Many Requests error.
+ * Used when an authentication request exceeds its configured rate limit.
+ */
+export class TooManyRequestsError extends AppError {
+  constructor(message: string = "Too many requests. Please try again later.") {
+    super(message, 429);
+  }
+}
+
+/**
+ * Represents a 503 Service Unavailable error.
+ * Used when an external OTP delivery provider is not configured or unavailable.
+ */
+export class ServiceUnavailableError extends AppError {
+  constructor(message: string = "Authentication service is temporarily unavailable") {
+    super(message, 503);
+  }
+}

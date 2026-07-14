@@ -25,6 +25,12 @@ enum AuthOtpPurpose {
   SIGNUP // OTP for creating a new account
 }
 
+// Where an authentication OTP must be delivered
+enum AuthOtpChannel {
+  MOBILE // OTP delivered through the configured mobile provider
+  EMAIL // OTP delivered through the configured email provider
+}
+
 // Current state of a customer's appointment
 enum BookingStatus {
   PENDING // Just created, waiting for confirmation
@@ -91,9 +97,9 @@ enum Gender {
 // Registered customer, staff member, or admin in the system
 model User {
   id          String    @id @default(cuid())
-  mobile      String    @unique @db.VarChar(10) // Indian mobile (10 digits)
+  mobile      String?   @unique @db.VarChar(10) // Optional Indian mobile when email is the signup identity
   name        String?   @db.VarChar(100)
-  email       String?   @db.VarChar(150)
+  email       String?   @unique @db.VarChar(150)
   gender      Gender?
   dateOfBirth DateTime?
   role        UserRole  @default(USER)
@@ -192,9 +198,10 @@ model UserFavoriteService {
 model AuthOtp {
   id           String         @id @default(cuid())
   userId       String? // NULL until user is identified (signup flow)
-  mobile       String         @db.VarChar(10)
+  identifier   String         @db.VarChar(150) // Normalized mobile number or lowercase email address
+  channel      AuthOtpChannel @default(MOBILE)
   purpose      AuthOtpPurpose @default(LOGIN)
-  otpHash      String // SHA-256 hash of the actual OTP (never store plain OTP)
+  otpHash      String // Server-keyed SHA-256 HMAC of the OTP (never store plain OTP)
   attemptCount Int            @default(0) // How many times verification was attempted
   maxAttempts  Int            @default(5) // Max allowed attempts before locking
   expiresAt    DateTime
@@ -208,7 +215,8 @@ model AuthOtp {
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([mobile, createdAt]) // Quick lookup: "find recent OTPs for this mobile"
+  @@index([identifier, channel, purpose, createdAt]) // Finds the latest OTP for one auth identity
+  @@index([ipAddress, createdAt]) // Supports database-backed OTP request throttling per IP
   @@index([expiresAt]) // Cleanup: "delete all expired OTPs"
 }
 

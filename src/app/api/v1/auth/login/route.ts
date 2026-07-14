@@ -2,60 +2,76 @@
  * @swagger
  * /api/v1/auth/login:
  *   post:
- *     summary: Login user via OTP
- *     description: Sends a 6-digit OTP to the user's mobile number for login.
+ *     summary: Send a login OTP by mobile or email
+ *     description: Accepts exactly one identity. The OTP expires after one minute.
  *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - mobile
- *             properties:
- *               mobile:
- *                 type: string
- *                 example: "9876543210"
+ *             oneOf:
+ *               - type: object
+ *                 required: [mobile]
+ *                 properties:
+ *                   mobile:
+ *                     type: string
+ *                     example: "9876543210"
+ *               - type: object
+ *                 required: [email]
+ *                 properties:
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                     example: "user@example.com"
  *     responses:
  *       200:
- *         description: OTP sent successfully
+ *         description: Generic OTP request success response
  *       400:
- *         description: Invalid mobile number or user not found
- */
-
-/**
- * ========================================================
- * LOGIN API ROUTE
- * Initiates the login flow by sending an OTP to the user's mobile.
- * Purpose is hardcoded to "LOGIN".
- * ========================================================
+ *         description: Invalid request payload
+ *       429:
+ *         description: OTP request rate limit exceeded
+ *       503:
+ *         description: Selected OTP delivery provider unavailable
  */
 
 import { NextRequest } from "next/server";
+
+import { getAuthRequestContext } from "@/src/helpers/auth-request";
 import { AppError } from "@/src/lib/errors";
 import { ApiResponse } from "@/src/lib/response";
 import { sendOtpService } from "@/src/services/auth/auth.service";
-import { sendOtpSchema } from "@/src/validations/auth/auth.validation";
+import { loginSchema } from "@/src/validations/auth/auth.validation";
 
-export async function POST(req: NextRequest) {
+// Initiate a mobile or email OTP login without changing the existing endpoint path.
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
+    // Parse the JSON body supplied by the API client.
+    const body = await request.json();
 
-    // Validate only the mobile number. Purpose is fixed to LOGIN.
-    const validated = sendOtpSchema.pick({ mobile: true }).parse(body);
+    // Validate and normalize exactly one mobile or email identity.
+    const validated = loginSchema.parse(body);
 
-    // Call service with hardcoded "LOGIN" purpose
-    const result = await sendOtpService(validated.mobile, "LOGIN");
+    // Capture request metadata for auth auditing and throttling.
+    const context = getAuthRequestContext(request);
 
+    // Send a LOGIN-purpose OTP through the selected identity channel.
+    const result = await sendOtpService(validated, "LOGIN", context);
+
+    // Preserve the standard successful API response envelope.
     return ApiResponse.success(result);
   } catch (error) {
+    // Preserve status codes from expected application and provider failures.
     if (error instanceof AppError) {
       return ApiResponse.error(error.message, error.statusCode);
     }
+
+    // Return validation and malformed JSON failures as bad requests.
     if (error instanceof Error) {
       return ApiResponse.error(error.message, 400);
     }
+
+    // Hide unknown runtime details behind one safe server response.
     return ApiResponse.error("An unexpected error occurred", 500);
   }
 }

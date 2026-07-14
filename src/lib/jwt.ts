@@ -3,9 +3,26 @@ import jwt from "jsonwebtoken";
 // Import crypto from Node.js standard library for hashing tokens before storing in DB
 import crypto from "node:crypto";
 
-// Access secret keys from environment variables for security
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET!;
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
+import {
+  ACCESS_TOKEN_EXPIRY,
+  REFRESH_TOKEN_EXPIRY,
+} from "@/src/constants/auth";
+
+// Read a required JWT secret at execution time and fail closed when it is missing.
+const getJwtSecret = (
+  name: "JWT_ACCESS_SECRET" | "JWT_REFRESH_SECRET",
+): string => {
+  // Read the selected server-only secret from the environment.
+  const secret = process.env[name];
+
+  // Reject token operations when secure signing configuration is incomplete.
+  if (!secret) {
+    throw new Error(`${name} is not configured`);
+  }
+
+  // Return the configured secret after validation.
+  return secret;
+};
 
 /**
  * Generate both Access Token (short-lived) and Refresh Token (long-lived).
@@ -13,13 +30,17 @@ const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
  * Refresh token is used to get a new access token when it expires.
  */
 export const generateTokens = (userId: string, role: string) => {
-  const accessToken = jwt.sign({ userId, role }, ACCESS_SECRET, {
-    expiresIn: "1d", // Access token valid for 1 day
-  });
-  const refreshToken = jwt.sign({ userId }, REFRESH_SECRET, {
-    expiresIn: "7d", // Refresh token valid for 7 days
+  // Sign a short-lived access token used by protected API endpoints.
+  const accessToken = jwt.sign({ userId, role }, getJwtSecret("JWT_ACCESS_SECRET"), {
+    expiresIn: ACCESS_TOKEN_EXPIRY,
   });
 
+  // Sign a longer-lived refresh token used only for session rotation.
+  const refreshToken = jwt.sign({ userId }, getJwtSecret("JWT_REFRESH_SECRET"), {
+    expiresIn: REFRESH_TOKEN_EXPIRY,
+  });
+
+  // Return raw tokens only to the caller while the database stores their hashes.
   return { accessToken, refreshToken };
 };
 
@@ -38,5 +59,19 @@ export const hashToken = (token: string): string => {
  * If invalid/expired, it will throw an error (caught by middleware).
  */
 export const verifyAccessToken = (token: string) => {
-  return jwt.verify(token, ACCESS_SECRET) as { userId: string; role: string };
+  // Verify signature and expiry before trusting authorization claims.
+  return jwt.verify(token, getJwtSecret("JWT_ACCESS_SECRET")) as {
+    userId: string;
+    role: string;
+  };
+};
+
+/**
+ * Verify a refresh token before rotating its matching database session.
+ */
+export const verifyRefreshToken = (token: string) => {
+  // Verify signature and expiry before trusting the refresh-token subject.
+  return jwt.verify(token, getJwtSecret("JWT_REFRESH_SECRET")) as {
+    userId: string;
+  };
 };
