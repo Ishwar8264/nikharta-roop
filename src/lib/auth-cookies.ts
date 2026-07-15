@@ -11,14 +11,36 @@ const ACCESS_TOKEN_COOKIE = "nikharta_access_token";
 // Keep refresh tokens separate so their longer lifetime remains explicit.
 const REFRESH_TOKEN_COOKIE = "nikharta_refresh_token";
 
-// Reuse the cookie security policy while allowing token-specific lifetimes.
-const getCookieOptions = (maxAge: number) => ({
+// Send the access token wherever authenticated application requests may need it.
+const ACCESS_TOKEN_COOKIE_PATH = "/";
+
+// Send the refresh token only to the endpoint that rotates the session.
+const REFRESH_TOKEN_COOKIE_PATH = "/api/v1/auth/refresh";
+
+// Remember the previous path so existing broad refresh cookies can be removed safely.
+const LEGACY_REFRESH_TOKEN_COOKIE_PATH = "/";
+
+// Reuse the cookie security policy while allowing token-specific paths and lifetimes.
+const getCookieOptions = (maxAge: number, path: string) => ({
   httpOnly: true,
   maxAge,
-  path: "/",
+  path,
+  priority: "high" as const,
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
 });
+
+// Append a separate expiry header because Next.js replaces same-name cookies across paths.
+const clearLegacyRefreshCookie = (response: NextResponse) => {
+  // Include Secure in production so the legacy cookie is removed with its original policy.
+  const secureAttribute = process.env.NODE_ENV === "production" ? "; Secure" : "";
+
+  // Expire the previous broad-path cookie without replacing the new scoped cookie header.
+  response.headers.append(
+    "Set-Cookie",
+    `${REFRESH_TOKEN_COOKIE}=; Path=${LEGACY_REFRESH_TOKEN_COOKIE_PATH}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Priority=High; SameSite=Lax${secureAttribute}`,
+  );
+};
 
 // Persist a verified browser session without exposing tokens to client storage.
 export const setAuthCookies = (
@@ -29,30 +51,36 @@ export const setAuthCookies = (
   response.cookies.set(
     ACCESS_TOKEN_COOKIE,
     tokens.accessToken,
-    getCookieOptions(ACCESS_TOKEN_EXPIRY_SECONDS),
+    getCookieOptions(ACCESS_TOKEN_EXPIRY_SECONDS, ACCESS_TOKEN_COOKIE_PATH),
   );
 
-  // Store the rotating refresh token in a separate HttpOnly cookie.
+  // Store the rotating refresh token only on its dedicated endpoint path.
   response.cookies.set(
     REFRESH_TOKEN_COOKIE,
     tokens.refreshToken,
-    getCookieOptions(AUTH_SESSION_EXPIRY_SECONDS),
+    getCookieOptions(AUTH_SESSION_EXPIRY_SECONDS, REFRESH_TOKEN_COOKIE_PATH),
   );
+
+  // Remove any older refresh cookie that was sent with every application request.
+  clearLegacyRefreshCookie(response);
 };
 
 // Remove both browser tokens when logout completes.
 export const clearAuthCookies = (response: NextResponse) => {
   // Expire the access token immediately using its original cookie path.
   response.cookies.set(ACCESS_TOKEN_COOKIE, "", {
-    ...getCookieOptions(0),
+    ...getCookieOptions(0, ACCESS_TOKEN_COOKIE_PATH),
     expires: new Date(0),
   });
 
   // Expire the refresh token immediately using its original cookie path.
   response.cookies.set(REFRESH_TOKEN_COOKIE, "", {
-    ...getCookieOptions(0),
+    ...getCookieOptions(0, REFRESH_TOKEN_COOKIE_PATH),
     expires: new Date(0),
   });
+
+  // Clear the legacy broad-path cookie for sessions created before this hardening.
+  clearLegacyRefreshCookie(response);
 };
 
 // Read bearer tokens for API clients and cookies for same-origin browsers.
