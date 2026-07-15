@@ -35,7 +35,7 @@ function SheetContent({
       {/* Anchor navigation to the right edge without depending on viewport JavaScript. */}
       <SheetPrimitive.Content
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex w-[min(22rem,calc(100vw-2rem))] flex-col border-l border-border bg-background p-6 text-foreground shadow-2xl outline-none",
+          "fixed inset-y-0 right-0 z-50 flex w-[min(22rem,calc(100vw-2rem))] flex-col overflow-y-auto border-l border-border bg-background p-6 text-foreground shadow-2xl outline-none",
           className,
         )}
         data-slot="sheet-content"

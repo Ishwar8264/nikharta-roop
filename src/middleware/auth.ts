@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAccessTokenFromRequest } from "@/src/lib/auth-cookies";
 import { UnauthorizedError } from "@/src/lib/errors";
-import { validateAccessSessionService } from "@/src/services/auth/auth.service";
+import { validateAccessSessionService } from "@/src/services/auth/auth-session.service";
 
 // Describe handlers that receive trusted identity claims after session validation.
 type AuthHandler = (

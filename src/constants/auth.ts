@@ -34,5 +34,5 @@ export const AUTH_ACCESS_COOKIE_NAME = "nikharta_access_token";
 // Keep the scoped refresh cookie name consistent across rotation and logout.
 export const AUTH_REFRESH_COOKIE_NAME = "nikharta_refresh_token";
 
-// Store a signed non-authoritative session marker for optimistic Proxy checks.
+// Store a signed session reference that Proxy validates against the active database session.
 export const AUTH_SESSION_HINT_COOKIE_NAME = "nikharta_session_hint";

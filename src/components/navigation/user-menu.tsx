@@ -10,6 +10,8 @@ import { showAppToast } from "@/src/components/shared/toast/app-toast";
 import { Button } from "@/src/components/ui/button";
 // Load the shared class utility for compact and expanded trigger treatments.
 import { cn } from "@/src/lib/utils";
+// Load the current role's protected landing destination.
+import { ROLE_HOME_PATHS } from "@/src/constants/authorization";
 // Load the reusable accessible dropdown pieces used by the account menu.
 import {
   DropdownMenu,
@@ -22,10 +24,13 @@ import {
 // Load focused icons that make each account action easy to scan.
 import {
   ChevronDown,
+  LayoutDashboard,
   LogOut,
   Settings,
   UserRound,
 } from "lucide-react";
+// Load optimized navigation for the current user's protected workspace.
+import Link from "next/link";
 // Load focused local state for the logout request only.
 import { useState } from "react";
 
@@ -141,10 +146,12 @@ export function UserMenu({ showLabel = false }: UserMenuProps) {
         {/* Separate account context from its available actions. */}
         <DropdownMenuSeparator />
 
-        {/* Present the future profile destination as a UI-only menu action. */}
-        <DropdownMenuItem disabled>
-          <UserRound aria-hidden="true" className="size-4" />
-          <span>Profile</span>
+        {/* Open the server-protected landing page selected by the current role. */}
+        <DropdownMenuItem asChild>
+          <Link href={ROLE_HOME_PATHS[user.role]}>
+            <LayoutDashboard aria-hidden="true" className="size-4" />
+            <span>Open workspace</span>
+          </Link>
         </DropdownMenuItem>
 
         {/* Present account preferences without attaching a route prematurely. */}

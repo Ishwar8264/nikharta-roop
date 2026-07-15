@@ -13,7 +13,7 @@ type SidebarProps = {
 export function Sidebar({ navigationItems }: SidebarProps) {
   // Keep navigation separated from route content with one semantic aside landmark.
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-border bg-card/40 p-5 lg:block">
+    <aside className="hidden w-64 shrink-0 border-r border-border bg-card/40 p-5 lg:sticky lg:top-0 lg:block lg:max-h-screen lg:self-start lg:overflow-y-auto">
       {/* Explain the navigation region without competing with page headings. */}
       <p className="px-4 text-xs font-bold tracking-[0.18em] text-muted-foreground uppercase">
         Your space

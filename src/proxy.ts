@@ -1,70 +1,61 @@
-// Load stable cookie names shared with the server session routes.
+// Load stable cookie names shared with server session routes.
 import {
   AUTH_ACCESS_COOKIE_NAME,
   AUTH_SESSION_HINT_COOKIE_NAME,
 } from "@/src/constants/auth";
-// Load focused JWT verification for optimistic route access only.
+// Load the single shared route policy and role-home authorization source.
 import {
-  verifyAccessToken,
-  verifyOptimisticSessionToken,
-} from "@/src/lib/jwt";
+  getProtectedRoutePolicy,
+  ROLE_HOME_PATHS,
+} from "@/src/constants/authorization";
+// Load database-backed browser session validation for Proxy authorization.
+import { validateBrowserSessionService } from "@/src/services/auth/auth-session.service";
 // Load the request type accepted by the Next.js 16 Proxy convention.
 import type { NextRequest } from "next/server";
-// Load the response helper used for pass-through and login redirects.
+// Load the response helper used before protected routes render.
 import { NextResponse } from "next/server";
 
 // Keep the public login destination explicit for unauthenticated redirects.
 const LOGIN_PATH = "/login";
 
-// Validate one optional cookie with a focused verifier and fail closed on any error.
-const isValidCookieToken = (
-  token: string | undefined,
-  verifyToken: (value: string) => unknown,
-) => {
-  // Reject requests that do not include the selected authentication marker.
-  if (!token) {
-    return false;
+// Enforce authentication and current database roles before protected routes render.
+export async function proxy(request: NextRequest) {
+  // Resolve the shared server policy for the matched protected URL.
+  const policy = getProtectedRoutePolicy(request.nextUrl.pathname);
+
+  // Fail closed if a future matcher is added without an explicit authorization policy.
+  if (!policy) {
+    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
   }
 
-  try {
-    // Verify signature, expiry, and purpose before allowing optimistic page access.
-    verifyToken(token);
+  // Validate both browser proofs against their exact persisted database sessions.
+  const session = await validateBrowserSessionService({
+    accessToken: request.cookies.get(AUTH_ACCESS_COOKIE_NAME)?.value,
+    sessionHint: request.cookies.get(AUTH_SESSION_HINT_COOKIE_NAME)?.value,
+  });
 
-    // Mark the request optimistic only after the selected verifier succeeds.
-    return true;
-  } catch {
-    // Treat malformed, expired, or incorrectly purposed tokens as unauthenticated.
-    return false;
-  }
-};
-
-// Gate matched private pages before rendering without performing database work.
-export function proxy(request: NextRequest) {
-  // Read the signed long-lived marker created alongside the refresh session.
-  const sessionHint = request.cookies.get(AUTH_SESSION_HINT_COOKIE_NAME)?.value;
-
-  // Prefer the dedicated low-privilege marker for normal private navigation.
-  const hasSessionHint = isValidCookieToken(
-    sessionHint,
-    verifyOptimisticSessionToken,
-  );
-
-  // Allow older sessions temporarily when their short-lived access cookie remains valid.
-  const accessToken = request.cookies.get(AUTH_ACCESS_COOKIE_NAME)?.value;
-
-  // Verify the fallback access token without querying the persisted session in Proxy.
-  const hasLegacyAccess = isValidCookieToken(accessToken, verifyAccessToken);
-
-  // Continue matched private navigation when either optimistic cookie is valid.
-  if (hasSessionHint || hasLegacyAccess) {
-    return NextResponse.next();
+  // Redirect unauthenticated or revoked sessions before any page component executes.
+  if (!session) {
+    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
   }
 
-  // Redirect anonymous private navigation before the protected page renders.
-  return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+  // Redirect authenticated users away from pages outside their current role hierarchy.
+  if (!policy.roles.includes(session.role)) {
+    return NextResponse.redirect(
+      new URL(ROLE_HOME_PATHS[session.role], request.url),
+    );
+  }
+
+  // Continue only after server-side authentication and authorization both succeed.
+  return NextResponse.next();
 }
 
-// Run Proxy only for the current private route family and its future nested pages.
+// Keep literal matchers because Next.js statically analyzes this exported configuration.
 export const config = {
-  matcher: ["/portfolio/:path*"],
+  matcher: [
+    "/user/:path*",
+    "/staff/:path*",
+    "/admin/:path*",
+    "/super-admin/:path*",
+  ],
 };

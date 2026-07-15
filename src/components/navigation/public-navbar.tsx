@@ -1,7 +1,3 @@
-"use client";
-
-// Load the current browser session so private links remain hidden from guests.
-import { useAuth } from "@/src/components/auth/providers/auth-provider";
 // Load reusable guest and account controls for desktop and drawer navigation.
 import { AuthNavActions } from "@/src/components/navigation/auth-nav-actions";
 // Load the shared mobile and tablet drawer.
@@ -10,24 +6,13 @@ import { MobileNav } from "@/src/components/navigation/mobile-nav";
 import { NavLinks } from "@/src/components/navigation/nav-links";
 // Load the shared salon wordmark used across application headers.
 import { NavbarBrand } from "@/src/components/navigation/navbar-brand";
-// Load real public and authenticated route configurations.
-import {
-  PRIVATE_NAV_ITEMS,
-  PUBLIC_NAV_ITEMS,
-} from "@/src/components/navigation/navigation.config";
+// Load the public schema-backed route catalog shared across all visitor sessions.
+import { PUBLIC_NAV_ITEMS } from "@/src/components/navigation/navigation.config";
 // Load the existing light, dark, and system theme selector.
 import { ThemeToggle } from "@/src/components/theme-toggle";
 
 // Render one reliable top navigation for public pages across every viewport.
 export function PublicNavbar() {
-  // Read resolved authentication without storing duplicated navigation state.
-  const { isAuthenticated } = useAuth();
-
-  // Reveal the existing private destination only after a user is authenticated.
-  const navigationItems = isAuthenticated
-    ? PRIVATE_NAV_ITEMS
-    : PUBLIC_NAV_ITEMS;
-
   // Keep desktop actions inline while moving mobile and tablet actions into a drawer.
   return (
     <header className="relative z-40 border-b border-border bg-background/90 backdrop-blur-xl">
@@ -37,17 +22,17 @@ export function PublicNavbar() {
         <NavbarBrand />
 
         {/* Avoid an empty navigation landmark when the root logo is the only public link. */}
-        {navigationItems.length > 0 ? (
+        {PUBLIC_NAV_ITEMS.length > 0 ? (
           <NavLinks
             ariaLabel="Primary navigation"
-            className="ml-auto hidden lg:flex"
-            items={navigationItems}
+            className="ml-auto hidden xl:flex"
+            items={PUBLIC_NAV_ITEMS}
             variant="horizontal"
           />
         ) : null}
 
         {/* Keep theme and session actions inline where horizontal room is reliable. */}
-        <div className="ml-auto hidden items-center gap-2 lg:flex">
+        <div className="ml-auto hidden items-center gap-2 xl:flex">
           {/* Preserve theme selection on every public route. */}
           <ThemeToggle />
           {/* Switch guest actions to the authenticated user menu after restoration. */}
@@ -55,7 +40,7 @@ export function PublicNavbar() {
         </div>
 
         {/* Move links and account controls into one touch-friendly mobile drawer. */}
-        <div className="ml-auto lg:hidden">
+        <div className="ml-auto xl:hidden">
           <MobileNav
             footer={
               <div className="space-y-5">
@@ -68,7 +53,7 @@ export function PublicNavbar() {
                 <AuthNavActions showLabels />
               </div>
             }
-            navigationItems={navigationItems}
+            navigationItems={PUBLIC_NAV_ITEMS}
           />
         </div>
       </div>

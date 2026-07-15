@@ -7,7 +7,7 @@ import {
   AUTH_SESSION_EXPIRY_SECONDS,
   AUTH_SESSION_HINT_COOKIE_NAME,
 } from "@/src/constants/auth";
-import { generateOptimisticSessionToken } from "@/src/lib/jwt";
+import { generateRouteSessionToken } from "@/src/lib/jwt";
 
 // Send the access token wherever authenticated application requests may need it.
 const ACCESS_TOKEN_COOKIE_PATH = "/";
@@ -15,7 +15,7 @@ const ACCESS_TOKEN_COOKIE_PATH = "/";
 // Send the refresh token only to the endpoint that rotates the session.
 const REFRESH_TOKEN_COOKIE_PATH = "/api/v1/auth/refresh";
 
-// Send the non-sensitive signed session marker to private page requests.
+// Send the non-sensitive signed session reference to protected page requests.
 const SESSION_HINT_COOKIE_PATH = "/";
 
 // Remember the previous path so existing broad refresh cookies can be removed safely.
@@ -62,10 +62,10 @@ export const setAuthCookies = (
     getCookieOptions(AUTH_SESSION_EXPIRY_SECONDS, REFRESH_TOKEN_COOKIE_PATH),
   );
 
-  // Sign a low-privilege marker so Proxy never needs the scoped refresh token.
-  const sessionHint = generateOptimisticSessionToken(tokens.refreshToken);
+  // Sign a low-privilege session reference so Proxy never receives the raw refresh token.
+  const sessionHint = generateRouteSessionToken(tokens.refreshToken);
 
-  // Keep optimistic page access aligned with the complete refresh-session lifetime.
+  // Keep server-validated page access aligned with the complete refresh-session lifetime.
   response.cookies.set(
     AUTH_SESSION_HINT_COOKIE_NAME,
     sessionHint,
@@ -90,7 +90,7 @@ export const clearAuthCookies = (response: NextResponse) => {
     expires: new Date(0),
   });
 
-  // Expire the optimistic session marker so Proxy immediately blocks private pages.
+  // Expire the signed session reference so Proxy immediately blocks protected pages.
   response.cookies.set(AUTH_SESSION_HINT_COOKIE_NAME, "", {
     ...getCookieOptions(0, SESSION_HINT_COOKIE_PATH),
     expires: new Date(0),

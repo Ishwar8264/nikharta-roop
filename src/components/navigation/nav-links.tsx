@@ -8,7 +8,26 @@ import type {
   NavigationItem,
 } from "@/src/components/navigation/navigation.config";
 // Load client-side icon components after navigation data crosses the server boundary.
-import { House, Images } from "lucide-react";
+import {
+  BadgeIndianRupee,
+  Bell,
+  BookOpenText,
+  CalendarDays,
+  CalendarRange,
+  ChartNoAxesCombined,
+  Crown,
+  Gift,
+  Heart,
+  House,
+  Images,
+  MapPin,
+  RefreshCcw,
+  Scissors,
+  ShieldCheck,
+  Star,
+  UsersRound,
+  UserRound,
+} from "lucide-react";
 // Load the shared icon type used by the complete icon-key mapping.
 import type { LucideIcon } from "lucide-react";
 // Load optimized client navigation for every configured destination.
@@ -18,10 +37,48 @@ import { usePathname } from "next/navigation";
 
 // Convert serializable navigation keys into renderable client icon components.
 const NAVIGATION_ICONS: Record<NavigationIcon, LucideIcon> = {
+  // Render a shield icon for branch administration destinations.
+  admin: ShieldCheck,
+  // Render a chart icon for owner-level business analytics.
+  analytics: ChartNoAxesCombined,
+  // Render an editorial icon for public and managed blog content.
+  blogs: BookOpenText,
+  // Render a calendar icon for customer and operational bookings.
+  bookings: CalendarDays,
+  // Render a location pin for public and managed salon branches.
+  branches: MapPin,
+  // Render a heart for customer-saved services.
+  favorites: Heart,
   // Render a familiar home icon for the restored public showcase route.
   home: House,
+  // Render a bell for customer and administrative communication.
+  notifications: Bell,
+  // Render a gift for active promotions and coupon management.
+  offers: Gift,
+  // Render the rupee icon for payment transaction destinations.
+  payments: BadgeIndianRupee,
   // Render the established gallery icon for the private Portfolio destination.
   portfolio: Images,
+  // Render a focused account icon for personal profile destinations.
+  profile: UserRound,
+  // Render a refresh icon for payment refund management.
+  refunds: RefreshCcw,
+  // Render a star for public, customer, staff, and moderated reviews.
+  reviews: Star,
+  // Render a calendar range for staff availability and leave.
+  schedule: CalendarRange,
+  // Render salon scissors for bookable services and staff skills.
+  services: Scissors,
+  // Render salon scissors for employee operations.
+  staff: Scissors,
+  // Render a crown for the owner-only system workspace.
+  "super-admin": Crown,
+  // Render a team icon for public staff profiles.
+  team: UsersRound,
+  // Render a users icon for owner-level account management.
+  users: UsersRound,
+  // Render a focused account icon for the customer dashboard.
+  user: UserRound,
 };
 
 // Describe the reusable rendering options for horizontal and stacked navigation.
@@ -49,6 +106,27 @@ export function NavLinks({
   // Derive the active destination directly from the current App Router pathname.
   const pathname = usePathname();
 
+  // Select the deepest matching destination so parent dashboards do not stay active.
+  const activeHref = items.reduce<string | null>((currentHref, item) => {
+    // Accept exact destinations and their nested page families.
+    const matchesPathname =
+      pathname === item.href ||
+      (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+
+    // Preserve the current match when this destination does not contain the pathname.
+    if (!matchesPathname) {
+      return currentHref;
+    }
+
+    // Prefer the longer path because it represents the most specific destination.
+    if (!currentHref || item.href.length > currentHref.length) {
+      return item.href;
+    }
+
+    // Keep the existing deeper match when this item is only its parent.
+    return currentHref;
+  }, null);
+
   // Keep the semantic navigation landmark consistent across every presentation.
   return (
     <nav
@@ -65,10 +143,8 @@ export function NavLinks({
         // Resolve the plain icon key only after data reaches the Client Component.
         const ItemIcon = NAVIGATION_ICONS[item.icon];
 
-        // Treat the exact route and its nested pages as one active destination.
-        const isActive =
-          pathname === item.href ||
-          (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+        // Mark only the deepest configured destination as active.
+        const isActive = activeHref === item.href;
 
         // Share active semantics while adapting spacing to the selected orientation.
         return (
