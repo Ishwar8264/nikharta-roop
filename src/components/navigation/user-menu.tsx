@@ -8,6 +8,8 @@ import { getAuthErrorMessage } from "@/src/components/auth/utils/auth-flow";
 import { showAppToast } from "@/src/components/shared/toast/app-toast";
 // Load the shared button so the account trigger follows existing interaction styles.
 import { Button } from "@/src/components/ui/button";
+// Load the shared class utility for compact and expanded trigger treatments.
+import { cn } from "@/src/lib/utils";
 // Load the reusable accessible dropdown pieces used by the account menu.
 import {
   DropdownMenu,
@@ -27,8 +29,14 @@ import {
 // Load focused local state for the logout request only.
 import { useState } from "react";
 
+// Describe whether the account trigger should reveal its identity label.
+type UserMenuProps = {
+  // Show the account label inside wider drawer navigation.
+  showLabel?: boolean;
+};
+
 // Render the global navigation account menu from the restored browser session.
-export function UserMenu() {
+export function UserMenu({ showLabel = false }: UserMenuProps) {
   // Read the current safe user and server-backed logout action.
   const { logout, user } = useAuth();
 
@@ -92,6 +100,7 @@ export function UserMenu() {
         {/* Show a compact account control that still has a clear screen-reader label. */}
         <Button
           aria-label="Open user menu"
+          className={cn(showLabel && "w-full justify-start")}
           size="sm"
           type="button"
           variant="ghost"
@@ -101,13 +110,21 @@ export function UserMenu() {
             <UserRound aria-hidden="true" className="size-4" />
           </span>
           {/* Show the restored user identity only when the navbar has enough room. */}
-          <span className="hidden max-w-36 truncate xl:inline">
+          <span
+            className={cn(
+              "max-w-36 truncate",
+              showLabel ? "inline" : "hidden xl:inline",
+            )}
+          >
             {accountLabel}
           </span>
           {/* Indicate that the account control opens additional options. */}
           <ChevronDown
             aria-hidden="true"
-            className="hidden size-3.5 text-muted-foreground xl:block"
+            className={cn(
+              "size-3.5 text-muted-foreground",
+              showLabel ? "ml-auto block" : "hidden xl:block",
+            )}
           />
         </Button>
       </DropdownMenuTrigger>
