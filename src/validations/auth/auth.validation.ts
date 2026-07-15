@@ -57,8 +57,9 @@ export const otpSentDataSchema = z.object({
   message: z.string().min(1),
 });
 
-// Validate the full register response before the signup UI consumes it.
-export const registerResponseSchema = createApiResponseSchema(otpSentDataSchema);
+// Validate every login or signup OTP delivery response through one shared contract.
+export const authOtpSentResponseSchema =
+  createApiResponseSchema(otpSentDataSchema);
 
 // Validate generic OTP requests used by existing API clients and documentation tools.
 export const sendOtpSchema = z

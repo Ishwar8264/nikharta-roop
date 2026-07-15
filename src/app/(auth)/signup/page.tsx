@@ -1,4 +1,4 @@
-import { RegisterForm } from "@/src/components/auth/register-form";
+import { RegisterForm } from "@/src/components/auth/register/register-form";
 import type { Metadata } from "next";
 
 // Describe the signup route in browser tabs and search previews.
@@ -11,12 +11,8 @@ export const metadata: Metadata = {
 // Keep the route focused on composing the reusable registration feature.
 export default function SignUpPage() {
   // Expose mobile only where the backend development fallback can deliver its OTP.
-  const mobileRegistrationAvailable = process.env.NODE_ENV !== "production";
+  const mobileAvailable = process.env.NODE_ENV !== "production";
 
-  // Render the client form inside the shared authentication layout.
-  return (
-    <RegisterForm
-      mobileRegistrationAvailable={mobileRegistrationAvailable}
-    />
-  );
+  // Render server-owned copy around the interactive signup form island.
+  return <RegisterForm mobileAvailable={mobileAvailable} />;
 }
