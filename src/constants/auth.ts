@@ -27,3 +27,12 @@ export const AUTH_SESSION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Match the browser refresh cookie lifetime with the persisted auth session.
 export const AUTH_SESSION_EXPIRY_SECONDS = AUTH_SESSION_EXPIRY_MS / 1000;
+
+// Keep the browser access cookie name consistent across routes and Proxy.
+export const AUTH_ACCESS_COOKIE_NAME = "nikharta_access_token";
+
+// Keep the scoped refresh cookie name consistent across rotation and logout.
+export const AUTH_REFRESH_COOKIE_NAME = "nikharta_refresh_token";
+
+// Store a signed non-authoritative session marker for optimistic Proxy checks.
+export const AUTH_SESSION_HINT_COOKIE_NAME = "nikharta_session_hint";

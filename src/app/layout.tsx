@@ -1,10 +1,10 @@
 // Load the global Tailwind stylesheet once from the root layout.
 import "./globals.css";
 
-// Load the shared theme selector shown across application routes.
-import { ThemeToggle } from "@/src/components/theme-toggle";
 // Load the client session boundary that restores HttpOnly-cookie authentication.
 import { AuthProvider } from "@/src/components/auth/providers/auth-provider";
+// Load the global navbar shared by public and private application routes.
+import { AppNavbar } from "@/src/components/navigation/app-navbar";
 // Load the single global host for shared application notifications.
 import { Toaster } from "@/src/components/ui/sonner";
 // Load the existing theme provider to manage saved and system preferences.
@@ -79,8 +79,8 @@ export default function RootLayout({
         >
           {/* Restore browser authentication without turning this layout into a Client Component. */}
           <AuthProvider>
-            {/* Keep theme selection available from every application route. */}
-            <ThemeToggle />
+            {/* Keep public navigation and session-aware actions visible on every page. */}
+            <AppNavbar />
             {/* Render the active App Router route inside both shared contexts. */}
             {children}
             {/* Render every props-driven toast inside the active providers. */}

@@ -16,8 +16,6 @@ import {
 } from "lucide-react";
 // Load the shared icon component type for strict service configuration.
 import type { LucideIcon } from "lucide-react";
-// Load the reusable private navbar instead of keeping page-local navigation.
-import { PrivateNavbar } from "@/src/components/navigation/private-navbar";
 // Load the metadata type for a strict page-level search preview declaration.
 import type { Metadata } from "next";
 
@@ -718,24 +716,19 @@ function ShowcaseFooter() {
 export default function HomePage() {
   // Compose focused server-rendered sections without adding unnecessary client state.
   return (
-    <>
-      {/* Render the reusable private navigation above the current Home experience. */}
-      <PrivateNavbar />
-      {/* Keep the private page content inside its semantic primary landmark. */}
-      <main className="min-h-screen overflow-hidden bg-background text-foreground">
-        {/* Introduce the approved salon direction through a realistic hero pattern. */}
-        <HeroSection />
-        {/* Document the complete approved light and dark semantic palette. */}
-        <ColorsSection />
-        {/* Demonstrate the complete responsive brand typography hierarchy. */}
-        <TypographySection />
-        {/* Demonstrate reusable controls, forms, cards, and booking patterns. */}
-        <ComponentsSection />
-        {/* Close the demo with a real conversion section using the approved hierarchy. */}
-        <BookingCallToAction />
-        {/* End the showcase with a minimal brand and accessibility reminder. */}
-        <ShowcaseFooter />
-      </main>
-    </>
+    <main className="min-h-screen overflow-hidden bg-background text-foreground">
+      {/* Introduce the approved salon direction through a realistic hero pattern. */}
+      <HeroSection />
+      {/* Document the complete approved light and dark semantic palette. */}
+      <ColorsSection />
+      {/* Demonstrate the complete responsive brand typography hierarchy. */}
+      <TypographySection />
+      {/* Demonstrate reusable controls, forms, cards, and booking patterns. */}
+      <ComponentsSection />
+      {/* Close the demo with a real conversion section using the approved hierarchy. */}
+      <BookingCallToAction />
+      {/* End the showcase with a minimal brand and accessibility reminder. */}
+      <ShowcaseFooter />
+    </main>
   );
 }

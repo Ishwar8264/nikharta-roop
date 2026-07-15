@@ -6,7 +6,7 @@ export default function AuthLayout({
 }) {
   // Keep authentication content readable in light, dark, and system modes.
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center bg-background p-4">
       {/* Use semantic colors so the authentication card follows the selected theme. */}
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-card-foreground shadow-md">
         {/* Render the active login or signup page inside the shared card. */}

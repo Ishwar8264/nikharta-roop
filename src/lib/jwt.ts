@@ -75,3 +75,33 @@ export const verifyRefreshToken = (token: string) => {
     userId: string;
   };
 };
+
+// Sign a low-privilege marker used only for optimistic private-route checks.
+export const generateOptimisticSessionToken = (refreshToken: string) => {
+  // Reuse the verified refresh subject without exposing the scoped token to Proxy.
+  const { userId } = verifyRefreshToken(refreshToken);
+
+  // Match the marker lifetime with the refresh session it represents optimistically.
+  return jwt.sign(
+    { purpose: "ROUTE_ACCESS", userId },
+    getJwtSecret("JWT_ACCESS_SECRET"),
+    { expiresIn: REFRESH_TOKEN_EXPIRY },
+  );
+};
+
+// Verify the signed marker without treating it as API authorization proof.
+export const verifyOptimisticSessionToken = (token: string) => {
+  // Validate signature, expiry, and the dedicated low-privilege purpose claim.
+  const payload = jwt.verify(token, getJwtSecret("JWT_ACCESS_SECRET")) as {
+    purpose?: string;
+    userId?: string;
+  };
+
+  // Reject valid JWTs that were issued for another authentication purpose.
+  if (payload.purpose !== "ROUTE_ACCESS" || !payload.userId) {
+    throw new Error("Invalid optimistic session token");
+  }
+
+  // Return the trusted marker claims for focused Proxy decisions.
+  return { userId: payload.userId };
+};

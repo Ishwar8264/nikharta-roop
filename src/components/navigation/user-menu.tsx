@@ -24,15 +24,13 @@ import {
   Settings,
   UserRound,
 } from "lucide-react";
-// Load client navigation for the unauthenticated sign-in fallback.
-import Link from "next/link";
 // Load focused local state for the logout request only.
 import { useState } from "react";
 
-// Render the private navigation account menu from the restored browser session.
+// Render the global navigation account menu from the restored browser session.
 export function UserMenu() {
-  // Read the current safe user, restore state, and server-backed logout action.
-  const { isLoading, logout, user } = useAuth();
+  // Read the current safe user and server-backed logout action.
+  const { logout, user } = useAuth();
 
   // Prevent repeated logout requests while refresh or revocation is in progress.
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -70,30 +68,9 @@ export function UserMenu() {
     }
   };
 
-  // Keep the account area stable while me and optional refresh requests resolve.
-  if (isLoading) {
-    return (
-      <Button
-        aria-label="Loading user session"
-        disabled
-        size="sm"
-        type="button"
-        variant="ghost"
-      >
-        <span className="flex size-8 items-center justify-center rounded-full bg-accent text-accent-foreground">
-          <UserRound aria-hidden="true" className="size-4" />
-        </span>
-      </Button>
-    );
-  }
-
-  // Offer login instead of rendering private user actions without a live session.
+  // Render nothing if a parent invokes the menu before authenticated state resolves.
   if (!user) {
-    return (
-      <Button asChild size="sm" variant="outline">
-        <Link href="/login">Sign in</Link>
-      </Button>
-    );
+    return null;
   }
 
   // Prefer the optional profile name before falling back to a verified identity.
