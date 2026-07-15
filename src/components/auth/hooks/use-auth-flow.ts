@@ -15,19 +15,10 @@ export function useAuthFlow() {
   // Preserve the normalized identity between OTP delivery and verification.
   const [identity, setIdentity] = useState<AuthIdentifierInput | null>(null);
 
-  // Preserve the backend delivery confirmation for the verification step.
-  const [deliveryMessage, setDeliveryMessage] = useState("");
-
   // Advance only after the purpose-specific endpoint confirms OTP delivery.
-  const handleOtpSent = (
-    nextIdentity: AuthIdentifierInput,
-    nextDeliveryMessage: string,
-  ) => {
+  const handleOtpSent = (nextIdentity: AuthIdentifierInput) => {
     // Retain the normalized email or mobile used by the backend OTP record.
     setIdentity(nextIdentity);
-
-    // Show the server-confirmed delivery result on the next step.
-    setDeliveryMessage(nextDeliveryMessage);
 
     // Replace identity collection with the six-digit verification form.
     setStep("OTP");
@@ -37,9 +28,6 @@ export function useAuthFlow() {
   const handleIdentityChange = () => {
     // Remove the previous identity before accepting another destination.
     setIdentity(null);
-
-    // Remove stale delivery feedback tied to the previous identity.
-    setDeliveryMessage("");
 
     // Render the identity form again.
     setStep("IDENTITY");
@@ -53,7 +41,6 @@ export function useAuthFlow() {
 
   // Expose only state and transitions required by the flow composition.
   return {
-    deliveryMessage,
     handleIdentityChange,
     handleOtpSent,
     handleVerified,

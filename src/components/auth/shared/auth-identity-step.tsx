@@ -2,7 +2,6 @@ import { ArrowRight, LoaderCircle, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 
 import { useAuthIdentityForm } from "@/src/components/auth/hooks/use-auth-identity-form";
-import { AuthFeedback } from "@/src/components/auth/shared/auth-feedback";
 import { AuthFormField } from "@/src/components/auth/shared/auth-form-field";
 import type { AuthFlowCopy } from "@/src/components/auth/utils/auth-flow";
 import { Button } from "@/src/components/ui/button";
@@ -12,7 +11,7 @@ import type { AuthIdentifierInput, AuthPurpose } from "@/src/types/auth";
 type AuthIdentityStepProps = {
   copy: AuthFlowCopy;
   mobileAvailable: boolean;
-  onOtpSent: (identity: AuthIdentifierInput, message: string) => void;
+  onOtpSent: (identity: AuthIdentifierInput) => void;
   purpose: AuthPurpose;
 };
 
@@ -25,7 +24,6 @@ export function AuthIdentityStep({
 }: AuthIdentityStepProps) {
   // Keep field behavior inside the dedicated auth identity hook.
   const {
-    apiError,
     channel,
     field,
     form,
@@ -93,9 +91,6 @@ export function AuthIdentityStep({
           type={field.type}
           {...form.register(field.name)}
         />
-
-        {/* Preserve useful backend errors beside the form that triggered them. */}
-        <AuthFeedback message={apiError} />
 
         {/* Submit only once while communicating React Hook Form pending state. */}
         <Button

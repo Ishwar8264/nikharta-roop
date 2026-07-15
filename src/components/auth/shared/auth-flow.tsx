@@ -24,7 +24,6 @@ export function AuthFlow({
 }: AuthFlowProps) {
   // Own only the state required to move between focused auth steps.
   const {
-    deliveryMessage,
     handleIdentityChange,
     handleOtpSent,
     handleVerified,
@@ -45,7 +44,6 @@ export function AuthFlow({
     return (
       <AuthOtpStep
         copy={copy}
-        deliveryMessage={deliveryMessage}
         identity={identity}
         onChangeIdentity={handleIdentityChange}
         onVerified={handleVerified}

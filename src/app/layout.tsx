@@ -3,6 +3,8 @@ import "./globals.css";
 
 // Load the shared theme selector shown across application routes.
 import { ThemeToggle } from "@/src/components/theme-toggle";
+// Load the single global host for shared application notifications.
+import { Toaster } from "@/src/components/ui/sonner";
 // Load the existing theme provider to manage saved and system preferences.
 import { ThemeProvider } from "next-themes";
 // Load optimized Google fonts for brand headings, UI text, and Hindi content.
@@ -77,6 +79,8 @@ export default function RootLayout({
           <ThemeToggle />
           {/* Render the active App Router route inside the theme context. */}
           {children}
+          {/* Render every props-driven toast inside the active theme provider. */}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { getAuthErrorMessage } from "@/src/components/auth/utils/auth-flow";
+import { showAppToast } from "@/src/components/shared/toast/app-toast";
 import { OTP_RESEND_COOLDOWN_SECONDS } from "@/src/constants/auth";
 import {
   requestAuthOtp,
@@ -20,7 +21,6 @@ import { otpInputSchema } from "@/src/validations/auth/auth.validation";
 
 // Configure the identity and completion behavior needed for OTP verification.
 type UseAuthOtpFormOptions = {
-  deliveryMessage: string;
   identity: AuthIdentifierInput;
   onVerified: () => void;
   purpose: AuthPurpose;
@@ -28,17 +28,10 @@ type UseAuthOtpFormOptions = {
 
 // Encapsulate OTP validation, verification, resend, and cooldown behavior.
 export function useAuthOtpForm({
-  deliveryMessage,
   identity,
   onVerified,
   purpose,
 }: UseAuthOtpFormOptions) {
-  // Store only replacement feedback instead of copying the initial prop.
-  const [resendNotice, setResendNotice] = useState("");
-
-  // Keep verification and resend failures visible beside the OTP form.
-  const [apiError, setApiError] = useState<string | null>(null);
-
   // Mirror the backend resend cooldown before enabling another OTP request.
   const [resendSeconds, setResendSeconds] = useState(
     OTP_RESEND_COOLDOWN_SECONDS,
@@ -72,9 +65,6 @@ export function useAuthOtpForm({
 
   // Verify the code against the same identity used to request it.
   const handleOtpSubmit = form.handleSubmit(async (input) => {
-    // Clear stale feedback before attempting another verification.
-    setApiError(null);
-
     // Build the complete payload expected by the shared verification schema.
     const verificationInput: VerifyOtpInput = {
       ...identity,
@@ -86,11 +76,25 @@ export function useAuthOtpForm({
       // Consume the OTP and establish the protected browser session.
       await verifyAuthOtp(verificationInput);
 
+      // Confirm the completed login or registration with purpose-specific heading.
+      showAppToast({
+        description:
+          purpose === "LOGIN"
+            ? "Welcome back to Nikharta Roop."
+            : "Your account is verified and ready.",
+        heading: purpose === "LOGIN" ? "Login successful" : "Account created",
+        variant: "success",
+      });
+
       // Complete the UI journey after the server sets authentication cookies.
       onVerified();
     } catch (error) {
-      // Preserve safe backend failures or use one unknown-error fallback.
-      setApiError(getAuthErrorMessage(error));
+      // Preserve the backend verification message inside an error toast.
+      showAppToast({
+        description: getAuthErrorMessage(error),
+        heading: "Verification failed",
+        variant: "error",
+      });
     }
   });
 
@@ -104,15 +108,16 @@ export function useAuthOtpForm({
     // Mark the independent resend request as pending.
     setIsResending(true);
 
-    // Clear stale verification feedback before requesting another OTP.
-    setApiError(null);
-
     try {
       // Reuse the normalized identity and purpose for the replacement OTP.
       const result = await requestAuthOtp(identity, purpose);
 
-      // Show the backend-confirmed delivery message for the fresh code.
-      setResendNotice(result.message);
+      // Confirm replacement delivery through the shared heading-based toast.
+      showAppToast({
+        description: result.message,
+        heading: "New OTP sent",
+        variant: "success",
+      });
 
       // Restart the UI cooldown to match the backend resend policy.
       setResendSeconds(OTP_RESEND_COOLDOWN_SECONDS);
@@ -120,16 +125,17 @@ export function useAuthOtpForm({
       // Clear the old code because the backend invalidated older OTP records.
       form.reset({ otp: "" });
     } catch (error) {
-      // Preserve safe backend failures or use one unknown-error fallback.
-      setApiError(getAuthErrorMessage(error));
+      // Preserve the backend resend message inside an error toast.
+      showAppToast({
+        description: getAuthErrorMessage(error),
+        heading: "OTP resend failed",
+        variant: "error",
+      });
     } finally {
       // Re-enable resend controls after this request finishes.
       setIsResending(false);
     }
   };
-
-  // Prefer fresh resend feedback while retaining initial server confirmation.
-  const visibleNotice = resendNotice || deliveryMessage;
 
   // Default to the available action after the cooldown finishes.
   let resendLabel = "Resend OTP";
@@ -144,13 +150,11 @@ export function useAuthOtpForm({
 
   // Expose focused render data while keeping side effects inside the hook.
   return {
-    apiError,
     form,
     handleOtpSubmit,
     handleResend,
     isResending,
     resendLabel,
     resendSeconds,
-    visibleNotice,
   };
 }

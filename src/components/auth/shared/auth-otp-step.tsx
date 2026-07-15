@@ -1,7 +1,6 @@
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 
 import { useAuthOtpForm } from "@/src/components/auth/hooks/use-auth-otp-form";
-import { AuthFeedback } from "@/src/components/auth/shared/auth-feedback";
 import { AuthFormField } from "@/src/components/auth/shared/auth-form-field";
 import type { AuthFlowCopy } from "@/src/components/auth/utils/auth-flow";
 import { Button } from "@/src/components/ui/button";
@@ -10,7 +9,6 @@ import type { AuthIdentifierInput, AuthPurpose } from "@/src/types/auth";
 // Configure the identity, purpose, and transitions required by verification.
 type AuthOtpStepProps = {
   copy: AuthFlowCopy;
-  deliveryMessage: string;
   identity: AuthIdentifierInput;
   onChangeIdentity: () => void;
   onVerified: () => void;
@@ -20,7 +18,6 @@ type AuthOtpStepProps = {
 // Render one reusable OTP step for both login and account registration.
 export function AuthOtpStep({
   copy,
-  deliveryMessage,
   identity,
   onChangeIdentity,
   onVerified,
@@ -28,15 +25,13 @@ export function AuthOtpStep({
 }: AuthOtpStepProps) {
   // Keep verification, resend, and cooldown behavior inside the dedicated hook.
   const {
-    apiError,
     form,
     handleOtpSubmit,
     handleResend,
     isResending,
     resendLabel,
     resendSeconds,
-    visibleNotice,
-  } = useAuthOtpForm({ deliveryMessage, identity, onVerified, purpose });
+  } = useAuthOtpForm({ identity, onVerified, purpose });
 
   // Show the normalized destination without exposing unrelated account data.
   const destination = identity.email ?? identity.mobile ?? "your identity";
@@ -79,11 +74,6 @@ export function AuthOtpStep({
         </p>
       </div>
 
-      {/* Preserve the initial or replacement OTP delivery confirmation. */}
-      <div className="mt-6">
-        <AuthFeedback message={visibleNotice} variant="success" />
-      </div>
-
       {/* Validate the OTP locally before consuming it on the server. */}
       <form className="mt-6 space-y-5" noValidate onSubmit={handleOtpSubmit}>
         {/* Accept numeric OTP entry while preserving leading zeroes as text. */}
@@ -99,9 +89,6 @@ export function AuthOtpStep({
           type="text"
           {...form.register("otp")}
         />
-
-        {/* Preserve useful backend errors beside the form that triggered them. */}
-        <AuthFeedback message={apiError} />
 
         {/* Submit the code once while communicating verification progress. */}
         <Button className="w-full" disabled={isBusy} size="lg" type="submit">

@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { showAppToast } from "@/src/components/shared/toast/app-toast";
 import { requestAuthOtp } from "@/src/services/auth/auth.client";
 import type { AuthIdentifierInput, AuthPurpose } from "@/src/types/auth";
 import {
@@ -18,7 +19,7 @@ export type AuthChannel = "EMAIL" | "MOBILE";
 // Configure server capability and successful delivery behavior for the form hook.
 type UseAuthIdentityFormOptions = {
   mobileAvailable: boolean;
-  onOtpSent: (identity: AuthIdentifierInput, message: string) => void;
+  onOtpSent: (identity: AuthIdentifierInput) => void;
   purpose: AuthPurpose;
 };
 
@@ -30,9 +31,6 @@ export function useAuthIdentityForm({
 }: UseAuthIdentityFormOptions) {
   // Start with email because production delivery is currently supported.
   const [channel, setChannel] = useState<AuthChannel>("EMAIL");
-
-  // Store API errors separately from field-level Zod validation messages.
-  const [apiError, setApiError] = useState<string | null>(null);
 
   // Choose the route-matching schema while preserving one shared field contract.
   const identitySchema = purpose === "LOGIN" ? loginSchema : registerSchema;
@@ -57,27 +55,32 @@ export function useAuthIdentityForm({
     // Render the newly selected identity input.
     setChannel(nextChannel);
 
-    // Remove backend feedback from the previous identity attempt.
-    setApiError(null);
-
     // Reset values and errors while keeping exactly one supported identity.
     form.reset(nextChannel === "EMAIL" ? { email: "" } : { mobile: "" });
   };
 
   // Send the normalized identity through the purpose-specific auth endpoint.
   const handleIdentitySubmit = form.handleSubmit(async (input) => {
-    // Clear stale request feedback before starting another submission.
-    setApiError(null);
-
     try {
       // Request one OTP using the identity already validated by Zod.
       const result = await requestAuthOtp(input, purpose);
 
+      // Confirm server-reported OTP delivery through the shared heading-based toast.
+      showAppToast({
+        description: result.message,
+        heading: "OTP sent",
+        variant: "success",
+      });
+
       // Advance only after the server confirms successful OTP delivery.
-      onOtpSent(input, result.message);
+      onOtpSent(input);
     } catch (error) {
-      // Preserve safe backend failures or use one unknown-error fallback.
-      setApiError(getAuthErrorMessage(error));
+      // Preserve the backend message inside a purpose-specific error toast.
+      showAppToast({
+        description: getAuthErrorMessage(error),
+        heading: purpose === "LOGIN" ? "Login failed" : "Registration failed",
+        variant: "error",
+      });
     }
   });
 
@@ -109,7 +112,6 @@ export function useAuthIdentityForm({
 
   // Expose focused render data while keeping form behavior inside the hook.
   return {
-    apiError,
     channel,
     field,
     form,
