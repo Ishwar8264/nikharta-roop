@@ -30,8 +30,13 @@ type ApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 // Reuse the global response envelope while allowing endpoint-specific data.
 type ApiResponseSchema<TData> = z.ZodType<ApiResponse<TData>>;
 
-// Prevent callers from overriding the method or manually serializing JSON bodies.
-type ApiRequestOptions = Omit<RequestInit, "body" | "method">;
+// Retry one protected request only after its caller successfully restores the session.
+type UnauthorizedRetry = () => Promise<unknown>;
+
+// Prevent method overrides while allowing protected services to supply refresh behavior.
+type ApiRequestOptions = Omit<RequestInit, "body" | "method"> & {
+  retryOnUnauthorized?: UnauthorizedRetry;
+};
 
 // Send one versioned JSON request used internally by every HTTP convenience method.
 async function request<TData, TBody = never>(
@@ -41,8 +46,11 @@ async function request<TData, TBody = never>(
   body?: TBody,
   options: ApiRequestOptions = {},
 ): Promise<TData> {
+  // Separate client-only retry behavior before forwarding standard options to fetch.
+  const { retryOnUnauthorized, ...requestOptions } = options;
+
   // Convert every supported header input into one safely mutable Headers instance.
-  const requestHeaders = new Headers(options.headers);
+  const requestHeaders = new Headers(requestOptions.headers);
 
   // Add JSON content type only when the request actually contains a body.
   if (body !== undefined && !requestHeaders.has("Content-Type")) {
@@ -58,10 +66,11 @@ async function request<TData, TBody = never>(
   try {
     // Send the request with consistent JSON headers and an optional serialized body.
     response = await fetch(url, {
-      ...options,
+      ...requestOptions,
       method,
       headers: requestHeaders,
       body: body === undefined ? undefined : JSON.stringify(body),
+      credentials: requestOptions.credentials ?? "same-origin",
     });
   } catch (error) {
     // Preserve deliberate request cancellation so UI code can ignore it safely.
@@ -71,6 +80,15 @@ async function request<TData, TBody = never>(
 
     // Hide browser-specific network details behind one actionable message.
     throw new ApiClientError("Unable to connect. Please try again.", 0);
+  }
+
+  // Restore protected browser sessions once before parsing the original unauthorized response.
+  if (response.status === 401 && retryOnUnauthorized) {
+    // Let the auth service rotate cookies through its strictly validated refresh endpoint.
+    await retryOnUnauthorized();
+
+    // Retry without the callback so a second unauthorized response cannot create a loop.
+    return request(path, method, responseSchema, body, requestOptions);
   }
 
   // Treat every response body as unknown until Zod validates its contract.

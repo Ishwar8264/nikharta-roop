@@ -1,7 +1,10 @@
 import type { z } from "zod";
 
 import type {
+  authenticatedUserSchema,
   authSessionDataSchema,
+  authTokensDataSchema,
+  currentUserDataSchema,
   loginSchema,
   otpInputSchema,
   otpSentDataSchema,
@@ -38,3 +41,12 @@ export type AuthPurpose = VerifyOtpInput["purpose"];
 
 // Derive the authenticated user and token contract from runtime validation.
 export type AuthSessionData = z.infer<typeof authSessionDataSchema>;
+
+// Derive the shared user shape accepted by global client authentication state.
+export type AuthenticatedUser = z.infer<typeof authenticatedUserSchema>;
+
+// Derive the complete safe profile returned by the authenticated me endpoint.
+export type CurrentUser = z.infer<typeof currentUserDataSchema>;
+
+// Derive the rotated token response used internally by browser session recovery.
+export type AuthTokensData = z.infer<typeof authTokensDataSchema>;

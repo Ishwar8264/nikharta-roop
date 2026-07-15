@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { useAuth } from "@/src/components/auth/providers/auth-provider";
 import { getAuthErrorMessage } from "@/src/components/auth/utils/auth-flow";
 import { showAppToast } from "@/src/components/shared/toast/app-toast";
 import { OTP_RESEND_COOLDOWN_SECONDS } from "@/src/constants/auth";
@@ -32,6 +33,9 @@ export function useAuthOtpForm({
   onVerified,
   purpose,
 }: UseAuthOtpFormOptions) {
+  // Read the focused action that synchronizes a newly verified browser session.
+  const { completeAuthentication } = useAuth();
+
   // Mirror the backend resend cooldown before enabling another OTP request.
   const [resendSeconds, setResendSeconds] = useState(
     OTP_RESEND_COOLDOWN_SECONDS,
@@ -74,7 +78,10 @@ export function useAuthOtpForm({
 
     try {
       // Consume the OTP and establish the protected browser session.
-      await verifyAuthOtp(verificationInput);
+      const session = await verifyAuthOtp(verificationInput);
+
+      // Make the verified user immediately available to private client UI.
+      completeAuthentication(session.user);
 
       // Confirm the completed login or registration with purpose-specific heading.
       showAppToast({
