@@ -8,7 +8,7 @@ import type {
   NavigationItem,
 } from "@/src/components/navigation/navigation.config";
 // Load client-side icon components after navigation data crosses the server boundary.
-import { Images } from "lucide-react";
+import { House, Images } from "lucide-react";
 // Load the shared icon type used by the complete icon-key mapping.
 import type { LucideIcon } from "lucide-react";
 // Load optimized client navigation for every configured destination.
@@ -18,6 +18,8 @@ import { usePathname } from "next/navigation";
 
 // Convert serializable navigation keys into renderable client icon components.
 const NAVIGATION_ICONS: Record<NavigationIcon, LucideIcon> = {
+  // Render a familiar home icon for the restored public showcase route.
+  home: House,
   // Render the established gallery icon for the private Portfolio destination.
   portfolio: Images,
 };
