@@ -55,6 +55,54 @@ function DropdownMenuContent({
   );
 }
 
+// Render a standard actionable row for navigation and account menu choices.
+function DropdownMenuItem({
+  className,
+  ...props
+}: ComponentProps<typeof DropdownMenuPrimitive.Item>) {
+  // Preserve Radix keyboard behavior while applying the shared menu item treatment.
+  return (
+    <DropdownMenuPrimitive.Item
+      className={cn(
+        "flex cursor-default items-center gap-2 rounded-sm px-2 py-2 text-sm outline-none select-none focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+        className,
+      )}
+      data-slot="dropdown-menu-item"
+      {...props}
+    />
+  );
+}
+
+// Render quiet supporting text above a related group of account actions.
+function DropdownMenuLabel({
+  className,
+  ...props
+}: ComponentProps<typeof DropdownMenuPrimitive.Label>) {
+  // Keep menu headings visually distinct without competing with actionable rows.
+  return (
+    <DropdownMenuPrimitive.Label
+      className={cn("px-2 py-1.5 text-sm font-semibold", className)}
+      data-slot="dropdown-menu-label"
+      {...props}
+    />
+  );
+}
+
+// Separate related dropdown groups without introducing another layout wrapper.
+function DropdownMenuSeparator({
+  className,
+  ...props
+}: ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
+  // Use the semantic border token so the divider follows light and dark themes.
+  return (
+    <DropdownMenuPrimitive.Separator
+      className={cn("-mx-1 my-1 h-px bg-border", className)}
+      data-slot="dropdown-menu-separator"
+      {...props}
+    />
+  );
+}
+
 // Group mutually exclusive menu options for accessible theme selection.
 function DropdownMenuRadioGroup(
   props: ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>,
@@ -102,7 +150,10 @@ function DropdownMenuRadioItem({
 export {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 };

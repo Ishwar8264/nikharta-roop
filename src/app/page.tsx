@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 // Load the shared icon component type for strict service configuration.
 import type { LucideIcon } from "lucide-react";
+// Load the reusable private navbar instead of keeping page-local navigation.
+import { PrivateNavbar } from "@/src/components/navigation/private-navbar";
 // Load the metadata type for a strict page-level search preview declaration.
 import type { Metadata } from "next";
 
@@ -237,52 +239,6 @@ function ServiceCard({ description, icon: Icon, price, title }: Service) {
         </button>
       </div>
     </article>
-  );
-}
-
-// Render the compact real-world header used by the salon showcase.
-function ShowcaseHeader() {
-  // Keep navigation focused on the three main design-system sections.
-  return (
-    <header className="relative z-10 border-b border-border bg-background/90 backdrop-blur-xl">
-        {/* Constrain navigation width while preserving mobile breathing room. */}
-        <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-8 px-5 pr-36 sm:px-8 sm:pr-40 lg:px-10 lg:pr-40">
-          {/* Use a text wordmark so the brand remains sharp at every resolution. */}
-          <a className="group flex items-center gap-3" href="#top">
-            {/* Give the wordmark a compact recognizable salon symbol. */}
-            <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground transition group-hover:bg-primary-hover">
-              <Sparkles aria-hidden="true" className="size-4" />
-            </span>
-            {/* Keep the main wordmark elegant without using display type for navigation. */}
-            <span>
-              <span className="font-display block text-xl leading-none font-semibold tracking-[-0.02em]">
-                Nikharta Roop
-              </span>
-              <span className="text-muted-foreground mt-1 block text-[10px] font-bold tracking-[0.24em] uppercase">
-                Salon &amp; Studio
-              </span>
-            </span>
-          </a>
-          {/* Offer direct jumps to the main demo sections on larger screens. */}
-          <nav
-            aria-label="Design system sections"
-            className="hidden items-center gap-6 text-sm font-semibold lg:flex"
-          >
-            {/* Link directly to the live color token examples. */}
-            <a className="transition hover:text-primary" href="#colors">
-              Colors
-            </a>
-            {/* Link directly to the responsive typography scale. */}
-            <a className="transition hover:text-primary" href="#typography">
-              Typography
-            </a>
-            {/* Link directly to the reusable interface patterns. */}
-            <a className="transition hover:text-primary" href="#components">
-              Components
-            </a>
-          </nav>
-        </div>
-    </header>
   );
 }
 
@@ -762,21 +718,24 @@ function ShowcaseFooter() {
 export default function HomePage() {
   // Compose focused server-rendered sections without adding unnecessary client state.
   return (
-    <main className="min-h-screen overflow-hidden bg-background text-foreground">
-      {/* Provide a compact real-world header pattern above the design showcase. */}
-      <ShowcaseHeader />
-      {/* Introduce the approved salon direction through a realistic hero pattern. */}
-      <HeroSection />
-      {/* Document the complete approved light and dark semantic palette. */}
-      <ColorsSection />
-      {/* Demonstrate the complete responsive brand typography hierarchy. */}
-      <TypographySection />
-      {/* Demonstrate reusable controls, forms, cards, and booking patterns. */}
-      <ComponentsSection />
-      {/* Close the demo with a real conversion section using the approved hierarchy. */}
-      <BookingCallToAction />
-      {/* End the showcase with a minimal brand and accessibility reminder. */}
-      <ShowcaseFooter />
-    </main>
+    <>
+      {/* Render the reusable private navigation above the current Home experience. */}
+      <PrivateNavbar />
+      {/* Keep the private page content inside its semantic primary landmark. */}
+      <main className="min-h-screen overflow-hidden bg-background text-foreground">
+        {/* Introduce the approved salon direction through a realistic hero pattern. */}
+        <HeroSection />
+        {/* Document the complete approved light and dark semantic palette. */}
+        <ColorsSection />
+        {/* Demonstrate the complete responsive brand typography hierarchy. */}
+        <TypographySection />
+        {/* Demonstrate reusable controls, forms, cards, and booking patterns. */}
+        <ComponentsSection />
+        {/* Close the demo with a real conversion section using the approved hierarchy. */}
+        <BookingCallToAction />
+        {/* End the showcase with a minimal brand and accessibility reminder. */}
+        <ShowcaseFooter />
+      </main>
+    </>
   );
 }
