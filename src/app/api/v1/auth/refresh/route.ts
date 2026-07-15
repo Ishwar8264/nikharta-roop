@@ -4,10 +4,10 @@
  * /api/v1/auth/refresh:
  *   post:
  *     summary: Refresh Access Token
- *     description: Get a new access token using a valid refresh token.
+ *     description: Rotates an explicit refresh token or protected browser cookie.
  *     tags: [Auth]
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
@@ -34,44 +34,58 @@
  */
 
 import { NextRequest } from "next/server";
+
+import { getAuthRequestContext } from "@/src/helpers/auth-request";
+import { handleApiRouteError } from "@/src/lib/api-route-error";
+import {
+  getRefreshTokenFromRequest,
+  setAuthCookies,
+} from "@/src/lib/auth-cookies";
+import { UnauthorizedError } from "@/src/lib/errors";
 import { ApiResponse } from "@/src/lib/response";
 import { refreshTokenService } from "@/src/services/auth/auth.service";
 import { refreshTokenSchema } from "@/src/validations/auth/auth.validation";
-import { AppError } from "@/src/lib/errors";
-import { getAuthRequestContext } from "@/src/helpers/auth-request";
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Parse and validate the request body
-    const body = await req.json();
+    // 1. Read the optional body because browser refresh can rely on its cookie.
+    const rawBody = await req.text();
+
+    // 2. Parse supplied JSON while treating an empty browser body as an object.
+    const body: unknown = rawBody ? JSON.parse(rawBody) : {};
+
+    // 3. Validate an optional explicit refresh token for non-browser clients.
     const validated = refreshTokenSchema.parse(body);
 
-    // 2. Capture request metadata for the rotated replacement session.
+    // Prefer an explicit API-client token before the protected browser cookie.
+    const refreshToken =
+      validated.refreshToken ?? getRefreshTokenFromRequest(req);
+
+    // Reject requests that provide neither supported refresh mechanism.
+    if (!refreshToken) {
+      throw new UnauthorizedError("Refresh token required");
+    }
+
+    // 4. Capture request metadata for the rotated replacement session.
     const context = getAuthRequestContext(req);
 
-    // 3. Call the service layer to rotate the valid refresh session.
-    const result = await refreshTokenService(validated.refreshToken, context);
+    // 5. Call the service layer to rotate the valid refresh session.
+    const result = await refreshTokenService(refreshToken, context);
 
-    // 4. Return the new tokens to the client
-    return ApiResponse.success(result);
+    // 6. Preserve the existing token response for non-browser API clients.
+    const response = ApiResponse.success(result);
+
+    // 7. Rotate the protected browser cookies with the replacement token pair.
+    setAuthCookies(response, result);
+
+    // 8. Return the response after both browser cookies are attached.
+    return response;
   } catch (error) {
-    // TypeScript automatically infers 'error' as 'unknown'. We safely narrow the type below.
-
-    // 1. If it's our custom AppError (e.g., UnauthorizedError), use its specific status code
-    if (error instanceof AppError) {
-      return ApiResponse.error(error.message, error.statusCode);
-    }
-
-    // 2. If it's a standard JavaScript Error (e.g., JWT verification failure or ZodError)
-    if (error instanceof Error) {
-      // Refresh failures should always return 401 Unauthorized
-      return ApiResponse.error(error.message, 401);
-    }
-
-    // 3. Fallback for any other unknown error types
-    return ApiResponse.error(
-      "An unexpected error occurred during token refresh",
-      500,
-    );
+    // Keep invalid token details private while reusing standard validation errors.
+    return handleApiRouteError(error, {
+      fallbackMessage: "Invalid or expired refresh token",
+      fallbackStatus: 401,
+      logUnexpected: false,
+    });
   }
 }

@@ -38,7 +38,8 @@
 import { NextRequest } from "next/server";
 
 import { getAuthRequestContext } from "@/src/helpers/auth-request";
-import { AppError } from "@/src/lib/errors";
+import { handleApiRouteError } from "@/src/lib/api-route-error";
+import { setAuthCookies } from "@/src/lib/auth-cookies";
 import { ApiResponse } from "@/src/lib/response";
 import { verifyOtpService } from "@/src/services/auth/auth.service";
 import { verifyOtpSchema } from "@/src/validations/auth/auth.validation";
@@ -63,20 +64,16 @@ export async function POST(request: NextRequest) {
       context,
     );
 
-    // Preserve the standard successful API response envelope.
-    return ApiResponse.success(result);
+    // Preserve the standard successful API response envelope for every client.
+    const response = ApiResponse.success(result);
+
+    // Establish a protected cookie session for same-origin browser clients.
+    setAuthCookies(response, result);
+
+    // Return tokens in the existing body for backward-compatible API clients.
+    return response;
   } catch (error) {
-    // Preserve status codes from expected authentication failures.
-    if (error instanceof AppError) {
-      return ApiResponse.error(error.message, error.statusCode);
-    }
-
-    // Return validation and malformed JSON failures as bad requests.
-    if (error instanceof Error) {
-      return ApiResponse.error(error.message, 400);
-    }
-
-    // Hide unknown runtime details behind one safe server response.
-    return ApiResponse.error("An unexpected error occurred", 500);
+    // Reuse the shared handler for clean validation and safe server errors.
+    return handleApiRouteError(error);
   }
 }

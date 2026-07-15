@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { createApiResponseSchema } from "@/src/validations/api.validation";
+
 // Validate and preserve the existing ten-digit Indian mobile format.
 const mobileSchema = z
   .string()
@@ -50,6 +52,14 @@ export const registerSchema = z
   .object(authIdentifierShape)
   .superRefine(requireExactlyOneIdentifier);
 
+// Validate the reusable message returned after an OTP request succeeds.
+export const otpSentDataSchema = z.object({
+  message: z.string().min(1),
+});
+
+// Validate the full register response before the signup UI consumes it.
+export const registerResponseSchema = createApiResponseSchema(otpSentDataSchema);
+
 // Validate generic OTP requests used by existing API clients and documentation tools.
 export const sendOtpSchema = z
   .object({
@@ -58,16 +68,49 @@ export const sendOtpSchema = z
   })
   .superRefine(requireExactlyOneIdentifier);
 
+// Reuse one six-digit OTP rule across the verification form and API payload.
+const otpCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^[0-9]{6}$/, "OTP must be 6 digits");
+
+// Validate the visible OTP field without duplicating the complete API payload.
+export const otpInputSchema = z.object({
+  otp: otpCodeSchema,
+});
+
 // Validate OTP verification for either login channel while keeping purpose explicit.
 export const verifyOtpSchema = z
   .object({
     ...authIdentifierShape,
-    otp: z.string().trim().regex(/^[0-9]{6}$/, "OTP must be 6 digits"),
+    otp: otpCodeSchema,
     purpose: z.enum(["LOGIN", "SIGNUP"]),
   })
   .superRefine(requireExactlyOneIdentifier);
 
-// Require a non-empty refresh token before JWT verification begins.
+// Validate the safe user fields returned after successful OTP verification.
+const authenticatedUserSchema = z.object({
+  id: z.string().min(1),
+  mobile: z.string().nullable(),
+  email: z.string().email().nullable(),
+  role: z.enum(["USER", "STAFF", "ADMIN", "SUPER_ADMIN"]),
+  isMobileVerified: z.boolean(),
+  isEmailVerified: z.boolean(),
+});
+
+// Validate the complete session payload while cookies protect browser persistence.
+export const authSessionDataSchema = z.object({
+  accessToken: z.string().min(1),
+  refreshToken: z.string().min(1),
+  user: authenticatedUserSchema,
+});
+
+// Validate OTP verification responses before the signup UI trusts session creation.
+export const verifyOtpResponseSchema = createApiResponseSchema(
+  authSessionDataSchema,
+);
+
+// Accept an optional body token because browsers can use the HttpOnly cookie.
 export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, "Refresh token required"),
+  refreshToken: z.string().min(1, "Refresh token required").optional(),
 });

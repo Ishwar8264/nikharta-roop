@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
+import { getAccessTokenFromRequest } from "@/src/lib/auth-cookies";
 import { UnauthorizedError } from "@/src/lib/errors";
 import { validateAccessSessionService } from "@/src/services/auth/auth.service";
 
@@ -19,18 +20,10 @@ export const withAuth = (handler: AuthHandler) => {
   // Return the actual Next.js route handler executed for each request.
   return async (request: NextRequest) => {
     try {
-      // Read the standard Authorization header from the incoming request.
-      const authHeader = request.headers.get("authorization");
+      // Support explicit bearer tokens and protected same-origin browser cookies.
+      const accessToken = getAccessTokenFromRequest(request);
 
-      // Require the Bearer scheme before attempting token extraction.
-      if (!authHeader?.startsWith("Bearer ")) {
-        throw new UnauthorizedError("Missing or invalid authorization header");
-      }
-
-      // Extract the raw JWT after the validated Bearer prefix.
-      const accessToken = authHeader.slice("Bearer ".length);
-
-      // Reject an empty Bearer value before JWT verification.
+      // Reject requests that provide neither supported authentication mechanism.
       if (!accessToken) {
         throw new UnauthorizedError("Missing access token");
       }

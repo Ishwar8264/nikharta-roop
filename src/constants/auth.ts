@@ -16,8 +16,14 @@ export const OTP_IP_RATE_LIMIT_MAX_REQUESTS = 10;
 // Keep access tokens short-lived so revoked sessions have limited fallback exposure.
 export const ACCESS_TOKEN_EXPIRY = "15m";
 
+// Match the browser access cookie lifetime with the signed access token lifetime.
+export const ACCESS_TOKEN_EXPIRY_SECONDS = 15 * 60;
+
 // Keep refresh tokens and their database sessions valid for seven days.
 export const REFRESH_TOKEN_EXPIRY = "7d";
 
 // Convert the refresh-token lifetime into milliseconds for session persistence.
 export const AUTH_SESSION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Match the browser refresh cookie lifetime with the persisted auth session.
+export const AUTH_SESSION_EXPIRY_SECONDS = AUTH_SESSION_EXPIRY_MS / 1000;

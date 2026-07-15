@@ -8,14 +8,22 @@
 
 import { NextResponse } from "next/server";
 
+import type {
+  ApiErrorResponse,
+  ApiSuccessResponse,
+} from "@/src/types/api";
+
 export class ApiResponse {
   /**
    * Send a successful response.
    * @param data - The payload to send to the client.
    * @param status - HTTP status code (default: 200).
    */
-  // TypeScript will auto-infer the type.
-  static success<T>(data: T, status: number = 200) {
+  // Return the shared success type so server and client contracts stay aligned.
+  static success<T>(
+    data: T,
+    status: number = 200,
+  ): NextResponse<ApiSuccessResponse<T>> {
     return NextResponse.json(
       {
         success: true,
@@ -30,7 +38,10 @@ export class ApiResponse {
    * @param message - The error message.
    * @param status - HTTP status code (default: 400).
    */
-  static error(message: string, status: number = 400) {
+  static error(
+    message: string,
+    status: number = 400,
+  ): NextResponse<ApiErrorResponse> {
     return NextResponse.json(
       {
         success: false,

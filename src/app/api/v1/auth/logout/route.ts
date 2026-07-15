@@ -3,26 +3,16 @@
  * @swagger
  * /api/v1/auth/logout:
  *   post:
- *     summary: Refresh Access Token
- *     description: Get a new access token using a valid refresh token.
+ *     summary: Log out the current session
+ *     description: Revokes the bearer-token or browser-cookie session.
  *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - refreshToken
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 example: "eyJhbGciOiJIUzI1NiIsInR5c..."
+ *     security:
+ *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: New tokens generated successfully
+ *         description: Session revoked and browser cookies cleared
  *       401:
- *         description: Invalid or expired refresh token
+ *         description: Missing, invalid, or expired session
  */
 
 /**
@@ -33,20 +23,27 @@
  */
 
 import { NextRequest } from "next/server";
+import {
+  clearAuthCookies,
+  getAccessTokenFromRequest,
+} from "@/src/lib/auth-cookies";
 import { ApiResponse } from "@/src/lib/response";
 import { withAuth } from "@/src/middleware/auth";
 import { logoutService } from "@/src/services/auth/auth.service";
 
 export const POST = withAuth(async (req: NextRequest) => {
-  // Extract token from the Authorization header
-  const authHeader = req.headers.get("authorization")!;
-
-  // Remove the validated Bearer prefix before session lookup.
-  const accessToken = authHeader.slice("Bearer ".length);
+  // Reuse the token source already accepted by the authentication middleware.
+  const accessToken = getAccessTokenFromRequest(req)!;
 
   // Call the service to revoke the session
   await logoutService(accessToken);
 
-  // Return success response
-  return ApiResponse.success({ message: "Logged out successfully" });
+  // Build the standard logout response before clearing browser credentials.
+  const response = ApiResponse.success({ message: "Logged out successfully" });
+
+  // Clear both HttpOnly cookies so browser logout completes immediately.
+  clearAuthCookies(response);
+
+  // Return the successful response after browser credentials are removed.
+  return response;
 });
