@@ -37,8 +37,8 @@ export type NavigationItem = {
 
 // Keep public navigation aligned with the restored design-system showcase route.
 export const PUBLIC_NAV_ITEMS = [
-  // Open the restored public home showcase without replacing the root placeholder.
-  { href: "/home", icon: "home", label: "Home" },
+  // Open the customer discovery landing page from every public navigation surface.
+  { href: "/", icon: "home", label: "Home" },
   // Browse active salon branches backed by the Branch model.
   { href: "/branches", icon: "branches", label: "Branches" },
   // Browse bookable salon services and their categories.
@@ -57,8 +57,8 @@ export const PUBLIC_NAV_ITEMS = [
 
 // Keep private navigation aligned with routes that already exist and are Proxy-protected.
 export const PRIVATE_NAV_ITEMS = [
-  // Let authenticated customers open the same public home showcase.
-  { href: "/home", icon: "home", label: "Home" },
+  // Let authenticated customers return to the public discovery landing page.
+  { href: "/", icon: "home", label: "Home" },
   // Open the dedicated landing page for regular customer accounts.
   { href: "/user", icon: "user", label: "Customer Area" },
   // Manage the customer's current and historical bookings.
@@ -81,8 +81,8 @@ export const PRIVATE_NAV_ITEMS = [
 
 // Keep staff navigation focused on shared operations and the public showcase.
 export const STAFF_NAV_ITEMS = [
-  // Let authenticated employees open the public home showcase.
-  { href: "/home", icon: "home", label: "Home" },
+  // Let authenticated employees return to the public discovery landing page.
+  { href: "/", icon: "home", label: "Home" },
   // Open the operational workspace shared with higher roles.
   { href: "/staff", icon: "staff", label: "Staff Area" },
   // Manage appointments assigned through the Staff and Booking models.

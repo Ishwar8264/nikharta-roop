@@ -38,7 +38,7 @@ export function AuthNavActions({ showLabels = false }: AuthNavActionsProps) {
         {/* Keep the loading control recognizable without showing guest actions early. */}
         <UserRound aria-hidden="true" className="size-4" />
         {/* Explain the neutral pending state inside the expanded drawer treatment. */}
-        {showLabels ? <span>Loading account...</span> : null}
+        {showLabels ? <span>Loading account…</span> : null}
       </Button>
     );
   }
