@@ -75,3 +75,44 @@ export const verifyRefreshToken = (token: string) => {
     userId: string;
   };
 };
+
+// Sign a low-privilege reference used only for database-backed protected-route checks.
+export const generateRouteSessionToken = (refreshToken: string) => {
+  // Reuse the verified refresh subject without exposing the scoped token to Proxy.
+  const { userId } = verifyRefreshToken(refreshToken);
+
+  // Bind the signed marker to the exact persisted refresh session without storing raw JWTs.
+  const refreshTokenId = hashToken(refreshToken);
+
+  // Match the signed reference lifetime with the refresh session validated by Proxy.
+  return jwt.sign(
+    { purpose: "ROUTE_ACCESS", refreshTokenId, userId },
+    getJwtSecret("JWT_ACCESS_SECRET"),
+    { expiresIn: REFRESH_TOKEN_EXPIRY },
+  );
+};
+
+// Verify the signed marker without treating it as API authorization proof.
+export const verifyRouteSessionToken = (token: string) => {
+  // Validate signature, expiry, and the dedicated low-privilege purpose claim.
+  const payload = jwt.verify(token, getJwtSecret("JWT_ACCESS_SECRET")) as {
+    purpose?: string;
+    refreshTokenId?: string;
+    userId?: string;
+  };
+
+  // Reject markers that cannot identify one exact persisted browser session.
+  if (
+    payload.purpose !== "ROUTE_ACCESS" ||
+    !payload.refreshTokenId ||
+    !payload.userId
+  ) {
+    throw new Error("Invalid route session token");
+  }
+
+  // Return trusted identifiers only after signature, expiry, and purpose validation.
+  return {
+    refreshTokenId: payload.refreshTokenId,
+    userId: payload.userId,
+  };
+};

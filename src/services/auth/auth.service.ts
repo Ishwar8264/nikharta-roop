@@ -24,7 +24,6 @@ import {
 import {
   generateTokens,
   hashToken,
-  verifyAccessToken,
   verifyRefreshToken,
 } from "@/src/lib/jwt";
 import { generateOtp, hashOtp, verifyOtpHash } from "@/src/lib/otp";
@@ -339,31 +338,6 @@ export const verifyOtpService = async (
       ...verificationFlags,
     },
   };
-};
-
-// Verify an access JWT and its persisted session for protected endpoints.
-export const validateAccessSessionService = async (accessToken: string) => {
-  // Verify JWT signature and expiry before reading its claims.
-  const decoded = verifyAccessToken(accessToken);
-
-  // Hash the presented token to locate its active database session.
-  const hashedToken = hashToken(accessToken);
-
-  // Load a non-revoked and unexpired session with its account.
-  const session = await authQuery.findSessionByAccessToken(hashedToken);
-
-  // Reject missing sessions, mismatched subjects, or blocked accounts.
-  if (
-    !session ||
-    session.userId !== decoded.userId ||
-    !session.user.isActive ||
-    session.user.deletedAt
-  ) {
-    throw new UnauthorizedError("Session expired or revoked");
-  }
-
-  // Return trusted authorization claims only after both checks pass.
-  return decoded;
 };
 
 // Rotate a valid refresh token and revoke its previous session.

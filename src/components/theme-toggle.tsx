@@ -52,55 +52,52 @@ export function ThemeToggle() {
   // Use the selected option's Lucide icon inside the dropdown trigger.
   const SelectedThemeIcon = selectedOption.icon;
 
-  // Render the globally positioned theme dropdown.
+  // Render the theme dropdown inside the global application navbar.
   return (
-    <div className="fixed top-4 right-4 z-50">
-      {/* Manage accessible open state and keyboard behavior through Radix. */}
-      <DropdownMenu>
-        {/* Render the theme-aware trigger as the interactive dropdown button. */}
-        <DropdownMenuTrigger asChild disabled={!isMounted}>
-          {/* Show the current mode while keeping a clear accessible label. */}
-          <button
-            aria-label="Choose theme"
-            className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-card-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
-          >
-            {/* Reflect the currently selected theme with its matching icon. */}
-            <SelectedThemeIcon aria-hidden="true" className="size-4" />
-            {/* Display the selected mode for clear visual feedback. */}
-            <span>{selectedOption.label}</span>
-            {/* Indicate that the button opens a list of additional choices. */}
-            <ChevronDown
-              aria-hidden="true"
-              className="size-3.5 text-muted-foreground"
-            />
-          </button>
-        </DropdownMenuTrigger>
-        {/* Align the floating menu with the trigger's right edge. */}
-        <DropdownMenuContent align="end">
-          {/* Persist the newly selected mode through next-themes. */}
-          <DropdownMenuRadioGroup
-            onValueChange={setTheme}
-            value={selectedTheme}
-          >
-            {/* Render each supported theme from the single option configuration. */}
-            {THEME_OPTIONS.map((option) => {
-              // Keep the option icon component available for this menu row.
-              const OptionIcon = option.icon;
+    <DropdownMenu>
+      {/* Render the theme-aware trigger as the interactive dropdown button. */}
+      <DropdownMenuTrigger asChild disabled={!isMounted}>
+        {/* Show a compact mobile icon and reveal its label on wide screens. */}
+        <button
+          aria-label="Choose theme"
+          className="flex size-10 items-center justify-center gap-2 rounded-md border border-border bg-card text-sm font-medium text-card-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60 xl:w-auto xl:px-3"
+          type="button"
+        >
+          {/* Reflect the currently selected theme with its matching icon. */}
+          <SelectedThemeIcon aria-hidden="true" className="size-4" />
+          {/* Display the selected mode when enough navbar space is available. */}
+          <span className="hidden xl:inline">{selectedOption.label}</span>
+          {/* Indicate additional theme choices without crowding compact navigation. */}
+          <ChevronDown
+            aria-hidden="true"
+            className="hidden size-3.5 text-muted-foreground xl:block"
+          />
+        </button>
+      </DropdownMenuTrigger>
+      {/* Align the floating menu with the trigger's right edge. */}
+      <DropdownMenuContent align="end">
+        {/* Persist the newly selected mode through next-themes. */}
+        <DropdownMenuRadioGroup
+          onValueChange={setTheme}
+          value={selectedTheme}
+        >
+          {/* Render each supported theme from the single option configuration. */}
+          {THEME_OPTIONS.map((option) => {
+            // Keep the option icon component available for this menu row.
+            const OptionIcon = option.icon;
 
-              // Render one accessible and mutually exclusive theme choice.
-              return (
-                <DropdownMenuRadioItem key={option.value} value={option.value}>
-                  {/* Pair every label with its corresponding Lucide icon. */}
-                  <OptionIcon aria-hidden="true" className="size-4" />
-                  {/* Show the human-readable theme name. */}
-                  <span>{option.label}</span>
-                </DropdownMenuRadioItem>
-              );
-            })}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+            // Render one accessible and mutually exclusive theme choice.
+            return (
+              <DropdownMenuRadioItem key={option.value} value={option.value}>
+                {/* Pair every label with its corresponding Lucide icon. */}
+                <OptionIcon aria-hidden="true" className="size-4" />
+                {/* Show the human-readable theme name. */}
+                <span>{option.label}</span>
+              </DropdownMenuRadioItem>
+            );
+          })}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -35,7 +35,7 @@
 import { NextRequest } from "next/server";
 
 import { getAuthRequestContext } from "@/src/helpers/auth-request";
-import { AppError } from "@/src/lib/errors";
+import { handleApiRouteError } from "@/src/lib/api-route-error";
 import { ApiResponse } from "@/src/lib/response";
 import { sendOtpService } from "@/src/services/auth/auth.service";
 import { sendOtpSchema } from "@/src/validations/auth/auth.validation";
@@ -62,17 +62,7 @@ export async function POST(request: NextRequest) {
     // Preserve the standard successful API response envelope.
     return ApiResponse.success(result);
   } catch (error) {
-    // Preserve status codes from expected application failures.
-    if (error instanceof AppError) {
-      return ApiResponse.error(error.message, error.statusCode);
-    }
-
-    // Return validation and malformed JSON failures as bad requests.
-    if (error instanceof Error) {
-      return ApiResponse.error(error.message, 400);
-    }
-
-    // Hide unknown runtime details behind one safe server response.
-    return ApiResponse.error("An unexpected error occurred", 500);
+    // Reuse the shared handler for clean validation and safe server errors.
+    return handleApiRouteError(error);
   }
 }
