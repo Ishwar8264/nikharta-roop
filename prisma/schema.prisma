@@ -1,0 +1,250 @@
+// ---------- ENUMS ----------
+enum Role {
+  SUPER_ADMIN
+  SALON_OWNER
+  MANAGER
+  STAFF
+  CUSTOMER
+}
+
+enum OtpChannel {
+  EMAIL
+  PHONE
+  WHATSAPP
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+// ---------- USER & AUTH ----------
+model User {
+  id             String    @id @default(uuid())
+  email          String?   @unique
+  phone          String?   @unique
+  password       String?
+  name           String?
+  avatar         String?
+  role           Role      @default(CUSTOMER)
+
+  // Location (User preferred area)
+  lat            Float?
+  lng            Float?
+
+  // Onboarding tracking
+  isOnboarded    Boolean   @default(false)
+
+  emailVerified  Boolean   @default(false)
+  phoneVerified  Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  otps                Otp[]
+  socialAccounts      SocialAccount[]
+  salonMemberships    SalonMember[]
+  appointments        Appointment[]
+  favorites           Favorite[]
+  serviceReviews      ServiceReview[]
+  productReviews      ProductReview[]
+  staffRatingsReceived StaffRating[] @relation("StaffRatingGiven")
+  staffRatingsGiven     StaffRating[] @relation("StaffRatingReceived")
+}
+
+model Otp {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  channel   OtpChannel
+  codeHash  String
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+}
+
+model SocialAccount {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  provider       String   // GOOGLE, FACEBOOK, APPLE
+  providerUserId String
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+}
+
+// ---------- SALON & STAFF ----------
+model Salon {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  city      String
+  state     String
+  zip       String
+  lat       Float
+  lng       Float
+  placeId   String?  @unique
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  members       SalonMember[]
+  services      Service[]
+  products      Product[]
+  appointments  Appointment[]
+  favorites     Favorite[]
+}
+
+model SalonMember {
+  id       String @id @default(uuid())
+  userId   String
+  salonId  String
+  role     Role
+
+  user     User   @relation(fields: [userId], references: [id])
+  salon    Salon  @relation(fields: [salonId], references: [id])
+
+  @@unique([userId, salonId])
+}
+
+// ---------- SERVICES & PRODUCTS ----------
+model Service {
+  id        String   @id @default(uuid())
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id])
+  name      String
+  price     Float
+  duration  Int
+  isActive  Boolean  @default(true)
+
+  reviews      ServiceReview[]
+  appointments AppointmentService[]
+  favorites    Favorite[]
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id])
+  name      String
+  price     Float
+  stock     Int
+  images    String[]
+  isActive  Boolean  @default(true)
+
+  reviews     ProductReview[]
+  favorites   Favorite[]
+}
+
+// ---------- FAVORITES ----------
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  salonId   String?
+  salon     Salon?   @relation(fields: [salonId], references: [id])
+
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------- REVIEWS ----------
+model ServiceReview {
+  id        String   @id @default(uuid())
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model ProductReview {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+// ---------- STAFF RATINGS ----------
+model StaffRating {
+  id            String      @id @default(uuid())
+  staffId       String
+  staff         User        @relation("StaffRatingGiven", fields: [staffId], references: [id])
+
+  customerId    String
+  customer      User        @relation("StaffRatingReceived", fields: [customerId], references: [id])
+
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+
+  rating        Int
+  comment       String?
+  createdAt     DateTime    @default(now())
+
+  @@index([staffId])
+}
+
+// ---------- BOOKINGS & PAYMENTS ----------
+model Appointment {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   User     @relation(fields: [customerId], references: [id])
+
+  salonId    String
+  salon      Salon    @relation(fields: [salonId], references: [id])
+
+  startTime  DateTime
+  endTime    DateTime
+  status     AppointmentStatus @default(SCHEDULED)
+  totalPrice Float
+
+  services      AppointmentService[]
+  payment       Payment?
+  staffRatings  StaffRating[]
+
+  createdAt  DateTime @default(now())
+}
+
+model AppointmentService {
+  appointmentId String
+  serviceId     String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  service       Service     @relation(fields: [serviceId], references: [id])
+
+  @@id([appointmentId, serviceId])
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  method        String   // CASH, CARD, UPI
+  transactionId String?
+  createdAt     DateTime @default(now())
+}
