@@ -7,7 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 // ---------- ENUMS ----------
 enum Role {
   SUPER_ADMIN
@@ -26,67 +25,167 @@ enum OtpChannel {
 enum AppointmentStatus {
   SCHEDULED
   CONFIRMED
+  IN_PROGRESS
   COMPLETED
   CANCELLED
   NO_SHOW
+  RESCHEDULED
 }
 
 enum PaymentStatus {
   PENDING
   PAID
+  PARTIALLY_PAID
   REFUNDED
   FAILED
 }
 
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  WALLET
+  ONLINE
+}
+
+enum AiContextType {
+  GENERAL
+  STAFF
+  PRODUCT
+  SERVICE
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum SalonCategory {
+  MALE
+  FEMALE
+  UNISEX
+  KIDS
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FLAT
+}
+
+enum LoyaltyTxnType {
+  EARNED
+  REDEEMED
+  EXPIRED
+  REFUNDED
+}
+
 // ---------- USER & AUTH ----------
 model User {
-  id             String    @id @default(uuid())
-  email          String?   @unique
-  phone          String?   @unique
-  password       String?
-  name           String?
-  avatar         String?
-  role           Role      @default(CUSTOMER)
+  id       String  @id @default(uuid())
+  email    String? @unique
+  phone    String? @unique
+  password String?
+  name     String?
+  avatar   String?
+  bio      String?
+  role     Role    @default(CUSTOMER)
 
-  // Location (User preferred area)
-  lat            Float?
-  lng            Float?
+  lat Float?
+  lng Float?
 
-  // Onboarding tracking
-  isOnboarded    Boolean   @default(false)
+  isOnboarded Boolean @default(false)
 
-  emailVerified  Boolean   @default(false)
-  phoneVerified  Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
 
-  // Relations
-  otps                Otp[]
-  socialAccounts      SocialAccount[]
-  salonMemberships    SalonMember[]
-  appointments        Appointment[]
-  favorites           Favorite[]
-  serviceReviews      ServiceReview[]
-  productReviews      ProductReview[]
-  staffRatingsReceived StaffRating[] @relation("StaffRatingGiven")
-  staffRatingsGiven     StaffRating[] @relation("StaffRatingReceived")
+  // Loyalty
+  loyaltyPoints Int @default(0)
+
+  // Soft delete
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  otps                 Otp[]
+  refreshTokens        RefreshToken[]
+  socialAccounts       SocialAccount[]
+  salonMemberships     SalonMember[]
+  appointments         Appointment[]
+  favorites            Favorite[]
+  serviceReviews       ServiceReview[]
+  productReviews       ProductReview[]
+  blogPosts            BlogPost[]
+  blogComments         BlogComment[]
+  aiChats              AiChat[]
+  aiUsage              UserAiUsage?
+  aiUsageLogs          AiUsageLog[]
+  notifications        Notification[]
+  loyaltyTxns          LoyaltyTransaction[]
+  staffRatingsGiven    StaffRating[]        @relation("StaffRatingCustomer")
+  staffRatingsReceived StaffRating[]        @relation("StaffRatingStaff")
+  staffSchedules       StaffSchedule[]
+  staffLeaves          StaffLeave[]
+
+  @@index([role])
+  @@index([deletedAt])
 }
 
 model Otp {
-  id        String     @id @default(uuid())
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  channel     OtpChannel
+  codeHash    String
+  attempts    Int        @default(0) // Brute-force protection
+  maxAttempts Int        @default(5)
+  isUsed      Boolean    @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, isUsed])
+}
+
+// Refresh token for JWT rotation
+model RefreshToken {
+  id        String    @id @default(uuid())
   userId    String
-  user      User       @relation(fields: [userId], references: [id])
-  channel   OtpChannel
-  codeHash  String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  userAgent String? // Device info
+  ipAddress String?
   expiresAt DateTime
-  createdAt DateTime   @default(now())
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model SocialAccount {
   id             String   @id @default(uuid())
   userId         String
   user           User     @relation(fields: [userId], references: [id])
-  provider       String   // GOOGLE, FACEBOOK, APPLE
+  provider       String
   providerUserId String
   createdAt      DateTime @default(now())
 
@@ -95,75 +194,191 @@ model SocialAccount {
 
 // ---------- SALON & STAFF ----------
 model Salon {
-  id        String   @id @default(uuid())
-  name      String
-  address   String
-  city      String
-  state     String
-  zip       String
-  lat       Float
-  lng       Float
-  placeId   String?  @unique
+  id          String        @id @default(uuid())
+  name        String
+  slug        String        @unique
+  description String?
+  category    SalonCategory @default(UNISEX)
+  address     String
+  city        String
+  state       String
+  zip         String
+  lat         Float
+  lng         Float
+  placeId     String?       @unique
 
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  phone  String?
+  email  String?
+  images String[] // Gallery
 
-  members       SalonMember[]
-  services      Service[]
-  products      Product[]
-  appointments  Appointment[]
-  favorites     Favorite[]
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  members      SalonMember[]
+  workingHours SalonWorkingHours[]
+  services     Service[]
+  products     Product[]
+  appointments Appointment[]
+  favorites    Favorite[]
+
+  @@index([city])
+  @@index([isActive])
+}
+
+// Salon ke weekly working hours
+model SalonWorkingHours {
+  id        String    @id @default(uuid())
+  salonId   String
+  salon     Salon     @relation(fields: [salonId], references: [id])
+  day       DayOfWeek
+  openTime  String // "09:00"
+  closeTime String // "21:00"
+  isClosed  Boolean   @default(false) // Weekly off
+
+  @@unique([salonId, day])
 }
 
 model SalonMember {
-  id       String @id @default(uuid())
-  userId   String
-  salonId  String
-  role     Role
+  id      String @id @default(uuid())
+  userId  String
+  salonId String
+  role    Role
 
-  user     User   @relation(fields: [userId], references: [id])
-  salon    Salon  @relation(fields: [salonId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  salon Salon @relation(fields: [salonId], references: [id])
 
   @@unique([userId, salonId])
 }
 
+// Staff ka weekly schedule
+model StaffSchedule {
+  id        String    @id @default(uuid())
+  staffId   String
+  staff     User      @relation(fields: [staffId], references: [id])
+  salonId   String
+  day       DayOfWeek
+  startTime String // "10:00"
+  endTime   String // "19:00"
+  isOff     Boolean   @default(false)
+
+  @@unique([staffId, salonId, day])
+}
+
+// Staff ki leave
+model StaffLeave {
+  id        String   @id @default(uuid())
+  staffId   String
+  staff     User     @relation(fields: [staffId], references: [id])
+  salonId   String
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ---------- SERVICE CATEGORIES ----------
+model ServiceCategory {
+  id       String    @id @default(uuid())
+  name     String // "Hair", "Skin", "Nails", "Beard"
+  slug     String    @unique
+  icon     String?
+  services Service[]
+}
+
 // ---------- SERVICES & PRODUCTS ----------
 model Service {
-  id        String   @id @default(uuid())
-  salonId   String
-  salon     Salon    @relation(fields: [salonId], references: [id])
+  id         String           @id @default(uuid())
+  salonId    String
+  salon      Salon            @relation(fields: [salonId], references: [id])
+  categoryId String?
+  category   ServiceCategory? @relation(fields: [categoryId], references: [id])
+
   name      String
+  slug      String    @unique
   price     Float
-  duration  Int
-  isActive  Boolean  @default(true)
+  duration  Int // minutes
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  // Description (same as product - flexible)
+  shortDescription String?
+  description      String?
+  descriptionHtml  String?
+  descriptionJson  String?
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  images String[]
 
   reviews      ServiceReview[]
   appointments AppointmentService[]
   favorites    Favorite[]
+  staffSkills  StaffServiceSkill[]
+}
+
+model ProductCategory {
+  id       String    @id @default(uuid())
+  name     String
+  slug     String    @unique
+  products Product[]
 }
 
 model Product {
-  id        String   @id @default(uuid())
-  salonId   String
-  salon     Salon    @relation(fields: [salonId], references: [id])
+  id         String           @id @default(uuid())
+  salonId    String
+  salon      Salon            @relation(fields: [salonId], references: [id])
+  categoryId String?
+  category   ProductCategory? @relation(fields: [categoryId], references: [id])
+
   name      String
   price     Float
   stock     Int
   images    String[]
-  isActive  Boolean  @default(true)
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
 
-  reviews     ProductReview[]
-  favorites   Favorite[]
+  slug             String  @unique
+  shortDescription String?
+  description      String?
+  descriptionHtml  String?
+  descriptionJson  String?
+
+  seoTitle       String?
+  seoDescription String?
+
+  reviews   ProductReview[]
+  favorites Favorite[]
+}
+
+// Staff ↔ Service (kaunsa staff kaunsi service deta hai)
+model StaffServiceSkill {
+  id         String   @id @default(uuid())
+  staffId    String
+  serviceId  String
+  experience Int? // years
+  createdAt  DateTime @default(now())
+  Service    Service  @relation(fields: [serviceId], references: [id])
+
+  @@unique([staffId, serviceId])
 }
 
 // ---------- FAVORITES ----------
 model Favorite {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  salonId   String?
-  salon     Salon?   @relation(fields: [salonId], references: [id])
+  salonId String?
+  salon   Salon?  @relation(fields: [salonId], references: [id])
 
   serviceId String?
   service   Service? @relation(fields: [serviceId], references: [id])
@@ -185,7 +400,10 @@ model ServiceReview {
   user      User     @relation(fields: [userId], references: [id])
   rating    Int
   comment   String?
+  images    String[] // Review photos
   createdAt DateTime @default(now())
+
+  @@index([serviceId])
 }
 
 model ProductReview {
@@ -196,52 +414,95 @@ model ProductReview {
   user      User     @relation(fields: [userId], references: [id])
   rating    Int
   comment   String?
+  images    String[]
   createdAt DateTime @default(now())
+
+  @@index([productId])
 }
 
 // ---------- STAFF RATINGS ----------
 model StaffRating {
-  id            String      @id @default(uuid())
-  staffId       String
-  staff         User        @relation("StaffRatingGiven", fields: [staffId], references: [id])
+  id      String @id @default(uuid())
+  staffId String
+  staff   User   @relation("StaffRatingStaff", fields: [staffId], references: [id])
 
-  customerId    String
-  customer      User        @relation("StaffRatingReceived", fields: [customerId], references: [id])
+  customerId String
+  customer   User   @relation("StaffRatingCustomer", fields: [customerId], references: [id])
 
   appointmentId String?
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
 
-  rating        Int
-  comment       String?
-  createdAt     DateTime    @default(now())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
 
   @@index([staffId])
 }
 
+// ---------- COUPONS ----------
+model Coupon {
+  id             String       @id @default(uuid())
+  code           String       @unique
+  description    String?
+  discountType   DiscountType
+  discountValue  Float // % ya flat amount
+  minOrderAmount Float? // Minimum appointment total
+  maxDiscount    Float? // Cap for percentage
+  usageLimit     Int? // Total uses
+  usedCount      Int          @default(0)
+  perUserLimit   Int          @default(1)
+  validFrom      DateTime
+  validUntil     DateTime
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  appointments Appointment[]
+}
+
 // ---------- BOOKINGS & PAYMENTS ----------
 model Appointment {
-  id         String   @id @default(uuid())
+  id         String @id @default(uuid())
   customerId String
-  customer   User     @relation(fields: [customerId], references: [id])
+  customer   User   @relation(fields: [customerId], references: [id])
 
-  salonId    String
-  salon      Salon    @relation(fields: [salonId], references: [id])
+  salonId String
+  salon   Salon  @relation(fields: [salonId], references: [id])
 
-  startTime  DateTime
-  endTime    DateTime
-  status     AppointmentStatus @default(SCHEDULED)
+  staffId String? // Primary staff assigned
+
+  startTime DateTime
+  endTime   DateTime
+  status    AppointmentStatus @default(SCHEDULED)
+
+  subtotal   Float @default(0)
+  discount   Float @default(0)
+  tax        Float @default(0)
   totalPrice Float
 
-  services      AppointmentService[]
-  payment       Payment?
-  staffRatings  StaffRating[]
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
 
-  createdAt  DateTime @default(now())
+  notes           String?
+  cancelReason    String?
+  rescheduledFrom String? // Original appointment ID
+
+  services     AppointmentService[]
+  payment      Payment?
+  staffRatings StaffRating[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([salonId, startTime])
+  @@index([status])
 }
 
 model AppointmentService {
   appointmentId String
   serviceId     String
+  staffId       String? // Specific staff for this service
+  price         Float // Price at time of booking
   appointment   Appointment @relation(fields: [appointmentId], references: [id])
   service       Service     @relation(fields: [serviceId], references: [id])
 
@@ -249,12 +510,203 @@ model AppointmentService {
 }
 
 model Payment {
-  id            String   @id @default(uuid())
-  appointmentId String   @unique
-  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  id            String        @id @default(uuid())
+  appointmentId String        @unique
+  appointment   Appointment   @relation(fields: [appointmentId], references: [id])
   amount        Float
   status        PaymentStatus @default(PENDING)
-  method        String   // CASH, CARD, UPI
+  method        PaymentMethod @default(CASH)
   transactionId String?
-  createdAt     DateTime @default(now())
+  gatewayRef    String? // Razorpay/Stripe reference
+  refundAmount  Float?
+  createdAt     DateTime      @default(now())
+}
+
+// ---------- LOYALTY (Nikharata Points) ----------
+model LoyaltyTransaction {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  points      Int // +/- points
+  type        LoyaltyTxnType
+  description String?
+  referenceId String? // Appointment ID etc.
+  createdAt   DateTime       @default(now())
+
+  @@index([userId])
+}
+
+// ---------- NOTIFICATIONS ----------
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  channel   NotificationChannel @default(IN_APP)
+  status    NotificationStatus  @default(PENDING)
+  data      String? // JSON payload
+  readAt    DateTime?
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, status])
+}
+
+// ---------- AUDIT LOG ----------
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String? // Kaun kiya (Admin/Staff)
+  action    String // "CREATE", "UPDATE", "DELETE"
+  entity    String // "Salon", "Service", etc.
+  entityId  String?
+  oldData   String? // JSON
+  newData   String? // JSON
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+}
+
+// ---------- AI FEATURE ----------
+model UserAiUsage {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  dailyLimit   Int      @default(500)
+  dailyUsed    Int      @default(0)
+  dailyResetAt DateTime
+
+  weeklyLimit   Int      @default(3000)
+  weeklyUsed    Int      @default(0)
+  weeklyResetAt DateTime
+
+  monthlyLimit   Int      @default(10000)
+  monthlyUsed    Int      @default(0)
+  monthlyResetAt DateTime
+
+  isBlocked   Boolean @default(false)
+  blockReason String?
+
+  updatedAt DateTime @updatedAt
+}
+
+model AiUsageLog {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  chatId String?
+  chat   AiChat? @relation(fields: [chatId], references: [id])
+
+  inputTokens  Int @default(0)
+  outputTokens Int @default(0)
+  totalTokens  Int @default(0)
+
+  model       String
+  cost        Float? // USD me track karo
+  contextType AiContextType @default(GENERAL)
+  createdAt   DateTime      @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+model AiChat {
+  id     String  @id @default(uuid())
+  userId String
+  user   User    @relation(fields: [userId], references: [id])
+  title  String?
+
+  contextType AiContextType @default(GENERAL)
+  contextId   String?
+
+  createdAt DateTime     @default(now())
+  messages  AiMessage[]
+  usageLogs AiUsageLog[]
+}
+
+model AiMessage {
+  id        String   @id @default(uuid())
+  chatId    String
+  chat      AiChat   @relation(fields: [chatId], references: [id])
+  role      String
+  content   String
+  tokens    Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// ---------- BLOG SYSTEM ----------
+model BlogPost {
+  id          String  @id @default(uuid())
+  title       String
+  slug        String  @unique
+  excerpt     String?
+  content     String
+  contentHtml String?
+  contentJson String?
+
+  coverImage  String?
+  readingTime Int     @default(0)
+  views       Int     @default(0) // Analytics
+
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  deletedAt   DateTime?
+
+  seoTitle       String?
+  seoDescription String?
+  metaKeywords   String?
+  canonicalUrl   String?
+  noIndex        Boolean @default(false)
+  tldr           String?
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  categoryId String?
+  category   BlogCategory? @relation(fields: [categoryId], references: [id])
+
+  tags     BlogTag[]
+  comments BlogComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, publishedAt(sort: Desc)])
+  @@index([slug])
+}
+
+model BlogComment {
+  id         String   @id @default(uuid())
+  postId     String
+  post       BlogPost @relation(fields: [postId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  content    String
+  parentId   String? // Nested replies
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([postId])
+}
+
+model BlogCategory {
+  id             String     @id @default(uuid())
+  name           String
+  slug           String     @unique
+  description    String?
+  seoTitle       String?
+  seoDescription String?
+  posts          BlogPost[]
+}
+
+model BlogTag {
+  id    String     @id @default(uuid())
+  name  String
+  slug  String     @unique
+  posts BlogPost[]
 }
