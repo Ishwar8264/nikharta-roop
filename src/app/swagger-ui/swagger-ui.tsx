@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import "swagger-ui-dist/swagger-ui.css";
+import "./swagger-ui-overrides.css";
 
 /** Mounts the official Swagger UI bundle against the local OpenAPI document. */
 export function ApiDocumentation(): React.JSX.Element {
@@ -27,7 +28,6 @@ export function ApiDocumentation(): React.JSX.Element {
       SwaggerUIBundle({
         domNode: container,
         url: "/api-docs",
-        deepLinking: true,
         displayRequestDuration: true,
         docExpansion: "list",
         filter: true,

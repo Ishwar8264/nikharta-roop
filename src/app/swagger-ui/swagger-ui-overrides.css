@@ -1,0 +1,4 @@
+/* Keep operation rows simple while preserving copy controls inside responses. */
+.swagger-ui .opblock-summary > .view-line-link.copy-to-clipboard {
+  display: none;
+}
