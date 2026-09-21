@@ -46,3 +46,38 @@ function renderOtpHtml(code: string): string {
     </div>
   `;
 }
+
+/** Sends a password reset code to the given email address. */
+export async function sendPasswordResetEmail(
+  to: string,
+  code: string,
+): Promise<void> {
+  if (!resend) {
+    console.log(`\n🔐 [DEV EMAIL] Password reset for ${to}: ${code}\n`);
+    return;
+  }
+
+  const { error } = await resend.emails.send({
+    from: emailFrom,
+    to,
+    subject: "Reset your password",
+    html: renderPasswordResetHtml(code),
+  });
+
+  if (error) {
+    throw new Error(`Resend rejected the message: ${error.message}`);
+  }
+}
+
+function renderPasswordResetHtml(code: string): string {
+  return `
+    <div style="font-family: sans-serif; max-width: 480px; margin: auto;">
+      <h2>Reset your password</h2>
+      <p>Use the code below to set a new password. It expires in 10 minutes.</p>
+      <p style="font-size: 32px; letter-spacing: 6px; font-weight: bold;">${code}</p>
+      <p style="color: #666; font-size: 12px;">
+        If you did not request a password reset, you can safely ignore this email.
+      </p>
+    </div>
+  `;
+}

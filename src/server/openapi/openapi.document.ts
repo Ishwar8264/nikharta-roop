@@ -523,6 +523,157 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      "/api/v1/auth/password/forgot": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Request password reset code",
+          description:
+            "Sends a 6-digit OTP to the user's email for password reset. " +
+            "The response is always a success to prevent email enumeration.",
+          operationId: "forgotPassword",
+          security: [],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ForgotPasswordRequest",
+                },
+                examples: {
+                  emailReset: {
+                    summary: "Reset via email",
+                    value: { email: "ishwar@example.com" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description:
+                "Reset code sent successfully (or silently skipped).",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/SendOtpResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "Malformed JSON or validation failure",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "429": {
+              description:
+                "Resend cooldown active. Wait before requesting again.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while issuing the code",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/auth/password/reset": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Reset password using OTP",
+          description:
+            "Validates the 6-digit code sent to the user's email and updates " +
+            "their password. The code is burned after successful use.",
+          operationId: "resetPassword",
+          security: [],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ResetPasswordRequest",
+                },
+                examples: {
+                  resetPassword: {
+                    summary: "Reset password",
+                    value: {
+                      email: "ishwar@example.com",
+                      code: "482193",
+                      newPassword: "new-secure-password",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Password reset successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ResetPasswordResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description:
+                "Malformed JSON, validation failure, or incorrect code",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "410": {
+              description: "Code has expired — request a new one",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "429": {
+              description: "Too many wrong attempts — request a new code",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while resetting the password",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -746,6 +897,56 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                   example: "EMAIL",
                 },
               },
+            },
+          },
+        },
+        ForgotPasswordRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["email"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              maxLength: 254,
+              example: "ishwar@example.com",
+            },
+          },
+        },
+        ResetPasswordRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["email", "code", "newPassword"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              maxLength: 254,
+              example: "ishwar@example.com",
+            },
+            code: {
+              type: "string",
+              pattern: "^\\d{6}$",
+              description: "6-digit numeric code",
+              example: "482193",
+            },
+            newPassword: {
+              type: "string",
+              format: "password",
+              minLength: 8,
+              maxLength: 128,
+              writeOnly: true,
+              example: "new-secure-password",
+            },
+          },
+        },
+        ResetPasswordResponse: {
+          type: "object",
+          required: ["message"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Password reset successfully",
             },
           },
         },

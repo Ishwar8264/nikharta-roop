@@ -1,12 +1,13 @@
 import "server-only";
 
-import type { OtpChannel } from "@/generated/prisma/client";
+import type { OtpChannel, OtpPurpose } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export interface OtpRecord {
   id: string;
   userId: string;
   channel: OtpChannel;
+  purpose: OtpPurpose;
   codeHash: string;
   attempts: number;
   maxAttempts: number;
@@ -46,26 +47,29 @@ export async function findUserByEmailOrPhone(input: {
   });
 }
 
-/** Returns the most recent OTP for a user + channel, regardless of status. */
+/** Returns the most recent OTP for a user + channel + purpose. */
 export async function findLatestOtp(
   userId: string,
   channel: OtpChannel,
+  purpose: OtpPurpose,
 ): Promise<OtpRecord | null> {
   return prisma.otp.findFirst({
-    where: { userId, channel },
+    where: { userId, channel, purpose },
     orderBy: { createdAt: "desc" },
   });
 }
 
-/** Returns the active (unused, unexpired) OTP for a user + channel. */
+/** Returns the active (unused, unexpired) OTP for a user + channel + purpose. */
 export async function findActiveOtp(
   userId: string,
   channel: OtpChannel,
+  purpose: OtpPurpose,
 ): Promise<OtpRecord | null> {
   return prisma.otp.findFirst({
     where: {
       userId,
       channel,
+      purpose,
       isUsed: false,
       expiresAt: { gt: new Date() },
     },
@@ -73,13 +77,14 @@ export async function findActiveOtp(
   });
 }
 
-/** Burns all prior unused OTPs for a user + channel. */
+/** Burns all prior unused OTPs for a user + channel + purpose. */
 export async function invalidatePriorOtps(
   userId: string,
   channel: OtpChannel,
+  purpose: OtpPurpose,
 ): Promise<void> {
   await prisma.otp.updateMany({
-    where: { userId, channel, isUsed: false },
+    where: { userId, channel, purpose, isUsed: false },
     data: { isUsed: true },
   });
 }
@@ -88,6 +93,7 @@ export async function invalidatePriorOtps(
 export async function createOtp(input: {
   userId: string;
   channel: OtpChannel;
+  purpose: OtpPurpose;
   codeHash: string;
   expiresAt: Date;
   maxAttempts: number;
@@ -96,6 +102,7 @@ export async function createOtp(input: {
     data: {
       userId: input.userId,
       channel: input.channel,
+      purpose: input.purpose,
       codeHash: input.codeHash,
       expiresAt: input.expiresAt,
       maxAttempts: input.maxAttempts,
@@ -105,9 +112,7 @@ export async function createOtp(input: {
 
 /** Deletes an OTP row. Used when delivery fails so the user can retry. */
 export async function deleteOtp(id: string): Promise<void> {
-  await prisma.otp.delete({ where: { id } }).catch(() => {
-    // Already gone — safe to ignore.
-  });
+  await prisma.otp.delete({ where: { id } }).catch(() => {});
 }
 
 /** Increments the attempt counter on an OTP row. */

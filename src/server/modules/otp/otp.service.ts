@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { OtpChannel } from "@/generated/prisma/client";
+import type { OtpChannel, OtpPurpose } from "@/generated/prisma/client";
 import { sendOtpEmail } from "@/lib/email";
 import {
   OTP_MAX_ATTEMPTS,
@@ -42,11 +42,13 @@ import type {
  * Why:
  * For unregistered or already-verified identifiers we return the same success
  * shape as for a real send. This prevents using the endpoint as an account
- * enumeration oracle. The cooldown only kicks in for real, unverified users,
- * so probing nonexistent addresses never hits the 60-second wall.
+ * enumeration oracle.
  */
 export async function sendOtp(input: SendOtpInput): Promise<OtpSendResult> {
   const channel = resolveChannel(input);
+  const purpose: OtpPurpose =
+    channel === "EMAIL" ? "EMAIL_VERIFICATION" : "PHONE_VERIFICATION";
+
   const user = await findUserByEmailOrPhone(input);
 
   if (!user) {
@@ -60,8 +62,61 @@ export async function sendOtp(input: SendOtpInput): Promise<OtpSendResult> {
     return silentSuccess(channel);
   }
 
-  // Cooldown check — prevents spam and OTP bombing.
-  const latest = await findLatestOtp(user.id, channel);
+  return issueOtp({
+    userId: user.id,
+    channel,
+    purpose,
+    email: user.email,
+  });
+}
+
+/**
+ * Verifies an OTP and flips the corresponding verified flag on the user.
+ */
+export async function verifyOtpCode(
+  input: VerifyOtpInput,
+): Promise<OtpVerifyResult> {
+  const channel = resolveChannel(input);
+  const purpose: OtpPurpose =
+    channel === "EMAIL" ? "EMAIL_VERIFICATION" : "PHONE_VERIFICATION";
+
+  const user = await findUserByEmailOrPhone(input);
+
+  if (!user) {
+    throw new OtpInvalidError();
+  }
+
+  await consumeOtp({
+    userId: user.id,
+    channel,
+    purpose,
+    code: input.code,
+  });
+
+  await markUserVerified(user.id, channel);
+
+  return { userId: user.id, channel };
+}
+
+/**
+ * Issues a new OTP row and delivers it, applying cooldown + rollback rules.
+ *
+ * Why:
+ * Shared between email/phone verification and password reset so both flows
+ * get identical cooldown, rollback, and error semantics.
+ */
+export async function issueOtp(input: {
+  userId: string;
+  channel: OtpChannel;
+  purpose: OtpPurpose;
+  email: string | null;
+}): Promise<OtpSendResult> {
+  const latest = await findLatestOtp(
+    input.userId,
+    input.channel,
+    input.purpose,
+  );
+
   if (latest) {
     const elapsedMs = Date.now() - latest.createdAt.getTime();
     const cooldownMs = OTP_RESEND_COOLDOWN_SECONDS * 1000;
@@ -70,57 +125,53 @@ export async function sendOtp(input: SendOtpInput): Promise<OtpSendResult> {
     }
   }
 
-  // Burn previous codes before issuing a new one.
-  await invalidatePriorOtps(user.id, channel);
+  await invalidatePriorOtps(input.userId, input.channel, input.purpose);
 
   const code = generateOtp();
   const codeHash = await hashOtp(code);
   const expiresAt = otpExpiryFromNow();
 
   const otp = await createOtp({
-    userId: user.id,
-    channel,
+    userId: input.userId,
+    channel: input.channel,
+    purpose: input.purpose,
     codeHash,
     expiresAt,
     maxAttempts: OTP_MAX_ATTEMPTS,
   });
 
   try {
-    await deliverOtp(channel, user.email, code);
+    await deliverOtp(input.purpose, input.channel, input.email, code);
   } catch (error) {
-    // Roll back the row so the cooldown does not block an immediate retry.
     await deleteOtp(otp.id);
     console.error("OTP delivery failed", error);
     throw new OtpDeliveryError();
   }
 
   return {
-    channel,
+    channel: input.channel,
     expiresAt,
     resendAvailableInSeconds: OTP_RESEND_COOLDOWN_SECONDS,
   };
 }
 
 /**
- * Verifies an OTP and flips the corresponding verified flag on the user.
+ * Verifies and burns a single OTP. Returns nothing — callers decide what
+ * side effect to apply on success.
  *
  * Why:
- * Failure modes are collapsed into typed errors so the route can return a
- * helpful but non-enumerating response. The attempt counter is incremented
- * before the code is compared, so every wrong guess counts even if the
- * process crashes mid-verification.
+ * Password reset needs the same verification steps (attempts, expiry, hash
+ * compare, burn) but a different post-verify action. Splitting this out lets
+ * both callers share one hardened path.
  */
-export async function verifyOtpCode(
-  input: VerifyOtpInput,
-): Promise<OtpVerifyResult> {
-  const channel = resolveChannel(input);
-  const user = await findUserByEmailOrPhone(input);
+export async function consumeOtp(input: {
+  userId: string;
+  channel: OtpChannel;
+  purpose: OtpPurpose;
+  code: string;
+}): Promise<void> {
+  const otp = await findActiveOtp(input.userId, input.channel, input.purpose);
 
-  if (!user) {
-    throw new OtpInvalidError();
-  }
-
-  const otp = await findActiveOtp(user.id, channel);
   if (!otp) {
     throw new OtpInvalidError();
   }
@@ -142,17 +193,12 @@ export async function verifyOtpCode(
   }
 
   await markOtpUsed(otp.id);
-  await markUserVerified(user.id, channel);
-
-  return { userId: user.id, channel };
 }
 
-/** Resolves the channel implied by the identifier supplied. */
 function resolveChannel(input: { email?: string; phone?: string }): OtpChannel {
   return input.email ? "EMAIL" : "PHONE";
 }
 
-/** Same shape as a real send, without doing anything. */
 function silentSuccess(channel: OtpChannel): OtpSendResult {
   return {
     channel,
@@ -161,17 +207,23 @@ function silentSuccess(channel: OtpChannel): OtpSendResult {
   };
 }
 
-/** Delivers the OTP through the correct channel. */
+/** Delivers the OTP through the correct channel + template. */
 async function deliverOtp(
+  purpose: OtpPurpose,
   channel: OtpChannel,
   email: string | null,
   code: string,
 ): Promise<void> {
+  if (channel === "EMAIL" && email && purpose === "PASSWORD_RESET") {
+    const { sendPasswordResetEmail } = await import("@/lib/email");
+    await sendPasswordResetEmail(email, code);
+    return;
+  }
+
   if (channel === "EMAIL" && email) {
     await sendOtpEmail(email, code);
     return;
   }
-  // SMS / WhatsApp delivery is not wired yet. Fail loudly rather than
-  // silently accept a code the user will never receive.
+
   throw new Error(`Delivery channel ${channel} is not supported yet`);
 }

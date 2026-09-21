@@ -13,6 +13,8 @@ enum PlatformRole {
   USER
 }
 
+
+
 enum SalonMemberRole {
   OWNER
   MANAGER
@@ -23,6 +25,12 @@ enum OtpChannel {
   EMAIL
   PHONE
   WHATSAPP
+}
+
+enum OtpPurpose {
+  EMAIL_VERIFICATION
+  PHONE_VERIFICATION
+  PASSWORD_RESET
 }
 
 enum AppointmentStatus {
@@ -162,14 +170,16 @@ model Otp {
   userId      String
   user        User       @relation(fields: [userId], references: [id])
   channel     OtpChannel
+  purpose     OtpPurpose @default(EMAIL_VERIFICATION)   // ← ADD
   codeHash    String
-  attempts    Int        @default(0) // Brute-force protection
+  attempts    Int        @default(0)
   maxAttempts Int        @default(5)
   isUsed      Boolean    @default(false)
   expiresAt   DateTime
   createdAt   DateTime   @default(now())
 
   @@index([userId, isUsed])
+  @@index([userId, purpose, isUsed])                    // ← ADD
 }
 
 // Refresh token for JWT rotation
