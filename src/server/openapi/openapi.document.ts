@@ -348,6 +348,181 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      "/api/v1/auth/otp/send": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Send an email or phone verification code",
+          description:
+            "Issues a 6-digit OTP to the supplied email or phone. The response " +
+            "shape is identical whether the identifier exists or not, which " +
+            "prevents this endpoint from being used for account enumeration. " +
+            "A 60-second cooldown applies per user + channel — the `Retry-After` " +
+            "header on 429 responses tells the client when to retry.",
+          operationId: "sendOtp",
+          security: [],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/SendOtpRequest",
+                },
+                examples: {
+                  emailOtp: {
+                    summary: "Send code to email",
+                    value: { email: "ishwar@example.com" },
+                  },
+                  phoneOtp: {
+                    summary: "Send code to phone",
+                    value: { phone: "+919876543210" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description:
+                "Code dispatched (or silently skipped for already-verified or " +
+                "unknown identifiers — the client cannot tell the difference).",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/SendOtpResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "Malformed JSON or validation failure",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "429": {
+              description:
+                "Resend cooldown active. `Retry-After` header holds the seconds to wait.",
+              headers: {
+                "Retry-After": {
+                  description: "Seconds until a new code can be requested.",
+                  schema: { type: "integer" },
+                },
+              },
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "502": {
+              description: "Email provider rejected the message",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while issuing the code",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/auth/otp/verify": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Verify an OTP code",
+          description:
+            "Validates a 6-digit code and marks the matching identifier as " +
+            "verified. Codes expire after 10 minutes and allow at most 5 wrong " +
+            "guesses before being burned. On success, the user can log in " +
+            "without hitting the 403 'email not verified' guard.",
+          operationId: "verifyOtp",
+          security: [],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/VerifyOtpRequest",
+                },
+                examples: {
+                  emailVerify: {
+                    summary: "Verify email code",
+                    value: { email: "ishwar@example.com", code: "482193" },
+                  },
+                  phoneVerify: {
+                    summary: "Verify phone code",
+                    value: { phone: "+919876543210", code: "482193" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Code accepted — identifier is now verified",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/VerifyOtpResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description:
+                "Malformed JSON, validation failure, or incorrect code",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "410": {
+              description: "Code has expired — request a new one",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "429": {
+              description: "Too many wrong attempts — request a new code",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while verifying the code",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -470,6 +645,105 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                   type: "integer",
                   description: "Access token lifetime in seconds.",
                   example: 900,
+                },
+              },
+            },
+          },
+        },
+        SendOtpRequest: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              maxLength: 254,
+              example: "ishwar@example.com",
+            },
+            phone: {
+              type: "string",
+              pattern: "^\\+[1-9]\\d{7,14}$",
+              example: "+919876543210",
+            },
+          },
+          oneOf: [{ required: ["email"] }, { required: ["phone"] }],
+          not: { required: ["email", "phone"] },
+        },
+        SendOtpResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Verification code sent",
+            },
+            data: {
+              type: "object",
+              required: ["channel", "expiresAt", "resendAvailableInSeconds"],
+              properties: {
+                channel: {
+                  type: "string",
+                  enum: ["EMAIL", "PHONE", "WHATSAPP"],
+                  example: "EMAIL",
+                },
+                expiresAt: {
+                  type: "string",
+                  format: "date-time",
+                  description:
+                    "Instant the code stops being valid (10 minutes ahead).",
+                },
+                resendAvailableInSeconds: {
+                  type: "integer",
+                  description: "Cooldown before a new code may be requested.",
+                  example: 60,
+                },
+              },
+            },
+          },
+        },
+        VerifyOtpRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["code"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              maxLength: 254,
+              example: "ishwar@example.com",
+            },
+            phone: {
+              type: "string",
+              pattern: "^\\+[1-9]\\d{7,14}$",
+              example: "+919876543210",
+            },
+            code: {
+              type: "string",
+              pattern: "^\\d{6}$",
+              description: "6-digit numeric code",
+              example: "482193",
+            },
+          },
+          oneOf: [{ required: ["email"] }, { required: ["phone"] }],
+          not: { required: ["email", "phone"] },
+        },
+        VerifyOtpResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Verification successful",
+            },
+            data: {
+              type: "object",
+              required: ["userId", "channel"],
+              properties: {
+                userId: { type: "string", format: "uuid" },
+                channel: {
+                  type: "string",
+                  enum: ["EMAIL", "PHONE", "WHATSAPP"],
+                  example: "EMAIL",
                 },
               },
             },
