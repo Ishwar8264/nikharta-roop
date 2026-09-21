@@ -1,0 +1,177 @@
+import { NextResponse, type NextRequest } from "next/server";
+
+import {
+  authLimiter,
+  authenticatedLimiter,
+  rateLimitHeaders,
+  standardLimiter,
+} from "@/lib/rate-limit";
+import { verifyAccessToken } from "@/server/auth/jwt";
+
+const ACCESS_COOKIE_NAME = "accessToken";
+
+/** Routes reachable without any access token. */
+const PUBLIC_PATHS = new Set<string>([
+  "/api/v1/auth/register",
+  "/api/v1/auth/login",
+  "/api/v1/auth/refresh",
+  "/api/v1/auth/logout",
+  "/api/v1/health",
+]);
+
+/** Auth paths that get the stricter limiter, even though they are public. */
+const AUTH_PATH_PREFIX = "/api/v1/auth";
+
+/** Path prefixes that require elevated platform roles. */
+const ADMIN_PATH_PREFIXES = ["/api/v1/admin"];
+
+/** Roles allowed to access admin-only routes. */
+const ADMIN_ROLES = new Set(["SUPER_ADMIN"]);
+
+/**
+ * Performs rate limiting, authentication, and role checks for API routes.
+ *
+ * Why:
+ * Proxy runs before every matched request and is the cheapest place to reject
+ * abusive, unauthenticated, or unauthorized traffic before it reaches route
+ * handlers. It verifies the JWT signature and expiry — it does NOT hit the
+ * database, because a full session check belongs in the route handler.
+ *
+ * Verified identity is forwarded as `x-auth-*` request headers so handlers
+ * can read it cheaply. Handlers must still treat these as hints, not proof —
+ * the database remains the source of truth (see `/api/v1/auth/me`).
+ */
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+
+  // ----- 1. Rate limiting -----
+  // Public auth routes are the most attacked; they get the strict limiter
+  // keyed by IP. Everything else gets keyed by user id once verified, or IP
+  // when the caller is anonymous.
+  if (PUBLIC_PATHS.has(pathname) && pathname.startsWith(AUTH_PATH_PREFIX)) {
+    const ip = clientIp(request);
+    const result = await authLimiter.limit(ip);
+
+    if (!result.success) {
+      return tooManyRequests(result);
+    }
+  }
+
+  // ----- 2. Public routes skip auth (but were rate limited above) -----
+  if (PUBLIC_PATHS.has(pathname)) {
+    return NextResponse.next();
+  }
+
+  // ----- 3. Extract + verify token -----
+  const token = extractAccessToken(request);
+
+  if (!token) {
+    // Anonymous traffic still gets the standard limiter so a single IP
+    // cannot hammer protected endpoints hoping for a lucky 200.
+    const result = await standardLimiter.limit(clientIp(request));
+    if (!result.success) return tooManyRequests(result);
+
+    return unauthorizedResponse();
+  }
+
+  let payload: { sub: string; role: string };
+
+  try {
+    payload = await verifyAccessToken(token);
+  } catch {
+    return unauthorizedResponse();
+  }
+
+  // ----- 4. Authenticated rate limit (keyed by user id) -----
+  const result = await authenticatedLimiter.limit(payload.sub);
+  if (!result.success) {
+    return tooManyRequests(result);
+  }
+
+  // ----- 5. Admin gate -----
+  if (isAdminPath(pathname) && !ADMIN_ROLES.has(payload.role)) {
+    return forbiddenResponse();
+  }
+
+  // ----- 6. Forward identity to handler -----
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-auth-user-id", payload.sub);
+  requestHeaders.set("x-auth-role", payload.role);
+
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+}
+
+/**
+ * Restricts the proxy to versioned API routes.
+ *
+ * Why:
+ * Without a matcher, proxy would run on static assets, image optimizations,
+ * and the Swagger UI — adding latency to traffic unrelated to auth.
+ */
+export const config = {
+  matcher: ["/api/v1/:path*"],
+};
+
+/** Returns true when the path lives under an admin-only prefix. */
+function isAdminPath(pathname: string): boolean {
+  return ADMIN_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+/** Reads the access token from the Authorization header or cookie. */
+function extractAccessToken(request: NextRequest): string | null {
+  const header = request.headers.get("authorization");
+
+  if (header) {
+    const [scheme, value] = header.split(/\s+/, 2);
+    if (scheme?.toLowerCase() === "bearer" && value) {
+      return value.trim() || null;
+    }
+  }
+
+  return request.cookies.get(ACCESS_COOKIE_NAME)?.value ?? null;
+}
+
+/** Extracts the client IP, preferring the proxy-set forwarding header. */
+function clientIp(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return request.headers.get("x-real-ip") ?? "anonymous";
+}
+
+/** 401 with a generic message so token failures do not leak details. */
+function unauthorizedResponse(): NextResponse {
+  return NextResponse.json(
+    { message: "Authentication required" },
+    { status: 401 },
+  );
+}
+
+/** 403 for authenticated users who lack the required role. */
+function forbiddenResponse(): NextResponse {
+  return NextResponse.json(
+    { message: "You do not have permission to access this resource" },
+    { status: 403 },
+  );
+}
+
+/** 429 with standard rate-limit headers so clients can back off. */
+function tooManyRequests(result: {
+  limit: number;
+  remaining: number;
+  reset: number;
+}): NextResponse {
+  return NextResponse.json(
+    { message: "Too many requests. Please try again later." },
+    {
+      status: 429,
+      headers: rateLimitHeaders(result),
+    },
+  );
+}
