@@ -49,3 +49,18 @@ export interface LoginResult {
   accessTokenExpiresIn: number;
   refreshTokenExpiresAt: Date;
 }
+
+/** Full user shape returned by GET /api/v1/auth/me. */
+export interface CurrentUser {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  role: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  createdAt: Date;
+}
+
+/** Repository row used to build a CurrentUser. */
+export type CurrentUserRecord = CurrentUser;

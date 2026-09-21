@@ -20,6 +20,10 @@ import { EmailNotVerifiedError, InvalidCredentialsError } from "./auth.errors";
 import { findUserForLogin } from "./auth.repository";
 import type { LoginResult, LoginUserInput } from "./auth.types";
 
+// auth me
+import { findUserById } from "./auth.repository";
+import type { CurrentUser } from "./auth.types";
+
 /**
  * Applies registration rules and persists a safely hashed password.
  *
@@ -130,6 +134,31 @@ function toPublicUser(user: LoginUserRecord): RegisteredUser {
     name: user.name,
     email: user.email,
     phone: user.phone,
+    createdAt: user.createdAt,
+  };
+}
+
+/**
+ * Loads the current user's profile for a verified access-token subject.
+ *
+ * Why:
+ * Returns `null` rather than throwing when the user no longer exists so the
+ * route can map both "no token" and "user deleted" to the same 401 response.
+ */
+export async function getCurrentUser(
+  userId: string,
+): Promise<CurrentUser | null> {
+  const user = await findUserById(userId);
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    emailVerified: user.emailVerified,
+    phoneVerified: user.phoneVerified,
     createdAt: user.createdAt,
   };
 }

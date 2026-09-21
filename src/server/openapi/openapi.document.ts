@@ -306,6 +306,48 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      "/api/v1/auth/me": {
+        get: {
+          tags: ["Authentication"],
+          summary: "Get the current user",
+          description:
+            "Returns the profile of the authenticated user. Accepts either an " +
+            "`Authorization: Bearer <accessToken>` header or the `accessToken` " +
+            "httpOnly cookie. The user is re-read from the database on every call, " +
+            "so role changes and soft-deletes take effect immediately.",
+          operationId: "getCurrentUser",
+          security: [{ bearerAuth: [] }],
+          responses: {
+            "200": {
+              description: "Authenticated user profile",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/CurrentUserResponse",
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "Missing, invalid, or expired access token, or the account no longer exists",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while loading the user",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -440,6 +482,49 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             message: {
               type: "string",
               const: "Logged out successfully",
+            },
+          },
+        },
+        CurrentUser: {
+          type: "object",
+          required: [
+            "id",
+            "name",
+            "email",
+            "phone",
+            "role",
+            "emailVerified",
+            "phoneVerified",
+            "createdAt",
+          ],
+          properties: {
+            id: { type: "string", format: "uuid" },
+            name: { type: ["string", "null"] },
+            email: { type: ["string", "null"], format: "email" },
+            phone: { type: ["string", "null"] },
+            role: {
+              type: "string",
+              enum: ["SUPER_ADMIN", "USER"],
+            },
+            emailVerified: { type: "boolean" },
+            phoneVerified: { type: "boolean" },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
+        CurrentUserResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Current user",
+            },
+            data: {
+              type: "object",
+              required: ["user"],
+              properties: {
+                user: { $ref: "#/components/schemas/CurrentUser" },
+              },
             },
           },
         },

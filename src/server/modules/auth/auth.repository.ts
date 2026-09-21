@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 import type {
   CreateUserRecord,
+  CurrentUserRecord,
   ExistingIdentifiers,
   LoginUserRecord,
   RegisteredUser,
@@ -88,6 +89,31 @@ export async function findUserForLogin(
       email: true,
       phone: true,
       password: true,
+      role: true,
+      emailVerified: true,
+      phoneVerified: true,
+      createdAt: true,
+    },
+  });
+}
+
+/**
+ * Loads a non-deleted user by id with the fields `/me` needs.
+ *
+ * Why:
+ * `/me` returns fresh DB state (role changes, name edits, soft-delete) rather
+ * than trusting the JWT payload, which can be up to 15 minutes stale.
+ */
+export async function findUserById(
+  id: string,
+): Promise<CurrentUserRecord | null> {
+  return prisma.user.findFirst({
+    where: { id, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
       role: true,
       emailVerified: true,
       phoneVerified: true,
