@@ -265,6 +265,47 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      "/api/v1/auth/logout": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Log out the current session",
+          description:
+            "Revokes the `refreshToken` httpOnly cookie on the server and clears " +
+            "both auth cookies. Idempotent: always returns 200, even when no " +
+            "session exists. Access tokens are short-lived JWTs and are not " +
+            "revoked explicitly — they expire on their own.",
+          operationId: "logoutUser",
+          security: [],
+          responses: {
+            "200": {
+              description:
+                "Logged out. `accessToken` and `refreshToken` cookies are cleared.",
+              headers: {
+                "Set-Cookie": {
+                  description:
+                    "accessToken and refreshToken cookies cleared (maxAge: 0).",
+                  schema: { type: "string" },
+                },
+              },
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/LogoutResponse",
+                  },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected logout failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -392,6 +433,17 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
+        LogoutResponse: {
+          type: "object",
+          required: ["message"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Logged out successfully",
+            },
+          },
+        },
+
         LoginUserResponse: {
           type: "object",
           required: ["message", "data"],
