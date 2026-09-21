@@ -43,3 +43,26 @@ export const registerUserSchema = z
 function emptyStringToUndefined(value: unknown): unknown {
   return typeof value === "string" && value.trim() === "" ? undefined : value;
 }
+
+// Login
+
+/**
+ * Login accepts either an email or a phone, plus a password.
+ *
+ * Why:
+ * A single schema for both identifier types keeps the client contract simple
+ * and matches the registration flow, which allows either identifier.
+ */
+export const loginUserSchema = z
+  .strictObject({
+    email: optionalEmailSchema,
+    phone: optionalPhoneSchema,
+    password: z
+      .string({ error: "Password must be a string" })
+      .min(1, "Password is required")
+      .max(128, "Password must contain at most 128 characters"),
+  })
+  .refine((input) => Boolean(input.email || input.phone), {
+    message: "Email or phone is required",
+    path: ["email"],
+  });

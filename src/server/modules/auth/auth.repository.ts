@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import type {
   CreateUserRecord,
   ExistingIdentifiers,
+  LoginUserRecord,
   RegisteredUser,
   UserIdentifiers,
 } from "./auth.types";
@@ -52,5 +53,45 @@ export async function createUser(
       password: input.passwordHash,
     },
     select: PUBLIC_USER_FIELDS,
+  });
+}
+
+// Login
+
+/**
+ * Loads a user by email OR phone for login, including the password hash.
+ *
+ * Why:
+ * Registration uses a narrower SELECT (no password). Login needs the hash, so
+ * it gets its own select clause rather than widening the shared one.
+ */
+export async function findUserForLogin(
+  identifiers: UserIdentifiers,
+): Promise<LoginUserRecord | null> {
+  const conditions = [
+    identifiers.email ? { email: identifiers.email } : undefined,
+    identifiers.phone ? { phone: identifiers.phone } : undefined,
+  ].filter((condition): condition is NonNullable<typeof condition> =>
+    Boolean(condition),
+  );
+
+  if (conditions.length === 0) return null;
+
+  return prisma.user.findFirst({
+    where: {
+      OR: conditions,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      password: true,
+      role: true,
+      emailVerified: true,
+      phoneVerified: true,
+      createdAt: true,
+    },
   });
 }

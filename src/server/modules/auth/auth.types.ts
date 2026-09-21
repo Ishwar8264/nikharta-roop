@@ -1,8 +1,9 @@
 import type { z } from "zod";
 
-import type { registerUserSchema } from "./auth.schema";
+import type { loginUserSchema, registerUserSchema } from "./auth.schema";
 
 export type RegisterUserInput = z.infer<typeof registerUserSchema>;
+export type LoginUserInput = z.infer<typeof loginUserSchema>;
 
 export interface UserIdentifiers {
   email?: string;
@@ -23,4 +24,28 @@ export interface RegisteredUser extends ExistingIdentifiers {
   id: string;
   name: string | null;
   createdAt: Date;
+}
+
+// Login
+
+/** The user record the repository returns for password verification. */
+export interface LoginUserRecord {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  password: string | null;
+  role: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  createdAt: Date;
+}
+
+/** Shape returned to the route after a successful login. */
+export interface LoginResult {
+  user: RegisteredUser;
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresIn: number;
+  refreshTokenExpiresAt: Date;
 }

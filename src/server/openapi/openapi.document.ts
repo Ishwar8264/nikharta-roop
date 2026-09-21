@@ -115,6 +115,104 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      "/api/v1/auth/login": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Sign in a user",
+          description:
+            "Authenticates a user with an email or phone plus password. " +
+            "Returns the access token in the response body and sets " +
+            "`accessToken` and `refreshToken` as httpOnly cookies. " +
+            "Use the returned token with the `bearerAuth` scheme for " +
+            "protected endpoints.",
+          operationId: "loginUser",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/LoginUserRequest",
+                },
+                examples: {
+                  emailLogin: {
+                    summary: "Sign in with email",
+                    value: {
+                      email: "ishwar@example.com",
+                      password: "secure-password",
+                    },
+                  },
+                  phoneLogin: {
+                    summary: "Sign in with phone",
+                    value: {
+                      phone: "+919876543210",
+                      password: "secure-password",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description:
+                "Login successful. Sets `accessToken` and `refreshToken` " +
+                "httpOnly cookies and returns the access token in the body.",
+              headers: {
+                "Set-Cookie": {
+                  description:
+                    "accessToken and refreshToken cookies (httpOnly, SameSite=Lax).",
+                  schema: { type: "string" },
+                },
+              },
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/LoginUserResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "Malformed JSON or validation failure",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Invalid email/phone or password",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description:
+                "Account exists but email/phone is not verified, or account is deactivated",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected sign-in failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -187,6 +285,62 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
           anyOf: [{ required: ["email"] }, { required: ["phone"] }],
+        },
+        LoginUserRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["password"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              maxLength: 254,
+              example: "ishwar@example.com",
+            },
+            phone: {
+              type: "string",
+              pattern: "^\\+[1-9]\\d{7,14}$",
+              example: "+919876543210",
+            },
+            password: {
+              type: "string",
+              format: "password",
+              minLength: 1,
+              maxLength: 128,
+              writeOnly: true,
+              example: "secure-password",
+            },
+          },
+          anyOf: [{ required: ["email"] }, { required: ["phone"] }],
+        },
+        LoginUserResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Login successful",
+            },
+            data: {
+              type: "object",
+              required: ["user", "accessToken", "accessTokenExpiresIn"],
+              properties: {
+                user: { $ref: "#/components/schemas/PublicUser" },
+                accessToken: {
+                  type: "string",
+                  description:
+                    "Short-lived JWT (HS256). Send as `Authorization: Bearer <token>` " +
+                    "for protected endpoints. Also set as an httpOnly cookie.",
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOi...",
+                },
+                accessTokenExpiresIn: {
+                  type: "integer",
+                  description: "Access token lifetime in seconds.",
+                  example: 900,
+                },
+              },
+            },
+          },
         },
         PublicUser: {
           type: "object",
