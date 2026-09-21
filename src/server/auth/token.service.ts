@@ -2,12 +2,14 @@ import "server-only";
 
 import { createHash, randomBytes } from "node:crypto";
 
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
+import {
+  ACCESS_TOKEN_TTL_SECONDS,
+  REFRESH_TOKEN_TTL_SECONDS,
+} from "./auth.constants";
 import { signAccessToken } from "./jwt";
-
-const ACCESS_TOKEN_TTL_SECONDS = 15 * 60; // 15 minutes
-const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 export interface TokenPair {
   accessToken: string;
@@ -34,6 +36,16 @@ export async function issueTokenPair(
   role: string,
   metadata: TokenMetadata = {},
 ): Promise<TokenPair> {
+  return createTokenPair(prisma, userId, role, metadata);
+}
+
+/** Creates and persists a token pair using the supplied transaction client. */
+async function createTokenPair(
+  database: Prisma.TransactionClient | typeof prisma,
+  userId: string,
+  role: string,
+  metadata: TokenMetadata,
+): Promise<TokenPair> {
   const accessToken = await signAccessToken({ sub: userId, role });
 
   const refreshToken = randomBytes(40).toString("base64url");
@@ -42,7 +54,7 @@ export async function issueTokenPair(
     Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000,
   );
 
-  await prisma.refreshToken.create({
+  await database.refreshToken.create({
     data: {
       userId,
       tokenHash: refreshTokenHash,
@@ -77,42 +89,45 @@ export async function rotateRefreshToken(
 ): Promise<TokenPair | null> {
   const tokenHash = hashRefreshToken(rawRefreshToken);
 
-  const stored = await prisma.refreshToken.findUnique({
-    where: { tokenHash },
-  });
+  return prisma.$transaction(async (transaction) => {
+    const stored = await transaction.refreshToken.findUnique({
+      where: { tokenHash },
+    });
 
-  if (!stored) return null;
+    if (!stored || stored.expiresAt <= new Date()) return null;
 
-  if (stored.expiresAt < new Date()) {
-    return null;
-  }
+    // Reuse of a revoked token = theft signal. Nuke every session for this user.
+    if (stored.revokedAt) {
+      await revokeAllUserTokens(transaction, stored.userId);
+      return null;
+    }
 
-  // Reuse of a revoked token = theft signal. Nuke every session for this user.
-  if (stored.revokedAt) {
-    await prisma.refreshToken.updateMany({
-      where: { userId: stored.userId, revokedAt: null },
+    const user = await transaction.user.findUnique({
+      where: { id: stored.userId },
+      select: { role: true, deletedAt: true },
+    });
+
+    if (!user || user.deletedAt) return null;
+
+    // Conditional claim is the concurrency boundary: only one request can
+    // change this exact active token. A loser is treated as replay.
+    const claimed = await transaction.refreshToken.updateMany({
+      where: { id: stored.id, revokedAt: null },
       data: { revokedAt: new Date() },
     });
-    return null;
-  }
 
-  // Load the current role and ensure the account is still active.
-  const user = await prisma.user.findUnique({
-    where: { id: stored.userId },
-    select: { role: true, deletedAt: true },
+    if (claimed.count !== 1) {
+      await revokeAllUserTokens(transaction, stored.userId);
+      return null;
+    }
+
+    return createTokenPair(
+      transaction,
+      stored.userId,
+      user.role,
+      metadata,
+    );
   });
-
-  if (!user || user.deletedAt) {
-    return null;
-  }
-
-  // Mark the old token as revoked, then issue a brand new pair.
-  await prisma.refreshToken.update({
-    where: { id: stored.id },
-    data: { revokedAt: new Date() },
-  });
-
-  return issueTokenPair(stored.userId, user.role, metadata);
 }
 
 /** Revokes a single refresh token. Safe to call on an already-revoked token. */
@@ -130,4 +145,15 @@ export async function revokeRefreshToken(
 /** Hashes a refresh token so plaintext tokens never touch the database. */
 function hashRefreshToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
+}
+
+/** Revokes every live refresh token for a user inside the current transaction. */
+async function revokeAllUserTokens(
+  transaction: Prisma.TransactionClient,
+  userId: string,
+): Promise<void> {
+  await transaction.refreshToken.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
 }

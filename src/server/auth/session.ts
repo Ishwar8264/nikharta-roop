@@ -1,8 +1,7 @@
 import "server-only";
 
 import { verifyAccessToken, type AccessTokenPayload } from "./jwt";
-
-const ACCESS_COOKIE_NAME = "accessToken";
+import { ACCESS_COOKIE_NAME } from "./auth.constants";
 
 /**
  * Resolves the caller's identity from the Authorization header or access cookie.
@@ -57,7 +56,12 @@ export function readCookie(request: Request, name: string): string | null {
     const key = pair.slice(0, eqIndex);
     if (key !== name) continue;
 
-    return decodeURIComponent(pair.slice(eqIndex + 1));
+    try {
+      return decodeURIComponent(pair.slice(eqIndex + 1));
+    } catch {
+      // Malformed percent-encoding is an invalid cookie, not a server error.
+      return null;
+    }
   }
 
   return null;

@@ -6,9 +6,9 @@ import {
   rateLimitHeaders,
   standardLimiter,
 } from "@/lib/rate-limit";
+import { ACCESS_COOKIE_NAME } from "@/server/auth/auth.constants";
+import { isMutationRequestTrusted } from "@/server/auth/csrf";
 import { verifyAccessToken } from "@/server/auth/jwt";
-
-const ACCESS_COOKIE_NAME = "accessToken";
 
 /** Routes reachable without any access token. */
 const PUBLIC_PATHS = new Set<string>([
@@ -38,17 +38,25 @@ const ADMIN_ROLES = new Set(["SUPER_ADMIN"]);
  * Why:
  * Proxy runs before every matched request and is the cheapest place to reject
  * abusive, unauthenticated, or unauthorized traffic before it reaches route
- * handlers. It verifies the JWT signature and expiry — it does NOT hit the
- * database, because a full session check belongs in the route handler.
+ * handlers. It verifies the JWT signature and expiry without hitting the
+ * database; resource authorization still belongs close to the data source.
  *
  * Verified identity is forwarded as `x-auth-*` request headers so handlers
- * can read it cheaply. Handlers must still treat these as hints, not proof —
- * the database remains the source of truth (see `/api/v1/auth/me`).
+ * can read it cheaply. Sensitive handlers must still authorize their resource
+ * access close to the data; this boundary only proves current identity/role.
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
-  // ----- 1. Rate limiting -----
+  // ----- 1. CSRF / cross-origin mutation protection -----
+  if (!isMutationRequestTrusted(request)) {
+    return NextResponse.json(
+      { message: "Invalid or missing CSRF token" },
+      { status: 403 },
+    );
+  }
+
+  // ----- 2. Rate limiting -----
   // Public auth routes are the most attacked; they get the strict limiter
   // keyed by IP. Everything else gets keyed by user id once verified, or IP
   // when the caller is anonymous.
@@ -61,12 +69,12 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // ----- 2. Public routes skip auth (but were rate limited above) -----
+  // ----- 3. Public routes skip auth (but were rate limited above) -----
   if (PUBLIC_PATHS.has(pathname)) {
     return NextResponse.next();
   }
 
-  // ----- 3. Extract + verify token -----
+  // ----- 4. Extract + verify token -----
   const token = extractAccessToken(request);
 
   if (!token) {
@@ -86,18 +94,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return unauthorizedResponse();
   }
 
-  // ----- 4. Authenticated rate limit (keyed by user id) -----
+  // ----- 5. Authenticated rate limit (keyed by user id) -----
   const result = await authenticatedLimiter.limit(payload.sub);
   if (!result.success) {
     return tooManyRequests(result);
   }
 
-  // ----- 5. Admin gate -----
+  // ----- 6. Admin gate -----
   if (isAdminPath(pathname) && !ADMIN_ROLES.has(payload.role)) {
     return forbiddenResponse();
   }
 
-  // ----- 6. Forward identity to handler -----
+  // ----- 7. Forward identity to handler -----
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-auth-user-id", payload.sub);
   requestHeaders.set("x-auth-role", payload.role);

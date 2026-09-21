@@ -109,10 +109,7 @@ export async function loginUser(
   }
 
   // If the identifier used is unverified, block login until it is verified.
-  if (input.email && !user.emailVerified) {
-    throw new EmailNotVerifiedError();
-  }
-  if (input.phone && !user.phoneVerified) {
+  if (!user.emailVerified) {
     throw new EmailNotVerifiedError();
   }
 

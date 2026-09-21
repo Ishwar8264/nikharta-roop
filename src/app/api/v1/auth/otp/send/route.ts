@@ -8,7 +8,7 @@ import { sendOtpSchema } from "@/server/modules/otp/otp.schema";
 import { sendOtp } from "@/server/modules/otp/otp.service";
 
 /**
- * Issues a fresh verification code to an email or phone.
+ * Issues a fresh email verification code.
  *
  * Why:
  * Runs before the user can log in, so it stays on the public surface. The

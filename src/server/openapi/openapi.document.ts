@@ -42,7 +42,8 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           tags: ["Authentication"],
           summary: "Register a user",
           description:
-            "Creates a local user account. Provide at least one of email or phone.",
+            "Creates an email-authenticated local account. Phone may be stored " +
+            "as profile data, but phone authentication is not available yet.",
           operationId: "registerUser",
           requestBody: {
             required: true,
@@ -57,14 +58,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                     value: {
                       name: "Ishwar Kumar",
                       email: "ishwar@example.com",
-                      password: "secure-password",
-                    },
-                  },
-                  phoneRegistration: {
-                    summary: "Register with phone",
-                    value: {
-                      name: "Ishwar Kumar",
-                      phone: "+919876543210",
                       password: "secure-password",
                     },
                   },
@@ -120,9 +113,9 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           tags: ["Authentication"],
           summary: "Sign in a user",
           description:
-            "Authenticates a user with an email or phone plus password. " +
+            "Authenticates a user with a verified email and password. " +
             "Returns the access token in the response body and sets " +
-            "`accessToken` and `refreshToken` as httpOnly cookies. " +
+            "httpOnly session cookies plus a readable `csrfToken` cookie. " +
             "Use the returned token with the `bearerAuth` scheme for " +
             "protected endpoints.",
           operationId: "loginUser",
@@ -141,13 +134,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                       password: "secure-password",
                     },
                   },
-                  phoneLogin: {
-                    summary: "Sign in with phone",
-                    value: {
-                      phone: "+919876543210",
-                      password: "secure-password",
-                    },
-                  },
                 },
               },
             },
@@ -160,7 +146,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               headers: {
                 "Set-Cookie": {
                   description:
-                    "accessToken and refreshToken cookies (httpOnly, SameSite=Lax).",
+                    "httpOnly access/refresh cookies and a readable CSRF cookie.",
                   schema: { type: "string" },
                 },
               },
@@ -186,7 +172,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               },
             },
             "401": {
-              description: "Invalid email/phone or password",
+              description: "Invalid email or password",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -195,7 +181,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
             "403": {
               description:
-                "Account exists but email/phone is not verified, or account is deactivated",
+                "Account exists but email is not verified, or account is deactivated",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -221,9 +207,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "Exchanges the `refreshToken` httpOnly cookie for a new access + " +
             "refresh token pair. The previous refresh token is revoked on every " +
             "successful call. Reuse of a revoked token revokes every session for " +
-            "that user, forcing a full re-login.",
+            "that user, forcing a full re-login. Send the readable `csrfToken` " +
+            "cookie value in the `x-csrf-token` header.",
           operationId: "refreshTokens",
-          security: [],
+          security: [{ csrfToken: [] }],
           responses: {
             "200": {
               description:
@@ -232,7 +219,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               headers: {
                 "Set-Cookie": {
                   description:
-                    "New accessToken and refreshToken cookies (httpOnly, SameSite=Lax).",
+                    "New auth cookies and rotated readable CSRF cookie.",
                   schema: { type: "string" },
                 },
               },
@@ -247,7 +234,15 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "401": {
               description:
                 "Missing, invalid, expired, or already-revoked refresh token. " +
-                "Both auth cookies are cleared.",
+                "All session cookies are cleared.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description: "Missing or invalid CSRF token",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -271,19 +266,20 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           summary: "Log out the current session",
           description:
             "Revokes the `refreshToken` httpOnly cookie on the server and clears " +
-            "both auth cookies. Idempotent: always returns 200, even when no " +
+            "all session cookies. Send the `csrfToken` cookie value in the " +
+            "`x-csrf-token` header. Idempotent: returns 200 when no " +
             "session exists. Access tokens are short-lived JWTs and are not " +
             "revoked explicitly — they expire on their own.",
           operationId: "logoutUser",
-          security: [],
+          security: [{ csrfToken: [] }],
           responses: {
             "200": {
               description:
-                "Logged out. `accessToken` and `refreshToken` cookies are cleared.",
+                "Logged out. Access, refresh, and CSRF cookies are cleared.",
               headers: {
                 "Set-Cookie": {
                   description:
-                    "accessToken and refreshToken cookies cleared (maxAge: 0).",
+                    "Access, refresh, and CSRF cookies cleared (maxAge: 0).",
                   schema: { type: "string" },
                 },
               },
@@ -297,6 +293,14 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
             "500": {
               description: "Unexpected logout failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description: "Missing or invalid CSRF token",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -351,9 +355,9 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       "/api/v1/auth/otp/send": {
         post: {
           tags: ["Authentication"],
-          summary: "Send an email or phone verification code",
+          summary: "Send an email verification code",
           description:
-            "Issues a 6-digit OTP to the supplied email or phone. The response " +
+            "Issues a 6-digit OTP to the supplied email. The response " +
             "shape is identical whether the identifier exists or not, which " +
             "prevents this endpoint from being used for account enumeration. " +
             "A 60-second cooldown applies per user + channel — the `Retry-After` " +
@@ -371,10 +375,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                   emailOtp: {
                     summary: "Send code to email",
                     value: { email: "ishwar@example.com" },
-                  },
-                  phoneOtp: {
-                    summary: "Send code to phone",
-                    value: { phone: "+919876543210" },
                   },
                 },
               },
@@ -462,10 +462,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                   emailVerify: {
                     summary: "Verify email code",
                     value: { email: "ishwar@example.com", code: "482193" },
-                  },
-                  phoneVerify: {
-                    summary: "Verify phone code",
-                    value: { phone: "+919876543210", code: "482193" },
                   },
                 },
               },
@@ -555,7 +551,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               content: {
                 "application/json": {
                   schema: {
-                    $ref: "#/components/schemas/SendOtpResponse",
+                    $ref: "#/components/schemas/ForgotPasswordResponse",
                   },
                 },
               },
@@ -599,7 +595,8 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           summary: "Reset password using OTP",
           description:
             "Validates the 6-digit code sent to the user's email and updates " +
-            "their password. The code is burned after successful use.",
+            "their password. The code is burned and all refresh sessions are " +
+            "revoked atomically after successful use.",
           operationId: "resetPassword",
           security: [],
           requestBody: {
@@ -712,12 +709,19 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           bearerFormat: "JWT",
           description: "JWT access token for protected endpoints",
         },
+        csrfToken: {
+          type: "apiKey",
+          in: "header",
+          name: "x-csrf-token",
+          description:
+            "Required for cookie-authenticated mutations. Copy the value from the readable csrfToken cookie. Bearer-only clients are exempt.",
+        },
       },
       schemas: {
         RegisterUserRequest: {
           type: "object",
           additionalProperties: false,
-          required: ["name", "password"],
+          required: ["name", "email", "password"],
           properties: {
             name: {
               type: "string",
@@ -745,23 +749,17 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               example: "secure-password",
             },
           },
-          anyOf: [{ required: ["email"] }, { required: ["phone"] }],
         },
         LoginUserRequest: {
           type: "object",
           additionalProperties: false,
-          required: ["password"],
+          required: ["email", "password"],
           properties: {
             email: {
               type: "string",
               format: "email",
               maxLength: 254,
               example: "ishwar@example.com",
-            },
-            phone: {
-              type: "string",
-              pattern: "^\\+[1-9]\\d{7,14}$",
-              example: "+919876543210",
             },
             password: {
               type: "string",
@@ -772,7 +770,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               example: "secure-password",
             },
           },
-          anyOf: [{ required: ["email"] }, { required: ["phone"] }],
         },
         RefreshTokenResponse: {
           type: "object",
@@ -804,6 +801,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         SendOtpRequest: {
           type: "object",
           additionalProperties: false,
+          required: ["email"],
           properties: {
             email: {
               type: "string",
@@ -811,14 +809,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               maxLength: 254,
               example: "ishwar@example.com",
             },
-            phone: {
-              type: "string",
-              pattern: "^\\+[1-9]\\d{7,14}$",
-              example: "+919876543210",
-            },
           },
-          oneOf: [{ required: ["email"] }, { required: ["phone"] }],
-          not: { required: ["email", "phone"] },
         },
         SendOtpResponse: {
           type: "object",
@@ -834,7 +825,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               properties: {
                 channel: {
                   type: "string",
-                  enum: ["EMAIL", "PHONE", "WHATSAPP"],
+                  enum: ["EMAIL"],
                   example: "EMAIL",
                 },
                 expiresAt: {
@@ -855,18 +846,13 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         VerifyOtpRequest: {
           type: "object",
           additionalProperties: false,
-          required: ["code"],
+          required: ["email", "code"],
           properties: {
             email: {
               type: "string",
               format: "email",
               maxLength: 254,
               example: "ishwar@example.com",
-            },
-            phone: {
-              type: "string",
-              pattern: "^\\+[1-9]\\d{7,14}$",
-              example: "+919876543210",
             },
             code: {
               type: "string",
@@ -875,8 +861,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               example: "482193",
             },
           },
-          oneOf: [{ required: ["email"] }, { required: ["phone"] }],
-          not: { required: ["email", "phone"] },
         },
         VerifyOtpResponse: {
           type: "object",
@@ -893,7 +877,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                 userId: { type: "string", format: "uuid" },
                 channel: {
                   type: "string",
-                  enum: ["EMAIL", "PHONE", "WHATSAPP"],
+                  enum: ["EMAIL"],
                   example: "EMAIL",
                 },
               },
@@ -910,6 +894,24 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               format: "email",
               maxLength: 254,
               example: "ishwar@example.com",
+            },
+          },
+        },
+        ForgotPasswordResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: {
+              type: "string",
+              const: "If the email exists, a reset code has been sent",
+            },
+            data: {
+              type: "object",
+              required: ["expiresAt", "resendAvailableInSeconds"],
+              properties: {
+                expiresAt: { type: "string", format: "date-time" },
+                resendAvailableInSeconds: { type: "integer", example: 60 },
+              },
             },
           },
         },
@@ -942,12 +944,13 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         },
         ResetPasswordResponse: {
           type: "object",
-          required: ["message"],
+          required: ["message", "data"],
           properties: {
             message: {
               type: "string",
-              const: "Password reset successfully",
+              const: "Password updated. Please sign in again.",
             },
+            data: { type: "null" },
           },
         },
         LogoutResponse: {

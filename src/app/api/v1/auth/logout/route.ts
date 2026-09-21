@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { REFRESH_COOKIE_NAME } from "@/server/auth/auth.constants";
+import { clearSessionCookies } from "@/server/auth/cookies";
+import { readCookie } from "@/server/auth/session";
 import { revokeRefreshToken } from "@/server/auth/token.service";
-
-const ACCESS_COOKIE_NAME = "accessToken";
-const REFRESH_COOKIE_NAME = "refreshToken";
-/** Must match the path used when the refresh cookie was originally set. */
-const REFRESH_COOKIE_PATH = "/api/v1/auth";
 
 /**
  * Ends the current session by revoking the refresh token and clearing cookies.
@@ -36,41 +34,7 @@ export async function POST(request: Request): Promise<Response> {
     { status: 200 },
   );
 
-  // Expire both cookies by setting maxAge: 0. Path must match exactly what
-  // was used when setting them, otherwise the browser keeps the old cookie.
-  response.cookies.set(ACCESS_COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
-  response.cookies.set(REFRESH_COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: REFRESH_COOKIE_PATH,
-    maxAge: 0,
-  });
+  clearSessionCookies(response);
 
   return response;
-}
-
-/** Reads a single cookie value from the raw `Cookie` header. */
-function readCookie(request: Request, name: string): string | null {
-  const header = request.headers.get("cookie");
-  if (!header) return null;
-
-  for (const pair of header.split(/;\s*/)) {
-    const eqIndex = pair.indexOf("=");
-    if (eqIndex === -1) continue;
-
-    const key = pair.slice(0, eqIndex);
-    if (key !== name) continue;
-
-    return decodeURIComponent(pair.slice(eqIndex + 1));
-  }
-
-  return null;
 }

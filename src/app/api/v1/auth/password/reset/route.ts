@@ -12,9 +12,8 @@ import { resetPassword } from "@/server/modules/password/password.service";
  * Completes the reset by verifying the code and setting a new password.
  *
  * Why:
- * On success, every active refresh token for the user is revoked inside the
- * same transaction as the password update. That forces all existing sessions
- * to log in again with the new password, which is the point of a reset.
+ * On success, every refresh token is revoked inside the password transaction.
+ * Existing short-lived access tokens expire naturally within 15 minutes.
  */
 export async function POST(request: Request): Promise<Response> {
   let body: unknown;

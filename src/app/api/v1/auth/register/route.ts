@@ -3,7 +3,7 @@ import { registerUser } from "@/server/modules/auth/auth.service";
 import { RegistrationConflictError } from "@/server/modules/auth/registration-conflict.error";
 
 /**
- * Registers a local user with an email or phone identifier.
+ * Registers an email-authenticated user with optional phone profile data.
  *
  * Why:
  * The route owns HTTP parsing and status codes while the service owns business

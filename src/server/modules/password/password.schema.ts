@@ -17,13 +17,11 @@ export const forgotPasswordSchema = z.strictObject({
   email: emailSchema,
 });
 
-export const resetPasswordSchema = z
-  .strictObject({
+export const resetPasswordSchema = z.strictObject({
     email: emailSchema,
     code: z
       .string({ error: "Code must be a string" })
       .trim()
       .regex(/^\d{6}$/, "Code must be 6 digits"),
     newPassword: passwordSchema,
-  })
-  .refine((input) => true, { message: "" }); // placeholder if you later add confirmPassword
+  });

@@ -2,7 +2,20 @@ import "server-only";
 
 import { randomBytes, timingSafeEqual } from "node:crypto";
 
+import type { NextRequest } from "next/server";
+
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from "./auth.constants";
+
 const CSRF_TOKEN_BYTES = 32;
+
+const PUBLIC_MUTATION_PATHS = new Set([
+  "/api/v1/auth/register",
+  "/api/v1/auth/login",
+  "/api/v1/auth/otp/send",
+  "/api/v1/auth/otp/verify",
+  "/api/v1/auth/password/forgot",
+  "/api/v1/auth/password/reset",
+]);
 
 /** Generates a cryptographically random CSRF token. */
 export function generateCsrfToken(): string {
@@ -29,4 +42,44 @@ export function verifyCsrfToken(
   if (headerBuffer.length !== cookieBuffer.length) return false;
 
   return timingSafeEqual(headerBuffer, cookieBuffer);
+}
+
+/**
+ * Rejects browser-forged mutation requests while preserving bearer clients.
+ *
+ * Why:
+ * Bearer credentials are explicitly supplied by the caller and are not
+ * attached automatically by a browser, so they do not need a CSRF token.
+ * Cookie-authenticated mutations must pass both same-origin signals and the
+ * double-submit token issued with the session.
+ */
+export function isMutationRequestTrusted(request: NextRequest): boolean {
+  if (isSafeMethod(request.method)) return true;
+
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite === "cross-site" || fetchSite === "same-site") return false;
+
+  const origin = request.headers.get("origin");
+  const expectedOrigin = process.env.APP_ORIGIN ?? request.nextUrl.origin;
+  if (origin && origin !== expectedOrigin) return false;
+
+  if (hasBearerToken(request)) return true;
+  if (PUBLIC_MUTATION_PATHS.has(request.nextUrl.pathname)) return true;
+
+  const hasAmbientAuth =
+    request.cookies.has("accessToken") || request.cookies.has("refreshToken");
+  if (!hasAmbientAuth) return true;
+
+  return verifyCsrfToken(
+    request.headers.get(CSRF_HEADER_NAME),
+    request.cookies.get(CSRF_COOKIE_NAME)?.value ?? null,
+  );
+}
+
+function isSafeMethod(method: string): boolean {
+  return method === "GET" || method === "HEAD" || method === "OPTIONS";
+}
+
+function hasBearerToken(request: NextRequest): boolean {
+  return /^Bearer\s+\S+$/i.test(request.headers.get("authorization") ?? "");
 }

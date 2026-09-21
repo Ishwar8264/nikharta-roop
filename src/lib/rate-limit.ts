@@ -7,6 +7,12 @@ const hasUpstashConfig =
   Boolean(process.env.UPSTASH_REDIS_REST_URL) &&
   Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
 
+if (process.env.NODE_ENV === "production" && !hasUpstashConfig) {
+  throw new Error(
+    "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are required in production",
+  );
+}
+
 // In production, Upstash provides a shared Redis so rate limits hold across
 // every server instance. In local dev (or when Upstash is not configured) we
 // fall back to an in-memory Map — it resets on every restart and does not

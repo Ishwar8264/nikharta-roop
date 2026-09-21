@@ -7,38 +7,22 @@ const emailSchema = z
   .pipe(z.email({ error: "Email format is invalid" }))
   .transform((email) => email.toLowerCase());
 
-const phoneSchema = z
-  .string({ error: "Phone must be a string" })
-  .trim()
-  .regex(/^\+[1-9]\d{7,14}$/, "Phone must use E.164 format");
-
 /**
- * Identifies the user by exactly one of email or phone.
+ * Identifies the user by email while phone delivery is unavailable.
  *
  * Why:
- * The `refine` check rejects requests that supply both identifiers or
- * neither, keeping the channel resolution unambiguous downstream.
+ * Keeping the unsupported phone field out of this strict schema prevents the
+ * API from promising an SMS flow that cannot complete.
  */
-export const sendOtpSchema = z
-  .strictObject({
-    email: emailSchema.optional(),
-    phone: phoneSchema.optional(),
-  })
-  .refine((input) => Boolean(input.email) !== Boolean(input.phone), {
-    message: "Provide exactly one of email or phone",
-    path: ["email"],
-  });
+export const sendOtpSchema = z.strictObject({
+  email: emailSchema,
+});
 
 export const verifyOtpSchema = z
   .strictObject({
-    email: emailSchema.optional(),
-    phone: phoneSchema.optional(),
+    email: emailSchema,
     code: z
       .string({ error: "Code must be a string" })
       .trim()
       .regex(/^\d{6}$/, "Code must be 6 digits"),
-  })
-  .refine((input) => Boolean(input.email) !== Boolean(input.phone), {
-    message: "Provide exactly one of email or phone",
-    path: ["email"],
   });

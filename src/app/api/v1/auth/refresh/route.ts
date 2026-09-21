@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { REFRESH_COOKIE_NAME } from "@/server/auth/auth.constants";
+import {
+  clearSessionCookies,
+  setSessionCookies,
+} from "@/server/auth/cookies";
+import { readCookie } from "@/server/auth/session";
 import { rotateRefreshToken } from "@/server/auth/token.service";
-
-/** Must match the values used when tokens were issued. */
-const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
-const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
-const ACCESS_COOKIE_NAME = "accessToken";
-const REFRESH_COOKIE_NAME = "refreshToken";
-/** Must match the path used when the refresh cookie was originally set. */
-const REFRESH_COOKIE_PATH = "/api/v1/auth";
 
 /**
  * Rotates the refresh token cookie into a fresh access + refresh pair.
@@ -25,12 +23,22 @@ export async function POST(request: Request): Promise<Response> {
     return unauthorizedResponse("Missing refresh token");
   }
 
-  const tokens = await rotateRefreshToken(rawRefreshToken, {
-    userAgent: request.headers.get("user-agent") ?? undefined,
-    ipAddress:
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      undefined,
-  });
+  let tokens;
+
+  try {
+    tokens = await rotateRefreshToken(rawRefreshToken, {
+      userAgent: request.headers.get("user-agent") ?? undefined,
+      ipAddress:
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        undefined,
+    });
+  } catch (error) {
+    console.error("Token refresh failed", error);
+    return NextResponse.json(
+      { message: "Unable to refresh session" },
+      { status: 500 },
+    );
+  }
 
   if (!tokens) {
     // Invalid, expired, or reused token — clear cookies so the client is
@@ -49,62 +57,15 @@ export async function POST(request: Request): Promise<Response> {
     { status: 200 },
   );
 
-  response.cookies.set(ACCESS_COOKIE_NAME, tokens.accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: ACCESS_TOKEN_TTL_SECONDS,
-  });
-
-  response.cookies.set(REFRESH_COOKIE_NAME, tokens.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: REFRESH_COOKIE_PATH,
-    maxAge: REFRESH_TOKEN_TTL_SECONDS,
-  });
+  setSessionCookies(response, tokens);
 
   return response;
-}
-
-/** Reads a single cookie value from the raw `Cookie` header. */
-function readCookie(request: Request, name: string): string | null {
-  const header = request.headers.get("cookie");
-  if (!header) return null;
-
-  for (const pair of header.split(/;\s*/)) {
-    const eqIndex = pair.indexOf("=");
-    if (eqIndex === -1) continue;
-
-    const key = pair.slice(0, eqIndex);
-    if (key !== name) continue;
-
-    return decodeURIComponent(pair.slice(eqIndex + 1));
-  }
-
-  return null;
 }
 
 /** 401 with both auth cookies cleared so the client cannot retry stale state. */
 function unauthorizedResponse(message: string): NextResponse {
   const response = NextResponse.json({ message }, { status: 401 });
-
-  response.cookies.set(ACCESS_COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
-  response.cookies.set(REFRESH_COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: REFRESH_COOKIE_PATH,
-    maxAge: 0,
-  });
+  clearSessionCookies(response);
 
   return response;
 }

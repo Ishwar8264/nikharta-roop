@@ -5,12 +5,20 @@ import { SignJWT, jwtVerify } from "jose";
 const ISSUER = "salon-app";
 const AUDIENCE = "salon-app-client";
 const ACCESS_TOKEN_TTL = "15m";
+const MINIMUM_SECRET_BYTES = 32;
+const ALLOWED_ROLES = new Set(["SUPER_ADMIN", "USER"]);
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+const configuredSecret = process.env.JWT_SECRET;
 
-if (!process.env.JWT_SECRET) {
+if (!configuredSecret) {
   throw new Error("JWT_SECRET is not configured");
 }
+
+if (Buffer.byteLength(configuredSecret, "utf8") < MINIMUM_SECRET_BYTES) {
+  throw new Error("JWT_SECRET must contain at least 32 bytes");
+}
+
+const secret = new TextEncoder().encode(configuredSecret);
 
 /**
  * The only claims we trust from an access token.
@@ -62,8 +70,17 @@ export async function verifyAccessToken(
     audience: AUDIENCE,
   });
 
+  if (
+    typeof payload.sub !== "string" ||
+    payload.sub.length === 0 ||
+    typeof payload.role !== "string" ||
+    !ALLOWED_ROLES.has(payload.role)
+  ) {
+    throw new Error("Access token contains invalid claims");
+  }
+
   return {
-    sub: String(payload.sub),
-    role: String(payload.role),
+    sub: payload.sub,
+    role: payload.role,
   };
 }

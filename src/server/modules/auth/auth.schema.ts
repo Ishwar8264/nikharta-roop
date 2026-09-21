@@ -1,14 +1,15 @@
 import { z } from "zod";
 
+const emailSchema = z
+  .string({ error: "Email must be a string" })
+  .trim()
+  .max(254, "Email must contain at most 254 characters")
+  .pipe(z.email({ error: "Email format is invalid" }))
+  .transform((email) => email.toLowerCase());
+
 const optionalEmailSchema = z.preprocess(
   emptyStringToUndefined,
-  z
-    .string({ error: "Email must be a string" })
-    .trim()
-    .max(254, "Email must contain at most 254 characters")
-    .pipe(z.email({ error: "Email format is invalid" }))
-    .transform((email) => email.toLowerCase())
-    .optional(),
+  emailSchema.optional(),
 );
 
 const optionalPhoneSchema = z.preprocess(
@@ -34,8 +35,8 @@ export const registerUserSchema = z
       .min(8, "Password must contain at least 8 characters")
       .max(128, "Password must contain at most 128 characters"),
   })
-  .refine((input) => Boolean(input.email || input.phone), {
-    message: "Email or phone is required",
+  .refine((input) => Boolean(input.email), {
+    message: "Email is required; phone authentication is not available yet",
     path: ["email"],
   });
 
@@ -47,22 +48,17 @@ function emptyStringToUndefined(value: unknown): unknown {
 // Login
 
 /**
- * Login accepts either an email or a phone, plus a password.
+ * Login currently accepts verified email credentials.
  *
  * Why:
- * A single schema for both identifier types keeps the client contract simple
- * and matches the registration flow, which allows either identifier.
+ * Phone remains storable on a profile, but accepting phone login before an
+ * SMS provider exists would create accounts that can never be verified.
  */
 export const loginUserSchema = z
   .strictObject({
-    email: optionalEmailSchema,
-    phone: optionalPhoneSchema,
+    email: emailSchema,
     password: z
       .string({ error: "Password must be a string" })
       .min(1, "Password is required")
       .max(128, "Password must contain at most 128 characters"),
-  })
-  .refine((input) => Boolean(input.email || input.phone), {
-    message: "Email or phone is required",
-    path: ["email"],
   });

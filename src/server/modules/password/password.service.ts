@@ -10,8 +10,14 @@ import {
   OtpDeliveryError,
   OtpInvalidError,
 } from "@/server/modules/otp/otp.errors";
-import { findUserByEmailOrPhone } from "@/server/modules/otp/otp.repository";
-import { consumeOtp, issueOtp } from "@/server/modules/otp/otp.service";
+import {
+  claimOtp,
+  findUserByEmailOrPhone,
+} from "@/server/modules/otp/otp.repository";
+import {
+  issueOtp,
+  verifyOtpCandidate,
+} from "@/server/modules/otp/otp.service";
 
 import type {
   ForgotPasswordInput,
@@ -57,9 +63,9 @@ export async function requestPasswordReset(
  * Applies a new password after verifying the reset code.
  *
  * Why:
- * Runs the password update and session revocation in a single transaction:
- * if the reset succeeds but revocation fails, an attacker who stole a
- * refresh token would keep access. Atomicity is the whole point.
+ * Runs password update, OTP claim, and refresh revocation in one transaction.
+ * A partial reset must never burn the user's one-time code without changing
+ * their password or leave a long-lived refresh session active.
  */
 export async function resetPassword(input: ResetPasswordInput): Promise<void> {
   const user = await findUserByEmailOrPhone({ email: input.email });
@@ -70,7 +76,7 @@ export async function resetPassword(input: ResetPasswordInput): Promise<void> {
     throw new OtpInvalidError();
   }
 
-  await consumeOtp({
+  const candidate = await verifyOtpCandidate({
     userId: user.id,
     channel: "EMAIL",
     purpose: "PASSWORD_RESET",
@@ -79,16 +85,23 @@ export async function resetPassword(input: ResetPasswordInput): Promise<void> {
 
   const passwordHash = await hashPassword(input.newPassword);
 
-  await prisma.$transaction([
-    prisma.user.update({
+  await prisma.$transaction(async (transaction) => {
+    const claimed = await claimOtp(
+      candidate.id,
+      candidate.attempts,
+      transaction,
+    );
+    if (!claimed) throw new OtpInvalidError();
+
+    await transaction.user.update({
       where: { id: user.id },
       data: { password: passwordHash },
-    }),
-    prisma.refreshToken.updateMany({
+    });
+    await transaction.refreshToken.updateMany({
       where: { userId: user.id, revokedAt: null },
       data: { revokedAt: new Date() },
-    }),
-  ]);
+    });
+  });
 }
 
 // Re-export to avoid an extra import in the route.
