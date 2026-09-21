@@ -67,10 +67,12 @@ export async function issueTokenPair(
  * Rotation means a stolen refresh token can only be used once. If a revoked
  * token is ever presented again, we treat it as theft and revoke every
  * session for that user, forcing a full re-login.
+ *
+ * The role is loaded from the database (not trusted from the caller) so a
+ * user whose role changed cannot keep an old role in their access token.
  */
 export async function rotateRefreshToken(
   rawRefreshToken: string,
-  role: string,
   metadata: TokenMetadata = {},
 ): Promise<TokenPair | null> {
   const tokenHash = hashRefreshToken(rawRefreshToken);
@@ -94,13 +96,23 @@ export async function rotateRefreshToken(
     return null;
   }
 
+  // Load the current role and ensure the account is still active.
+  const user = await prisma.user.findUnique({
+    where: { id: stored.userId },
+    select: { role: true, deletedAt: true },
+  });
+
+  if (!user || user.deletedAt) {
+    return null;
+  }
+
   // Mark the old token as revoked, then issue a brand new pair.
   await prisma.refreshToken.update({
     where: { id: stored.id },
     data: { revokedAt: new Date() },
   });
 
-  return issueTokenPair(stored.userId, role, metadata);
+  return issueTokenPair(stored.userId, user.role, metadata);
 }
 
 /** Revokes a single refresh token. Safe to call on an already-revoked token. */

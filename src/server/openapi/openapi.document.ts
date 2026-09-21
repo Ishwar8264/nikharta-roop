@@ -213,6 +213,58 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      "/api/v1/auth/refresh": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Rotate refresh token",
+          description:
+            "Exchanges the `refreshToken` httpOnly cookie for a new access + " +
+            "refresh token pair. The previous refresh token is revoked on every " +
+            "successful call. Reuse of a revoked token revokes every session for " +
+            "that user, forcing a full re-login.",
+          operationId: "refreshTokens",
+          security: [],
+          responses: {
+            "200": {
+              description:
+                "Token refreshed. Sets new `accessToken` and `refreshToken` " +
+                "httpOnly cookies.",
+              headers: {
+                "Set-Cookie": {
+                  description:
+                    "New accessToken and refreshToken cookies (httpOnly, SameSite=Lax).",
+                  schema: { type: "string" },
+                },
+              },
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/RefreshTokenResponse",
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "Missing, invalid, expired, or already-revoked refresh token. " +
+                "Both auth cookies are cleared.",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected refresh failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -312,6 +364,33 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
           anyOf: [{ required: ["email"] }, { required: ["phone"] }],
+        },
+        RefreshTokenResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Token refreshed",
+            },
+            data: {
+              type: "object",
+              required: ["accessToken", "accessTokenExpiresIn"],
+              properties: {
+                accessToken: {
+                  type: "string",
+                  description:
+                    "New short-lived JWT. Also set as an httpOnly cookie.",
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOi...",
+                },
+                accessTokenExpiresIn: {
+                  type: "integer",
+                  description: "Access token lifetime in seconds.",
+                  example: 900,
+                },
+              },
+            },
+          },
         },
         LoginUserResponse: {
           type: "object",
