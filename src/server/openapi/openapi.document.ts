@@ -35,8 +35,12 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
     tags: [
       { name: "Authentication", description: "User identity operations" },
       { name: "System", description: "Service availability operations" },
+      { name: "Salons", description: "Salon directory and management" },
     ],
     paths: {
+      // ============================================================
+      // AUTHENTICATION
+      // ============================================================
       "/api/v1/auth/register": {
         post: {
           tags: ["Authentication"],
@@ -361,10 +365,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "mistake a no-op for success. Email, phone, role, and verification " +
             "flags are intentionally not editable through this endpoint.",
           operationId: "updateCurrentUser",
-          security: [
-            { bearerAuth: [] },
-            { accessCookie: [], csrfToken: [] },
-          ],
+          security: [{ bearerAuth: [] }, { accessCookie: [], csrfToken: [] }],
           requestBody: {
             required: true,
             content: {
@@ -762,10 +763,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "refresh session is revoked and this device receives a newly rotated " +
             "access + refresh token pair.",
           operationId: "changePassword",
-          security: [
-            { bearerAuth: [] },
-            { accessCookie: [], csrfToken: [] },
-          ],
+          security: [{ bearerAuth: [] }, { accessCookie: [], csrfToken: [] }],
           requestBody: {
             required: true,
             content: {
@@ -842,10 +840,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "references. All live refresh tokens are revoked; auth cookies are " +
             "cleared on the response.",
           operationId: "deleteAccount",
-          security: [
-            { bearerAuth: [] },
-            { accessCookie: [], csrfToken: [] },
-          ],
+          security: [{ bearerAuth: [] }, { accessCookie: [], csrfToken: [] }],
           requestBody: {
             required: true,
             content: {
@@ -958,10 +953,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "Revokes one active refresh session owned by the authenticated user. " +
             "Revoking the current cookie-backed session also clears auth cookies.",
           operationId: "revokeSession",
-          security: [
-            { bearerAuth: [] },
-            { accessCookie: [], csrfToken: [] },
-          ],
+          security: [{ bearerAuth: [] }, { accessCookie: [], csrfToken: [] }],
           parameters: [
             {
               name: "id",
@@ -1015,6 +1007,565 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+
+      // ============================================================
+      // SALONS
+      // ============================================================
+      "/api/v1/salons": {
+        get: {
+          tags: ["Salons"],
+          summary: "List salons",
+          description:
+            "Cursor-paginated list of active salons. Supports `city`, `category`, " +
+            "and `search` filters. Cursor pagination is stable under inserts, so " +
+            "infinite scroll will not skip entries when new salons appear.",
+          operationId: "listSalons",
+          security: [],
+          parameters: [
+            { $ref: "#/components/parameters/CursorParam" },
+            { $ref: "#/components/parameters/LimitParam" },
+            {
+              name: "city",
+              in: "query",
+              schema: { type: "string", maxLength: 80 },
+              example: "Mumbai",
+            },
+            {
+              name: "category",
+              in: "query",
+              schema: {
+                type: "string",
+                enum: ["MALE", "FEMALE", "UNISEX", "KIDS"],
+              },
+            },
+            {
+              name: "search",
+              in: "query",
+              schema: { type: "string", minLength: 2, maxLength: 80 },
+              description: "Case-insensitive match on name or description.",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Paginated list of salons",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/PaginatedSalonsResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "Validation failure",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ValidationErrorResponse",
+                  },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected listing failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          tags: ["Salons"],
+          summary: "Create a salon",
+          description:
+            "Any authenticated user can open a salon and becomes its first OWNER. " +
+            "If `slug` is omitted it is derived from `name` with numeric suffixes " +
+            "on collision.",
+          operationId: "createSalon",
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/CreateSalonRequest" },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "Salon created",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SalonResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Malformed JSON or validation failure",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Authentication required",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "409": {
+              description: "Slug already in use",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected creation failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/salons/{salonRef}": {
+        get: {
+          tags: ["Salons"],
+          summary: "Get a salon by slug",
+          description: "Public detail lookup by the salon's URL slug.",
+          operationId: "getSalonBySlug",
+          security: [],
+          parameters: [
+            {
+              name: "salonRef",
+              in: "path",
+              required: true,
+              schema: { type: "string", minLength: 2, maxLength: 80 },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Salon detail",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SalonResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Invalid slug",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ValidationErrorResponse",
+                  },
+                },
+              },
+            },
+            "404": {
+              description: "Salon not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected lookup failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        patch: {
+          tags: ["Salons"],
+          summary: "Update a salon",
+          description:
+            "Partial update. Requires at least MANAGER on the target salon. Empty " +
+            "bodies are rejected with 400.",
+          operationId: "updateSalon",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "salonRef",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/UpdateSalonRequest" },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Salon updated",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SalonResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Malformed JSON, validation failure, or empty body",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Authentication required",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description: "Insufficient salon role",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "Salon not found or caller is not a member",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "409": {
+              description: "Slug already in use",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected update failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        delete: {
+          tags: ["Salons"],
+          summary: "Delete a salon",
+          description:
+            "Soft-deletes a salon. Requires OWNER on the target salon. The row " +
+            "remains in the database with `deletedAt` set so downstream data keeps " +
+            "its references.",
+          operationId: "deleteSalon",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "salonRef",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Salon deleted",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SuccessResponse" },
+                },
+              },
+            },
+            "401": {
+              description: "Authentication required",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description: "Insufficient salon role",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "Salon not found or caller is not a member",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected deletion failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/salons/{id}/members": {
+        get: {
+          tags: ["Salons"],
+          summary: "List salon members",
+          description: "Requires at least MANAGER on the target salon.",
+          operationId: "listSalonMembers",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Member roster",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/SalonMemberListResponse",
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Authentication required",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description: "Insufficient salon role",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "Salon not found or caller is not a member",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected listing failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          tags: ["Salons"],
+          summary: "Add a salon member",
+          description: "Requires OWNER on the target salon.",
+          operationId: "addSalonMember",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/AddSalonMemberRequest" },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "Member added",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SalonMemberResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Validation failure",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ValidationErrorResponse",
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Authentication required",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description: "Insufficient salon role",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "Salon not found or caller is not a member",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "409": {
+              description: "User is already a member",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected add failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/salons/{id}/members/{memberId}": {
+        delete: {
+          tags: ["Salons"],
+          summary: "Remove a salon member",
+          description:
+            "Requires OWNER on the target salon. The last OWNER cannot be removed " +
+            "— the request returns 409 to prevent orphaning the salon.",
+          operationId: "removeSalonMember",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
+            {
+              name: "memberId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Member removed",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SuccessResponse" },
+                },
+              },
+            },
+            "401": {
+              description: "Authentication required",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description: "Insufficient salon role",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "Salon or member not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "409": {
+              description: "Cannot remove the last owner",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected removal failure",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+
+      // ============================================================
+      // SYSTEM
+      // ============================================================
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -1068,6 +1619,33 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "Required for cookie-authenticated mutations. Copy the value from the readable csrfToken cookie. Bearer-only clients are exempt.",
         },
       },
+
+      // ============================================================
+      // REUSABLE PARAMETERS  ← YE MISSING THA
+      // ============================================================
+      parameters: {
+        CursorParam: {
+          name: "cursor",
+          in: "query",
+          required: false,
+          description:
+            "Opaque cursor returned by the previous page (`meta.nextCursor`).",
+          schema: { $ref: "#/components/schemas/ResourceId" },
+        },
+        LimitParam: {
+          name: "limit",
+          in: "query",
+          required: false,
+          description: "Page size. Defaults to 20, max 50.",
+          schema: {
+            type: "integer",
+            minimum: 1,
+            maximum: 50,
+            default: 20,
+          },
+        },
+      },
+
       schemas: {
         ResourceId: {
           description:
@@ -1540,7 +2118,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
-
         LoginUserResponse: {
           type: "object",
           required: ["message", "data"],
@@ -1634,6 +2211,237 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             status: { type: "string", const: "error" },
             database: { type: "string", const: "disconnected" },
             timestamp: { type: "string", format: "date-time" },
+          },
+        },
+
+        // ============================================================
+        // SALON SCHEMAS  ← YE BHI MISSING THE
+        // ============================================================
+        Salon: {
+          type: "object",
+          required: [
+            "id",
+            "name",
+            "slug",
+            "description",
+            "category",
+            "address",
+            "city",
+            "state",
+            "zip",
+            "country",
+            "timezone",
+            "lat",
+            "lng",
+            "placeId",
+            "phone",
+            "email",
+            "images",
+            "seoTitle",
+            "seoDescription",
+            "createdAt",
+            "updatedAt",
+          ],
+          properties: {
+            id: { $ref: "#/components/schemas/ResourceId" },
+            name: { type: "string" },
+            slug: { type: "string" },
+            description: { type: ["string", "null"] },
+            category: {
+              type: "string",
+              enum: ["MALE", "FEMALE", "UNISEX", "KIDS"],
+            },
+            address: { type: "string" },
+            city: { type: "string" },
+            state: { type: "string" },
+            zip: { type: "string" },
+            country: { type: "string" },
+            timezone: { type: "string" },
+            lat: { type: "number", format: "float" },
+            lng: { type: "number", format: "float" },
+            placeId: { type: ["string", "null"] },
+            phone: { type: ["string", "null"] },
+            email: { type: ["string", "null"], format: "email" },
+            images: {
+              type: "array",
+              items: { type: "string", format: "uri" },
+            },
+            seoTitle: { type: ["string", "null"] },
+            seoDescription: { type: ["string", "null"] },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
+        CreateSalonRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "address", "city", "state", "zip", "lat", "lng"],
+          properties: {
+            name: { type: "string", minLength: 2, maxLength: 120 },
+            slug: {
+              type: "string",
+              pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              minLength: 2,
+              maxLength: 80,
+            },
+            description: { type: "string", maxLength: 2000 },
+            category: {
+              type: "string",
+              enum: ["MALE", "FEMALE", "UNISEX", "KIDS"],
+              default: "UNISEX",
+            },
+            address: { type: "string", minLength: 5, maxLength: 500 },
+            city: { type: "string", maxLength: 80 },
+            state: { type: "string", maxLength: 80 },
+            zip: { type: "string", minLength: 3, maxLength: 12 },
+            country: {
+              type: "string",
+              minLength: 2,
+              maxLength: 2,
+              default: "IN",
+            },
+            timezone: { type: "string", default: "Asia/Kolkata" },
+            lat: { type: "number", minimum: -90, maximum: 90 },
+            lng: { type: "number", minimum: -180, maximum: 180 },
+            placeId: { type: "string", maxLength: 255 },
+            phone: { type: "string", pattern: "^\\+[1-9]\\d{7,14}$" },
+            email: { type: "string", format: "email", maxLength: 254 },
+            images: {
+              type: "array",
+              items: { type: "string", format: "uri" },
+              maxItems: 20,
+              default: [],
+            },
+            seoTitle: { type: "string", maxLength: 70 },
+            seoDescription: { type: "string", maxLength: 160 },
+          },
+        },
+        UpdateSalonRequest: {
+          type: "object",
+          additionalProperties: false,
+          minProperties: 1,
+          properties: {
+            name: { type: "string", minLength: 2, maxLength: 120 },
+            slug: {
+              type: "string",
+              pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              minLength: 2,
+              maxLength: 80,
+            },
+            description: { type: "string", maxLength: 2000 },
+            category: {
+              type: "string",
+              enum: ["MALE", "FEMALE", "UNISEX", "KIDS"],
+            },
+            address: { type: "string", minLength: 5, maxLength: 500 },
+            city: { type: "string", maxLength: 80 },
+            state: { type: "string", maxLength: 80 },
+            zip: { type: "string", minLength: 3, maxLength: 12 },
+            country: { type: "string", minLength: 2, maxLength: 2 },
+            timezone: { type: "string" },
+            lat: { type: "number", minimum: -90, maximum: 90 },
+            lng: { type: "number", minimum: -180, maximum: 180 },
+            placeId: { type: "string", maxLength: 255 },
+            phone: { type: "string", pattern: "^\\+[1-9]\\d{7,14}$" },
+            email: { type: "string", format: "email", maxLength: 254 },
+            images: {
+              type: "array",
+              items: { type: "string", format: "uri" },
+              maxItems: 20,
+            },
+            seoTitle: { type: "string", maxLength: 70 },
+            seoDescription: { type: "string", maxLength: 160 },
+          },
+        },
+        SalonResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: { type: "string" },
+            data: {
+              type: "object",
+              required: ["salon"],
+              properties: {
+                salon: { $ref: "#/components/schemas/Salon" },
+              },
+            },
+          },
+        },
+        PaginatedSalonsResponse: {
+          type: "object",
+          required: ["message", "data", "meta"],
+          properties: {
+            message: { type: "string", const: "Salons retrieved" },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Salon" },
+            },
+            meta: {
+              type: "object",
+              required: ["nextCursor", "hasMore"],
+              properties: {
+                nextCursor: {
+                  type: ["string", "null"],
+                  format: "uuid",
+                  description:
+                    "Pass as the `cursor` query param to fetch the next page. Null when there are no more results.",
+                },
+                hasMore: { type: "boolean" },
+              },
+            },
+          },
+        },
+        SalonMember: {
+          type: "object",
+          required: ["id", "userId", "salonId", "role", "user"],
+          properties: {
+            id: { $ref: "#/components/schemas/ResourceId" },
+            userId: { $ref: "#/components/schemas/ResourceId" },
+            salonId: { $ref: "#/components/schemas/ResourceId" },
+            role: { type: "string", enum: ["OWNER", "MANAGER", "STAFF"] },
+            user: {
+              type: "object",
+              required: ["id", "name", "email"],
+              properties: {
+                id: { $ref: "#/components/schemas/ResourceId" },
+                name: { type: ["string", "null"] },
+                email: { type: ["string", "null"], format: "email" },
+              },
+            },
+          },
+        },
+        AddSalonMemberRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["userId", "role"],
+          properties: {
+            userId: { $ref: "#/components/schemas/ResourceId" },
+            role: { type: "string", enum: ["OWNER", "MANAGER", "STAFF"] },
+          },
+        },
+        SalonMemberResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: { type: "string" },
+            data: {
+              type: "object",
+              required: ["member"],
+              properties: {
+                member: { $ref: "#/components/schemas/SalonMember" },
+              },
+            },
+          },
+        },
+        SalonMemberListResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: { type: "string" },
+            data: {
+              type: "array",
+              items: { $ref: "#/components/schemas/SalonMember" },
+            },
           },
         },
       },
