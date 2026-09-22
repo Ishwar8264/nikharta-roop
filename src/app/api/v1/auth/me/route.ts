@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { getAuthContext } from "@/server/auth/session";
-import { getCurrentUser } from "@/server/modules/auth/auth.service";
-
+import { AccountDeactivatedError } from "@/server/modules/auth/auth.errors";
+import { updateProfileSchema } from "@/server/modules/auth/auth.schema";
+import {
+  getCurrentUser,
+  updateProfile,
+} from "@/server/modules/auth/auth.service";
 /**
  * Returns the authenticated user's profile.
  *
@@ -45,6 +49,72 @@ export async function GET(request: Request): Promise<Response> {
     console.error("Failed to load current user", error);
     return NextResponse.json(
       { message: "Unable to load user" },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * Applies a partial profile update to the authenticated user.
+ *
+ * Why:
+ * Only fields explicitly present in the body are written, so PATCH semantics
+ * hold and accidental overwrites of untouched fields are impossible.
+ */
+export async function PATCH(request: Request): Promise<Response> {
+  const auth = await getAuthContext(request);
+
+  if (!auth) {
+    return NextResponse.json(
+      { message: "Authentication required" },
+      { status: 401 },
+    );
+  }
+
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { message: "Request body must be valid JSON" },
+      { status: 400 },
+    );
+  }
+
+  const validation = updateProfileSchema.safeParse(body);
+
+  if (!validation.success) {
+    return NextResponse.json(
+      {
+        message: "Validation failed",
+        errors: validation.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const user = await updateProfile(auth.sub, validation.data);
+
+    return NextResponse.json(
+      { message: "Profile updated", data: { user } },
+      { status: 200 },
+    );
+  } catch (error) {
+    if (error instanceof AccountDeactivatedError) {
+      return NextResponse.json(
+        { message: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
+    console.error("Profile update failed", error);
+    return NextResponse.json(
+      { message: "Unable to update profile" },
       { status: 500 },
     );
   }

@@ -39,6 +39,16 @@ export async function issueTokenPair(
   return createTokenPair(prisma, userId, role, metadata);
 }
 
+/** Issues a token pair as part of a larger authentication transaction. */
+export async function issueTokenPairInTransaction(
+  transaction: Prisma.TransactionClient,
+  userId: string,
+  role: string,
+  metadata: TokenMetadata = {},
+): Promise<TokenPair> {
+  return createTokenPair(transaction, userId, role, metadata);
+}
+
 /** Creates and persists a token pair using the supplied transaction client. */
 async function createTokenPair(
   database: Prisma.TransactionClient | typeof prisma,
@@ -121,12 +131,7 @@ export async function rotateRefreshToken(
       return null;
     }
 
-    return createTokenPair(
-      transaction,
-      stored.userId,
-      user.role,
-      metadata,
-    );
+    return createTokenPair(transaction, stored.userId, user.role, metadata);
   });
 }
 
@@ -143,7 +148,7 @@ export async function revokeRefreshToken(
 }
 
 /** Hashes a refresh token so plaintext tokens never touch the database. */
-function hashRefreshToken(token: string): string {
+export function hashRefreshToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 

@@ -320,7 +320,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "httpOnly cookie. The user is re-read from the database on every call, " +
             "so role changes and soft-deletes take effect immediately.",
           operationId: "getCurrentUser",
-          security: [{ bearerAuth: [] }],
+          security: [{ bearerAuth: [] }, { accessCookie: [] }],
           responses: {
             "200": {
               description: "Authenticated user profile",
@@ -343,6 +343,86 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
             "500": {
               description: "Unexpected failure while loading the user",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        patch: {
+          tags: ["Authentication"],
+          summary: "Update the current user's profile",
+          description:
+            "Applies a partial update to the authenticated user's profile. " +
+            "Only the fields present in the body are written — omitted fields are " +
+            "left untouched. Empty bodies are rejected with 400 so a client cannot " +
+            "mistake a no-op for success. Email, phone, role, and verification " +
+            "flags are intentionally not editable through this endpoint.",
+          operationId: "updateCurrentUser",
+          security: [
+            { bearerAuth: [] },
+            { accessCookie: [], csrfToken: [] },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/UpdateProfileRequest",
+                },
+                examples: {
+                  nameAndBio: {
+                    summary: "Update name and bio",
+                    value: {
+                      name: "Ishwar Kumar",
+                      bio: "Salon enthusiast based in Mumbai.",
+                    },
+                  },
+                  location: {
+                    summary: "Update approximate location",
+                    value: { lat: 19.076, lng: 72.8777 },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Profile updated",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/UpdatedProfileResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description:
+                "Malformed JSON, validation failure, or empty body (no fields to update)",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Missing, invalid, or expired access token",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while updating the profile",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -671,6 +751,270 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      "/api/v1/auth/password/change": {
+        post: {
+          tags: ["Authentication"],
+          summary: "Change the current user's password",
+          description:
+            "Replaces the authenticated user's password after re-verifying the " +
+            "current one. The current password requirement means a stolen access " +
+            "token alone cannot lock the real owner out. On success, every old " +
+            "refresh session is revoked and this device receives a newly rotated " +
+            "access + refresh token pair.",
+          operationId: "changePassword",
+          security: [
+            { bearerAuth: [] },
+            { accessCookie: [], csrfToken: [] },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ChangePasswordRequest",
+                },
+                examples: {
+                  standardChange: {
+                    summary: "Standard password change",
+                    value: {
+                      currentPassword: "old-secure-password",
+                      newPassword: "brand-new-password-999",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description:
+                "Password updated. Old sessions were revoked and auth cookies rotated.",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ChangePasswordResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description:
+                "Malformed JSON, validation failure, or new password matches the current one",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "Missing/invalid access token, or the supplied current password is incorrect",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while changing the password",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/auth/account": {
+        delete: {
+          tags: ["Authentication"],
+          summary: "Delete the current user's account",
+          description:
+            "Soft-deletes the authenticated user's account after confirming the " +
+            "current password. The user row remains in the database with " +
+            "`deletedAt` set so appointments, reviews, and audit trails keep their " +
+            "references. All live refresh tokens are revoked; auth cookies are " +
+            "cleared on the response.",
+          operationId: "deleteAccount",
+          security: [
+            { bearerAuth: [] },
+            { accessCookie: [], csrfToken: [] },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/DeleteAccountRequest",
+                },
+                examples: {
+                  confirm: {
+                    summary: "Confirm deletion with password",
+                    value: { password: "your-current-password" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description:
+                "Account deleted. Auth cookies are cleared in the response headers.",
+              headers: {
+                "Set-Cookie": {
+                  description:
+                    "Clears accessToken, refreshToken, and csrfToken cookies.",
+                  schema: { type: "string" },
+                },
+              },
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SuccessResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Malformed JSON or validation failure",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "Missing/invalid access token, or the supplied password is incorrect",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while deleting the account",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/auth/session": {
+        get: {
+          tags: ["Authentication"],
+          summary: "List active sessions",
+          description:
+            "Returns the authenticated user's non-revoked, non-expired refresh " +
+            "sessions. Token hashes are never returned. When the refresh cookie " +
+            "matches a listed session, `isCurrent` is true.",
+          operationId: "listSessions",
+          security: [{ bearerAuth: [] }, { accessCookie: [] }],
+          responses: {
+            "200": {
+              description: "Active sessions",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SessionListResponse" },
+                },
+              },
+            },
+            "401": {
+              description: "Missing, invalid, or expired access token",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while loading sessions",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/auth/session/{id}": {
+        delete: {
+          tags: ["Authentication"],
+          summary: "Revoke an active session",
+          description:
+            "Revokes one active refresh session owned by the authenticated user. " +
+            "Revoking the current cookie-backed session also clears auth cookies.",
+          operationId: "revokeSession",
+          security: [
+            { bearerAuth: [] },
+            { accessCookie: [], csrfToken: [] },
+          ],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              description: "Refresh session UUID",
+              schema: { type: "string", format: "uuid" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Session revoked",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/SuccessResponse" },
+                },
+              },
+            },
+            "400": {
+              description: "Session ID is not a UUID",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "401": {
+              description: "Missing, invalid, or expired access token",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "No active user-owned session has this ID",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "500": {
+              description: "Unexpected failure while revoking the session",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -708,6 +1052,13 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           scheme: "bearer",
           bearerFormat: "JWT",
           description: "JWT access token for protected endpoints",
+        },
+        accessCookie: {
+          type: "apiKey",
+          in: "cookie",
+          name: "accessToken",
+          description:
+            "HttpOnly JWT cookie set by login, refresh, and password change.",
         },
         csrfToken: {
           type: "apiKey",
@@ -970,23 +1321,37 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "name",
             "email",
             "phone",
+            "avatar",
+            "bio",
+            "lat",
+            "lng",
             "role",
+            "isOnboarded",
             "emailVerified",
             "phoneVerified",
+            "loyaltyPoints",
             "createdAt",
+            "updatedAt",
           ],
           properties: {
             id: { type: "string", format: "uuid" },
             name: { type: ["string", "null"] },
             email: { type: ["string", "null"], format: "email" },
             phone: { type: ["string", "null"] },
+            avatar: { type: ["string", "null"], format: "uri" },
+            bio: { type: ["string", "null"] },
+            lat: { type: ["number", "null"], format: "float" },
+            lng: { type: ["number", "null"], format: "float" },
             role: {
               type: "string",
               enum: ["SUPER_ADMIN", "USER"],
             },
+            isOnboarded: { type: "boolean" },
             emailVerified: { type: "boolean" },
             phoneVerified: { type: "boolean" },
+            loyaltyPoints: { type: "integer" },
             createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
           },
         },
         CurrentUserResponse: {
@@ -1002,6 +1367,163 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               required: ["user"],
               properties: {
                 user: { $ref: "#/components/schemas/CurrentUser" },
+              },
+            },
+          },
+        },
+        UpdateProfileRequest: {
+          type: "object",
+          additionalProperties: false,
+          minProperties: 1,
+          properties: {
+            name: {
+              type: ["string", "null"],
+              minLength: 2,
+              maxLength: 100,
+              example: "Ishwar Kumar",
+            },
+            avatar: {
+              type: ["string", "null"],
+              format: "uri",
+              maxLength: 2048,
+              example: "https://cdn.example.com/avatars/ishwar.png",
+            },
+            bio: {
+              type: ["string", "null"],
+              maxLength: 500,
+              example: "Salon enthusiast based in Mumbai.",
+            },
+            lat: {
+              type: ["number", "null"],
+              format: "float",
+              minimum: -90,
+              maximum: 90,
+              example: 19.076,
+            },
+            lng: {
+              type: ["number", "null"],
+              format: "float",
+              minimum: -180,
+              maximum: 180,
+              example: 72.8777,
+            },
+          },
+        },
+        UpdatedProfileResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Profile updated",
+            },
+            data: {
+              type: "object",
+              required: ["user"],
+              properties: {
+                user: { $ref: "#/components/schemas/CurrentUser" },
+              },
+            },
+          },
+        },
+        ChangePasswordRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["currentPassword", "newPassword"],
+          properties: {
+            currentPassword: {
+              type: "string",
+              format: "password",
+              minLength: 1,
+              maxLength: 128,
+              writeOnly: true,
+              example: "old-secure-password",
+            },
+            newPassword: {
+              type: "string",
+              format: "password",
+              minLength: 8,
+              maxLength: 128,
+              writeOnly: true,
+              example: "brand-new-password-999",
+            },
+          },
+        },
+        DeleteAccountRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["password"],
+          properties: {
+            password: {
+              type: "string",
+              format: "password",
+              minLength: 1,
+              maxLength: 128,
+              writeOnly: true,
+              description:
+                "Current password, used as a second factor to confirm deletion.",
+              example: "your-current-password",
+            },
+          },
+        },
+        SuccessResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: { type: "string" },
+            data: { type: ["object", "null"] },
+          },
+        },
+        ChangePasswordResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: {
+              type: "string",
+              const: "Password updated successfully",
+            },
+            data: {
+              type: "object",
+              required: ["accessToken", "accessTokenExpiresIn"],
+              properties: {
+                accessToken: { type: "string" },
+                accessTokenExpiresIn: { type: "integer", example: 900 },
+              },
+            },
+          },
+        },
+        AuthSession: {
+          type: "object",
+          required: [
+            "id",
+            "userAgent",
+            "ipAddress",
+            "createdAt",
+            "expiresAt",
+            "isCurrent",
+          ],
+          properties: {
+            id: { type: "string", format: "uuid" },
+            userAgent: { type: ["string", "null"] },
+            ipAddress: { type: ["string", "null"] },
+            createdAt: { type: "string", format: "date-time" },
+            expiresAt: { type: "string", format: "date-time" },
+            isCurrent: { type: "boolean" },
+          },
+        },
+        SessionListResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: { type: "string", const: "Active sessions" },
+            data: {
+              type: "object",
+              required: ["sessions"],
+              properties: {
+                sessions: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/AuthSession" },
+                },
               },
             },
           },
