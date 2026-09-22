@@ -38,7 +38,10 @@ const FULLY_PUBLIC_PATHS = new Set<string>([
  * a salon needs a signed-in owner. Splitting by method keeps the read surface
  * open without opening the write surface.
  */
-const PUBLIC_GET_PATHS = new Set<string>(["/api/v1/salons"]);
+const PUBLIC_GET_PATHS = new Set<string>([
+  "/api/v1/salons",
+  "/api/v1/services/categories",
+]);
 
 /**
  * Regex patterns for paths where GET/HEAD is public but deeper nesting is not.
@@ -49,7 +52,11 @@ const PUBLIC_GET_PATHS = new Set<string>(["/api/v1/salons"]);
  * exactly one trailing segment so nested resources fall through to the normal
  * authentication check.
  */
-const PUBLIC_GET_PATTERNS: RegExp[] = [/^\/api\/v1\/salons\/[^/]+$/];
+const PUBLIC_GET_PATTERNS: RegExp[] = [
+  /^\/api\/v1\/salons\/[^/]+$/,
+  /^\/api\/v1\/salons\/[^/]+\/services$/,
+  /^\/api\/v1\/salons\/[^/]+\/services\/[^/]+$/,
+];
 
 /** Auth paths that get the stricter limiter, even though they are public. */
 const AUTH_PATH_PREFIX = "/api/v1/auth";

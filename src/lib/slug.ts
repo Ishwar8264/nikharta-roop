@@ -32,8 +32,9 @@ export function slugify(input: string): string {
 export async function generateUniqueSlug(
   base: string,
   exists: (candidate: string) => Promise<boolean>,
+  fallback = "item",
 ): Promise<string> {
-  const normalized = slugify(base) || "salon";
+  const normalized = slugify(base) || fallback;
 
   if (!(await exists(normalized))) {
     return normalized;

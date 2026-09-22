@@ -245,7 +245,7 @@ async function loadSalonForViewer(
 /** Generates a slug and normalises slug errors into a typed conflict. */
 async function generateSlugOrFail(name: string): Promise<string> {
   try {
-    return await generateUniqueSlug(name, salonSlugExists);
+    return await generateUniqueSlug(name, salonSlugExists, "salon");
   } catch {
     throw new SlugConflictError();
   }

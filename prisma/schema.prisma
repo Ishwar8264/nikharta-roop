@@ -342,6 +342,9 @@ model Service {
 
   images String[]
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   reviews      ServiceReview[]
   appointments AppointmentService[]
   favorites    Favorite[]
