@@ -1,49 +1,40 @@
-// For refresh route
-/**
- * @swagger
- * /api/v1/auth/logout:
- *   post:
- *     summary: Log out the current session
- *     description: Revokes the bearer-token or browser-cookie session.
- *     tags: [Auth]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: Session revoked and browser cookies cleared
- *       401:
- *         description: Missing, invalid, or expired session
- */
+import { NextResponse } from "next/server";
+
+import { REFRESH_COOKIE_NAME } from "@/server/auth/auth.constants";
+import { clearSessionCookies } from "@/server/auth/cookies";
+import { readCookie } from "@/server/auth/session";
+import { revokeRefreshToken } from "@/server/auth/token.service";
 
 /**
- * ========================================================
- * LOGOUT API ROUTE
- * Revokes the user's active session by deleting the session record from the DB.
- * ========================================================
+ * Ends the current session by revoking the refresh token and clearing cookies.
+ *
+ * Why:
+ * Logout is intentionally idempotent — it always returns 200, even when the
+ * cookie is missing or already revoked. Clients call it as a "make me logged
+ * out" instruction, not as a transaction, so failing it would only create
+ * confusing retry loops. Access tokens are short-lived JWTs and expire on
+ * their own; only the refresh token needs server-side revocation.
  */
+export async function POST(request: Request): Promise<Response> {
+  const rawRefreshToken = readCookie(request, REFRESH_COOKIE_NAME);
 
-import { NextRequest } from "next/server";
-import {
-  clearAuthCookies,
-  getAccessTokenFromRequest,
-} from "@/src/lib/auth-cookies";
-import { ApiResponse } from "@/src/lib/response";
-import { withAuth } from "@/src/middleware/auth";
-import { logoutService } from "@/src/services/auth/auth.service";
+  if (rawRefreshToken) {
+    // Best-effort revocation. If the token is already gone, revokeRefreshToken
+    // is a no-op; if the DB is down, we still clear cookies so the client
+    // leaves with a clean local state.
+    try {
+      await revokeRefreshToken(rawRefreshToken);
+    } catch (error) {
+      console.error("Failed to revoke refresh token during logout", error);
+    }
+  }
 
-export const POST = withAuth(async (req: NextRequest) => {
-  // Reuse the token source already accepted by the authentication middleware.
-  const accessToken = getAccessTokenFromRequest(req)!;
+  const response = NextResponse.json(
+    { message: "Logged out successfully" },
+    { status: 200 },
+  );
 
-  // Call the service to revoke the session
-  await logoutService(accessToken);
+  clearSessionCookies(response);
 
-  // Build the standard logout response before clearing browser credentials.
-  const response = ApiResponse.success({ message: "Logged out successfully" });
-
-  // Clear both HttpOnly cookies so browser logout completes immediately.
-  clearAuthCookies(response);
-
-  // Return the successful response after browser credentials are removed.
   return response;
-});
+}

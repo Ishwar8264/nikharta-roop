@@ -1,68 +1,80 @@
+import { NextResponse } from "next/server";
+
+import {
+  OtpCooldownError,
+  OtpDeliveryError,
+} from "@/server/modules/otp/otp.errors";
+import { sendOtpSchema } from "@/server/modules/otp/otp.schema";
+import { sendOtp } from "@/server/modules/otp/otp.service";
+
 /**
- * @swagger
- * /api/v1/auth/otp/send:
- *   post:
- *     summary: Send an authentication OTP
- *     description: Sends a one-minute OTP using exactly one mobile or email identity.
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [purpose]
- *             properties:
- *               mobile:
- *                 type: string
- *                 example: "9876543210"
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "user@example.com"
- *               purpose:
- *                 type: string
- *                 enum: [LOGIN, SIGNUP]
- *     responses:
- *       200:
- *         description: Generic OTP request success response
- *       400:
- *         description: Invalid request payload
- *       429:
- *         description: OTP request rate limit exceeded
+ * Issues a fresh email verification code.
+ *
+ * Why:
+ * Runs before the user can log in, so it stays on the public surface. The
+ * response shape is identical whether the identifier exists or not, which
+ * prevents the endpoint from being used to enumerate accounts.
  */
+export async function POST(request: Request): Promise<Response> {
+  let body: unknown;
 
-import { NextRequest } from "next/server";
-
-import { getAuthRequestContext } from "@/src/helpers/auth-request";
-import { handleApiRouteError } from "@/src/lib/api-route-error";
-import { ApiResponse } from "@/src/lib/response";
-import { sendOtpService } from "@/src/services/auth/auth.service";
-import { sendOtpSchema } from "@/src/validations/auth/auth.validation";
-
-// Support existing generic OTP clients across mobile and email login channels.
-export async function POST(request: NextRequest) {
   try {
-    // Parse the JSON body supplied by the API client.
-    const body = await request.json();
-
-    // Validate identity exclusivity, normalization, and requested purpose.
-    const validated = sendOtpSchema.parse(body);
-
-    // Capture request metadata for auth auditing and throttling.
-    const context = getAuthRequestContext(request);
-
-    // Pass only identity fields and the validated purpose to the service.
-    const result = await sendOtpService(
-      { mobile: validated.mobile, email: validated.email },
-      validated.purpose,
-      context,
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { message: "Request body must be valid JSON" },
+      { status: 400 },
     );
+  }
 
-    // Preserve the standard successful API response envelope.
-    return ApiResponse.success(result);
+  const validation = sendOtpSchema.safeParse(body);
+
+  if (!validation.success) {
+    return NextResponse.json(
+      {
+        message: "Validation failed",
+        errors: validation.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const result = await sendOtp(validation.data);
+
+    return NextResponse.json(
+      {
+        message: "Verification code sent",
+        data: {
+          channel: result.channel,
+          expiresAt: result.expiresAt,
+          resendAvailableInSeconds: result.resendAvailableInSeconds,
+        },
+      },
+      { status: 200 },
+    );
   } catch (error) {
-    // Reuse the shared handler for clean validation and safe server errors.
-    return handleApiRouteError(error);
+    if (error instanceof OtpCooldownError) {
+      return NextResponse.json(
+        { message: error.message },
+        {
+          status: 429,
+          headers: { "Retry-After": String(error.retryAfterSeconds) },
+        },
+      );
+    }
+
+    if (error instanceof OtpDeliveryError) {
+      return NextResponse.json({ message: error.message }, { status: 502 });
+    }
+
+    console.error("OTP send failed", error);
+    return NextResponse.json(
+      { message: "Unable to send verification code" },
+      { status: 500 },
+    );
   }
 }

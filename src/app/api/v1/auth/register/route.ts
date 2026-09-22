@@ -1,65 +1,61 @@
+import { registerUserSchema } from "@/server/modules/auth/auth.schema";
+import { registerUser } from "@/server/modules/auth/auth.service";
+import { RegistrationConflictError } from "@/server/modules/auth/registration-conflict.error";
+
 /**
- * @swagger
- * /api/v1/auth/register:
- *   post:
- *     summary: Register a new user through mobile or email OTP
- *     description: Sends a one-minute signup OTP using exactly one identity.
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             oneOf:
- *               - type: object
- *                 required: [mobile]
- *                 properties:
- *                   mobile:
- *                     type: string
- *                     example: "9876543210"
- *               - type: object
- *                 required: [email]
- *                 properties:
- *                   email:
- *                     type: string
- *                     format: email
- *                     example: "new-user@example.com"
- *     responses:
- *       200:
- *         description: OTP sent successfully
- *       409:
- *         description: Mobile or email already registered
- *       429:
- *         description: OTP request rate limit exceeded
+ * Registers an email-authenticated user with optional phone profile data.
+ *
+ * Why:
+ * The route owns HTTP parsing and status codes while the service owns business
+ * rules, which keeps registration reusable outside an HTTP request.
  */
+export async function POST(request: Request): Promise<Response> {
+  let body: unknown;
 
-import { NextRequest } from "next/server";
-
-import { getAuthRequestContext } from "@/src/helpers/auth-request";
-import { handleApiRouteError } from "@/src/lib/api-route-error";
-import { ApiResponse } from "@/src/lib/response";
-import { sendOtpService } from "@/src/services/auth/auth.service";
-import { registerSchema } from "@/src/validations/auth/auth.validation";
-
-// Initiate account registration through exactly one mobile or email identity.
-export async function POST(request: NextRequest) {
   try {
-    // Parse the JSON body supplied by the API client.
-    const body = await request.json();
+    body = await request.json();
+  } catch {
+    return Response.json(
+      { message: "Request body must be valid JSON" },
+      { status: 400 },
+    );
+  }
 
-    // Validate and normalize exactly one mobile or email signup identity.
-    const validated = registerSchema.parse(body);
+  const validation = registerUserSchema.safeParse(body);
 
-    // Capture request metadata for auth auditing and throttling.
-    const context = getAuthRequestContext(request);
+  if (!validation.success) {
+    return Response.json(
+      {
+        message: "Validation failed",
+        errors: validation.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 },
+    );
+  }
 
-    // Send a SIGNUP-purpose OTP through the selected identity channel.
-    const result = await sendOtpService(validated, "SIGNUP", context);
+  try {
+    const user = await registerUser(validation.data);
 
-    // Preserve the standard successful API response envelope.
-    return ApiResponse.success(result);
+    return Response.json(
+      {
+        message: "User registered successfully",
+        data: { user },
+      },
+      { status: 201 },
+    );
   } catch (error) {
-    // Reuse the shared handler for clean validation and safe server errors.
-    return handleApiRouteError(error);
+    if (error instanceof RegistrationConflictError) {
+      return Response.json({ message: error.message }, { status: 409 });
+    }
+
+    // The public response must not leak database or infrastructure details.
+    console.error("User registration failed", error);
+    return Response.json(
+      { message: "Unable to register user" },
+      { status: 500 },
+    );
   }
 }

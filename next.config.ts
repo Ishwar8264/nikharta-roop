@@ -1,23 +1,15 @@
-/**
- * Purpose: Next.js runtime configuration for the Nikharta Roop app.
- * Responsibilities: declare image optimization sources used by maps and uploaded media.
- * Important notes: Cloudinary image URLs are stored dynamically, so the shared host is allowed.
- */
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
+  // Keep the familiar Springdoc URL without creating a conflicting app route.
+  async redirects() {
+    return [
       {
-        hostname: "maps.googleapis.com",
-        pathname: "/maps/api/staticmap",
-        protocol: "https",
+        source: "/swagger-ui.html",
+        destination: "/swagger-ui",
+        permanent: false,
       },
-      {
-        hostname: "res.cloudinary.com",
-        protocol: "https",
-      },
-    ],
+    ];
   },
 };
 

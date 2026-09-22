@@ -1,91 +1,71 @@
-// For refresh route
-/**
- * @swagger
- * /api/v1/auth/refresh:
- *   post:
- *     summary: Refresh Access Token
- *     description: Rotates an explicit refresh token or protected browser cookie.
- *     tags: [Auth]
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - refreshToken
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 example: "eyJhbGciOiJIUzI1NiIsInR5c..."
- *     responses:
- *       200:
- *         description: New tokens generated successfully
- *       401:
- *         description: Invalid or expired refresh token
- */
+import { NextResponse } from "next/server";
 
-/**
- * ========================================================
- * REFRESH TOKEN API ROUTE
- * Allows the client to get a new access token using a valid refresh token.
- * Implements token rotation for enhanced security (old session is revoked).
- * ========================================================
- */
-
-import { NextRequest } from "next/server";
-
-import { getAuthRequestContext } from "@/src/helpers/auth-request";
-import { handleApiRouteError } from "@/src/lib/api-route-error";
+import { REFRESH_COOKIE_NAME } from "@/server/auth/auth.constants";
 import {
-  getRefreshTokenFromRequest,
-  setAuthCookies,
-} from "@/src/lib/auth-cookies";
-import { UnauthorizedError } from "@/src/lib/errors";
-import { ApiResponse } from "@/src/lib/response";
-import { refreshTokenService } from "@/src/services/auth/auth.service";
-import { refreshTokenSchema } from "@/src/validations/auth/auth.validation";
+  clearSessionCookies,
+  setSessionCookies,
+} from "@/server/auth/cookies";
+import { readCookie } from "@/server/auth/session";
+import { rotateRefreshToken } from "@/server/auth/token.service";
 
-export async function POST(req: NextRequest) {
-  try {
-    // 1. Read the optional body because browser refresh can rely on its cookie.
-    const rawBody = await req.text();
+/**
+ * Rotates the refresh token cookie into a fresh access + refresh pair.
+ *
+ * Why:
+ * The refresh token is sent as an httpOnly cookie so JavaScript cannot steal
+ * it. On every successful call, the old refresh token is revoked and a new
+ * one issued — reuse of the old one is treated as theft.
+ */
+export async function POST(request: Request): Promise<Response> {
+  const rawRefreshToken = readCookie(request, REFRESH_COOKIE_NAME);
 
-    // 2. Parse supplied JSON while treating an empty browser body as an object.
-    const body: unknown = rawBody ? JSON.parse(rawBody) : {};
-
-    // 3. Validate an optional explicit refresh token for non-browser clients.
-    const validated = refreshTokenSchema.parse(body);
-
-    // Prefer an explicit API-client token before the protected browser cookie.
-    const refreshToken =
-      validated.refreshToken ?? getRefreshTokenFromRequest(req);
-
-    // Reject requests that provide neither supported refresh mechanism.
-    if (!refreshToken) {
-      throw new UnauthorizedError("Refresh token required");
-    }
-
-    // 4. Capture request metadata for the rotated replacement session.
-    const context = getAuthRequestContext(req);
-
-    // 5. Call the service layer to rotate the valid refresh session.
-    const result = await refreshTokenService(refreshToken, context);
-
-    // 6. Preserve the existing token response for non-browser API clients.
-    const response = ApiResponse.success(result);
-
-    // 7. Rotate the protected browser cookies with the replacement token pair.
-    setAuthCookies(response, result);
-
-    // 8. Return the response after both browser cookies are attached.
-    return response;
-  } catch (error) {
-    // Keep invalid token details private while reusing standard validation errors.
-    return handleApiRouteError(error, {
-      fallbackMessage: "Invalid or expired refresh token",
-      fallbackStatus: 401,
-      logUnexpected: false,
-    });
+  if (!rawRefreshToken) {
+    return unauthorizedResponse("Missing refresh token");
   }
+
+  let tokens;
+
+  try {
+    tokens = await rotateRefreshToken(rawRefreshToken, {
+      userAgent: request.headers.get("user-agent") ?? undefined,
+      ipAddress:
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        undefined,
+    });
+  } catch (error) {
+    console.error("Token refresh failed", error);
+    return NextResponse.json(
+      { message: "Unable to refresh session" },
+      { status: 500 },
+    );
+  }
+
+  if (!tokens) {
+    // Invalid, expired, or reused token — clear cookies so the client is
+    // forced to log in again instead of retrying with stale state.
+    return unauthorizedResponse("Invalid or expired refresh token");
+  }
+
+  const response = NextResponse.json(
+    {
+      message: "Token refreshed",
+      data: {
+        accessToken: tokens.accessToken,
+        accessTokenExpiresIn: tokens.accessTokenExpiresIn,
+      },
+    },
+    { status: 200 },
+  );
+
+  setSessionCookies(response, tokens);
+
+  return response;
+}
+
+/** 401 with both auth cookies cleared so the client cannot retry stale state. */
+function unauthorizedResponse(message: string): NextResponse {
+  const response = NextResponse.json({ message }, { status: 401 });
+  clearSessionCookies(response);
+
+  return response;
 }

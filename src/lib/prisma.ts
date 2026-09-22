@@ -1,15 +1,19 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-// Preserve one Prisma client across Next.js development hot reloads.
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+import { PrismaClient } from "@/generated/prisma/client";
 
-// Reuse the cached client or create the application's database client once.
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    // Keep verbose SQL logs local and expose only database errors in production.
-    log: process.env.NODE_ENV === "production" ? ["error"] : ["query", "error"],
-  });
+const connectionString = process.env.DATABASE_URL;
 
-// Cache the client only during development to prevent duplicate connection pools.
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not configured");
+}
+
+const adapter = new PrismaPg({ connectionString });
+
+const globalForPrisma = global as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
+
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

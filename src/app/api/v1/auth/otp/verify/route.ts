@@ -1,79 +1,75 @@
+import { NextResponse } from "next/server";
+
+import {
+  OtpExpiredError,
+  OtpInvalidError,
+  OtpMaxAttemptsError,
+} from "@/server/modules/otp/otp.errors";
+import { verifyOtpSchema } from "@/server/modules/otp/otp.schema";
+import { verifyOtpCode } from "@/server/modules/otp/otp.service";
+
 /**
- * @swagger
- * /api/v1/auth/otp/verify:
- *   post:
- *     summary: Verify a mobile or email OTP
- *     description: Claims one unexpired OTP and returns a new JWT session.
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [otp, purpose]
- *             properties:
- *               mobile:
- *                 type: string
- *                 example: "9876543210"
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "user@example.com"
- *               otp:
- *                 type: string
- *                 example: "123456"
- *               purpose:
- *                 type: string
- *                 enum: [LOGIN, SIGNUP]
- *     responses:
- *       200:
- *         description: OTP verified and JWT session created
- *       400:
- *         description: Invalid, expired, reused, or locked OTP
- *       401:
- *         description: Incorrect OTP or authentication failure
+ * Verifies an OTP and marks the corresponding identifier as verified.
+ *
+ * Why:
+ * Public route — an unverified user cannot log in, so they have no token to
+ * authenticate with here. Error messages stay informative but never reveal
+ * whether the identifier exists.
  */
+export async function POST(request: Request): Promise<Response> {
+  let body: unknown;
 
-import { NextRequest } from "next/server";
-
-import { getAuthRequestContext } from "@/src/helpers/auth-request";
-import { handleApiRouteError } from "@/src/lib/api-route-error";
-import { setAuthCookies } from "@/src/lib/auth-cookies";
-import { ApiResponse } from "@/src/lib/response";
-import { verifyOtpService } from "@/src/services/auth/auth.service";
-import { verifyOtpSchema } from "@/src/validations/auth/auth.validation";
-
-// Complete mobile signup or mobile/email login after OTP proof succeeds.
-export async function POST(request: NextRequest) {
   try {
-    // Parse the JSON body supplied by the API client.
-    const body = await request.json();
-
-    // Validate one identity, six-digit OTP, and explicit purpose.
-    const validated = verifyOtpSchema.parse(body);
-
-    // Capture request metadata for the created session audit fields.
-    const context = getAuthRequestContext(request);
-
-    // Verify and consume the OTP before creating a JWT session.
-    const result = await verifyOtpService(
-      { mobile: validated.mobile, email: validated.email },
-      validated.otp,
-      validated.purpose,
-      context,
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { message: "Request body must be valid JSON" },
+      { status: 400 },
     );
+  }
 
-    // Preserve the standard successful API response envelope for every client.
-    const response = ApiResponse.success(result);
+  const validation = verifyOtpSchema.safeParse(body);
 
-    // Establish a protected cookie session for same-origin browser clients.
-    setAuthCookies(response, result);
+  if (!validation.success) {
+    return NextResponse.json(
+      {
+        message: "Validation failed",
+        errors: validation.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 },
+    );
+  }
 
-    // Return tokens in the existing body for backward-compatible API clients.
-    return response;
+  try {
+    const result = await verifyOtpCode(validation.data);
+
+    return NextResponse.json(
+      {
+        message: "Verification successful",
+        data: { userId: result.userId, channel: result.channel },
+      },
+      { status: 200 },
+    );
   } catch (error) {
-    // Reuse the shared handler for clean validation and safe server errors.
-    return handleApiRouteError(error);
+    if (error instanceof OtpInvalidError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
+
+    if (error instanceof OtpExpiredError) {
+      return NextResponse.json({ message: error.message }, { status: 410 });
+    }
+
+    if (error instanceof OtpMaxAttemptsError) {
+      return NextResponse.json({ message: error.message }, { status: 429 });
+    }
+
+    console.error("OTP verify failed", error);
+    return NextResponse.json(
+      { message: "Unable to verify code" },
+      { status: 500 },
+    );
   }
 }
