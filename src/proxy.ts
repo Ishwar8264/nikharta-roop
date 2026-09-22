@@ -10,8 +10,15 @@ import { ACCESS_COOKIE_NAME } from "@/server/auth/auth.constants";
 import { isMutationRequestTrusted } from "@/server/auth/csrf";
 import { verifyAccessToken } from "@/server/auth/jwt";
 
-/** Routes reachable without any access token. */
-const PUBLIC_PATHS = new Set<string>([
+/**
+ * Routes reachable without any access token for every HTTP method.
+ *
+ * Why:
+ * Registration, login, refresh, logout, OTP, and password recovery must all
+ * work before a session exists (or after one has ended). Health checks are
+ * called by monitoring tools that carry no credentials.
+ */
+const FULLY_PUBLIC_PATHS = new Set<string>([
   "/api/v1/auth/register",
   "/api/v1/auth/login",
   "/api/v1/auth/refresh",
@@ -23,6 +30,38 @@ const PUBLIC_PATHS = new Set<string>([
   "/api/v1/health",
 ]);
 
+/**
+ * Exact paths where only GET and HEAD are public; mutations still require auth.
+ *
+ * Why:
+ * Browsing the salon directory must work for anonymous visitors, but creating
+ * a salon needs a signed-in owner. Splitting by method keeps the read surface
+ * open without opening the write surface.
+ */
+const PUBLIC_GET_PATHS = new Set<string>([
+  "/api/v1/salons",
+  "/api/v1/services/categories",
+  "/api/v1/products/categories",
+]);
+
+/**
+ * Regex patterns for paths where GET/HEAD is public but deeper nesting is not.
+ *
+ * Why:
+ * `/api/v1/salons/{slug}` is a public detail lookup, but
+ * `/api/v1/salons/{id}/members` must stay behind auth. The pattern matches
+ * exactly one trailing segment so nested resources fall through to the normal
+ * authentication check.
+ */
+const PUBLIC_GET_PATTERNS: RegExp[] = [
+  /^\/api\/v1\/salons\/[^/]+$/,
+  /^\/api\/v1\/salons\/[^/]+\/services$/,
+  /^\/api\/v1\/salons\/[^/]+\/services\/[^/]+$/,
+  /^\/api\/v1\/salons\/[^/]+\/services\/[^/]+\/staff$/,
+  /^\/api\/v1\/salons\/[^/]+\/products$/,
+  /^\/api\/v1\/salons\/[^/]+\/products\/[^/]+$/,
+];
+
 /** Auth paths that get the stricter limiter, even though they are public. */
 const AUTH_PATH_PREFIX = "/api/v1/auth";
 
@@ -31,6 +70,22 @@ const ADMIN_PATH_PREFIXES = ["/api/v1/admin"];
 
 /** Roles allowed to access admin-only routes. */
 const ADMIN_ROLES = new Set(["SUPER_ADMIN"]);
+
+/**
+ * Returns true when the request may proceed without an access token.
+ *
+ * Why:
+ * Centralising the "is this public?" decision keeps the ordering of checks
+ * explicit and easy to audit as new resources are added. Safe methods only —
+ * a public GET path is never implicitly a public POST.
+ */
+function isPublicRequest(pathname: string, method: string): boolean {
+  if (FULLY_PUBLIC_PATHS.has(pathname)) return true;
+
+  if (method !== "GET" && method !== "HEAD") return false;
+  if (PUBLIC_GET_PATHS.has(pathname)) return true;
+  return PUBLIC_GET_PATTERNS.some((pattern) => pattern.test(pathname));
+}
 
 /**
  * Performs rate limiting, authentication, and role checks for API routes.
@@ -47,6 +102,7 @@ const ADMIN_ROLES = new Set(["SUPER_ADMIN"]);
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
+  const publicRequest = isPublicRequest(pathname, request.method);
 
   // ----- 1. CSRF / cross-origin mutation protection -----
   if (!isMutationRequestTrusted(request)) {
@@ -60,17 +116,23 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   // Public auth routes are the most attacked; they get the strict limiter
   // keyed by IP. Everything else gets keyed by user id once verified, or IP
   // when the caller is anonymous.
-  if (PUBLIC_PATHS.has(pathname) && pathname.startsWith(AUTH_PATH_PREFIX)) {
+  if (
+    FULLY_PUBLIC_PATHS.has(pathname) &&
+    pathname.startsWith(AUTH_PATH_PREFIX)
+  ) {
     const ip = clientIp(request);
     const result = await authLimiter.limit(ip);
 
     if (!result.success) {
       return tooManyRequests(result);
     }
+  } else if (publicRequest && pathname !== "/api/v1/health") {
+    const result = await standardLimiter.limit(clientIp(request));
+    if (!result.success) return tooManyRequests(result);
   }
 
-  // ----- 3. Public routes skip auth (but were rate limited above) -----
-  if (PUBLIC_PATHS.has(pathname)) {
+  // ----- 3. Public routes skip auth (rate limited above when applicable) -----
+  if (publicRequest) {
     return NextResponse.next();
   }
 
