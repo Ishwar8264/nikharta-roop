@@ -13,7 +13,7 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
 
-const CATEGORIES = [
+const SERVICE_CATEGORIES = [
   { name: "Hair", slug: "hair", icon: "scissors" },
   { name: "Hair Color", slug: "hair-color", icon: "palette" },
   { name: "Beard & Shave", slug: "beard-shave", icon: "razor" },
@@ -28,9 +28,22 @@ const CATEGORIES = [
   { name: "Men's Grooming", slug: "mens-grooming", icon: "mustache" },
 ] as const;
 
+const PRODUCT_CATEGORIES = [
+  { name: "Hair Care", slug: "hair-care" },
+  { name: "Skin Care", slug: "skin-care" },
+  { name: "Beard Care", slug: "beard-care" },
+  { name: "Nail Care", slug: "nail-care" },
+  { name: "Makeup", slug: "makeup-products" },
+  { name: "Tools & Accessories", slug: "tools-accessories" },
+  { name: "Fragrances", slug: "fragrances" },
+  { name: "Body Care", slug: "body-care" },
+  { name: "Spa & Wellness", slug: "spa-wellness" },
+  { name: "Gift Sets", slug: "gift-sets" },
+] as const;
+
 /** Seeds the global service categories used by every salon. */
 async function seedServiceCategories(): Promise<void> {
-  for (const category of CATEGORIES) {
+  for (const category of SERVICE_CATEGORIES) {
     await prisma.serviceCategory.upsert({
       where: { slug: category.slug },
       update: { name: category.name, icon: category.icon },
@@ -39,9 +52,22 @@ async function seedServiceCategories(): Promise<void> {
   }
 }
 
-seedServiceCategories()
+/** Seeds the global product categories used by every salon. */
+async function seedProductCategories(): Promise<void> {
+  for (const category of PRODUCT_CATEGORIES) {
+    await prisma.productCategory.upsert({
+      where: { slug: category.slug },
+      update: { name: category.name },
+      create: category,
+    });
+  }
+}
+
+Promise.all([seedServiceCategories(), seedProductCategories()])
   .then(() => {
-    console.log(`Seeded ${CATEGORIES.length} service categories`);
+    console.log(
+      `Seeded ${SERVICE_CATEGORIES.length} service categories and ${PRODUCT_CATEGORIES.length} product categories`,
+    );
   })
   .catch((error: unknown) => {
     console.error("Seed failed", error);
