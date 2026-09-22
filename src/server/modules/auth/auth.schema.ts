@@ -146,5 +146,10 @@ export const deleteAccountSchema = z.strictObject({
     .max(128, "Password must contain at most 128 characters"),
 });
 
-/** Validates the public identifier accepted by the session revoke route. */
-export const sessionIdSchema = z.uuid({ error: "Session ID must be a UUID" });
+/** Validates both legacy UUIDs and the current 48-character ID format. */
+export const sessionIdSchema = z
+  .string({ error: "Session ID must be a string" })
+  .regex(
+    /^(?:[a-f0-9]{48}|[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/i,
+    "Session ID format is invalid",
+  );

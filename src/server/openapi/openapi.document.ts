@@ -967,8 +967,8 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               name: "id",
               in: "path",
               required: true,
-              description: "Refresh session UUID",
-              schema: { type: "string", format: "uuid" },
+              description: "Refresh session ID",
+              schema: { $ref: "#/components/schemas/ResourceId" },
             },
           ],
           responses: {
@@ -981,7 +981,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               },
             },
             "400": {
-              description: "Session ID is not a UUID",
+              description: "Session ID format is invalid",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -1069,6 +1069,18 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         },
       },
       schemas: {
+        ResourceId: {
+          description:
+            "A 48-character secure ID. UUID is also accepted for records created before the ID migration.",
+          oneOf: [
+            {
+              type: "string",
+              pattern: "^[a-f0-9]{48}$",
+              example: "3fe48374dc93727a7c57bd53796fe078dc46b76b6f21fffb",
+            },
+            { type: "string", format: "uuid" },
+          ],
+        },
         RegisterUserRequest: {
           type: "object",
           additionalProperties: false,
@@ -1225,7 +1237,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               type: "object",
               required: ["userId", "channel"],
               properties: {
-                userId: { type: "string", format: "uuid" },
+                userId: { $ref: "#/components/schemas/ResourceId" },
                 channel: {
                   type: "string",
                   enum: ["EMAIL"],
@@ -1334,7 +1346,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "updatedAt",
           ],
           properties: {
-            id: { type: "string", format: "uuid" },
+            id: { $ref: "#/components/schemas/ResourceId" },
             name: { type: ["string", "null"] },
             email: { type: ["string", "null"], format: "email" },
             phone: { type: ["string", "null"] },
@@ -1503,7 +1515,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "isCurrent",
           ],
           properties: {
-            id: { type: "string", format: "uuid" },
+            id: { $ref: "#/components/schemas/ResourceId" },
             userAgent: { type: ["string", "null"] },
             ipAddress: { type: ["string", "null"] },
             createdAt: { type: "string", format: "date-time" },
@@ -1562,7 +1574,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           type: "object",
           required: ["id", "name", "email", "phone", "createdAt"],
           properties: {
-            id: { type: "string", format: "uuid" },
+            id: { $ref: "#/components/schemas/ResourceId" },
             name: { type: ["string", "null"] },
             email: { type: ["string", "null"], format: "email" },
             phone: { type: ["string", "null"] },
