@@ -57,6 +57,7 @@ const PUBLIC_GET_PATTERNS: RegExp[] = [
   /^\/api\/v1\/salons\/[^/]+$/,
   /^\/api\/v1\/salons\/[^/]+\/services$/,
   /^\/api\/v1\/salons\/[^/]+\/services\/[^/]+$/,
+  /^\/api\/v1\/salons\/[^/]+\/services\/[^/]+\/staff$/,
   /^\/api\/v1\/salons\/[^/]+\/products$/,
   /^\/api\/v1\/salons\/[^/]+\/products\/[^/]+$/,
 ];
