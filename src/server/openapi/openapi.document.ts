@@ -6,6 +6,7 @@ import {
   appointmentPaths,
   appointmentSchemas,
 } from "./appointment.openapi";
+import { reviewPaths, reviewSchemas } from "./review.openapi";
 
 const errorResponseSchema: OpenAPIV3_1.SchemaObject = {
   type: "object",
@@ -54,6 +55,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "Appointments",
         description: "Booking, availability, lifecycle, and payment operations",
+      },
+      {
+        name: "Reviews & Ratings",
+        description: "Service, product, and staff feedback",
       },
     ],
     paths: {
@@ -2891,6 +2896,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         },
       },
       ...appointmentPaths,
+      ...reviewPaths,
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -4492,6 +4498,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
         ...appointmentSchemas,
+        ...reviewSchemas,
         WorkingHoursDay: {
           type: "object",
           required: ["id", "day", "openTime", "closeTime", "isClosed"],

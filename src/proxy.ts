@@ -62,6 +62,9 @@ const PUBLIC_GET_PATTERNS: RegExp[] = [
   /^\/api\/v1\/salons\/[^/]+\/products\/[^/]+$/,
   /^\/api\/v1\/salons\/[^/]+\/working-hours$/,
   /^\/api\/v1\/salons\/[^/]+\/availability$/,
+  /^\/api\/v1\/services\/[^/]+\/reviews$/,
+  /^\/api\/v1\/products\/[^/]+\/reviews$/,
+  /^\/api\/v1\/staff\/[^/]+\/ratings$/,
 ];
 
 /** Auth paths that get the stricter limiter, even though they are public. */
