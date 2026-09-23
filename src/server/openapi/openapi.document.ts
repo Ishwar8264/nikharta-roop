@@ -42,6 +42,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         name: "Staff",
         description: "Salon staff, schedules, leaves, and skills",
       },
+      {
+        name: "Salon Working Hours",
+        description: "Weekly opening hours for a salon",
+      },
     ],
     paths: {
       // ============================================================
@@ -2251,7 +2255,12 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "listSalonStaff",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
             { $ref: "#/components/parameters/CursorParam" },
             { $ref: "#/components/parameters/LimitParam" },
             {
@@ -2265,7 +2274,9 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               description: "Paginated staff list",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/PaginatedStaffResponse" },
+                  schema: {
+                    $ref: "#/components/schemas/PaginatedStaffResponse",
+                  },
                 },
               },
             },
@@ -2288,8 +2299,18 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "getStaffDetail",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           responses: {
             "200": {
@@ -2320,8 +2341,18 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "getStaffSchedule",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           responses: {
             "200": {
@@ -2347,12 +2378,23 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         put: {
           tags: ["Staff"],
           summary: "Replace a staff member's weekly schedule",
-          description: "Requires MANAGER or OWNER. Staff cannot edit their own schedule.",
+          description:
+            "Requires MANAGER or OWNER. Staff cannot edit their own schedule.",
           operationId: "replaceStaffSchedule",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           requestBody: {
             required: true,
@@ -2375,7 +2417,9 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               description: "Validation failure",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/ValidationErrorResponse" },
+                  schema: {
+                    $ref: "#/components/schemas/ValidationErrorResponse",
+                  },
                 },
               },
             },
@@ -2391,15 +2435,27 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "listStaffLeaves",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           responses: {
             "200": {
               description: "Leave requests",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/PaginatedLeavesResponse" },
+                  schema: {
+                    $ref: "#/components/schemas/PaginatedLeavesResponse",
+                  },
                 },
               },
             },
@@ -2413,8 +2469,18 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "createStaffLeave",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           requestBody: {
             required: true,
@@ -2437,7 +2503,9 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               description: "Validation failure",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/ValidationErrorResponse" },
+                  schema: {
+                    $ref: "#/components/schemas/ValidationErrorResponse",
+                  },
                 },
               },
             },
@@ -2461,9 +2529,24 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "updateStaffLeave",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
-            { name: "leaveId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
+            {
+              name: "leaveId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           requestBody: {
             required: true,
@@ -2500,9 +2583,24 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "cancelStaffLeave",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
-            { name: "leaveId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
+            {
+              name: "leaveId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           responses: {
             "200": {
@@ -2541,8 +2639,18 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "getStaffSkills",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           responses: {
             "200": {
@@ -2563,8 +2671,18 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "replaceStaffSkills",
           security: [{ bearerAuth: [] }],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "staffId", in: "path", required: true, schema: { $ref: "#/components/schemas/ResourceId" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "staffId",
+              in: "path",
+              required: true,
+              schema: { $ref: "#/components/schemas/ResourceId" },
+            },
           ],
           requestBody: {
             required: true,
@@ -2608,8 +2726,18 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           operationId: "listStaffForSalonService",
           security: [],
           parameters: [
-            { name: "salonId", in: "path", required: true, schema: { type: "string" } },
-            { name: "serviceId", in: "path", required: true, schema: { type: "string" } },
+            {
+              name: "salonId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "serviceId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
           ],
           responses: {
             "200": {
@@ -2622,6 +2750,128 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
             "404": {
               description: "Salon or service not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/api/v1/salons/{salonRef}/working-hours": {
+        get: {
+          tags: ["Salon Working Hours"],
+          summary: "Get a salon's weekly opening hours",
+          operationId: "getSalonWorkingHours",
+          security: [],
+          parameters: [
+            {
+              name: "salonRef",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Weekly hours",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/WorkingHoursResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "Invalid salon reference",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ValidationErrorResponse",
+                  },
+                },
+              },
+            },
+            "404": {
+              description: "Salon not found",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+          },
+        },
+        put: {
+          tags: ["Salon Working Hours"],
+          summary: "Replace a salon's weekly opening hours",
+          description:
+            "Requires at least MANAGER on the target salon. Sends the full week " +
+            "as one request; each day may appear at most once.",
+          operationId: "replaceSalonWorkingHours",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "salonRef",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ReplaceWorkingHoursRequest",
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Working hours replaced",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/WorkingHoursResponse",
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "Invalid salon reference, JSON, or request body",
+              content: {
+                "application/json": {
+                  schema: {
+                    oneOf: [
+                      { $ref: "#/components/schemas/ErrorResponse" },
+                      { $ref: "#/components/schemas/ValidationErrorResponse" },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "Authentication required",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "403": {
+              description: "Insufficient salon role",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "404": {
+              description: "Salon not found or caller is not a member",
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -4001,8 +4251,14 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                 "SUNDAY",
               ],
             },
-            startTime: { type: ["string", "null"], pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
-            endTime: { type: ["string", "null"], pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+            startTime: {
+              type: ["string", "null"],
+              pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            },
+            endTime: {
+              type: ["string", "null"],
+              pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            },
             isOff: { type: "boolean" },
           },
         },
@@ -4060,9 +4316,17 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                 additionalProperties: false,
                 required: ["day"],
                 properties: {
-                  day: { $ref: "#/components/schemas/ScheduleDay/properties/day" },
-                  startTime: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
-                  endTime: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+                  day: {
+                    $ref: "#/components/schemas/ScheduleDay/properties/day",
+                  },
+                  startTime: {
+                    type: "string",
+                    pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+                  },
+                  endTime: {
+                    type: "string",
+                    pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+                  },
                   isOff: { type: "boolean", default: false },
                 },
               },
@@ -4114,7 +4378,9 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             data: {
               type: "object",
               required: ["staff"],
-              properties: { staff: { $ref: "#/components/schemas/StaffMember" } },
+              properties: {
+                staff: { $ref: "#/components/schemas/StaffMember" },
+              },
             },
           },
         },
@@ -4173,7 +4439,9 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             data: {
               type: "object",
               required: ["leave"],
-              properties: { leave: { $ref: "#/components/schemas/StaffLeave" } },
+              properties: {
+                leave: { $ref: "#/components/schemas/StaffLeave" },
+              },
             },
           },
         },
@@ -4208,6 +4476,91 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
                 skills: {
                   type: "array",
                   items: { $ref: "#/components/schemas/StaffSkill" },
+                },
+              },
+            },
+          },
+        },
+        WorkingHoursDay: {
+          type: "object",
+          required: ["id", "day", "openTime", "closeTime", "isClosed"],
+          properties: {
+            id: { $ref: "#/components/schemas/ResourceId" },
+            day: {
+              type: "string",
+              enum: [
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY",
+                "SUNDAY",
+              ],
+            },
+            openTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            },
+            closeTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            },
+            isClosed: { type: "boolean" },
+          },
+        },
+        ReplaceWorkingHoursRequest: {
+          type: "object",
+          additionalProperties: false,
+          required: ["days"],
+          properties: {
+            days: {
+              type: "array",
+              minItems: 7,
+              maxItems: 7,
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["day"],
+                properties: {
+                  day: {
+                    type: "string",
+                    enum: [
+                      "MONDAY",
+                      "TUESDAY",
+                      "WEDNESDAY",
+                      "THURSDAY",
+                      "FRIDAY",
+                      "SATURDAY",
+                      "SUNDAY",
+                    ],
+                  },
+                  openTime: {
+                    type: "string",
+                    pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+                  },
+                  closeTime: {
+                    type: "string",
+                    pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+                  },
+                  isClosed: { type: "boolean", default: false },
+                },
+              },
+            },
+          },
+        },
+        WorkingHoursResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: { type: "string" },
+            data: {
+              type: "object",
+              required: ["hours"],
+              properties: {
+                hours: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/WorkingHoursDay" },
                 },
               },
             },
