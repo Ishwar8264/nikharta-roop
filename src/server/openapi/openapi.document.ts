@@ -2,6 +2,11 @@ import "server-only";
 
 import type { OpenAPIV3_1 } from "openapi-types";
 
+import {
+  appointmentPaths,
+  appointmentSchemas,
+} from "./appointment.openapi";
+
 const errorResponseSchema: OpenAPIV3_1.SchemaObject = {
   type: "object",
   required: ["message"],
@@ -45,6 +50,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "Salon Working Hours",
         description: "Weekly opening hours for a salon",
+      },
+      {
+        name: "Appointments",
+        description: "Booking, availability, lifecycle, and payment operations",
       },
     ],
     paths: {
@@ -2881,6 +2890,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      ...appointmentPaths,
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -4481,6 +4491,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
+        ...appointmentSchemas,
         WorkingHoursDay: {
           type: "object",
           required: ["id", "day", "openTime", "closeTime", "isClosed"],
