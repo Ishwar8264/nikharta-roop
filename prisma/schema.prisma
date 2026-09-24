@@ -424,6 +424,9 @@ model Favorite {
 
   createdAt DateTime @default(now())
 
+  @@unique([userId, salonId])
+  @@unique([userId, serviceId])
+  @@unique([userId, productId])
   @@index([userId])
 }
 

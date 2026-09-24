@@ -6,6 +6,7 @@ import {
   appointmentPaths,
   appointmentSchemas,
 } from "./appointment.openapi";
+import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { reviewPaths, reviewSchemas } from "./review.openapi";
 
 const errorResponseSchema: OpenAPIV3_1.SchemaObject = {
@@ -59,6 +60,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "Reviews & Ratings",
         description: "Service, product, and staff feedback",
+      },
+      {
+        name: "Favorites",
+        description: "Saved salons, services, and products",
       },
     ],
     paths: {
@@ -2897,6 +2902,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       },
       ...appointmentPaths,
       ...reviewPaths,
+      ...favoritePaths,
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -4499,6 +4505,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         },
         ...appointmentSchemas,
         ...reviewSchemas,
+        ...favoriteSchemas,
         WorkingHoursDay: {
           type: "object",
           required: ["id", "day", "openTime", "closeTime", "isClosed"],
