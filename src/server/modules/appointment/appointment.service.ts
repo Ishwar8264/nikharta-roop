@@ -5,6 +5,7 @@ import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
 import { findSalonForViewer } from "@/server/modules/salon/salon.repository";
 import { resolveSalonId } from "@/server/modules/service/service.repository";
 
+import { awardPointsForCompletedAppointment } from "../loyalty/loyalty.service";
 import {
   assertCanManagePayment,
   assertCanRecordPayment,
@@ -458,6 +459,25 @@ export async function updateAppointmentStatus(
       ? { cancelReason: input.reason }
       : {}),
   });
+
+  // Award loyalty points the moment a booking is marked COMPLETED.
+  // Failures here must not roll back the status change — the ledger is
+  // idempotent, so a later retry (or backfill job) will still credit.
+  if (input.status === "COMPLETED") {
+    try {
+      await awardPointsForCompletedAppointment({
+        userId: appointment.customerId,
+        totalPrice: Number(appointment.totalPrice),
+        appointmentId,
+      });
+    } catch (error) {
+      console.error(
+        "Loyalty award failed for appointment",
+        appointmentId,
+        error,
+      );
+    }
+  }
 
   return toPublicAppointment(updated);
 }

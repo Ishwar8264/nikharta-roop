@@ -2,11 +2,9 @@ import "server-only";
 
 import type { OpenAPIV3_1 } from "openapi-types";
 
-import {
-  appointmentPaths,
-  appointmentSchemas,
-} from "./appointment.openapi";
+import { appointmentPaths, appointmentSchemas } from "./appointment.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
+import { loyaltyPaths } from "./loyalty.openapi";
 import { reviewPaths, reviewSchemas } from "./review.openapi";
 
 const errorResponseSchema: OpenAPIV3_1.SchemaObject = {
@@ -64,6 +62,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "Favorites",
         description: "Saved salons, services, and products",
+      },
+      {
+        name: "Loyalty",
+        description: "Points ledger, balance, and redemption",
       },
     ],
     paths: {
@@ -2900,6 +2902,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      ...loyaltyPaths,
       ...appointmentPaths,
       ...reviewPaths,
       ...favoritePaths,
