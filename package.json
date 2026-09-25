@@ -47,7 +47,8 @@
     "prisma": "7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vercel-local-cron": "^0.1.2"
   },
   "packageManager": "pnpm@10.32.0"
 }
