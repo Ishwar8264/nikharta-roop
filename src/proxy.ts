@@ -42,6 +42,9 @@ const PUBLIC_GET_PATHS = new Set<string>([
   "/api/v1/salons",
   "/api/v1/services/categories",
   "/api/v1/products/categories",
+  "/api/v1/blog/posts",
+  "/api/v1/blog/categories",
+  "/api/v1/blog/tags",
 ]);
 
 /**
@@ -65,6 +68,8 @@ const PUBLIC_GET_PATTERNS: RegExp[] = [
   /^\/api\/v1\/services\/[^/]+\/reviews$/,
   /^\/api\/v1\/products\/[^/]+\/reviews$/,
   /^\/api\/v1\/staff\/[^/]+\/ratings$/,
+  /^\/api\/v1\/blog\/posts\/[^/]+$/,
+  /^\/api\/v1\/blog\/posts\/[^/]+\/comments$/,
 ];
 
 /** Auth paths that get the stricter limiter, even though they are public. */

@@ -3,6 +3,7 @@ import "server-only";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 import { appointmentPaths, appointmentSchemas } from "./appointment.openapi";
+import { blogPaths, blogSchemas } from "./blog.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
 import { notificationPaths, notificationSchemas } from "./notification.openapi";
@@ -71,6 +72,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "Notifications",
         description: "User inbox and delivery attempts",
+      },
+      {
+        name: "Blog",
+        description: "Blog posts, comments, categories, and tags",
       },
     ],
     paths: {
@@ -2907,6 +2912,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      ...blogPaths,
       ...notificationPaths,
       ...loyaltyPaths,
       ...appointmentPaths,
@@ -4512,6 +4518,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
+        ...blogSchemas,
         ...notificationSchemas,
         ...loyaltySchemas,
         ...appointmentSchemas,
