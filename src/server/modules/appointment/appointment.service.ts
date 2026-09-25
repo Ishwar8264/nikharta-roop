@@ -5,12 +5,12 @@ import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
 import { findSalonForViewer } from "@/server/modules/salon/salon.repository";
 import { resolveSalonId } from "@/server/modules/service/service.repository";
 
-import { awardPointsForCompletedAppointment } from "../loyalty/loyalty.service";
-
+import { writeAuditLog } from "@/server/modules/audit/audit.writer";
 import {
   notifyAppointmentCancelled,
   notifyAppointmentConfirmed,
 } from "@/server/modules/notification/notification.service";
+import { awardPointsForCompletedAppointment } from "../loyalty/loyalty.service";
 import {
   assertCanManagePayment,
   assertCanRecordPayment,
@@ -340,6 +340,17 @@ export async function cancelAppointment(
   }).catch((error) => {
     console.error("Cancellation notification failed", error);
   });
+  writeAuditLog({
+    userId: callerId,
+    action: "UPDATE",
+    entity: "Appointment",
+    entityId: appointmentId,
+    oldData: {
+      status: appointment.status,
+      cancelReason: appointment.cancelReason,
+    },
+    newData: { status: "CANCELLED", cancelReason: input.reason },
+  });
   return toPublicAppointment(updated);
 }
 
@@ -486,6 +497,17 @@ export async function updateAppointmentStatus(
       console.error("Confirmation notification failed", error);
     });
   }
+
+  // Fire-and-forget audit trail. Status transitions are the highest-value
+  // events to log on appointments — they drive billing, reviews, and loyalty.
+  writeAuditLog({
+    userId: callerId,
+    action: "UPDATE",
+    entity: "Appointment",
+    entityId: appointmentId,
+    oldData: { status: appointment.status },
+    newData: { status: input.status, reason: input.reason ?? null },
+  });
 
   // Award loyalty points the moment a booking is marked COMPLETED.
   // Failures here must not roll back the status change — the ledger is

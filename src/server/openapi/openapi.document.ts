@@ -3,6 +3,7 @@ import "server-only";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 import { appointmentPaths, appointmentSchemas } from "./appointment.openapi";
+import { auditPaths, auditSchemas } from "./audit.openapi";
 import { blogPaths, blogSchemas } from "./blog.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
@@ -77,6 +78,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         name: "Blog",
         description: "Blog posts, comments, categories, and tags",
       },
+      { name: "Audit", description: "Platform audit trail (SUPER_ADMIN only)" },
     ],
     paths: {
       // ============================================================
@@ -2912,6 +2914,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      ...auditPaths,
       ...blogPaths,
       ...notificationPaths,
       ...loyaltyPaths,
@@ -4518,6 +4521,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
+        ...auditSchemas,
         ...blogSchemas,
         ...notificationSchemas,
         ...loyaltySchemas,
