@@ -2,6 +2,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { generateUniqueSlug } from "@/lib/slug";
+import { writeAuditLog } from "@/server/modules/audit/audit.writer";
 import { assertRoleAtLeast } from "@/server/modules/salon/salon.authorization";
 import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
 import { findSalonForViewer } from "@/server/modules/salon/salon.repository";
@@ -127,6 +128,20 @@ export async function createSalonProduct(
       images: input.images,
     });
 
+    writeAuditLog({
+      userId: actorId,
+      action: "CREATE",
+      entity: "Product",
+      entityId: created.id,
+      newData: {
+        salonId,
+        name: created.name,
+        slug: created.slug,
+        price: Number(created.price),
+        stock: created.stock,
+      },
+    });
+
     return toPublicProduct(created);
   } catch (error) {
     if (isUniqueConstraintViolation(error, "slug")) {
@@ -191,6 +206,26 @@ export async function updateSalonProduct(
 
   try {
     const updated = await updateProductById(productRef, data);
+
+    writeAuditLog({
+      userId: actorId,
+      action: "UPDATE",
+      entity: "Product",
+      entityId: productRef,
+      oldData: {
+        name: existing.name,
+        slug: existing.slug,
+        price: Number(existing.price),
+        stock: existing.stock,
+      },
+      newData: {
+        name: updated.name,
+        slug: updated.slug,
+        price: Number(updated.price),
+        stock: updated.stock,
+      },
+    });
+
     return toPublicProduct(updated);
   } catch (error) {
     if (isUniqueConstraintViolation(error, "slug")) {
@@ -219,6 +254,20 @@ export async function deleteSalonProduct(
   }
 
   await softDeleteProductById(productRef);
+
+  writeAuditLog({
+    userId: actorId,
+    action: "DELETE",
+    entity: "Product",
+    entityId: productRef,
+    oldData: {
+      salonId,
+      name: existing.name,
+      slug: existing.slug,
+      price: Number(existing.price),
+      stock: existing.stock,
+    },
+  });
 }
 
 /** Public list of global product categories. */
@@ -247,7 +296,17 @@ export async function createProductCategory(
   }
 
   try {
-    return await createCategory({ name: input.name, slug });
+    const created = await createCategory({ name: input.name, slug });
+
+    writeAuditLog({
+      userId: null,
+      action: "CREATE",
+      entity: "ProductCategory",
+      entityId: created.id,
+      newData: { name: created.name, slug: created.slug },
+    });
+
+    return created;
   } catch (error) {
     if (isUniqueConstraintViolation(error, "slug")) {
       throw new ProductCategorySlugConflictError();

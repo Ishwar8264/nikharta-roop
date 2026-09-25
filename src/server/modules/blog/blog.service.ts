@@ -1,6 +1,7 @@
 import "server-only";
 
 import { generateUniqueSlug, slugify } from "@/lib/slug";
+import { writeAuditLog } from "@/server/modules/audit/audit.writer";
 
 import {
   BlogCategoryNotFoundError,
@@ -157,6 +158,18 @@ export async function createDraftPost(
       tags: { connect: tagRows.map((tag) => ({ id: tag.id })) },
     });
 
+    writeAuditLog({
+      userId: callerId,
+      action: "CREATE",
+      entity: "BlogPost",
+      entityId: created.id,
+      newData: {
+        title: created.title,
+        slug: created.slug,
+        authorId: callerId,
+      },
+    });
+
     return toPublicBlogPost(created);
   } catch (error) {
     if (isUniqueViolation(error, "slug")) throw new BlogPostSlugConflictError();
@@ -188,6 +201,8 @@ export async function patchPost(
     }
   }
 
+  const before = await findPostById(postId);
+
   const data: Record<string, unknown> = {};
   if (input.title !== undefined) data.title = input.title;
   if (input.slug !== undefined) data.slug = input.slug;
@@ -216,6 +231,26 @@ export async function patchPost(
 
   try {
     const updated = await updateBlogPost(postId, data);
+
+    writeAuditLog({
+      userId: null,
+      action: "UPDATE",
+      entity: "BlogPost",
+      entityId: postId,
+      oldData: before
+        ? {
+            title: before.title,
+            slug: before.slug,
+            published: before.published,
+          }
+        : null,
+      newData: {
+        title: updated.title,
+        slug: updated.slug,
+        published: updated.published,
+      },
+    });
+
     return toPublicBlogPost(updated);
   } catch (error) {
     if (isUniqueViolation(error, "slug")) throw new BlogPostSlugConflictError();
@@ -234,6 +269,14 @@ export async function removePost(
   if (!header || header.deletedAt) throw new BlogPostNotFoundError();
 
   await softDeletePost(postId);
+
+  writeAuditLog({
+    userId: header.authorId,
+    action: "DELETE",
+    entity: "BlogPost",
+    entityId: postId,
+    oldData: { published: header.published },
+  });
 }
 
 /**
@@ -256,6 +299,15 @@ export async function togglePublish(
   const updated = await updateBlogPost(postId, {
     published: input.publish,
     publishedAt: input.publish ? new Date() : null,
+  });
+
+  writeAuditLog({
+    userId: null,
+    action: "UPDATE",
+    entity: "BlogPost",
+    entityId: postId,
+    oldData: { published: header.published },
+    newData: { published: input.publish },
   });
 
   return toPublicBlogPost(updated);
@@ -305,6 +357,14 @@ export async function createComment(
     parentId: input.parentId ?? null,
   });
 
+  writeAuditLog({
+    userId,
+    action: "CREATE",
+    entity: "BlogComment",
+    entityId: created.id,
+    newData: { postId: post.id, parentId: input.parentId ?? null },
+  });
+
   return toPublicComment(created);
 }
 
@@ -340,6 +400,22 @@ export async function patchComment(
   if (input.isApproved !== undefined) data.isApproved = input.isApproved;
 
   const updated = await updateBlogComment(commentId, data);
+
+  writeAuditLog({
+    userId: callerId,
+    action: "UPDATE",
+    entity: "BlogComment",
+    entityId: commentId,
+    oldData: {
+      content: existing.content,
+      isApproved: existing.isApproved,
+    },
+    newData: {
+      content: input.content,
+      isApproved: input.isApproved,
+    },
+  });
+
   return toPublicComment(updated);
 }
 
@@ -364,6 +440,14 @@ export async function removeComment(
   if (!isAuthor && !isAdmin) throw new BlogCommentAccessDeniedError();
 
   await deleteBlogComment(commentId);
+
+  writeAuditLog({
+    userId: callerId,
+    action: "DELETE",
+    entity: "BlogComment",
+    entityId: commentId,
+    oldData: { postId: existing.postId },
+  });
 }
 
 /** Public list of blog categories. */
@@ -387,13 +471,23 @@ export async function createBlogCategory(
   }
 
   try {
-    return await createCategory({
+    const created = await createCategory({
       name: input.name,
       slug,
       description: input.description ?? null,
       seoTitle: input.seoTitle ?? null,
       seoDescription: input.seoDescription ?? null,
     });
+
+    writeAuditLog({
+      userId: null,
+      action: "CREATE",
+      entity: "BlogCategory",
+      entityId: created.id,
+      newData: { name: created.name, slug: created.slug },
+    });
+
+    return created;
   } catch (error) {
     if (isUniqueViolation(error, "slug")) {
       throw new BlogCategorySlugConflictError();

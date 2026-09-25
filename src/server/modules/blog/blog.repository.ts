@@ -214,7 +214,14 @@ export async function listApprovedComments(
 export async function findCommentById(id: string) {
   return prisma.blogComment.findUnique({
     where: { id },
-    select: { id: true, postId: true, userId: true, parentId: true },
+    select: {
+      id: true,
+      postId: true,
+      userId: true,
+      parentId: true,
+      content: true,
+      isApproved: true,
+    },
   });
 }
 
