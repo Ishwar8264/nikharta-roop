@@ -4,7 +4,8 @@ import type { OpenAPIV3_1 } from "openapi-types";
 
 import { appointmentPaths, appointmentSchemas } from "./appointment.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
-import { loyaltyPaths } from "./loyalty.openapi";
+import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
+import { notificationPaths, notificationSchemas } from "./notification.openapi";
 import { reviewPaths, reviewSchemas } from "./review.openapi";
 
 const errorResponseSchema: OpenAPIV3_1.SchemaObject = {
@@ -66,6 +67,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "Loyalty",
         description: "Points ledger, balance, and redemption",
+      },
+      {
+        name: "Notifications",
+        description: "User inbox and delivery attempts",
       },
     ],
     paths: {
@@ -2902,6 +2907,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      ...notificationPaths,
       ...loyaltyPaths,
       ...appointmentPaths,
       ...reviewPaths,
@@ -4506,6 +4512,8 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
+        ...notificationSchemas,
+        ...loyaltySchemas,
         ...appointmentSchemas,
         ...reviewSchemas,
         ...favoriteSchemas,

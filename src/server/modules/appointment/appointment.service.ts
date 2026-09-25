@@ -6,6 +6,11 @@ import { findSalonForViewer } from "@/server/modules/salon/salon.repository";
 import { resolveSalonId } from "@/server/modules/service/service.repository";
 
 import { awardPointsForCompletedAppointment } from "../loyalty/loyalty.service";
+
+import {
+  notifyAppointmentCancelled,
+  notifyAppointmentConfirmed,
+} from "@/server/modules/notification/notification.service";
 import {
   assertCanManagePayment,
   assertCanRecordPayment,
@@ -325,7 +330,16 @@ export async function cancelAppointment(
     status: "CANCELLED",
     cancelReason: input.reason,
   });
-
+  // Fire the cancellation notification. Failures here must not fail the
+  // cancellation itself — the DB is the source of truth.
+  notifyAppointmentCancelled({
+    userId: appointment.customerId,
+    salonName: appointment.salonId, // TODO: replace with salon name when loaded
+    startTime: appointment.startTime.toISOString(),
+    reason: input.reason,
+  }).catch((error) => {
+    console.error("Cancellation notification failed", error);
+  });
   return toPublicAppointment(updated);
 }
 
@@ -459,6 +473,19 @@ export async function updateAppointmentStatus(
       ? { cancelReason: input.reason }
       : {}),
   });
+
+  // Only CONFIRMED fires the email — the customer doesn't need one for
+  // IN_PROGRESS or COMPLETED transitions.
+  if (input.status === "CONFIRMED") {
+    notifyAppointmentConfirmed({
+      userId: appointment.customerId,
+      salonName: appointment.salonId, // TODO: replace with salon name findSalonById
+      startTime: appointment.startTime.toISOString(),
+      services: appointment.services.map((s) => s.service.name),
+    }).catch((error) => {
+      console.error("Confirmation notification failed", error);
+    });
+  }
 
   // Award loyalty points the moment a booking is marked COMPLETED.
   // Failures here must not roll back the status change — the ledger is

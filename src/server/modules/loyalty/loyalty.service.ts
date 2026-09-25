@@ -1,5 +1,6 @@
 import "server-only";
 
+import { notifyLoyaltyEarned } from "../notification/notification.service";
 import {
   LoyaltyInsufficientPointsError,
   LoyaltyInvalidAmountError,
@@ -21,7 +22,6 @@ import type {
   RedeemPointsInput,
   RedeemResult,
 } from "./loyalty.types";
-
 /** Points earned per ₹1 spent. Kept as a constant so both the earn and the
  *  display code read from the same number. */
 const EARN_RATE_PER_RUPEE = 0.01;
@@ -107,7 +107,6 @@ export async function redeemPointsForDiscount(
     throw error;
   }
 }
-
 /**
  * Awards points for a completed appointment.
  *
@@ -134,11 +133,26 @@ export async function awardPointsForCompletedAppointment(input: {
   );
   if (already) return null;
 
-  return awardPoints({
+  const txn = await awardPoints({
     userId: input.userId,
     points,
     type: "EARNED",
     description: `Earned for appointment ${input.appointmentId}`,
     referenceId: input.appointmentId,
   });
+
+  // Fire the loyalty-earned notification. Failures here must not fail the
+  // award itself — the ledger row is the source of truth and the customer
+  // can still see their balance. We do this *after* the award so the
+  // notification reflects the persisted state.
+  const balance = await getUserPoints(input.userId);
+  notifyLoyaltyEarned({
+    userId: input.userId,
+    points: txn.points,
+    balance,
+  }).catch((error) => {
+    console.error("Loyalty notification failed", error);
+  });
+
+  return txn;
 }
