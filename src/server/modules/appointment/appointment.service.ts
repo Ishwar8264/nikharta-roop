@@ -6,6 +6,12 @@ import { findSalonForViewer } from "@/server/modules/salon/salon.repository";
 import { resolveSalonId } from "@/server/modules/service/service.repository";
 
 import { writeAuditLog } from "@/server/modules/audit/audit.writer";
+import { CouponUsageLimitReachedError } from "@/server/modules/coupon/coupon.errors";
+import {
+  releaseCouponSlot,
+  tryReserveCouponSlot,
+} from "@/server/modules/coupon/coupon.repository";
+import { assertCouponUsable } from "@/server/modules/coupon/coupon.service";
 import {
   notifyAppointmentCancelled,
   notifyAppointmentConfirmed,
@@ -178,8 +184,8 @@ export async function getAppointment(
  * Why:
  * The create path has the most invariants: salon membership, customer
  * identity, service ownership, staff skills, working hours, schedule, leave,
- * and slot conflict. Wrapping them in one function keeps the rules in one
- * place and makes the route trivial.
+ * coupon validity, and slot conflict. Wrapping them in one function keeps
+ * the rules in one place and makes the route trivial.
  */
 export async function createAppointment(
   callerId: string,
@@ -267,6 +273,22 @@ export async function createAppointment(
 
   const subtotal = lines.reduce((sum, line) => sum + line.price, 0);
 
+  // Evaluate the coupon before opening the transaction. The result carries
+  // the exact discount amount; failure paths throw typed errors the route
+  // maps to specific statuses.
+  let couponId: string | null = null;
+  let discount = 0;
+  if (input.couponCode) {
+    const coupon = await assertCouponUsable({
+      code: input.couponCode,
+      subtotal,
+      userId: customerId,
+    });
+    couponId = coupon.couponId;
+    discount = coupon.discountAmount;
+  }
+  const totalPrice = subtotal - discount;
+
   try {
     const id = await createAppointmentWithServices({
       customerId,
@@ -275,12 +297,30 @@ export async function createAppointment(
       startTime,
       endTime,
       subtotal,
+      discount,
+      totalPrice,
+      couponId,
       notes: input.notes ?? null,
       services: lines.map((l) => ({
         serviceId: l.serviceId,
         staffId: l.staffUserId,
         price: l.price,
       })),
+      // Reserve a coupon slot inside the same transaction. If the limit was
+      // reached between evaluation and the write, this throws and the whole
+      // booking rolls back — no phantom appointment.
+      onAfterCreate: couponId
+        ? async (transaction) => {
+            const reserved = await tryReserveCouponSlot(transaction, couponId!);
+            if (!reserved) {
+              const err = new Error("COUPON_LIMIT_REACHED") as Error & {
+                code?: string;
+              };
+              err.code = "COUPON_LIMIT_REACHED";
+              throw err;
+            }
+          }
+        : undefined,
     });
 
     const created = await findAppointmentById(id);
@@ -296,6 +336,16 @@ export async function createAppointment(
       )
     ) {
       throw new AppointmentSlotTakenError();
+    }
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: string }).code === "COUPON_LIMIT_REACHED"
+    ) {
+      // Surface as the same typed error the coupon module uses so the route
+      // maps it to 409 without special-casing the appointment path.
+      throw new CouponUsageLimitReachedError();
     }
     throw error;
   }
@@ -330,16 +380,31 @@ export async function cancelAppointment(
     status: "CANCELLED",
     cancelReason: input.reason,
   });
+
+  // Release the coupon slot if the appointment had one. Failures here must
+  // not fail the cancellation — the customer's appointment is already
+  // cancelled, and a stale slot count is preferable to a phantom error.
+  if (appointment.couponId) {
+    releaseCouponSlot(appointment.couponId).catch((error) => {
+      console.error(
+        "Failed to release coupon slot for appointment",
+        appointmentId,
+        error,
+      );
+    });
+  }
+
   // Fire the cancellation notification. Failures here must not fail the
   // cancellation itself — the DB is the source of truth.
   notifyAppointmentCancelled({
     userId: appointment.customerId,
-    salonName: appointment.salonId, // TODO: replace with salon name when loaded
+    salonName: appointment.salonId,
     startTime: appointment.startTime.toISOString(),
     reason: input.reason,
   }).catch((error) => {
     console.error("Cancellation notification failed", error);
   });
+
   writeAuditLog({
     userId: callerId,
     action: "UPDATE",
@@ -351,6 +416,7 @@ export async function cancelAppointment(
     },
     newData: { status: "CANCELLED", cancelReason: input.reason },
   });
+
   return toPublicAppointment(updated);
 }
 
@@ -360,7 +426,9 @@ export async function cancelAppointment(
  * Why:
  * Modelled as "mark old RESCHEDULED, create new with rescheduledFrom" so the
  * historical chain is preserved. The new appointment goes through the same
- * availability rules as a fresh booking.
+ * availability rules as a fresh booking and preserves the original coupon
+ * assignment — a reschedule must not silently re-apply a coupon or release
+ * the slot.
  */
 export async function rescheduleAppointment(
   callerId: string,
@@ -410,6 +478,13 @@ export async function rescheduleAppointment(
     0,
   );
 
+  // Preserve the original pricing and coupon assignment. A reschedule is a
+  // move, not a new booking — the customer keeps the same total they agreed
+  // to, and the coupon slot stays reserved on the new row.
+  const discount = Number(appointment.discount);
+  const totalPrice = Number(appointment.totalPrice);
+  const couponId = appointment.couponId;
+
   let newId: string;
   try {
     newId = await createAppointmentWithServices({
@@ -419,6 +494,9 @@ export async function rescheduleAppointment(
       startTime: newStart,
       endTime: newEnd,
       subtotal,
+      discount,
+      totalPrice,
+      couponId,
       notes: appointment.notes,
       rescheduledFrom: appointmentId,
       replacesAppointmentId: appointmentId,
@@ -485,12 +563,25 @@ export async function updateAppointmentStatus(
       : {}),
   });
 
+  // If this transition is a cancellation, release any reserved coupon slot.
+  // Failures here are logged and swallowed — the status change is already
+  // committed and a stale counter is preferable to a phantom error.
+  if (input.status === "CANCELLED" && appointment.couponId) {
+    releaseCouponSlot(appointment.couponId).catch((error) => {
+      console.error(
+        "Failed to release coupon slot for appointment",
+        appointmentId,
+        error,
+      );
+    });
+  }
+
   // Only CONFIRMED fires the email — the customer doesn't need one for
   // IN_PROGRESS or COMPLETED transitions.
   if (input.status === "CONFIRMED") {
     notifyAppointmentConfirmed({
       userId: appointment.customerId,
-      salonName: appointment.salonId, // TODO: replace with salon name findSalonById
+      salonName: appointment.salonId,
       startTime: appointment.startTime.toISOString(),
       services: appointment.services.map((s) => s.service.name),
     }).catch((error) => {

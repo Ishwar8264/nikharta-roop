@@ -23,6 +23,7 @@ export const PUBLIC_APPOINTMENT_SELECT = {
   discount: true,
   tax: true,
   totalPrice: true,
+  couponId: true,
   notes: true,
   cancelReason: true,
   rescheduledFrom: true,
@@ -284,6 +285,12 @@ export async function loadStaffSkillsForServices(
  * overlap check if it runs outside a serializable transaction. Wrapping the
  * check and the insert in one serializable transaction makes the database
  * the arbiter of who wins.
+ *
+ * Pricing fields (`discount`, `totalPrice`, `couponId`) are computed by the
+ * service layer and passed in so this function stays a pure persistence
+ * boundary. The optional `onAfterCreate` callback runs inside the same
+ * transaction — used by the coupon flow to atomically reserve a usage slot.
+ * If the callback throws, the whole booking rolls back.
  */
 export async function createAppointmentWithServices(input: {
   customerId: string;
@@ -292,6 +299,9 @@ export async function createAppointmentWithServices(input: {
   startTime: Date;
   endTime: Date;
   subtotal: number;
+  discount: number;
+  totalPrice: number;
+  couponId: string | null;
   notes: string | null;
   rescheduledFrom?: string;
   replacesAppointmentId?: string;
@@ -300,6 +310,7 @@ export async function createAppointmentWithServices(input: {
     staffId: string | null;
     price: number;
   }>;
+  onAfterCreate?: (transaction: Prisma.TransactionClient) => Promise<void>;
 }) {
   return prisma.$transaction(
     async (transaction) => {
@@ -334,9 +345,10 @@ export async function createAppointmentWithServices(input: {
           startTime: input.startTime,
           endTime: input.endTime,
           subtotal: input.subtotal,
-          discount: 0,
+          discount: input.discount,
           tax: 0,
-          totalPrice: input.subtotal,
+          totalPrice: input.totalPrice,
+          couponId: input.couponId,
           notes: input.notes,
           rescheduledFrom: input.rescheduledFrom,
         },
@@ -357,6 +369,12 @@ export async function createAppointmentWithServices(input: {
           where: { id: input.replacesAppointmentId },
           data: { status: "RESCHEDULED" },
         });
+      }
+
+      // Coupon reservation runs last, still inside the transaction. If the
+      // reserve throws (limit reached), the entire booking rolls back.
+      if (input.onAfterCreate) {
+        await input.onAfterCreate(transaction);
       }
 
       return appointment.id;

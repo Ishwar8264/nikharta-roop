@@ -26,6 +26,10 @@ const serviceLineSchema = z.strictObject({
  * The client sends the desired start time as an ISO datetime with offset.
  * The server derives `endTime` from the sum of service durations, so the
  * client cannot manipulate the booked window.
+ *
+ * `couponCode` is optional. When present, the discount is applied to the
+ * subtotal during booking and the coupon's per-user limit and capacity are
+ * enforced inside the same transaction that creates the appointment.
  */
 export const createAppointmentSchema = z
   .strictObject({
@@ -41,6 +45,17 @@ export const createAppointmentSchema = z
       .array(serviceLineSchema, { error: "Services must be an array" })
       .min(1, "At least one service is required")
       .max(20, "At most 20 services are allowed"),
+    couponCode: z
+      .string({ error: "Coupon code must be a string" })
+      .trim()
+      .min(3, "Coupon code must contain at least 3 characters")
+      .max(32, "Coupon code must contain at most 32 characters")
+      .regex(
+        /^[A-Z0-9-]+$/i,
+        "Coupon code may contain only letters, digits, and hyphens",
+      )
+      .transform((value) => value.toUpperCase())
+      .optional(),
     notes: z
       .string({ error: "Notes must be a string" })
       .trim()
