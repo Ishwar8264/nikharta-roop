@@ -2,6 +2,7 @@ import "server-only";
 
 import type { OpenAPIV3_1 } from "openapi-types";
 
+import { aiPaths, aiSchemas } from "./ai.openapi";
 import { appointmentPaths, appointmentSchemas } from "./appointment.openapi";
 import { auditPaths, auditSchemas } from "./audit.openapi";
 import { blogPaths, blogSchemas } from "./blog.openapi";
@@ -79,6 +80,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         description: "Blog posts, comments, categories, and tags",
       },
       { name: "Audit", description: "Platform audit trail (SUPER_ADMIN only)" },
+      { name: "AI", description: "Chat with the AI assistant" },
     ],
     paths: {
       // ============================================================
@@ -2914,6 +2916,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      ...aiPaths,
       ...auditPaths,
       ...blogPaths,
       ...notificationPaths,
@@ -4521,6 +4524,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
+        ...aiSchemas,
         ...auditSchemas,
         ...blogSchemas,
         ...notificationSchemas,
