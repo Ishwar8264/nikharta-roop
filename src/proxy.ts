@@ -30,6 +30,9 @@ const FULLY_PUBLIC_PATHS = new Set<string>([
   "/api/v1/health",
   "/api/v1/coupons/validate",
   "/api/v1/cron/appointment-reminders",
+  "/api/v1/cron/notification-retry",
+  "/api/v1/cron/otp-cleanup",
+  "/api/v1/cron/token-cleanup",
 ]);
 
 /**
