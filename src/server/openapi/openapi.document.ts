@@ -7,11 +7,11 @@ import { aiPaths, aiSchemas } from "./ai.openapi";
 import { appointmentPaths, appointmentSchemas } from "./appointment.openapi";
 import { auditPaths, auditSchemas } from "./audit.openapi";
 import { blogPaths, blogSchemas } from "./blog.openapi";
+import { couponPaths, couponSchemas } from "./coupon.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
 import { notificationPaths, notificationSchemas } from "./notification.openapi";
 import { reviewPaths, reviewSchemas } from "./review.openapi";
-
 const errorResponseSchema: OpenAPIV3_1.SchemaObject = {
   type: "object",
   required: ["message"],
@@ -86,6 +86,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         name: "Admin",
         description: "Platform administration (SUPER_ADMIN only)",
       },
+      { name: "Coupons", description: "Discount coupons and validation" },
     ],
     paths: {
       // ============================================================
@@ -2921,6 +2922,8 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      ...couponPaths,
+
       ...adminPaths,
       ...aiPaths,
       ...auditPaths,
@@ -4530,6 +4533,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
+        ...couponSchemas,
         ...adminSchemas,
         ...aiSchemas,
         ...auditSchemas,
