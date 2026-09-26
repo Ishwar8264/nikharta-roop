@@ -28,6 +28,7 @@ export function LoginForm() {
   const { login, isLoading, error, fieldErrors } = useLogin();
   const searchParams = useSearchParams();
   const justRegistered = searchParams.get("registered") === "1";
+  const justVerified = searchParams.get("verified") === "1";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,6 +57,10 @@ export function LoginForm() {
 
       {justRegistered ? (
         <FormSuccess>Account created. Sign in to continue.</FormSuccess>
+      ) : null}
+
+      {justVerified ? (
+        <FormSuccess>Email verified. You can sign in now.</FormSuccess>
       ) : null}
 
       <FormError>{error}</FormError>

@@ -125,3 +125,34 @@ export interface ValidationErrorResponse {
   message: string;
   errors: FieldError[];
 }
+
+// ─────────────────────────────────────────────────────────────
+// OTP / Email Verification
+// ─────────────────────────────────────────────────────────────
+
+export interface SendOtpInput {
+  email: string;
+}
+
+export interface VerifyOtpInput {
+  email: string;
+  code: string;
+}
+
+export interface SendOtpResponse {
+  message: string;
+  data: {
+    channel: "EMAIL" | "PHONE" | "WHATSAPP";
+    expiresAt: string;
+    /** Seconds the user must wait before requesting another code. */
+    resendAvailableInSeconds: number;
+  };
+}
+
+export interface VerifyOtpResponse {
+  message: string;
+  data: {
+    userId: string;
+    channel: "EMAIL" | "PHONE" | "WHATSAPP";
+  };
+}
