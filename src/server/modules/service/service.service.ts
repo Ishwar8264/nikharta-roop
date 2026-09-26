@@ -2,6 +2,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { generateUniqueSlug } from "@/lib/slug";
+import { writeAuditLog } from "@/server/modules/audit/audit.writer";
 import { assertRoleAtLeast } from "@/server/modules/salon/salon.authorization";
 import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
 import { findSalonForViewer } from "@/server/modules/salon/salon.repository";
@@ -127,6 +128,20 @@ export async function createSalonService(
       images: input.images,
     });
 
+    writeAuditLog({
+      userId: actorId,
+      action: "CREATE",
+      entity: "Service",
+      entityId: created.id,
+      newData: {
+        salonId,
+        name: created.name,
+        slug: created.slug,
+        price: Number(created.price),
+        duration: created.duration,
+      },
+    });
+
     return toPublicService(created);
   } catch (error) {
     if (isUniqueConstraintViolation(error, "slug")) {
@@ -191,6 +206,26 @@ export async function updateSalonService(
 
   try {
     const updated = await updateServiceById(serviceRef, data);
+
+    writeAuditLog({
+      userId: actorId,
+      action: "UPDATE",
+      entity: "Service",
+      entityId: serviceRef,
+      oldData: {
+        name: existing.name,
+        slug: existing.slug,
+        price: Number(existing.price),
+        duration: existing.duration,
+      },
+      newData: {
+        name: updated.name,
+        slug: updated.slug,
+        price: Number(updated.price),
+        duration: updated.duration,
+      },
+    });
+
     return toPublicService(updated);
   } catch (error) {
     if (isUniqueConstraintViolation(error, "slug")) {
@@ -219,6 +254,20 @@ export async function deleteSalonService(
   }
 
   await softDeleteServiceById(serviceRef);
+
+  writeAuditLog({
+    userId: actorId,
+    action: "DELETE",
+    entity: "Service",
+    entityId: serviceRef,
+    oldData: {
+      salonId,
+      name: existing.name,
+      slug: existing.slug,
+      price: Number(existing.price),
+      duration: existing.duration,
+    },
+  });
 }
 
 /** Public list of global service categories. */
@@ -253,11 +302,25 @@ export async function createServiceCategory(
   }
 
   try {
-    return await createCategory({
+    const created = await createCategory({
       name: input.name,
       slug,
       icon: input.icon ?? null,
     });
+
+    writeAuditLog({
+      userId: null,
+      action: "CREATE",
+      entity: "ServiceCategory",
+      entityId: created.id,
+      newData: {
+        name: created.name,
+        slug: created.slug,
+        icon: created.icon,
+      },
+    });
+
+    return created;
   } catch (error) {
     if (isUniqueConstraintViolation(error, "slug")) {
       throw new ServiceCategorySlugConflictError();

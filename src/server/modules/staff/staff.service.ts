@@ -1,5 +1,6 @@
 import "server-only";
 
+import { writeAuditLog } from "@/server/modules/audit/audit.writer";
 import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
 import { isResourceId } from "@/server/modules/salon/salon.helpers";
 import { ServiceNotFoundError } from "@/server/modules/service/service.errors";
@@ -76,7 +77,6 @@ export async function getStaffDetail(
   staffId: string,
 ): Promise<PublicStaffMember> {
   const context = await loadStaffContext(callerId, salonRef, staffId);
-  // Any member of the salon can see the directory entry, same as listing.
   void context;
   const member = await findStaffMemberInSalon(staffId, context.salonId);
   if (!member) throw new StaffNotFoundError();
@@ -112,7 +112,6 @@ export async function replaceSchedule(
   assertManagerOrSelf(context, "MANAGER");
 
   if (context.isSelf && context.callerRole !== "OWNER") {
-    // STAFF cannot edit their own schedule — see comment above.
     throw new StaffSelfModificationError();
   }
 
@@ -127,6 +126,18 @@ export async function replaceSchedule(
     })),
   );
 
+  writeAuditLog({
+    userId: callerId,
+    action: "UPDATE",
+    entity: "StaffSchedule",
+    entityId: context.targetMember.userId,
+    newData: {
+      salonId: context.salonId,
+      staffUserId: context.targetMember.userId,
+      days: input.days.length,
+    },
+  });
+
   return getStaffSchedule(context.targetMember.userId, context.salonId);
 }
 
@@ -139,7 +150,6 @@ export async function listLeaves(
   const context = await loadStaffContext(callerId, salonRef, staffId);
   assertManagerOrSelf(context, "MANAGER");
 
-  // Leaves are small enough that pagination here is a formality.
   return listStaffLeaves(context.targetMember.userId, context.salonId, {
     limit: 50,
   });
@@ -173,13 +183,28 @@ export async function createStaffLeave(
   );
   if (overlaps) throw new StaffLeaveOverlapError();
 
-  return createLeave({
+  const created = await createLeave({
     staffId: context.targetMember.userId,
     salonId: context.salonId,
     startDate,
     endDate,
     reason: input.reason ?? null,
   });
+
+  writeAuditLog({
+    userId: callerId,
+    action: "CREATE",
+    entity: "StaffLeave",
+    entityId: created.id,
+    newData: {
+      salonId: context.salonId,
+      staffUserId: context.targetMember.userId,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    },
+  });
+
+  return created;
 }
 
 /**
@@ -200,7 +225,6 @@ export async function updateStaffLeave(
   const context = await loadStaffContext(callerId, salonRef, staffId);
 
   if (context.isSelf) {
-    // Even a MANAGER cannot approve their own leave.
     throw new StaffSelfModificationError();
   }
 
@@ -215,7 +239,18 @@ export async function updateStaffLeave(
   );
   if (!leave) throw new StaffLeaveNotFoundError();
 
-  return updateLeaveApproval(leaveId, input.approved);
+  const updated = await updateLeaveApproval(leaveId, input.approved);
+
+  writeAuditLog({
+    userId: callerId,
+    action: "UPDATE",
+    entity: "StaffLeave",
+    entityId: leaveId,
+    oldData: { approved: leave.approved },
+    newData: { approved: input.approved },
+  });
+
+  return updated;
 }
 
 /**
@@ -247,6 +282,19 @@ export async function cancelStaffLeave(
   }
 
   await deleteLeave(leaveId);
+
+  writeAuditLog({
+    userId: callerId,
+    action: "DELETE",
+    entity: "StaffLeave",
+    entityId: leaveId,
+    oldData: {
+      salonId: context.salonId,
+      staffUserId: context.targetMember.userId,
+      startDate: leave.startDate.toISOString(),
+      endDate: leave.endDate.toISOString(),
+    },
+  });
 }
 
 /** Lists the skills (services) a staff member can perform. */
@@ -299,6 +347,18 @@ export async function replaceSkills(
     })),
   );
 
+  writeAuditLog({
+    userId: callerId,
+    action: "UPDATE",
+    entity: "StaffServiceSkill",
+    entityId: context.targetMember.userId,
+    newData: {
+      salonId: context.salonId,
+      staffUserId: context.targetMember.userId,
+      serviceIds: uniqueIds,
+    },
+  });
+
   return listStaffSkills(context.targetMember.userId);
 }
 
@@ -317,8 +377,6 @@ export async function listStaffForSalonService(
   const salonId = await resolveSalonId(salonRef);
   if (!salonId) throw new SalonNotFoundError();
 
-  // The service must belong to the salon. Querying by (salonId, serviceRef)
-  // keeps an attacker from enumerating services across tenants.
   const service = await findServiceForSalon(salonId, serviceRef);
   if (!service) throw new ServiceNotFoundError();
 

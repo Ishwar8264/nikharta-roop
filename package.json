@@ -11,14 +11,18 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.75",
+    "@ai-sdk/react": "^4.0.117",
     "@base-ui/react": "^1.8.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@upstash/ratelimit": "^2.1.0",
     "@upstash/redis": "^1.39.0",
+    "ai": "^7.0.114",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
     "dotenv": "^17.4.2",
+    "google-auth-library": "^11.1.0",
     "jose": "^6.2.12",
     "lucide-react": "^1.43.0",
     "next": "16.3.5",
@@ -44,7 +48,8 @@
     "prisma": "7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vercel-local-cron": "^0.1.2"
   },
   "packageManager": "pnpm@10.32.0"
 }

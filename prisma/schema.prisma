@@ -424,6 +424,9 @@ model Favorite {
 
   createdAt DateTime @default(now())
 
+  @@unique([userId, salonId])
+  @@unique([userId, serviceId])
+  @@unique([userId, productId])
   @@index([userId])
 }
 
@@ -731,7 +734,7 @@ model BlogComment {
   user       User     @relation(fields: [userId], references: [id])
   content    String
   parentId   String? // Nested replies
-  isApproved Boolean  @default(false)
+  isApproved Boolean  @default(true)
   createdAt  DateTime @default(now())
 
   @@index([postId])

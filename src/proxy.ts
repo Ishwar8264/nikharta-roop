@@ -28,6 +28,18 @@ const FULLY_PUBLIC_PATHS = new Set<string>([
   "/api/v1/auth/password/forgot",
   "/api/v1/auth/password/reset",
   "/api/v1/health",
+  "/api/v1/coupons/validate",
+  "/api/v1/cron/appointment-reminders",
+  "/api/v1/cron/notification-retry",
+  "/api/v1/cron/otp-cleanup",
+  "/api/v1/cron/token-cleanup",
+  "/api/v1/auth/oauth/providers",
+  "/api/v1/auth/oauth/google",
+  "/api/v1/auth/oauth/google/callback",
+  "/api/v1/auth/oauth/apple",
+  "/api/v1/auth/oauth/apple/callback",
+  "/api/v1/auth/oauth/facebook",
+  "/api/v1/auth/oauth/facebook/callback",
 ]);
 
 /**
@@ -42,6 +54,10 @@ const PUBLIC_GET_PATHS = new Set<string>([
   "/api/v1/salons",
   "/api/v1/services/categories",
   "/api/v1/products/categories",
+  "/api/v1/blog/posts",
+  "/api/v1/blog/categories",
+  "/api/v1/blog/tags",
+  "/api/v1/coupons/validate",
 ]);
 
 /**
@@ -60,6 +76,14 @@ const PUBLIC_GET_PATTERNS: RegExp[] = [
   /^\/api\/v1\/salons\/[^/]+\/services\/[^/]+\/staff$/,
   /^\/api\/v1\/salons\/[^/]+\/products$/,
   /^\/api\/v1\/salons\/[^/]+\/products\/[^/]+$/,
+  /^\/api\/v1\/salons\/[^/]+\/working-hours$/,
+  /^\/api\/v1\/salons\/[^/]+\/availability$/,
+  /^\/api\/v1\/services\/[^/]+\/reviews$/,
+  /^\/api\/v1\/products\/[^/]+\/reviews$/,
+  /^\/api\/v1\/staff\/[^/]+\/ratings$/,
+  /^\/api\/v1\/blog\/posts\/[^/]+$/,
+  /^\/api\/v1\/blog\/posts\/[^/]+\/comments$/,
+  /^\/api\/v1\/coupons\/[^/]+$/,
 ];
 
 /** Auth paths that get the stricter limiter, even though they are public. */

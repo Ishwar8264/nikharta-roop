@@ -2,6 +2,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { generateUniqueSlug } from "@/lib/slug";
+import { writeAuditLog } from "@/server/modules/audit/audit.writer";
 
 import { assertRoleAtLeast } from "./salon.authorization";
 import {
@@ -89,10 +90,27 @@ export async function createSalon(
     const slug = input.slug ?? (await generateSlugOrFail(input.name));
 
     try {
-      return await createSalonWithOwner({
+      const created = await createSalonWithOwner({
         ownerId,
         data: buildSalonCreateInput(input, slug),
       });
+
+      // Audit trail. Fire-and-forget — the create itself is the source of
+      // truth and must not be rolled back if the log write fails.
+      writeAuditLog({
+        userId: ownerId,
+        action: "CREATE",
+        entity: "Salon",
+        entityId: created.id,
+        newData: {
+          name: created.name,
+          slug: created.slug,
+          city: created.city,
+          category: created.category,
+        },
+      });
+
+      return created;
     } catch (error) {
       if (!isUniqueConstraintViolation(error, "slug")) throw error;
       if (input.slug) throw new SlugConflictError();
@@ -121,7 +139,30 @@ export async function updateSalon(
   const data = buildSalonUpdateInput(input);
 
   try {
-    return await updateSalonById(salonId, data);
+    const updated = await updateSalonById(salonId, data);
+
+    // The `salon` variable already holds the pre-update snapshot — no extra
+    // read is needed to record the old state.
+    writeAuditLog({
+      userId,
+      action: "UPDATE",
+      entity: "Salon",
+      entityId: salonId,
+      oldData: {
+        name: salon.name,
+        slug: salon.slug,
+        city: salon.city,
+        category: salon.category,
+      },
+      newData: {
+        name: updated.name,
+        slug: updated.slug,
+        city: updated.city,
+        category: updated.category,
+      },
+    });
+
+    return updated;
   } catch (error) {
     if (isUniqueConstraintViolation(error, "slug")) {
       throw new SlugConflictError();
@@ -146,6 +187,19 @@ export async function deleteSalon(
   assertRoleAtLeast(salon.viewerRole, "OWNER");
 
   await softDeleteSalonById(salonId);
+
+  writeAuditLog({
+    userId,
+    action: "DELETE",
+    entity: "Salon",
+    entityId: salonId,
+    oldData: {
+      name: salon.name,
+      slug: salon.slug,
+      city: salon.city,
+      category: salon.category,
+    },
+  });
 }
 
 /** Lists members of a salon. Managers and up can see the roster. */
@@ -182,11 +236,25 @@ export async function addSalonMemberByOwner(
   if (existing) throw new SalonMemberExistsError();
 
   try {
-    return await addSalonMember({
+    const member = await addSalonMember({
       salonId,
       userId: input.userId,
       role: input.role,
     });
+
+    writeAuditLog({
+      userId: actorId,
+      action: "CREATE",
+      entity: "SalonMember",
+      entityId: member.id,
+      newData: {
+        salonId,
+        memberUserId: input.userId,
+        role: input.role,
+      },
+    });
+
+    return member;
   } catch (error) {
     if (isUniqueConstraintViolation(error, "userId")) {
       throw new SalonMemberExistsError();
@@ -223,6 +291,18 @@ export async function removeSalonMemberByOwner(
   }
 
   await removeSalonMember(memberId);
+
+  writeAuditLog({
+    userId: actorId,
+    action: "DELETE",
+    entity: "SalonMember",
+    entityId: memberId,
+    oldData: {
+      salonId,
+      memberUserId: member.userId,
+      role: member.role,
+    },
+  });
 }
 
 /**
@@ -317,10 +397,7 @@ function buildSalonUpdateInput(
 }
 
 /** Checks whether Prisma reported a conflict for a specific unique field. */
-function isUniqueConstraintViolation(
-  error: unknown,
-  field: string,
-): boolean {
+function isUniqueConstraintViolation(error: unknown, field: string): boolean {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
   if (error.code !== "P2002") return false;
 
