@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
-import type { NavItem as NavItemType, NavVariant } from "./nav.types";
+import type { NavItem, NavVariant } from "./nav.types";
 
-interface NavItemProps {
-  item: NavItemType;
+interface NavLinkProps {
+  item: NavItem;
   variant?: NavVariant;
   /** Called after navigation; lets the mobile sheet close itself. */
   onNavigate?: () => void;
@@ -22,15 +22,20 @@ interface NavItemProps {
  * component) and MobileNav (a client component) both delegate the link
  * markup here, so hover, active, and focus styles cannot drift apart.
  *
+ * Renamed from `NavItem` to `NavLink` so the component name does not
+ * collide with the `NavItem` data type. The old barrel had to alias the
+ * type as `NavItemData` to work around the clash — this removes that
+ * awkwardness entirely.
+ *
  * "use client" is required because `usePathname` is a client-only hook.
  * Server components can still import this file — Next.js treats the import
  * as a client boundary and ships only this small chunk to the browser.
  */
-export function NavItem({
+export function NavLink({
   item,
   variant = "desktop",
   onNavigate,
-}: NavItemProps) {
+}: NavLinkProps) {
   const pathname = usePathname();
   const isActive = isRouteActive(pathname, item.href);
 

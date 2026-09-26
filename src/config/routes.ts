@@ -18,6 +18,11 @@ export const routes = {
   about: "/about",
   contact: "/contact",
 
+  // ─── Legal / Support ───
+  help: "/help",
+  privacy: "/privacy",
+  terms: "/terms",
+
   // ─── Auth ───
   login: "/login",
   register: "/register",

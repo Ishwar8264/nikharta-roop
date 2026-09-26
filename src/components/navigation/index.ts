@@ -11,12 +11,13 @@
  */
 export { DesktopNav } from "./desktop-nav";
 export { MobileNav } from "./mobile-nav";
-export { NavItem } from "./nav-item";
+export { NavLink } from "./nav-link";
 
 export { footerNav, publicNav, userMenuNav } from "./nav.config";
 
 export type {
   FooterGroup,
-  NavItem as NavItemData,
+  NavItem,
+  NavItemWithIcon,
   NavVariant,
 } from "./nav.types";
