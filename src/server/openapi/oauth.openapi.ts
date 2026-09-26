@@ -14,7 +14,7 @@ import type { OpenAPIV3_1 } from "openapi-types";
 export const oauthPaths = {
   "/api/v1/auth/oauth/providers": {
     get: {
-      tags: ["Authentication"],
+      tags: ["OAuth"],
       summary: "List configured OAuth providers",
       description:
         "Returns the social login providers this deployment has credentials " +
@@ -73,7 +73,7 @@ export const oauthPaths = {
 
   "/api/v1/auth/oauth/{providerId}": {
     get: {
-      tags: ["Authentication"],
+      tags: ["OAuth"],
       summary: "Start an OAuth login flow",
       description:
         "Redirects the caller's browser to the chosen provider's " +
