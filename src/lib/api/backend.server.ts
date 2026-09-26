@@ -4,8 +4,13 @@ import { ACCESS_COOKIE_NAME } from "@/server/auth/auth.constants";
 import { cookies } from "next/headers";
 
 /**
- * JSON-serializable value. Rejects functions, Date, Map, etc. at the type
- * level so we never silently send `[object Object]` over the wire.
+ * JSON-serializable value.
+ *
+ * Why it exists:
+ * Documents the shape we intend to send. Not enforced as the `json` param
+ * type on the api methods — TypeScript interfaces don't get implicit index
+ * signatures, so any interface would fail the structural check. The
+ * serialization contract is enforced at runtime by JSON.stringify.
  */
 export type JsonValue =
   | string
@@ -59,7 +64,7 @@ export class ApiError extends Error {
  * origin, shared with client-side code.
  */
 const BASE_URL = `${
-  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"
 }/api/v1`;
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -67,7 +72,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 async function request<T>(
   method: string,
   path: string,
-  options: RequestOptions & { json?: JsonValue } = {},
+  options: RequestOptions & { json?: unknown } = {},
 ): Promise<T> {
   const {
     json,
@@ -215,13 +220,13 @@ export const api = {
   get: <T>(path: string, options?: RequestOptions) =>
     request<T>("GET", path, options),
 
-  post: <T>(path: string, json?: JsonValue, options?: RequestOptions) =>
+  post: <T>(path: string, json?: unknown, options?: RequestOptions) =>
     request<T>("POST", path, { ...options, json }),
 
-  put: <T>(path: string, json?: JsonValue, options?: RequestOptions) =>
+  put: <T>(path: string, json?: unknown, options?: RequestOptions) =>
     request<T>("PUT", path, { ...options, json }),
 
-  patch: <T>(path: string, json?: JsonValue, options?: RequestOptions) =>
+  patch: <T>(path: string, json?: unknown, options?: RequestOptions) =>
     request<T>("PATCH", path, { ...options, json }),
 
   delete: <T>(path: string, options?: RequestOptions) =>

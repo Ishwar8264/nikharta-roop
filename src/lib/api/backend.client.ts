@@ -137,7 +137,7 @@ function emit(name: string): void {
 async function request<T>(
   method: string,
   path: string,
-  options: RequestOptions & { json?: JsonValue } = {},
+  options: RequestOptions & { json?: unknown } = {},
   retry = true,
 ): Promise<T> {
   const { json, headers: initHeaders, signal } = options;
@@ -258,13 +258,13 @@ export const api = {
   get: <T>(path: string, options?: RequestOptions) =>
     request<T>("GET", path, options),
 
-  post: <T>(path: string, json?: JsonValue, options?: RequestOptions) =>
+  post: <T>(path: string, json?: unknown, options?: RequestOptions) =>
     request<T>("POST", path, { ...options, json }),
 
-  put: <T>(path: string, json?: JsonValue, options?: RequestOptions) =>
+  put: <T>(path: string, json?: unknown, options?: RequestOptions) =>
     request<T>("PUT", path, { ...options, json }),
 
-  patch: <T>(path: string, json?: JsonValue, options?: RequestOptions) =>
+  patch: <T>(path: string, json?: unknown, options?: RequestOptions) =>
     request<T>("PATCH", path, { ...options, json }),
 
   delete: <T>(path: string, options?: RequestOptions) =>
