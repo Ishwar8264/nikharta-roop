@@ -75,9 +75,14 @@ export interface RegisterResponse {
 /** Envelope for successful login response. */
 export interface LoginResponse {
   message: string;
-  data: { user: AuthUser };
+  data: {
+    user: AuthUser;
+    /** JWT for non-browser clients. Browser clients use HttpOnly cookies. */
+    accessToken: string;
+    /** Seconds until the access token expires (for proactive refresh). */
+    accessTokenExpiresIn: number;
+  };
 }
-
 /** Envelope for failed validation (400). */
 export interface ValidationErrorResponse {
   message: string;
