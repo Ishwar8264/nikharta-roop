@@ -33,6 +33,13 @@ const FULLY_PUBLIC_PATHS = new Set<string>([
   "/api/v1/cron/notification-retry",
   "/api/v1/cron/otp-cleanup",
   "/api/v1/cron/token-cleanup",
+  "/api/v1/auth/oauth/providers",
+  "/api/v1/auth/oauth/google",
+  "/api/v1/auth/oauth/google/callback",
+  "/api/v1/auth/oauth/apple",
+  "/api/v1/auth/oauth/apple/callback",
+  "/api/v1/auth/oauth/facebook",
+  "/api/v1/auth/oauth/facebook/callback",
 ]);
 
 /**

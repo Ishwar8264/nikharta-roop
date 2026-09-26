@@ -11,6 +11,7 @@ import { couponPaths, couponSchemas } from "./coupon.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
 import { notificationPaths, notificationSchemas } from "./notification.openapi";
+import { oauthPaths, oauthSchemas } from "./oauth.openapi";
 import { reviewPaths, reviewSchemas } from "./review.openapi";
 const errorResponseSchema: OpenAPIV3_1.SchemaObject = {
   type: "object",
@@ -87,6 +88,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         description: "Platform administration (SUPER_ADMIN only)",
       },
       { name: "Coupons", description: "Discount coupons and validation" },
+      {
+        name: "OAuth",
+        description: "Social sign-in via Google, Apple, and Facebook",
+      },
     ],
     paths: {
       // ============================================================
@@ -2922,8 +2927,8 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
           },
         },
       },
+      ...oauthPaths,
       ...couponPaths,
-
       ...adminPaths,
       ...aiPaths,
       ...auditPaths,
@@ -4533,6 +4538,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             },
           },
         },
+        ...oauthSchemas,
         ...couponSchemas,
         ...adminSchemas,
         ...aiSchemas,
