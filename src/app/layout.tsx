@@ -5,15 +5,6 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 
 import "./globals.css";
 
-/**
- * Typography — the two-font system.
- *
- * Why:
- * Playfair Display is loaded with only the weights the headings actually use
- * (700 for H1, 600 for H2-H3). Requesting the full range would ship ~150KB of
- * unused font data on every first paint. Inter is a variable font so a single
- * file covers every weight the UI needs.
- */
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -22,7 +13,7 @@ const inter = Inter({
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
-  weight: ["600", "700"], // ← only the two weights we use
+  weight: ["600", "700"],
   variable: "--font-heading",
   display: "swap",
 });
@@ -32,6 +23,15 @@ export const metadata: Metadata = {
   description: "Premium salon booking platform",
 };
 
+/**
+ * Root layout.
+ *
+ * Why:
+ * The root layout only owns things that every page needs: fonts, theme
+ * provider, and the <html>/<body> shell. Chrome like the header and footer
+ * lives in the route group that actually uses it (see `(public)/layout.tsx`)
+ * so auth pages and dashboards do not inherit a marketing header.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
