@@ -209,7 +209,15 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
  * and the Swagger UI — adding latency to traffic unrelated to auth.
  */
 export const config = {
-  matcher: ["/api/v1/:path*"],
+  matcher: [
+    "/api/v1/:path*",
+    "/dashboard/:path*",
+    "/appointments/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/favorites/:path*",
+    "/loyalty/:path*",
+  ],
 };
 
 /** Returns true when the path lives under an admin-only prefix. */

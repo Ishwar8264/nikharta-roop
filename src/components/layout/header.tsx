@@ -4,24 +4,27 @@ import { DesktopNav, MobileNav } from "@/components/navigation";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { routes } from "@/config/routes";
 import { siteConfig } from "@/config/site";
+import { AuthButtons } from "@/features/auth/components/authButtons";
+import { UserMenu } from "@/features/auth/components/userMenu";
+import { getSession } from "@/lib/auth/get-session";
 
 /**
  * Public site header.
  *
- * Why:
- * A server component that composes three interactive islands (DesktopNav,
- * MobileNav, ThemeToggle) into one stable shell. Because the header itself
- * has no state, it renders on the server and stays out of the client bundle
- * — the only JS that ships is what those islands already needed.
+ * Why server:
+ * Composes interactive islands (DesktopNav, ThemeToggle, MobileNav, and
+ * either UserMenu or AuthButtons). Itself has no state — reads the session
+ * once and hands the user to the correct client island.
  *
- * Layout: logo left, primary nav middle, actions right. On mobile, the
- * primary nav collapses into the sheet behind the hamburger.
+ * Why getSession() here and in the root layout:
+ * Both calls hit React's cache() — the second one is free.
  */
-export function Header() {
+export async function Header() {
+  const user = await getSession();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
-        {/* Left — brand */}
         <Link
           href={routes.home}
           className="font-heading text-lg font-bold tracking-tight"
@@ -29,12 +32,11 @@ export function Header() {
           {siteConfig.name}
         </Link>
 
-        {/* Middle — desktop nav (hidden below lg) */}
         <DesktopNav />
 
-        {/* Right — actions */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {user ? <UserMenu user={user} /> : <AuthButtons />}
           <MobileNav />
         </div>
       </div>

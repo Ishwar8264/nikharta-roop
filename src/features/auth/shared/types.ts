@@ -28,6 +28,43 @@ export interface AuthUser {
   createdAt: string;
 }
 
+/**
+ * Full user shape returned by /auth/me and /auth/session.
+ *
+ * Why separate from AuthUser:
+ * Register/login only expose { id, name, email, phone, createdAt }. The
+ * /me endpoint returns the complete profile (avatar, bio, role, flags,
+ * loyalty). Keeping two types stops the register form from reading fields
+ * that don't exist in its response.
+ *
+ * Dates are strings here because this type is used in the browser, where
+ * every Date arrives as an ISO string over JSON. Server code uses its own
+ * CurrentUser (Date fields) from server/modules/auth.
+ */
+export interface CurrentUser {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  avatar: string | null;
+  bio: string | null;
+  lat: number | null;
+  lng: number | null;
+  role: string;
+  isOnboarded: boolean;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  loyaltyPoints: number;
+  /** Date — arrives via RSC serialization, not JSON. */
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** Envelope for POST /auth/logout. */
+export interface LogoutResponse {
+  message: string;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Form inputs
 // ─────────────────────────────────────────────────────────────
