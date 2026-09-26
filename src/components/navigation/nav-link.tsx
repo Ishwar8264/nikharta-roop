@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
+import { navIconMap } from "./nav-icon-map";
 import type { NavItem, NavVariant } from "./nav.types";
 
 interface NavLinkProps {
@@ -22,14 +23,9 @@ interface NavLinkProps {
  * component) and MobileNav (a client component) both delegate the link
  * markup here, so hover, active, and focus styles cannot drift apart.
  *
- * Renamed from `NavItem` to `NavLink` so the component name does not
- * collide with the `NavItem` data type. The old barrel had to alias the
- * type as `NavItemData` to work around the clash — this removes that
- * awkwardness entirely.
- *
- * "use client" is required because `usePathname` is a client-only hook.
- * Server components can still import this file — Next.js treats the import
- * as a client boundary and ships only this small chunk to the browser.
+ * Icon resolution happens here, not in the caller: `item.icon` is a string
+ * name (server-safe), and the actual Lucide component is looked up in the
+ * client-side map. This is what keeps DesktopNav renderable on the server.
  */
 export function NavLink({
   item,
@@ -39,10 +35,12 @@ export function NavLink({
   const pathname = usePathname();
   const isActive = isRouteActive(pathname, item.href);
 
+  const Icon = item.icon ? navIconMap[item.icon] : null;
+
   const baseStyles =
     variant === "desktop"
-      ? "text-sm font-medium transition-colors"
-      : "flex w-full items-center rounded-lg px-3 py-2 text-base font-medium transition-colors";
+      ? "inline-flex items-center gap-2 text-sm font-medium transition-colors"
+      : "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-base font-medium transition-colors";
 
   const stateStyles =
     variant === "desktop"
@@ -63,9 +61,15 @@ export function NavLink({
         ? { target: "_blank", rel: "noopener noreferrer" }
         : {})}
     >
-      {item.label}
+      {Icon ? (
+        <Icon
+          className={variant === "desktop" ? "h-4 w-4" : "h-4 w-4 shrink-0"}
+          aria-hidden="true"
+        />
+      ) : null}
+      <span>{item.label}</span>
       {item.badge ? (
-        <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+        <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
           {item.badge}
         </span>
       ) : null}
@@ -73,16 +77,6 @@ export function NavLink({
   );
 }
 
-/**
- * Determines whether a path matches the nav item's href.
- *
- * Why:
- * `pathname === href` breaks for parent links: /salons should stay active on
- * /salons/glamour-studio. But a naive `startsWith` also matches sibling
- * routes like /salons-other, so we anchor the prefix with a trailing slash.
- *
- * The root path "/" is special-cased because every path starts with "/".
- */
 function isRouteActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
