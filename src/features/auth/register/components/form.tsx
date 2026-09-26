@@ -8,7 +8,7 @@ import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import { PasswordField } from "@/features/auth/shared/components/password-field";
 import { FIELD } from "@/features/auth/shared/constants";
-import { useRegister } from "../hooks/use-register";
+import { useRegister } from "../hooks/useRegister";
 
 /**
  * Registration form.

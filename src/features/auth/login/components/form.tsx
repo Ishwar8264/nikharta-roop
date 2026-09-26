@@ -10,7 +10,7 @@ import { FormError } from "@/features/auth/shared/components/form-error";
 import { FormSuccess } from "@/features/auth/shared/components/form-success";
 import { PasswordField } from "@/features/auth/shared/components/password-field";
 import { FIELD } from "@/features/auth/shared/constants";
-import { useLogin } from "../hooks/use-login";
+import { useLogin } from "../hooks/useLogin";
 
 /**
  * Login form.
