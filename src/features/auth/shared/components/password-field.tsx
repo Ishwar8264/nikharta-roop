@@ -25,6 +25,7 @@ interface PasswordFieldProps {
   label: string;
   autoComplete?: "new-password" | "current-password";
   placeholder?: string;
+  icon?: React.ReactNode;
   error?: string;
   disabled?: boolean;
 }
@@ -34,6 +35,7 @@ export function PasswordField({
   label,
   autoComplete = "new-password",
   placeholder,
+  icon,
   error,
   disabled,
 }: PasswordFieldProps) {
@@ -44,6 +46,14 @@ export function PasswordField({
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       <div className="relative">
+        {icon ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground"
+          >
+            {icon}
+          </span>
+        ) : null}
         <Input
           id={id}
           name={id}
@@ -51,7 +61,7 @@ export function PasswordField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           disabled={disabled}
-          className="pr-10"
+          className={icon ? "pl-9 pr-10" : "pr-10"}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
         />

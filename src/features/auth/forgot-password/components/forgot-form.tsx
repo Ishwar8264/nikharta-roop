@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
@@ -48,6 +49,8 @@ export function ForgotPasswordForm() {
         label="Email"
         type="email"
         autoComplete="email"
+        placeholder="you@example.com"
+        icon={<Mail className="size-4" />}
         error={fieldErrors[FIELD.email]}
         disabled={isLoading}
       />

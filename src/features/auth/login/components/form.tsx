@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { LockKeyhole, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
@@ -29,6 +30,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const justRegistered = searchParams.get("registered") === "1";
   const justVerified = searchParams.get("verified") === "1";
+  const justReset = searchParams.get("reset") === "1";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -63,6 +65,10 @@ export function LoginForm() {
         <FormSuccess>Email verified. You can sign in now.</FormSuccess>
       ) : null}
 
+      {justReset ? (
+        <FormSuccess>Password updated. Please sign in again.</FormSuccess>
+      ) : null}
+
       <FormError>{error}</FormError>
 
       <Field
@@ -70,6 +76,8 @@ export function LoginForm() {
         label="Email"
         type="email"
         autoComplete="email"
+        placeholder="you@example.com"
+        icon={<Mail className="size-4" />}
         error={fieldErrors[FIELD.email]}
         disabled={isLoading}
       />
@@ -78,6 +86,8 @@ export function LoginForm() {
         id={FIELD.password}
         label="Password"
         autoComplete="current-password"
+        placeholder="Enter your password"
+        icon={<LockKeyhole className="size-4" />}
         error={fieldErrors[FIELD.password]}
         disabled={isLoading}
       />

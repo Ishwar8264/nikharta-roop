@@ -76,11 +76,11 @@ export function useRegister(): UseRegisterResult {
           const message = e.message.toLowerCase();
           if (message.includes("email")) {
             setFieldErrors({
-              [FIELD.email]: "This email is already registered",
+              [FIELD.email]: e.message,
             });
           } else if (message.includes("phone")) {
             setFieldErrors({
-              [FIELD.phone]: "This phone is already registered",
+              [FIELD.phone]: e.message,
             });
           }
           setError(e.message);

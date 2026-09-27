@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { LockKeyhole } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
 import { FormError } from "@/features/auth/shared/components/form-error";
-import { OtpInput } from "@/features/auth/shared/components/otp-input";
+import { OtpInput } from "@/features/auth/shared/otpInput";
 import { PasswordField } from "@/features/auth/shared/components/password-field";
 import { FIELD } from "@/features/auth/shared/constants";
 
@@ -91,6 +92,8 @@ function ResetPasswordFlow() {
         id={FIELD.newPassword}
         label="New password"
         autoComplete="new-password"
+        placeholder="Enter a new password"
+        icon={<LockKeyhole className="size-4" />}
         error={fieldErrors.newPassword}
         disabled={isLoading}
       />

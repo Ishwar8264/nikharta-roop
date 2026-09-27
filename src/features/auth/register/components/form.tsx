@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
@@ -68,6 +69,8 @@ export function RegisterForm() {
         id={FIELD.name}
         label="Full name"
         autoComplete="name"
+        placeholder="Enter your full name"
+        icon={<UserRound className="size-4" />}
         error={fieldErrors[FIELD.name]}
         disabled={isLoading}
       />
@@ -77,6 +80,8 @@ export function RegisterForm() {
         label="Email"
         type="email"
         autoComplete="email"
+        placeholder="you@example.com"
+        icon={<Mail className="size-4" />}
         error={fieldErrors[FIELD.email]}
         disabled={isLoading}
       />
@@ -86,7 +91,8 @@ export function RegisterForm() {
         label="Phone (optional)"
         type="tel"
         autoComplete="tel"
-        placeholder="+919876543210"
+        placeholder="+91 98765 43210"
+        icon={<Phone className="size-4" />}
         error={fieldErrors[FIELD.phone]}
         disabled={isLoading}
       />
@@ -95,6 +101,8 @@ export function RegisterForm() {
         id={FIELD.password}
         label="Password"
         autoComplete="new-password"
+        placeholder="Create a strong password"
+        icon={<LockKeyhole className="size-4" />}
         error={fieldErrors[FIELD.password]}
         disabled={isLoading}
       />

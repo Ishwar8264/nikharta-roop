@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api/backend.client";
 
@@ -48,32 +48,15 @@ export function useResetPassword(): UseResetPasswordResult {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [resendIn, setResendIn] = useState(initialCooldown);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const startCooldown = useCallback((seconds: number) => {
-    setResendIn(seconds);
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (seconds <= 0) return;
-
-    timerRef.current = setInterval(() => {
-      setResendIn((current) => {
-        if (current <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-  }, []);
-
-  // Kick off the countdown as soon as the page mounts if the URL carried one.
+  // A one-shot timeout keeps the countdown accurate without a mutable timer.
   useEffect(() => {
-    if (initialCooldown > 0) startCooldown(initialCooldown);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (resendIn <= 0) return;
+    const timeout = window.setTimeout(
+      () => setResendIn((current) => Math.max(0, current - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [resendIn]);
 
   async function submit(newPassword: string) {
     setIsLoading(true);
@@ -133,14 +116,14 @@ export function useResetPassword(): UseResetPasswordResult {
 
     try {
       const res = await forgotPasswordApi({ email });
-      startCooldown(res.data.resendAvailableInSeconds);
+      setResendIn(res.data.resendAvailableInSeconds);
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.status === 429) {
           // Already inside the cooldown window — restart the local timer so
           // the UI matches the server's view instead of lying about being
           // able to resend.
-          startCooldown(60);
+          setResendIn(e.retryAfterSeconds ?? 60);
         }
         setError(e.message);
       } else {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api/backend.client";
 import { sendOtpApi } from "../api/sendOtp";
@@ -51,31 +51,16 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  /** Starts (or restarts) the resend countdown. */
-  const startCooldown = useCallback((seconds: number) => {
-    setResendIn(seconds);
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    timerRef.current = setInterval(() => {
-      setResendIn((current) => {
-        if (current <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-  }, []);
-
-  // Cleanup on unmount — otherwise the interval keeps ticking against a
-  // component that no longer exists (and warns in strict mode).
+  // A one-shot timeout avoids interval bookkeeping and is safely cleaned up
+  // whenever the countdown changes or the component unmounts.
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
+    if (resendIn <= 0) return;
+    const timeout = window.setTimeout(
+      () => setResendIn((current) => Math.max(0, current - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [resendIn]);
 
   async function sendCode() {
     setIsSending(true);
@@ -83,7 +68,7 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
 
     try {
       const res = await sendOtpApi({ email });
-      startCooldown(res.data.resendAvailableInSeconds);
+      setResendIn(res.data.resendAvailableInSeconds);
       setStep("verify");
     } catch (e) {
       if (e instanceof ApiError) {
@@ -92,8 +77,7 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
         // so the UI reflects reality instead of blocking them.
         if (e.status === 429) {
           setStep("verify");
-          const retrySeconds = extractRetryAfter(e.data);
-          startCooldown(retrySeconds ?? 60);
+          setResendIn(e.retryAfterSeconds ?? 60);
           setError(e.message);
         } else {
           setError(e.message);
@@ -150,20 +134,4 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
     error,
     resendIn,
   };
-}
-
-/**
- * Pulls a numeric Retry-After from a backend error body.
- *
- * Why:
- * The backend returns the value as `retryAfterSeconds` in some errors and a
- * `Retry-After` header in others. Both feed the same countdown; a missing
- * value falls back to a conservative default so the user is never blocked
- * by a zero-length cooldown we misread.
- */
-function extractRetryAfter(data: unknown): number | null {
-  if (!data || typeof data !== "object") return null;
-  const record = data as Record<string, unknown>;
-  const value = record.retryAfterSeconds;
-  return typeof value === "number" ? value : null;
 }

@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { routes } from "@/config/routes";
 import { ApiError } from "@/lib/api/backend.client";
 
 import { FIELD } from "../../shared/constants";
@@ -67,7 +68,10 @@ export function useLogin(): UseLoginResult {
       // Re-run Server Components so they see the new session cookies.
       router.refresh();
 
-      const redirectTo = searchParams.get("redirect") ?? "/";
+      const requestedRedirect = searchParams.get("redirect");
+      const redirectTo = isSafeInternalPath(requestedRedirect)
+        ? requestedRedirect
+        : routes.home;
       router.push(redirectTo);
     } catch (e) {
       if (e instanceof ApiError) {
@@ -102,3 +106,8 @@ export function useLogin(): UseLoginResult {
  * to reference field names without importing constants directly.
  */
 export { FIELD };
+
+/** Prevents user-controlled redirect params from navigating off-site. */
+function isSafeInternalPath(path: string | null): path is string {
+  return Boolean(path?.startsWith("/") && !path.startsWith("//"));
+}

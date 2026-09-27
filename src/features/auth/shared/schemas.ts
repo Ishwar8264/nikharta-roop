@@ -88,10 +88,6 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
-export const forgotPasswordSchema = z.strictObject({
-  email: emailSchema,
-});
-
 /**
  * Reset password payload.
  *
@@ -118,5 +114,4 @@ export const resetPasswordSchema = z.strictObject({
     ),
 });
 
-export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;

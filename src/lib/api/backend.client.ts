@@ -34,6 +34,7 @@ export class ApiError extends Error {
     public readonly status: number,
     message: string,
     public readonly data: unknown = null,
+    public readonly retryAfterSeconds: number | null = null,
   ) {
     super(message);
     this.name = "ApiError";
@@ -199,10 +200,19 @@ async function request<T>(
       res.status,
       extractMessage(data) ?? res.statusText,
       data,
+      parseRetryAfter(res.headers.get("retry-after")),
     );
   }
 
   return data as T;
+}
+
+/** Parses the standard Retry-After seconds value used by auth cooldowns. */
+function parseRetryAfter(value: string | null): number | null {
+  if (!value) return null;
+
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds) : null;
 }
 
 async function parseBody(res: Response): Promise<unknown> {

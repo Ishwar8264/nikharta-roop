@@ -82,10 +82,6 @@ export interface LoginInput {
   password: string;
 }
 
-export interface ForgotPasswordInput {
-  email: string;
-}
-
 // ─────────────────────────────────────────────────────────────
 // API envelopes
 // ─────────────────────────────────────────────────────────────
