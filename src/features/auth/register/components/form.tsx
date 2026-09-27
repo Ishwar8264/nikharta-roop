@@ -75,8 +75,6 @@ export function RegisterForm({
 
       <FormError>{error}</FormError>
 
-      <OAuthButtons providers={providers} disabled={isLoading} />
-
       <Field
         id={FIELD.name}
         label="Full name"
@@ -134,6 +132,8 @@ export function RegisterForm({
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? "Creating account…" : "Create account"}
       </Button>
+
+      <OAuthButtons providers={providers} />
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}

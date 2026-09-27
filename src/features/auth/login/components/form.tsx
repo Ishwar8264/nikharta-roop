@@ -93,8 +93,6 @@ export function LoginForm({
         {oauthFailed ? "Something went wrong. Please try again." : null}
       </FormError>
 
-      <OAuthButtons providers={providers} disabled={isLoading} />
-
       <Field
         id={FIELD.email}
         label="Email"
@@ -128,6 +126,8 @@ export function LoginForm({
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? "Signing in…" : "Sign in"}
       </Button>
+
+      <OAuthButtons providers={providers} />
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
