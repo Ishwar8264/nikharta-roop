@@ -15,13 +15,13 @@ export const siteConfig = {
   locale: "en-IN",
   currency: "INR",
   contact: {
-    email: "hello@nikhartaroop.com",
-    phone: "+91 98765 43210",
+    email: "nikharta.roop.salon@gmail.com",
+    phone: "+91 82648 82518",
   },
   social: {
-    instagram: "https://instagram.com/nikhartaroop",
-    facebook: "https://facebook.com/nikhartaroop",
-    twitter: "https://twitter.com/nikhartaroop",
+    instagram: "https://www.instagram.com/nikharta.roop/",
+    facebook: "https://www.facebook.com/profile.php?id=61594007611549",
+    twitter: "https://x.com/NikhartaPIs8264",
   },
 } as const;
 
