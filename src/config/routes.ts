@@ -29,6 +29,8 @@ export const routes = {
   forgotPassword: "/forgot-password",
   resetPassword: "/reset-password",
   verifyOtp: "/verify-otp",
+  verifyOtpForEmail: (email: string) =>
+    `/verify-otp?email=${encodeURIComponent(email)}`,
 
   // ─── Authenticated customer ───
   dashboard: "/dashboard",

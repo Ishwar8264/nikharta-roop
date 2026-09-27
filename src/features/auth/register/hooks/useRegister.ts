@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { routes } from "@/config/routes";
 import { ApiError } from "@/lib/api/backend.client";
 
 import { FIELD } from "../../shared/constants";
@@ -59,8 +60,7 @@ export function useRegister(): UseRegisterResult {
     try {
       await registerApi(parsed.data);
 
-      const email = parsed.data.email;
-      router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+      router.push(routes.verifyOtpForEmail(parsed.data.email));
     } catch (e) {
       if (e instanceof ApiError) {
         const data = e.data as { errors?: FieldError[] } | null;

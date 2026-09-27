@@ -11,6 +11,9 @@ import { loginSchema } from "../../shared/schemas";
 import type { FieldError, LoginInput } from "../../shared/types";
 import { loginApi } from "../api/login";
 
+const EMAIL_NOT_VERIFIED_MESSAGE =
+  "Please verify your email before signing in";
+
 interface UseLoginResult {
   login: (input: LoginInput) => Promise<void>;
   isLoading: boolean;
@@ -74,10 +77,17 @@ export function useLogin(): UseLoginResult {
           }
           setFieldErrors(map);
           setError("Please fix the highlighted fields");
+        } else if (
+          e.status === 403 &&
+          e.message === EMAIL_NOT_VERIFIED_MESSAGE
+        ) {
+          // The verification flow owns sending and validating the OTP. Keep
+          // the validated email so the user does not need to enter it again.
+          router.replace(routes.verifyOtpForEmail(parsed.data.email));
         } else {
-          // 401 invalid credentials, 403 unverified/deactivated, 500 — all
-          // surface as a banner. 401 in particular must NOT be field-mapped
-          // (mapping it to email/password would leak which one was wrong).
+          // Invalid credentials, deactivated accounts, and server failures
+          // surface as a banner. A 401 must NOT be field-mapped because that
+          // could leak whether the email or password was wrong.
           setError(e.message);
         }
       } else {
