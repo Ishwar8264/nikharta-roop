@@ -90,7 +90,7 @@ function VerifyOtpFlow({ email }: { email: string }) {
           type="button"
           onClick={() => void sendCode()}
           disabled={isSending}
-          className="h-11 w-full rounded-none"
+          className="w-full"
         >
           <Send data-icon="inline-start" />
           {isSending ? "Sending code…" : "Send verification code"}
@@ -113,7 +113,7 @@ function VerifyOtpFlow({ email }: { email: string }) {
           <Button
             type="submit"
             disabled={isVerifying || code.length !== 6}
-            className="h-11 w-full rounded-none"
+            className="w-full"
           >
             {isVerifying ? "Verifying…" : "Verify email"}
           </Button>
@@ -167,14 +167,14 @@ function MissingEmail() {
           render={<Link href={routes.login} />}
           nativeButton={false}
           variant="outline"
-          className="h-11 flex-1 rounded-none"
+          className="flex-1"
         >
           Sign in
         </Button>
         <Button
           render={<Link href={routes.register} />}
           nativeButton={false}
-          className="h-11 flex-1 rounded-none"
+          className="flex-1"
         >
           Create account
         </Button>
