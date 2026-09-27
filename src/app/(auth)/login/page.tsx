@@ -17,7 +17,9 @@ export const metadata: Metadata = {
  * lets the shell stay static while only the form defers.
  */
 export default function LoginPage() {
-  const providers = listOAuthProviders();
+  const providers = listOAuthProviders().filter(
+    (provider) => provider.configured,
+  );
   return (
     <Suspense fallback={null}>
       <LoginForm providers={providers} />

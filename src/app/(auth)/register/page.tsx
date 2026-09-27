@@ -16,6 +16,8 @@ export const metadata: Metadata = {
  * fast, and only the form's chunk ships to the browser.
  */
 export default function RegisterPage() {
-  const providers = listOAuthProviders();
+  const providers = listOAuthProviders().filter(
+    (provider) => provider.configured,
+  );
   return <RegisterForm providers={providers} />;
 }

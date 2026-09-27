@@ -97,6 +97,20 @@ export function clearOAuthFlowCookies(response: NextResponse): void {
   });
 }
 
+/** Resolves a configured OAuth destination without allowing another origin. */
+export function resolveOAuthRedirect(request: Request, target: string): URL {
+  const requestUrl = new URL(request.url);
+  const destination = new URL(target, requestUrl.origin);
+
+  // OAuth destinations are deployment configuration, but treating them as
+  // trusted URLs would turn one bad value into an external post-login redirect.
+  if (destination.origin !== requestUrl.origin) {
+    return new URL("/login?error=oauth_failed", requestUrl.origin);
+  }
+
+  return destination;
+}
+
 /** Reads a single cookie value from the raw `Cookie` header. */
 function readCookie(request: Request, name: string): string | null {
   const header = request.headers.get("cookie");

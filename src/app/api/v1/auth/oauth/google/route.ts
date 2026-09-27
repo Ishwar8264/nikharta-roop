@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { OAuthProviderNotConfiguredError } from "@/server/auth/oauth/oauth.errors";
-import { attachOAuthFlowCookies } from "@/server/auth/oauth/oauth.helpers";
+import {
+  attachOAuthFlowCookies,
+  resolveOAuthRedirect,
+} from "@/server/auth/oauth/oauth.helpers";
 import { initiateOAuth } from "@/server/auth/oauth/oauth.service";
 import {
   derivePkceChallenge,
@@ -52,6 +55,6 @@ export async function GET(request: Request): Promise<Response> {
     console.error("Google OAuth initiation failed", error);
     const failureRedirect =
       process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
-    return NextResponse.redirect(new URL(failureRedirect, request.url));
+    return NextResponse.redirect(resolveOAuthRedirect(request, failureRedirect));
   }
 }

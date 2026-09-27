@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  ACCESS_COOKIE_NAME,
-  ACCESS_TOKEN_TTL_SECONDS,
-  CSRF_COOKIE_NAME,
-  REFRESH_COOKIE_NAME,
-  REFRESH_COOKIE_PATH,
-  REFRESH_TOKEN_TTL_SECONDS,
-} from "@/server/auth/auth.constants";
-import { generateCsrfToken } from "@/server/auth/csrf";
+import { setSessionCookies } from "@/server/auth/cookies";
 import {
   OAuthProviderNotConfiguredError,
   OAuthStateInvalidError,
@@ -18,6 +10,7 @@ import {
   clearOAuthFlowCookies,
   readOAuthStateCookie,
   readOAuthVerifierCookie,
+  resolveOAuthRedirect,
 } from "@/server/auth/oauth/oauth.helpers";
 import { completeOAuth } from "@/server/auth/oauth/oauth.service";
 import { verifyStateProvider } from "@/server/auth/oauth/oauth.state";
@@ -101,7 +94,7 @@ function buildFailureRedirect(
   target: string,
   reason: string,
 ): NextResponse {
-  const url = new URL(target, request.url);
+  const url = resolveOAuthRedirect(request, target);
   url.searchParams.set("reason", reason);
 
   const response = NextResponse.redirect(url.toString());
@@ -118,36 +111,9 @@ function buildSuccessRedirect(
     refreshToken: string;
   },
 ): NextResponse {
-  const response = NextResponse.redirect(
-    new URL(target, request.url).toString(),
-  );
+  const response = NextResponse.redirect(resolveOAuthRedirect(request, target));
 
-  const secure = process.env.NODE_ENV === "production";
-
-  response.cookies.set(ACCESS_COOKIE_NAME, result.accessToken, {
-    httpOnly: true,
-    secure,
-    sameSite: "lax",
-    path: "/",
-    maxAge: ACCESS_TOKEN_TTL_SECONDS,
-  });
-
-  response.cookies.set(REFRESH_COOKIE_NAME, result.refreshToken, {
-    httpOnly: true,
-    secure,
-    sameSite: "lax",
-    path: REFRESH_COOKIE_PATH,
-    maxAge: REFRESH_TOKEN_TTL_SECONDS,
-  });
-
-  response.cookies.set(CSRF_COOKIE_NAME, generateCsrfToken(), {
-    httpOnly: false,
-    secure,
-    sameSite: "lax",
-    path: "/",
-    maxAge: REFRESH_TOKEN_TTL_SECONDS,
-  });
-
+  setSessionCookies(response, result);
   clearOAuthFlowCookies(response);
   return response;
 }

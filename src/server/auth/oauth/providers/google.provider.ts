@@ -79,8 +79,7 @@ export const googleProvider: OAuthProvider = {
     });
 
     if (!response.ok) {
-      const body = await response.text();
-      console.error("Google token exchange failed", response.status, body);
+      console.error("Google token exchange failed", response.status);
       throw new OAuthExchangeFailedError(
         "Google rejected the authorization code",
       );
