@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { footerNav } from "@/components/navigation";
-import { routes } from "@/config/routes";
+import { Brand } from "@/components/shared/brand";
 import { siteConfig } from "@/config/site";
 
 /**
@@ -25,12 +25,7 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
           {/* ─── Brand block ─── */}
           <div className="lg:col-span-2">
-            <Link
-              href={routes.home}
-              className="font-heading text-xl font-bold tracking-tight"
-            >
-              {siteConfig.name}
-            </Link>
+            <Brand size="lg" />
             <p className="mt-3 max-w-sm text-sm text-muted-foreground">
               {siteConfig.description}
             </p>

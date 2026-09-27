@@ -1,12 +1,13 @@
+import { Header } from "@/components/layout/header";
 import { Card, CardContent } from "@/components/ui/card";
-import { AuthNav } from "@/features/auth/shared/components/auth-nav";
 
 /**
  * Auth route-group layout.
  *
  * Why a route group:
- * Auth pages (login, register, forgot) share a chrome — centered, no public
- * header/footer. Parentheses mean `(auth)` does not appear in the URL:
+ * Auth pages reuse the public header for consistent navigation while keeping
+ * their focused centered form shell and no footer. Parentheses mean `(auth)`
+ * does not appear in the URL:
  * `(auth)/register` still resolves to `/register`.
  *
  * Why no "use client":
@@ -19,9 +20,9 @@ export default function AuthLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <AuthNav />
+      <Header />
 
-      <main className="relative grid min-h-screen place-items-center px-4 pb-10 pt-28 sm:px-6 sm:pb-12 sm:pt-32">
+      <main className="relative grid min-h-[calc(100vh-4rem)] place-items-center px-4 py-10 sm:px-6 sm:py-12">
         <div
           aria-hidden="true"
           className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,var(--primary)_12%,transparent),transparent_42%),radial-gradient(circle_at_bottom_right,color-mix(in_oklch,var(--accent)_16%,transparent),transparent_38%)]"

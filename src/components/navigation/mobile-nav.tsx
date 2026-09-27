@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Brand } from "@/components/shared/brand";
 import {
   Sheet,
   SheetContent,
@@ -47,7 +48,9 @@ export function MobileNav() {
 
       <SheetContent side="left" className="w-72">
         <SheetHeader>
-          <SheetTitle>Menu</SheetTitle>
+          <SheetTitle>
+            <Brand size="sm" />
+          </SheetTitle>
         </SheetHeader>
 
         <nav aria-label="Primary" className="mt-6 flex flex-col gap-1 px-2">

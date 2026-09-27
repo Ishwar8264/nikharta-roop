@@ -1,9 +1,6 @@
-import Link from "next/link";
-
 import { DesktopNav, MobileNav } from "@/components/navigation";
+import { Brand } from "@/components/shared/brand";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
-import { routes } from "@/config/routes";
-import { siteConfig } from "@/config/site";
 import { AuthButtons } from "@/features/auth/components/authButtons";
 import { UserMenu } from "@/features/auth/components/userMenu";
 import { getSession } from "@/lib/auth/get-session";
@@ -25,12 +22,7 @@ export async function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
-        <Link
-          href={routes.home}
-          className="font-heading text-lg font-bold tracking-tight"
-        >
-          {siteConfig.name}
-        </Link>
+        <Brand size="sm" />
 
         <DesktopNav />
 
