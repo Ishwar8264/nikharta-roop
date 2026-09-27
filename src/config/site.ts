@@ -16,7 +16,7 @@ export const siteConfig = {
   currency: "INR",
   contact: {
     email: "nikharta.roop.salon@gmail.com",
-    phone: "+91 98765 43210",
+    phone: "+91 82648 82518",
   },
   social: {
     instagram: "https://www.instagram.com/nikharta.roop/",
