@@ -1,3 +1,4 @@
+import { Mail } from "lucide-react";
 import Link from "next/link";
 
 import { footerNav } from "@/components/navigation";
@@ -21,7 +22,7 @@ export function Footer() {
 
   return (
     <footer className="border-t border-border bg-muted/30">
-      <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="mx-auto max-w-7xl px-6 py-14">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
           {/* ─── Brand block ─── */}
           <div className="lg:col-span-2">
@@ -30,12 +31,13 @@ export function Footer() {
               {siteConfig.description}
             </p>
 
-            <div className="mt-6 space-y-1 text-sm text-muted-foreground">
+            <div className="mt-6 space-y-2 text-sm text-muted-foreground">
               <p>
                 <a
                   href={`mailto:${siteConfig.contact.email}`}
-                  className="transition-colors hover:text-foreground"
+                  className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
                 >
+                  <Mail className="h-4 w-4" aria-hidden="true" />
                   {siteConfig.contact.email}
                 </a>
               </p>
@@ -78,10 +80,22 @@ export function Footer() {
             © {year} {siteConfig.name}. All rights reserved.
           </p>
 
-          <div className="flex items-center gap-5">
-            <SocialLink label="Instagram" href={siteConfig.social.instagram} />
-            <SocialLink label="Facebook" href={siteConfig.social.facebook} />
-            <SocialLink label="Twitter" href={siteConfig.social.twitter} />
+          <div className="flex items-center gap-2">
+            <SocialLink
+              label="Instagram"
+              href={siteConfig.social.instagram}
+              icon={<span className="text-xs font-bold">IG</span>}
+            />
+            <SocialLink
+              label="Facebook"
+              href={siteConfig.social.facebook}
+              icon={<span className="text-sm font-bold">f</span>}
+            />
+            <SocialLink
+              label="X"
+              href={siteConfig.social.twitter}
+              icon={<span className="text-sm font-semibold">X</span>}
+            />
           </div>
         </div>
       </div>
@@ -98,15 +112,24 @@ export function Footer() {
  * required on external links that open in a new tab — it prevents the
  * destination from accessing `window.opener`.
  */
-function SocialLink({ label, href }: { label: string; href: string }) {
+function SocialLink({
+  label,
+  href,
+  icon,
+}: {
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+}) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+      aria-label={`Follow Nikharta Roop on ${label}`}
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      {label}
+      {icon}
     </a>
   );
 }
