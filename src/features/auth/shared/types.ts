@@ -156,3 +156,31 @@ export interface VerifyOtpResponse {
     channel: "EMAIL" | "PHONE" | "WHATSAPP";
   };
 }
+
+// ─────────────────────────────────────────────────────────────
+// Password reset
+// ─────────────────────────────────────────────────────────────
+
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  data: {
+    expiresAt: string;
+    /** Seconds before a resend is allowed. */
+    resendAvailableInSeconds: number;
+  };
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+  data: null;
+}

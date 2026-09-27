@@ -8,7 +8,7 @@ import { routes } from "@/config/routes";
 
 import { FormError } from "@/features/auth/shared/components/form-error";
 import { useVerifyOtp } from "../hooks/useVerifyOtp";
-import { OtpInput } from "./otpInput";
+import { OtpInput } from "../../shared/otpInput";
 
 /**
  * Two-step email verification form.
