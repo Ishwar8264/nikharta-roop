@@ -17,6 +17,10 @@ const PUBLIC_MUTATION_PATHS = new Set([
   "/api/v1/auth/password/reset",
 ]);
 
+const CROSS_SITE_CALLBACK_PATHS = new Set([
+  "/api/v1/auth/oauth/apple/callback",
+]);
+
 /** Generates a cryptographically random CSRF token. */
 export function generateCsrfToken(): string {
   return randomBytes(CSRF_TOKEN_BYTES).toString("base64url");
@@ -55,6 +59,10 @@ export function verifyCsrfToken(
  */
 export function isMutationRequestTrusted(request: NextRequest): boolean {
   if (isSafeMethod(request.method)) return true;
+
+  // Apple returns a cross-site form POST. The callback independently proves
+  // the request with an exact, single-use OAuth state value before login.
+  if (CROSS_SITE_CALLBACK_PATHS.has(request.nextUrl.pathname)) return true;
 
   const fetchSite = request.headers.get("sec-fetch-site");
   if (fetchSite === "cross-site" || fetchSite === "same-site") return false;

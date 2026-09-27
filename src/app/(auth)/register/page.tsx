@@ -1,5 +1,6 @@
 import { RegisterForm } from "@/features/auth/register/components/form";
 import type { Metadata } from "next";
+import { listOAuthProviders } from "@/server/auth/oauth/providers";
 
 export const metadata: Metadata = {
   title: "Create account · Nikharta Roop",
@@ -15,5 +16,6 @@ export const metadata: Metadata = {
  * fast, and only the form's chunk ships to the browser.
  */
 export default function RegisterPage() {
-  return <RegisterForm />;
+  const providers = listOAuthProviders();
+  return <RegisterForm providers={providers} />;
 }

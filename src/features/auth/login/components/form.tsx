@@ -9,6 +9,10 @@ import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import { FormSuccess } from "@/features/auth/shared/components/form-success";
+import {
+  OAuthButtons,
+  type OAuthOption,
+} from "@/features/auth/shared/components/oauth-buttons";
 import { PasswordField } from "@/features/auth/shared/components/password-field";
 import { FIELD } from "@/features/auth/shared/constants";
 import { useLogin } from "../hooks/useLogin";
@@ -25,12 +29,26 @@ import { useLogin } from "../hooks/useLogin";
  * form. Keeping the read here means the page stays a dumb shell that could
  * be cached/pre-rendered — no `searchParams` prop drilling needed.
  */
-export function LoginForm() {
+export function LoginForm({
+  providers = [],
+}: {
+  providers?: readonly OAuthOption[];
+}) {
   const { login, isLoading, error, fieldErrors } = useLogin();
   const searchParams = useSearchParams();
   const justRegistered = searchParams.get("registered") === "1";
   const justVerified = searchParams.get("verified") === "1";
   const justReset = searchParams.get("reset") === "1";
+  const oauthFailureReasons = new Set([
+    "provider_denied",
+    "missing_params",
+    "state_mismatch",
+    "state_invalid",
+    "oauth_failed",
+  ]);
+  const oauthFailed =
+    searchParams.get("error") === "oauth_failed" ||
+    oauthFailureReasons.has(searchParams.get("reason") ?? "");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -70,6 +88,12 @@ export function LoginForm() {
       ) : null}
 
       <FormError>{error}</FormError>
+
+      <FormError>
+        {oauthFailed ? "Something went wrong. Please try again." : null}
+      </FormError>
+
+      <OAuthButtons providers={providers} disabled={isLoading} />
 
       <Field
         id={FIELD.email}

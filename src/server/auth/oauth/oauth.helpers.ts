@@ -36,12 +36,16 @@ export function attachOAuthFlowCookies(
   response: NextResponse,
   input: { state: string; codeVerifier: string; providerId: OAuthProviderId },
 ): void {
-  const secure = process.env.NODE_ENV === "production";
+  const secure =
+    process.env.NODE_ENV === "production" || input.providerId === "apple";
+  // Apple's form_post callback is cross-site and needs SameSite=None.
+  // Apple web authentication already requires HTTPS in production.
+  const sameSite = input.providerId === "apple" ? "none" : "lax";
 
   response.cookies.set(STATE_COOKIE, input.state, {
     httpOnly: true,
     secure,
-    sameSite: "lax",
+    sameSite,
     path: "/",
     maxAge: FLOW_TTL_SECONDS,
   });
@@ -49,7 +53,7 @@ export function attachOAuthFlowCookies(
   response.cookies.set(VERIFIER_COOKIE, input.codeVerifier, {
     httpOnly: true,
     secure,
-    sameSite: "lax",
+    sameSite,
     path: "/",
     maxAge: FLOW_TTL_SECONDS,
   });

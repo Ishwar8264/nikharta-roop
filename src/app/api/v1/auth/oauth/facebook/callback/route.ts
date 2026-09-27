@@ -37,10 +37,10 @@ export async function GET(request: Request): Promise<Response> {
     const errorParam = url.searchParams.get("error");
 
     if (errorParam) {
-      return buildFailureRedirect(failureRedirect, "provider_denied");
+      return buildFailureRedirect(request, failureRedirect, "provider_denied");
     }
     if (!code || !returnedState) {
-      return buildFailureRedirect(failureRedirect, "missing_params");
+      return buildFailureRedirect(request, failureRedirect, "missing_params");
     }
 
     const cookieState = readOAuthStateCookie(request);
@@ -67,21 +67,25 @@ export async function GET(request: Request): Promise<Response> {
       },
     });
 
-    return buildSuccessRedirect(successRedirect, result);
+    return buildSuccessRedirect(request, successRedirect, result);
   } catch (error) {
     if (error instanceof OAuthStateProviderMismatchError) {
-      return buildFailureRedirect(failureRedirect, "state_mismatch");
+      return buildFailureRedirect(request, failureRedirect, "state_mismatch");
     }
     if (error instanceof OAuthStateInvalidError) {
-      return buildFailureRedirect(failureRedirect, "state_invalid");
+      return buildFailureRedirect(request, failureRedirect, "state_invalid");
     }
     console.error("Facebook OAuth callback failed", error);
-    return buildFailureRedirect(failureRedirect, "oauth_failed");
+    return buildFailureRedirect(request, failureRedirect, "oauth_failed");
   }
 }
 
-function buildFailureRedirect(target: string, reason: string): NextResponse {
-  const url = new URL(target, "http://localhost");
+function buildFailureRedirect(
+  request: Request,
+  target: string,
+  reason: string,
+): NextResponse {
+  const url = new URL(target, request.url);
   url.searchParams.set("reason", reason);
   const response = NextResponse.redirect(url.toString());
   clearOAuthFlowCookies(response);
@@ -89,16 +93,15 @@ function buildFailureRedirect(target: string, reason: string): NextResponse {
 }
 
 function buildSuccessRedirect(
+  request: Request,
   target: string,
   result: {
-    user: { isOnboarded: boolean };
     accessToken: string;
     refreshToken: string;
   },
 ): NextResponse {
-  const finalTarget = result.user.isOnboarded ? target : "/onboarding";
   const response = NextResponse.redirect(
-    new URL(finalTarget, "http://localhost").toString(),
+    new URL(target, request.url).toString(),
   );
 
   const secure = process.env.NODE_ENV === "production";
