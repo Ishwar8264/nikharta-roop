@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { routes } from "@/config/routes";
@@ -25,12 +25,7 @@ interface UseLoginResult {
  *   - fieldErrors: client OR server validation issues (400 with `errors[]`)
  *   - error: form-level failures (401 invalid creds, 403 unverified, 500)
  *
- * Why respect ?redirect:
- * The middleware appends `?redirect=/dashboard` when it kicks an
- * unauthenticated visitor out of a protected page. Honoring it here sends
- * the user back where they were trying to go — no second navigation.
- *
- * Why router.refresh() before push:
+ * Why router.refresh() before navigation:
  * The login route sets cookies, but Server Components already rendered with
  * the old (unauthenticated) cookies. `refresh()` re-fetches server data so
  * the header/layout immediately reflect the signed-in state. Without it, a
@@ -38,7 +33,6 @@ interface UseLoginResult {
  */
 export function useLogin(): UseLoginResult {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -68,11 +62,7 @@ export function useLogin(): UseLoginResult {
       // Re-run Server Components so they see the new session cookies.
       router.refresh();
 
-      const requestedRedirect = searchParams.get("redirect");
-      const redirectTo = isSafeInternalPath(requestedRedirect)
-        ? requestedRedirect
-        : routes.home;
-      router.push(redirectTo);
+      router.replace(routes.home);
     } catch (e) {
       if (e instanceof ApiError) {
         const data = e.data as { errors?: FieldError[] } | null;
@@ -106,8 +96,3 @@ export function useLogin(): UseLoginResult {
  * to reference field names without importing constants directly.
  */
 export { FIELD };
-
-/** Prevents user-controlled redirect params from navigating off-site. */
-function isSafeInternalPath(path: string | null): path is string {
-  return Boolean(path?.startsWith("/") && !path.startsWith("//"));
-}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ArrowLeft, MailCheck, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
@@ -52,16 +53,34 @@ function VerifyOtpFlow({ email }: { email: string }) {
     resendIn,
   } = useVerifyOtp(email);
 
+  const isCodeSent = step === "verify";
+
   return (
-    <div className="w-full max-w-sm space-y-5">
-      <header className="space-y-1">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">
-          Verify your email
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          We&apos;ll send a 6-digit code to{" "}
-          <span className="font-medium text-foreground">{email}</span>.
-        </p>
+    <div className="w-full min-w-0 max-w-sm space-y-6">
+      <header className="flex items-start gap-3">
+        <div
+          aria-hidden="true"
+          className="flex size-11 shrink-0 items-center justify-center border border-primary/25 bg-primary/10 text-primary"
+        >
+          <MailCheck className="size-5" />
+        </div>
+
+        <div className="min-w-0 space-y-2">
+          <div className="space-y-1">
+            <h1 className="font-heading text-2xl font-bold tracking-tight">
+              {isCodeSent ? "Check your inbox" : "Verify your email"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isCodeSent
+                ? "Enter the 6-digit code sent to:"
+                : "We'll send a 6-digit verification code to:"}
+            </p>
+          </div>
+
+          <p className="break-all border-l-2 border-primary pl-2 font-medium text-foreground">
+            {email}
+          </p>
+        </div>
       </header>
 
       <FormError>{error}</FormError>
@@ -71,8 +90,9 @@ function VerifyOtpFlow({ email }: { email: string }) {
           type="button"
           onClick={() => void sendCode()}
           disabled={isSending}
-          className="w-full"
+          className="h-11 w-full rounded-none"
         >
+          <Send data-icon="inline-start" />
           {isSending ? "Sending code…" : "Send verification code"}
         </Button>
       ) : (
@@ -93,13 +113,13 @@ function VerifyOtpFlow({ email }: { email: string }) {
           <Button
             type="submit"
             disabled={isVerifying || code.length !== 6}
-            className="w-full"
+            className="h-11 w-full rounded-none"
           >
             {isVerifying ? "Verifying…" : "Verify email"}
           </Button>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
+          <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span role="status" aria-atomic="true">
               {resendIn > 0
                 ? `Resend available in ${resendIn}s`
                 : "Didn't get the code?"}
@@ -116,15 +136,15 @@ function VerifyOtpFlow({ email }: { email: string }) {
         </form>
       )}
 
-      <p className="text-center text-sm text-muted-foreground">
-        Wrong email?{" "}
+      <div className="border-t border-border pt-4 text-center">
         <Link
           href={routes.login}
-          className="font-medium text-foreground underline-offset-4 hover:underline"
+          className="inline-flex min-h-6 items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          Back to sign in
+          <ArrowLeft className="size-3.5" aria-hidden="true" />
+          Wrong email? Back to sign in
         </Link>
-      </p>
+      </div>
     </div>
   );
 }
@@ -147,14 +167,14 @@ function MissingEmail() {
           render={<Link href={routes.login} />}
           nativeButton={false}
           variant="outline"
-          className="flex-1"
+          className="h-11 flex-1 rounded-none"
         >
           Sign in
         </Button>
         <Button
           render={<Link href={routes.register} />}
           nativeButton={false}
-          className="flex-1"
+          className="h-11 flex-1 rounded-none"
         >
           Create account
         </Button>

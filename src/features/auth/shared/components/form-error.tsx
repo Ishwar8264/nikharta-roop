@@ -18,7 +18,7 @@ export function FormError({ children, className }: FormErrorProps) {
     <div
       role="alert"
       className={cn(
-        "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive",
+        "rounded-none border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive",
         className,
       )}
     >

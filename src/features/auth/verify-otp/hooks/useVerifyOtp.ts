@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { routes } from "@/config/routes";
 import { ApiError } from "@/lib/api/backend.client";
 import { sendOtpApi } from "../api/sendOtp";
 import { verifyOtpApi } from "../api/verifyOtp";
@@ -26,11 +27,11 @@ interface UseVerifyOtpResult {
 /**
  * Orchestrates the two-step email verification flow.
  *
- * Why verify lands on /dashboard, not /login:
+ * Why verify lands on home, not /login:
  * The verify endpoint issues session cookies on success (same contract as
  * login). At that point the user IS signed in — routing them to a login
- * form would ask for credentials that are no longer needed and force a
- * pointless re-entry.
+ * form would force a pointless credential re-entry. Home is the canonical
+ * post-auth landing page for every email/password flow.
  *
  * Why a state machine ("send" | "verify") instead of one form:
  * OTP endpoints are separate — send then verify — with distinct cooldowns,
@@ -104,9 +105,9 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
 
       // Server has set session cookies — the browser is now signed in.
       // refresh() re-fetches Server Components so the header's user menu
-      // reflects the new session before the dashboard's own render.
+      // reflects the new session before the home page renders.
       router.refresh();
-      router.push("/dashboard");
+      router.replace(routes.home);
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);

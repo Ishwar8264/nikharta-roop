@@ -99,7 +99,11 @@ export function OtpInput({
   }
 
   return (
-    <div className="flex gap-2" role="group" aria-label="One-time code">
+    <div
+      className="grid grid-cols-6 gap-2"
+      role="group"
+      aria-label="One-time code"
+    >
       {Array.from({ length }).map((_, index) => (
         <input
           key={index}
@@ -120,7 +124,7 @@ export function OtpInput({
           aria-label={`Digit ${index + 1} of ${length}`}
           aria-invalid={invalid ? true : undefined}
           className={cn(
-            "h-12 w-10 rounded-md border border-input bg-background text-center text-lg font-semibold",
+            "h-11 w-full min-w-0 rounded-none border border-input bg-background text-center text-lg font-semibold",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
             invalid && "border-destructive focus-visible:ring-destructive",
