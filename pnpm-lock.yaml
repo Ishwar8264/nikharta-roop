@@ -17,6 +17,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.8.0
         version: 1.8.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@intl-tel-input/react':
+        specifier: ^29.5.3
+        version: 29.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@prisma/adapter-pg':
         specifier: 7.10.0
         version: 7.10.0
@@ -44,6 +47,9 @@ importers:
       google-auth-library:
         specifier: ^11.1.0
         version: 11.1.0
+      intl-tel-input:
+        specifier: ^29.5.3
+        version: 29.5.3
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -759,6 +765,12 @@ packages:
     engines: {node: '>=20.9.0'}
     cpu: [x64]
     os: [win32]
+
+  '@intl-tel-input/react@29.5.3':
+    resolution: {integrity: sha512-jM/DSNQQ/xcfI7Clsi68EH9/oY2kD1IFdtUzDSmeaVqa8Mhyy2UQAc106OnhDz5bHSlvcL/j6+UDl4jSG/KS0w==}
+    peerDependencies:
+      react: '>=18'
+      react-dom: '>=18'
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2506,6 +2518,9 @@ packages:
   internmap@2.0.3:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
+
+  intl-tel-input@29.5.3:
+    resolution: {integrity: sha512-aVqUyjALMavXrdpniEv5+9CjTdVcHRDLiHKi6fBKxb+iNVriwqnWcsGvWmKwHjjDdBoYe2lf3pta0sIJL5ytYA==}
 
   ip-address@10.7.0:
     resolution: {integrity: sha512-BGFsyJd5mpXp3rK6jIdADLNgpJUK1jnjzvYF8lK+VyDab9JAmqN0YOKDdP17HlgKb2+ehPgDc8EtnRLbGCAMhA==}
@@ -4513,6 +4528,12 @@ snapshots:
   '@img/sharp-win32-x64@0.35.4':
     optional: true
 
+  '@intl-tel-input/react@29.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      intl-tel-input: 29.5.3
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
@@ -6452,6 +6473,8 @@ snapshots:
       side-channel: 1.1.1
 
   internmap@2.0.3: {}
+
+  intl-tel-input@29.5.3: {}
 
   ip-address@10.7.0: {}
 

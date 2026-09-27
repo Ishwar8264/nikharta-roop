@@ -18,12 +18,19 @@ export const routes = {
   about: "/about",
   contact: "/contact",
 
+  // ─── Legal / Support ───
+  help: "/help",
+  privacy: "/privacy",
+  terms: "/terms",
+
   // ─── Auth ───
   login: "/login",
   register: "/register",
   forgotPassword: "/forgot-password",
   resetPassword: "/reset-password",
   verifyOtp: "/verify-otp",
+  verifyOtpForEmail: (email: string) =>
+    `/verify-otp?email=${encodeURIComponent(email)}`,
 
   // ─── Authenticated customer ───
   dashboard: "/dashboard",

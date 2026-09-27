@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { getSession } from "@/lib/auth/get-session";
 
+import { AuthProvider } from "@/features/auth/components/authProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -26,19 +28,25 @@ export const metadata: Metadata = {
 /**
  * Root layout.
  *
- * Why:
- * The root layout only owns things that every page needs: fonts, theme
- * provider, and the <html>/<body> shell. Chrome like the header and footer
- * lives in the route group that actually uses it (see `(public)/layout.tsx`)
- * so auth pages and dashboards do not inherit a marketing header.
+ * Why it resolves the session:
+ * The user object must come from the server (HttpOnly cookie). Fetching it
+ * once here and providing it via AuthProvider gives every client island the
+ * same authoritative user — no client-side /auth/me round trip, no flicker.
+ *
+ * getSession() is cache()'d, so the Header's own call is a no-op on the same
+ * request — the DB is only hit once.
  */
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const user = await getSession();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} antialiased`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider user={user}>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "intl-tel-input/styles";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -221,4 +222,60 @@
   h3 {
     font-family: var(--font-heading);
   }
+}
+
+@layer components {
+  .phone-input {
+    --iti-border-color: var(--border);
+    --iti-country-selector-bg: var(--popover);
+    --iti-hover-color: color-mix(in oklch, var(--accent) 70%, transparent);
+    --iti-icon-color: var(--muted-foreground);
+    width: 100%;
+  }
+
+  .phone-input .iti {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .phone-input .phone-input__control {
+    @apply h-11 w-full min-w-0 rounded-none border border-input bg-transparent px-3 py-2 text-base text-foreground transition-colors outline-none md:text-sm dark:bg-input/30;
+    @apply focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50;
+    @apply disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 dark:disabled:bg-input/80;
+    @apply aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40;
+  }
+
+  .phone-input .iti__selected-country-primary {
+    border-radius: 0;
+  }
+
+  .phone-input .iti__country-selector {
+    color: var(--popover-foreground);
+    border-color: var(--border);
+    border-radius: 0;
+    box-shadow: 0 10px 30px color-mix(in oklch, var(--foreground) 15%, transparent);
+  }
+
+  .phone-input .iti__search-input {
+    background: var(--background);
+    color: var(--foreground);
+    outline: none;
+  }
+
+  .phone-input .iti__search-input:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--ring);
+  }
+}
+
+/*
+ * Keep native and third-party form controls on one visual baseline.
+ * These unlayered rules intentionally win over library and utility defaults.
+ */
+:where(
+  [data-slot="input"],
+  .phone-input .phone-input__control,
+  .phone-input .iti__search-input
+) {
+  height: 2.75rem;
+  border-radius: 0;
 }

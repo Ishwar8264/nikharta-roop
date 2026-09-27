@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Brand } from "@/components/shared/brand";
 import {
   Sheet,
   SheetContent,
@@ -12,7 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-import { NavItem } from "./nav-item";
+import { NavLink } from "./nav-link";
 import { publicNav } from "./nav.config";
 
 /**
@@ -22,7 +23,7 @@ import { publicNav } from "./nav.config";
  * "use client" is required: the sheet holds open/close state in React so
  * that the trigger button and the drawer body stay in sync. The nav data
  * still comes from `nav.config`, and each link still renders via the shared
- * `NavItem`, so no styling or logic is duplicated.
+ * `NavLink`, so no styling or logic is duplicated.
  *
  * `lg:hidden` hides the trigger on desktop — the same CSS-only visibility
  * rule DesktopNav uses, keeping the two components symmetric.
@@ -47,12 +48,14 @@ export function MobileNav() {
 
       <SheetContent side="left" className="w-72">
         <SheetHeader>
-          <SheetTitle>Menu</SheetTitle>
+          <SheetTitle>
+            <Brand size="sm" />
+          </SheetTitle>
         </SheetHeader>
 
         <nav aria-label="Primary" className="mt-6 flex flex-col gap-1 px-2">
           {publicNav.map((item) => (
-            <NavItem
+            <NavLink
               key={item.href}
               item={item}
               variant="mobile"

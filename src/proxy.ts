@@ -169,7 +169,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     const result = await standardLimiter.limit(clientIp(request));
     if (!result.success) return tooManyRequests(result);
 
-    return unauthorizedResponse();
+    return unauthorizedResponse(request);
   }
 
   let payload: { sub: string; role: string };
@@ -177,7 +177,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   try {
     payload = await verifyAccessToken(token);
   } catch {
-    return unauthorizedResponse();
+    return unauthorizedResponse(request);
   }
 
   // ----- 5. Authenticated rate limit (keyed by user id) -----
@@ -209,7 +209,15 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
  * and the Swagger UI — adding latency to traffic unrelated to auth.
  */
 export const config = {
-  matcher: ["/api/v1/:path*"],
+  matcher: [
+    "/api/v1/:path*",
+    "/dashboard/:path*",
+    "/appointments/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/favorites/:path*",
+    "/loyalty/:path*",
+  ],
 };
 
 /** Returns true when the path lives under an admin-only prefix. */
@@ -243,8 +251,17 @@ function clientIp(request: NextRequest): string {
   return request.headers.get("x-real-ip") ?? "anonymous";
 }
 
-/** 401 with a generic message so token failures do not leak details. */
-function unauthorizedResponse(): NextResponse {
+/** Returns JSON for APIs and preserves the destination for page sign-in. */
+function unauthorizedResponse(request: NextRequest): NextResponse {
+  if (!request.nextUrl.pathname.startsWith("/api/")) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set(
+      "redirect",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
+    return NextResponse.redirect(loginUrl);
+  }
+
   return NextResponse.json(
     { message: "Authentication required" },
     { status: 401 },
