@@ -46,7 +46,7 @@ export function Field({
         {icon ? (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground"
+            className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-muted-foreground"
           >
             {icon}
           </span>
@@ -61,7 +61,10 @@ export function Field({
           defaultValue={defaultValue}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={cn("placeholder:text-muted-foreground/80", icon && "pl-9")}
+          className={cn(
+            "placeholder:text-muted-foreground/80",
+            icon && "pl-10!",
+          )}
         />
       </div>
       {error ? (

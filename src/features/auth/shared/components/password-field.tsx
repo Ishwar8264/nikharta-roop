@@ -49,7 +49,7 @@ export function PasswordField({
         {icon ? (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground"
+            className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-muted-foreground"
           >
             {icon}
           </span>
@@ -61,7 +61,7 @@ export function PasswordField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           disabled={disabled}
-          className={icon ? "pl-9 pr-10" : "pr-10"}
+          className={icon ? "pr-12! pl-10!" : "pr-12!"}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
         />
@@ -71,7 +71,7 @@ export function PasswordField({
           size="icon"
           onClick={() => setVisible((v) => !v)}
           disabled={disabled}
-          className="absolute right-0 top-0 h-full w-10 hover:bg-transparent"
+          className="absolute right-1 top-0 h-full w-10 hover:bg-transparent"
           aria-label={visible ? "Hide password" : "Show password"}
           tabIndex={-1}
         >

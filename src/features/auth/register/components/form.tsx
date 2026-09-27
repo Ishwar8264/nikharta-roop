@@ -54,7 +54,7 @@ export function RegisterForm() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="w-full max-w-sm space-y-5"
+      className="w-full min-w-0 max-w-sm space-y-5"
     >
       <header className="space-y-1">
         <h1 className="font-heading text-2xl font-bold tracking-tight">

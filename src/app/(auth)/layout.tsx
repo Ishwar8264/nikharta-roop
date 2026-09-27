@@ -28,9 +28,9 @@ export default function AuthLayout({
           className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklch,var(--primary)_12%,transparent),transparent_42%),radial-gradient(circle_at_bottom_right,color-mix(in_oklch,var(--accent)_16%,transparent),transparent_38%)]"
         />
 
-        <div className="w-full max-w-md space-y-6">
-          <Card className="shadow-xl shadow-primary/5">
-            <CardContent className="py-2 sm:px-6 sm:py-4">
+        <div className="w-full min-w-0 max-w-md space-y-6">
+          <Card className="min-w-0 shadow-xl shadow-primary/5">
+            <CardContent className="flex min-w-0 justify-center py-2 sm:px-6 sm:py-4">
               {children}
             </CardContent>
           </Card>
