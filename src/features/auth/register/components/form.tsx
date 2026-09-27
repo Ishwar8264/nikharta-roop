@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
+import { LockKeyhole, Mail, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
@@ -86,16 +88,28 @@ export function RegisterForm() {
         disabled={isLoading}
       />
 
-      <Field
-        id={FIELD.phone}
-        label="Phone (optional)"
-        type="tel"
-        autoComplete="tel"
-        placeholder="+91 98765 43210"
-        icon={<Phone className="size-4" />}
-        error={fieldErrors[FIELD.phone]}
-        disabled={isLoading}
-      />
+      <div className="space-y-1.5">
+        <Label htmlFor={FIELD.phone}>Phone (optional)</Label>
+        <PhoneInput
+          name={FIELD.phone}
+          initialCountry="in"
+          disabled={isLoading}
+          inputProps={{
+            id: FIELD.phone,
+            autoComplete: "tel",
+            placeholder: "Enter your phone number",
+            "aria-invalid": fieldErrors[FIELD.phone] ? true : undefined,
+            "aria-describedby": fieldErrors[FIELD.phone]
+              ? `${FIELD.phone}-error`
+              : undefined,
+          }}
+        />
+        {fieldErrors[FIELD.phone] ? (
+          <p id={`${FIELD.phone}-error`} className="text-xs text-destructive">
+            {fieldErrors[FIELD.phone]}
+          </p>
+        ) : null}
+      </div>
 
       <PasswordField
         id={FIELD.password}
