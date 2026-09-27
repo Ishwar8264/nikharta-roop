@@ -9,6 +9,10 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
+import {
+  OAuthButtons,
+  type OAuthOption,
+} from "@/features/auth/shared/components/oauth-buttons";
 import { PasswordField } from "@/features/auth/shared/components/password-field";
 import { FIELD } from "@/features/auth/shared/constants";
 import { useRegister } from "../hooks/useRegister";
@@ -32,7 +36,11 @@ import { useRegister } from "../hooks/useRegister";
  * timing. We use zod on submit so the user sees errors in our design system,
  * in a consistent position.
  */
-export function RegisterForm() {
+export function RegisterForm({
+  providers = [],
+}: {
+  providers?: readonly OAuthOption[];
+}) {
   const { register, isLoading, error, fieldErrors } = useRegister();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -124,6 +132,8 @@ export function RegisterForm() {
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? "Creating account…" : "Create account"}
       </Button>
+
+      <OAuthButtons providers={providers} />
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}

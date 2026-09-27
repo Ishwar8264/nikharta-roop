@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { OAuthProviderNotConfiguredError } from "@/server/auth/oauth/oauth.errors";
-import { attachOAuthFlowCookies } from "@/server/auth/oauth/oauth.helpers";
+import {
+  attachOAuthFlowCookies,
+  resolveOAuthRedirect,
+} from "@/server/auth/oauth/oauth.helpers";
 import { initiateOAuth } from "@/server/auth/oauth/oauth.service";
 import {
   derivePkceChallenge,
@@ -24,7 +27,7 @@ export const runtime = "nodejs";
  * is what protects against a state issued by Google being replayed on the
  * Apple callback (CVE-2026-73419 in Auth.js).
  */
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   try {
     const state = generateState("google");
     const codeVerifier = generatePkceVerifier();
@@ -52,6 +55,6 @@ export async function GET(): Promise<Response> {
     console.error("Google OAuth initiation failed", error);
     const failureRedirect =
       process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
-    return NextResponse.redirect(new URL(failureRedirect, "http://localhost"));
+    return NextResponse.redirect(resolveOAuthRedirect(request, failureRedirect));
   }
 }

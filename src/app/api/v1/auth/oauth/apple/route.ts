@@ -12,7 +12,7 @@ import {
 export const runtime = "nodejs";
 
 /** Starts the Apple Sign In flow. */
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   try {
     const state = generateState("apple");
     const codeVerifier = generatePkceVerifier();
@@ -40,6 +40,6 @@ export async function GET(): Promise<Response> {
     console.error("Apple OAuth initiation failed", error);
     const failureRedirect =
       process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
-    return NextResponse.redirect(new URL(failureRedirect, "http://localhost"));
+    return NextResponse.redirect(new URL(failureRedirect, request.url));
   }
 }

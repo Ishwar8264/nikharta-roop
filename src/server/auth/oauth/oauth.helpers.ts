@@ -36,12 +36,16 @@ export function attachOAuthFlowCookies(
   response: NextResponse,
   input: { state: string; codeVerifier: string; providerId: OAuthProviderId },
 ): void {
-  const secure = process.env.NODE_ENV === "production";
+  const secure =
+    process.env.NODE_ENV === "production" || input.providerId === "apple";
+  // Apple's form_post callback is cross-site and needs SameSite=None.
+  // Apple web authentication already requires HTTPS in production.
+  const sameSite = input.providerId === "apple" ? "none" : "lax";
 
   response.cookies.set(STATE_COOKIE, input.state, {
     httpOnly: true,
     secure,
-    sameSite: "lax",
+    sameSite,
     path: "/",
     maxAge: FLOW_TTL_SECONDS,
   });
@@ -49,7 +53,7 @@ export function attachOAuthFlowCookies(
   response.cookies.set(VERIFIER_COOKIE, input.codeVerifier, {
     httpOnly: true,
     secure,
-    sameSite: "lax",
+    sameSite,
     path: "/",
     maxAge: FLOW_TTL_SECONDS,
   });
@@ -91,6 +95,20 @@ export function clearOAuthFlowCookies(response: NextResponse): void {
     path: "/",
     maxAge: 0,
   });
+}
+
+/** Resolves a configured OAuth destination without allowing another origin. */
+export function resolveOAuthRedirect(request: Request, target: string): URL {
+  const requestUrl = new URL(request.url);
+  const destination = new URL(target, requestUrl.origin);
+
+  // OAuth destinations are deployment configuration, but treating them as
+  // trusted URLs would turn one bad value into an external post-login redirect.
+  if (destination.origin !== requestUrl.origin) {
+    return new URL("/login?error=oauth_failed", requestUrl.origin);
+  }
+
+  return destination;
 }
 
 /** Reads a single cookie value from the raw `Cookie` header. */

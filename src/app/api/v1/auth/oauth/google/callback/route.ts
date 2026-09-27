@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  ACCESS_COOKIE_NAME,
-  ACCESS_TOKEN_TTL_SECONDS,
-  CSRF_COOKIE_NAME,
-  REFRESH_COOKIE_NAME,
-  REFRESH_COOKIE_PATH,
-  REFRESH_TOKEN_TTL_SECONDS,
-} from "@/server/auth/auth.constants";
-import { generateCsrfToken } from "@/server/auth/csrf";
+import { setSessionCookies } from "@/server/auth/cookies";
 import {
   OAuthProviderNotConfiguredError,
   OAuthStateInvalidError,
@@ -18,6 +10,7 @@ import {
   clearOAuthFlowCookies,
   readOAuthStateCookie,
   readOAuthVerifierCookie,
+  resolveOAuthRedirect,
 } from "@/server/auth/oauth/oauth.helpers";
 import { completeOAuth } from "@/server/auth/oauth/oauth.service";
 import { verifyStateProvider } from "@/server/auth/oauth/oauth.state";
@@ -50,11 +43,11 @@ export async function GET(request: Request): Promise<Response> {
 
     // Provider may reject before ever issuing a code (user cancelled, etc.).
     if (errorParam) {
-      return buildFailureRedirect(failureRedirect, "provider_denied");
+      return buildFailureRedirect(request, failureRedirect, "provider_denied");
     }
 
     if (!code || !returnedState) {
-      return buildFailureRedirect(failureRedirect, "missing_params");
+      return buildFailureRedirect(request, failureRedirect, "missing_params");
     }
 
     const cookieState = readOAuthStateCookie(request);
@@ -81,23 +74,27 @@ export async function GET(request: Request): Promise<Response> {
       },
     });
 
-    return buildSuccessRedirect(successRedirect, result);
+    return buildSuccessRedirect(request, successRedirect, result);
   } catch (error) {
     if (error instanceof OAuthStateProviderMismatchError) {
       console.error("Google callback rejected: state provider mismatch");
-      return buildFailureRedirect(failureRedirect, "state_mismatch");
+      return buildFailureRedirect(request, failureRedirect, "state_mismatch");
     }
     if (error instanceof OAuthStateInvalidError) {
-      return buildFailureRedirect(failureRedirect, "state_invalid");
+      return buildFailureRedirect(request, failureRedirect, "state_invalid");
     }
     console.error("Google OAuth callback failed", error);
-    return buildFailureRedirect(failureRedirect, "oauth_failed");
+    return buildFailureRedirect(request, failureRedirect, "oauth_failed");
   }
 }
 
 /** Builds a failure redirect and clears any lingering OAuth flow cookies. */
-function buildFailureRedirect(target: string, reason: string): NextResponse {
-  const url = new URL(target, "http://localhost");
+function buildFailureRedirect(
+  request: Request,
+  target: string,
+  reason: string,
+): NextResponse {
+  const url = resolveOAuthRedirect(request, target);
   url.searchParams.set("reason", reason);
 
   const response = NextResponse.redirect(url.toString());
@@ -107,44 +104,16 @@ function buildFailureRedirect(target: string, reason: string): NextResponse {
 
 /** Builds the post-login redirect with auth cookies attached. */
 function buildSuccessRedirect(
+  request: Request,
   target: string,
   result: {
-    user: { isOnboarded: boolean };
     accessToken: string;
     refreshToken: string;
   },
 ): NextResponse {
-  const finalTarget = result.user.isOnboarded ? target : "/onboarding";
-  const response = NextResponse.redirect(
-    new URL(finalTarget, "http://localhost").toString(),
-  );
+  const response = NextResponse.redirect(resolveOAuthRedirect(request, target));
 
-  const secure = process.env.NODE_ENV === "production";
-
-  response.cookies.set(ACCESS_COOKIE_NAME, result.accessToken, {
-    httpOnly: true,
-    secure,
-    sameSite: "lax",
-    path: "/",
-    maxAge: ACCESS_TOKEN_TTL_SECONDS,
-  });
-
-  response.cookies.set(REFRESH_COOKIE_NAME, result.refreshToken, {
-    httpOnly: true,
-    secure,
-    sameSite: "lax",
-    path: REFRESH_COOKIE_PATH,
-    maxAge: REFRESH_TOKEN_TTL_SECONDS,
-  });
-
-  response.cookies.set(CSRF_COOKIE_NAME, generateCsrfToken(), {
-    httpOnly: false,
-    secure,
-    sameSite: "lax",
-    path: "/",
-    maxAge: REFRESH_TOKEN_TTL_SECONDS,
-  });
-
+  setSessionCookies(response, result);
   clearOAuthFlowCookies(response);
   return response;
 }
