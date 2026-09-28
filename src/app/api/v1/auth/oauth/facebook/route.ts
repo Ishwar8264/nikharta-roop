@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 
+import {
+  createAuthRequestId,
+  logAuthError,
+  logAuthEvent,
+} from "@/server/auth/auth.logger";
 import { OAuthProviderNotConfiguredError } from "@/server/auth/oauth/oauth.errors";
-import { attachOAuthFlowCookies } from "@/server/auth/oauth/oauth.helpers";
+import {
+  attachOAuthFlowCookies,
+  resolveOAuthRedirect,
+} from "@/server/auth/oauth/oauth.helpers";
 import { initiateOAuth } from "@/server/auth/oauth/oauth.service";
 import {
   derivePkceChallenge,
@@ -13,6 +21,8 @@ export const runtime = "nodejs";
 
 /** Starts the Facebook Login flow. */
 export async function GET(request: Request): Promise<Response> {
+  const requestId = createAuthRequestId(request);
+
   try {
     const state = generateState("facebook");
     const codeVerifier = generatePkceVerifier();
@@ -35,11 +45,18 @@ export async function GET(request: Request): Promise<Response> {
       codeVerifier,
       providerId: "facebook",
     });
+    logAuthEvent("info", "oauth.initiated", {
+      requestId,
+      provider: "facebook",
+    });
     return response;
   } catch (error) {
-    console.error("Facebook OAuth initiation failed", error);
+    logAuthError("oauth.initiation.failed", error, {
+      requestId,
+      provider: "facebook",
+    });
     const failureRedirect =
       process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
-    return NextResponse.redirect(new URL(failureRedirect, request.url));
+    return NextResponse.redirect(resolveOAuthRedirect(request, failureRedirect));
   }
 }
