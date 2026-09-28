@@ -1,5 +1,8 @@
 import { RegisterForm } from "@/features/auth/register/components/form";
+import { routes } from "@/config/routes";
+import { getSession } from "@/lib/auth/get-session";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { listOAuthProviders } from "@/server/auth/oauth/providers";
 
 export const metadata: Metadata = {
@@ -15,7 +18,10 @@ export const metadata: Metadata = {
  * client island. Keeping the page server means: metadata works, SSR HTML is
  * fast, and only the form's chunk ships to the browser.
  */
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const user = await getSession();
+  if (user) redirect(routes.dashboard);
+
   const providers = listOAuthProviders().filter(
     (provider) => provider.configured,
   );

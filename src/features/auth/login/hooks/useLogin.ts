@@ -62,10 +62,10 @@ export function useLogin(): UseLoginResult {
     try {
       await loginApi(parsed.data);
 
-      // Re-run Server Components so they see the new session cookies.
-      router.refresh();
-
-      router.replace(routes.home);
+      // A document navigation guarantees the next Server Component request
+      // includes the newly-issued HttpOnly cookies. It also avoids racing a
+      // refresh of the stale /login tree against client-side navigation.
+      window.location.replace(getPostLoginDestination());
     } catch (e) {
       if (e instanceof ApiError) {
         const data = e.data as { errors?: FieldError[] } | null;
@@ -99,6 +99,19 @@ export function useLogin(): UseLoginResult {
   }
 
   return { login, isLoading, error, fieldErrors };
+}
+
+/** Returns a safe internal destination preserved by the auth proxy. */
+function getPostLoginDestination(): string {
+  const requested = new URLSearchParams(window.location.search).get("redirect");
+
+  // Protocol-relative paths (`//host`) are external even though they start
+  // with a slash, so only a single leading slash is accepted.
+  if (requested?.startsWith("/") && !requested.startsWith("//")) {
+    return requested;
+  }
+
+  return routes.dashboard;
 }
 
 /**

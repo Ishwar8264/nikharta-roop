@@ -2,6 +2,7 @@ import "server-only";
 
 import { OAuth2Client } from "google-auth-library";
 
+import { logAuthEvent } from "@/server/auth/auth.logger";
 import {
   OAuthEmailMissingError,
   OAuthExchangeFailedError,
@@ -79,7 +80,10 @@ export const googleProvider: OAuthProvider = {
     });
 
     if (!response.ok) {
-      console.error("Google token exchange failed", response.status);
+      logAuthEvent("warn", "oauth.token_exchange.rejected", {
+        provider: "google",
+        status: response.status,
+      });
       throw new OAuthExchangeFailedError(
         "Google rejected the authorization code",
       );
@@ -107,15 +111,6 @@ export const googleProvider: OAuthProvider = {
     if (!payload) throw new OAuthIdTokenInvalidError();
     if (!payload.sub) throw new OAuthIdTokenInvalidError("Missing subject");
 
-    console.log(
-      "GOOGLE PAYLOAD:",
-      JSON.stringify({
-        sub: payload.sub,
-        email: payload.email,
-        email_verified: payload.email_verified,
-        tokens,
-      }),
-    );
     if (!payload.email) throw new OAuthEmailMissingError();
 
     // Google ID tokens carry `email_verified`; only a verified email is
