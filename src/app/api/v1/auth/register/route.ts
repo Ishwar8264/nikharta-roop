@@ -1,11 +1,6 @@
 import { registerUserSchema } from "@/server/modules/auth/auth.schema";
 import { registerUser } from "@/server/modules/auth/auth.service";
 import { RegistrationConflictError } from "@/server/modules/auth/registration-conflict.error";
-import {
-  createAuthRequestId,
-  logAuthError,
-  logAuthEvent,
-} from "@/server/auth/auth.logger";
 
 /**
  * Registers an email-authenticated user with optional phone profile data.
@@ -15,7 +10,6 @@ import {
  * rules, which keeps registration reusable outside an HTTP request.
  */
 export async function POST(request: Request): Promise<Response> {
-  const requestId = createAuthRequestId(request);
   let body: unknown;
 
   try {
@@ -44,7 +38,6 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const user = await registerUser(validation.data);
-    logAuthEvent("info", "registration.succeeded", { requestId });
 
     return Response.json(
       {
@@ -55,15 +48,10 @@ export async function POST(request: Request): Promise<Response> {
     );
   } catch (error) {
     if (error instanceof RegistrationConflictError) {
-      logAuthEvent("warn", "registration.rejected", {
-        requestId,
-        reason: "identifier_conflict",
-      });
       return Response.json({ message: error.message }, { status: 409 });
     }
 
     // The public response must not leak database or infrastructure details.
-    logAuthError("registration.failed", error, { requestId });
     return Response.json(
       { message: "Unable to register user" },
       { status: 500 },

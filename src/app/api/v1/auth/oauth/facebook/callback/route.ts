@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
 
-import {
-  createAuthRequestId,
-  logAuthError,
-  logAuthEvent,
-} from "@/server/auth/auth.logger";
 import { setSessionCookies } from "@/server/auth/cookies";
 import {
   OAuthEmailMissingError,
@@ -25,7 +20,6 @@ export const runtime = "nodejs";
 
 /** Handles Facebook's callback. */
 export async function GET(request: Request): Promise<Response> {
-  const requestId = createAuthRequestId(request);
   const failureRedirect =
     process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
   const successRedirect = process.env.OAUTH_SUCCESS_REDIRECT ?? "/dashboard";
@@ -67,42 +61,17 @@ export async function GET(request: Request): Promise<Response> {
       },
     });
 
-    logAuthEvent("info", "oauth.callback.succeeded", {
-      requestId,
-      provider: "facebook",
-      isNewUser: result.isNewUser,
-    });
-
     return buildSuccessRedirect(request, successRedirect, result);
   } catch (error) {
     if (error instanceof OAuthStateProviderMismatchError) {
-      logAuthEvent("warn", "oauth.callback.rejected", {
-        requestId,
-        provider: "facebook",
-        reason: "state_provider_mismatch",
-      });
       return buildFailureRedirect(request, failureRedirect, "state_mismatch");
     }
     if (error instanceof OAuthStateInvalidError) {
-      logAuthEvent("warn", "oauth.callback.rejected", {
-        requestId,
-        provider: "facebook",
-        reason: "state_invalid",
-      });
       return buildFailureRedirect(request, failureRedirect, "state_invalid");
     }
     if (error instanceof OAuthEmailMissingError) {
-      logAuthEvent("warn", "oauth.callback.rejected", {
-        requestId,
-        provider: "facebook",
-        reason: "email_missing",
-      });
       return buildFailureRedirect(request, failureRedirect, "email_missing");
     }
-    logAuthError("oauth.callback.failed", error, {
-      requestId,
-      provider: "facebook",
-    });
     return buildFailureRedirect(request, failureRedirect, "oauth_failed");
   }
 }

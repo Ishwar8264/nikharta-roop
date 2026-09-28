@@ -2,7 +2,6 @@ import "server-only";
 
 import { OAuth2Client } from "google-auth-library";
 
-import { logAuthEvent } from "@/server/auth/auth.logger";
 import {
   OAuthEmailMissingError,
   OAuthExchangeFailedError,
@@ -80,10 +79,6 @@ export const googleProvider: OAuthProvider = {
     });
 
     if (!response.ok) {
-      logAuthEvent("warn", "oauth.token_exchange.rejected", {
-        provider: "google",
-        status: response.status,
-      });
       throw new OAuthExchangeFailedError(
         "Google rejected the authorization code",
       );
