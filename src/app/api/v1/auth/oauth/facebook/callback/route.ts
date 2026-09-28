@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 
 import {
-  ACCESS_COOKIE_NAME,
-  ACCESS_TOKEN_TTL_SECONDS,
-  CSRF_COOKIE_NAME,
-  REFRESH_COOKIE_NAME,
-  REFRESH_COOKIE_PATH,
-  REFRESH_TOKEN_TTL_SECONDS,
-} from "@/server/auth/auth.constants";
-import { generateCsrfToken } from "@/server/auth/csrf";
+  createAuthRequestId,
+  logAuthError,
+  logAuthEvent,
+} from "@/server/auth/auth.logger";
+import { setSessionCookies } from "@/server/auth/cookies";
 import {
+  OAuthEmailMissingError,
   OAuthProviderNotConfiguredError,
   OAuthStateInvalidError,
   OAuthStateProviderMismatchError,
@@ -18,6 +16,7 @@ import {
   clearOAuthFlowCookies,
   readOAuthStateCookie,
   readOAuthVerifierCookie,
+  resolveOAuthRedirect,
 } from "@/server/auth/oauth/oauth.helpers";
 import { completeOAuth } from "@/server/auth/oauth/oauth.service";
 import { verifyStateProvider } from "@/server/auth/oauth/oauth.state";
@@ -26,6 +25,7 @@ export const runtime = "nodejs";
 
 /** Handles Facebook's callback. */
 export async function GET(request: Request): Promise<Response> {
+  const requestId = createAuthRequestId(request);
   const failureRedirect =
     process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
   const successRedirect = process.env.OAUTH_SUCCESS_REDIRECT ?? "/dashboard";
@@ -67,15 +67,42 @@ export async function GET(request: Request): Promise<Response> {
       },
     });
 
+    logAuthEvent("info", "oauth.callback.succeeded", {
+      requestId,
+      provider: "facebook",
+      isNewUser: result.isNewUser,
+    });
+
     return buildSuccessRedirect(request, successRedirect, result);
   } catch (error) {
     if (error instanceof OAuthStateProviderMismatchError) {
+      logAuthEvent("warn", "oauth.callback.rejected", {
+        requestId,
+        provider: "facebook",
+        reason: "state_provider_mismatch",
+      });
       return buildFailureRedirect(request, failureRedirect, "state_mismatch");
     }
     if (error instanceof OAuthStateInvalidError) {
+      logAuthEvent("warn", "oauth.callback.rejected", {
+        requestId,
+        provider: "facebook",
+        reason: "state_invalid",
+      });
       return buildFailureRedirect(request, failureRedirect, "state_invalid");
     }
-    console.error("Facebook OAuth callback failed", error);
+    if (error instanceof OAuthEmailMissingError) {
+      logAuthEvent("warn", "oauth.callback.rejected", {
+        requestId,
+        provider: "facebook",
+        reason: "email_missing",
+      });
+      return buildFailureRedirect(request, failureRedirect, "email_missing");
+    }
+    logAuthError("oauth.callback.failed", error, {
+      requestId,
+      provider: "facebook",
+    });
     return buildFailureRedirect(request, failureRedirect, "oauth_failed");
   }
 }
@@ -85,7 +112,7 @@ function buildFailureRedirect(
   target: string,
   reason: string,
 ): NextResponse {
-  const url = new URL(target, request.url);
+  const url = resolveOAuthRedirect(request, target);
   url.searchParams.set("reason", reason);
   const response = NextResponse.redirect(url.toString());
   clearOAuthFlowCookies(response);
@@ -100,34 +127,9 @@ function buildSuccessRedirect(
     refreshToken: string;
   },
 ): NextResponse {
-  const response = NextResponse.redirect(
-    new URL(target, request.url).toString(),
-  );
+  const response = NextResponse.redirect(resolveOAuthRedirect(request, target));
 
-  const secure = process.env.NODE_ENV === "production";
-
-  response.cookies.set(ACCESS_COOKIE_NAME, result.accessToken, {
-    httpOnly: true,
-    secure,
-    sameSite: "lax",
-    path: "/",
-    maxAge: ACCESS_TOKEN_TTL_SECONDS,
-  });
-  response.cookies.set(REFRESH_COOKIE_NAME, result.refreshToken, {
-    httpOnly: true,
-    secure,
-    sameSite: "lax",
-    path: REFRESH_COOKIE_PATH,
-    maxAge: REFRESH_TOKEN_TTL_SECONDS,
-  });
-  response.cookies.set(CSRF_COOKIE_NAME, generateCsrfToken(), {
-    httpOnly: false,
-    secure,
-    sameSite: "lax",
-    path: "/",
-    maxAge: REFRESH_TOKEN_TTL_SECONDS,
-  });
-
+  setSessionCookies(response, result);
   clearOAuthFlowCookies(response);
   return response;
 }

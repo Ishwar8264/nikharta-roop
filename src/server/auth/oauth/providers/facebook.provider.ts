@@ -1,5 +1,7 @@
 import "server-only";
 
+import { logAuthEvent } from "@/server/auth/auth.logger";
+
 import {
   OAuthEmailMissingError,
   OAuthExchangeFailedError,
@@ -76,12 +78,10 @@ export const facebookProvider: OAuthProvider = {
     });
 
     if (!tokenResponse.ok) {
-      const body = await tokenResponse.text();
-      console.error(
-        "Facebook token exchange failed",
-        tokenResponse.status,
-        body,
-      );
+      logAuthEvent("warn", "oauth.token_exchange.rejected", {
+        provider: "facebook",
+        status: tokenResponse.status,
+      });
       throw new OAuthExchangeFailedError(
         "Facebook rejected the authorization code",
       );
@@ -102,8 +102,10 @@ export const facebookProvider: OAuthProvider = {
 
     const meResponse = await fetch(meUrl.toString(), { method: "GET" });
     if (!meResponse.ok) {
-      const body = await meResponse.text();
-      console.error("Facebook profile fetch failed", meResponse.status, body);
+      logAuthEvent("warn", "oauth.profile_fetch.rejected", {
+        provider: "facebook",
+        status: meResponse.status,
+      });
       throw new OAuthExchangeFailedError("Facebook did not return a profile");
     }
 

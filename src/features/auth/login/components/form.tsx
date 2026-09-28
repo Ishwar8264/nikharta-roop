@@ -49,6 +49,7 @@ export function LoginForm({
   const oauthFailed =
     searchParams.get("error") === "oauth_failed" ||
     oauthFailureReasons.has(searchParams.get("reason") ?? "");
+  const oauthEmailMissing = searchParams.get("reason") === "email_missing";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -90,7 +91,11 @@ export function LoginForm({
       <FormError>{error}</FormError>
 
       <FormError>
-        {oauthFailed ? "Something went wrong. Please try again." : null}
+        {oauthEmailMissing
+          ? "The provider did not return a verified email address"
+          : oauthFailed
+            ? "Something went wrong. Please try again."
+            : null}
       </FormError>
 
       <Field
