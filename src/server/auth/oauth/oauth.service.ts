@@ -151,7 +151,10 @@ export async function resolveOAuthLogin(input: {
   }
 
   // 2. No link yet — try to match an existing account by verified email.
-  const byEmail = await findUserByEmail(info.email);
+  // Facebook may legitimately omit email. In that case we cannot safely
+  // auto-link an existing password account, but its stable provider subject
+  // is still sufficient to create and revisit a dedicated social account.
+  const byEmail = info.email ? await findUserByEmail(info.email) : null;
 
   if (byEmail) {
     if (byEmail.deletedAt) throw new OAuthAccountDeactivatedError();
@@ -182,6 +185,7 @@ export async function resolveOAuthLogin(input: {
   //    so we trust it and skip the OTP flow.
   const created = await createOAuthUser({
     email: info.email,
+    emailVerified: info.emailVerified,
     name: info.name,
     avatar: info.avatar,
   });

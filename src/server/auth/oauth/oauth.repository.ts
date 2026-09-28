@@ -136,19 +136,20 @@ export async function linkSocialAccount(input: {
  * number or profile details after the first sign-in.
  */
 export async function createOAuthUser(input: {
-  email: string;
+  email: string | null;
+  emailVerified: boolean;
   name: string | null;
   avatar: string | null;
 }): Promise<OAuthUserRecord> {
   return prisma.user.create({
     data: {
-      email: input.email.toLowerCase(),
+      email: input.email?.toLowerCase() ?? null,
       name: input.name,
       avatar: input.avatar,
       // No password — this account can only be accessed via the provider
       // until the user sets one through the password-change flow.
       password: null,
-      emailVerified: true,
+      emailVerified: input.emailVerified,
       isOnboarded: false,
     },
     select: {
