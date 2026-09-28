@@ -84,6 +84,11 @@ export async function GET(request: Request): Promise<Response> {
       return buildFailureRedirect(request, failureRedirect, "state_invalid");
     }
     console.error("Google OAuth callback failed", error);
+    console.error("Google OAuth callback failed", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.constructor.name : typeof error,
+    });
     return buildFailureRedirect(request, failureRedirect, "oauth_failed");
   }
 }
