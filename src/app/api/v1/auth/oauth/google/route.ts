@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 
+import {
+  createAuthRequestId,
+  logAuthError,
+  logAuthEvent,
+} from "@/server/auth/auth.logger";
 import { OAuthProviderNotConfiguredError } from "@/server/auth/oauth/oauth.errors";
 import {
   attachOAuthFlowCookies,
@@ -28,6 +33,8 @@ export const runtime = "nodejs";
  * Apple callback (CVE-2026-73419 in Auth.js).
  */
 export async function GET(request: Request): Promise<Response> {
+  const requestId = createAuthRequestId(request);
+
   try {
     const state = generateState("google");
     const codeVerifier = generatePkceVerifier();
@@ -50,9 +57,16 @@ export async function GET(request: Request): Promise<Response> {
       codeVerifier,
       providerId: "google",
     });
+    logAuthEvent("info", "oauth.initiated", {
+      requestId,
+      provider: "google",
+    });
     return response;
   } catch (error) {
-    console.error("Google OAuth initiation failed", error);
+    logAuthError("oauth.initiation.failed", error, {
+      requestId,
+      provider: "google",
+    });
     const failureRedirect =
       process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
     return NextResponse.redirect(resolveOAuthRedirect(request, failureRedirect));

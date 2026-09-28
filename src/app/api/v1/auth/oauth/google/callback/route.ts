@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { setSessionCookies } from "@/server/auth/cookies";
 import {
+  createAuthRequestId,
+  logAuthError,
+  logAuthEvent,
+} from "@/server/auth/auth.logger";
+import {
   OAuthProviderNotConfiguredError,
   OAuthStateInvalidError,
   OAuthStateProviderMismatchError,
@@ -31,6 +36,7 @@ export const runtime = "nodejs";
  * 16 does not carry `next/headers` mutations into `NextResponse.redirect()`.
  */
 export async function GET(request: Request): Promise<Response> {
+  const requestId = createAuthRequestId(request);
   const failureRedirect =
     process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
   const successRedirect = process.env.OAUTH_SUCCESS_REDIRECT ?? "/dashboard";
@@ -74,20 +80,33 @@ export async function GET(request: Request): Promise<Response> {
       },
     });
 
+    logAuthEvent("info", "oauth.callback.succeeded", {
+      requestId,
+      provider: "google",
+      isNewUser: result.isNewUser,
+    });
+
     return buildSuccessRedirect(request, successRedirect, result);
   } catch (error) {
     if (error instanceof OAuthStateProviderMismatchError) {
-      console.error("Google callback rejected: state provider mismatch");
+      logAuthEvent("warn", "oauth.callback.rejected", {
+        requestId,
+        provider: "google",
+        reason: "state_provider_mismatch",
+      });
       return buildFailureRedirect(request, failureRedirect, "state_mismatch");
     }
     if (error instanceof OAuthStateInvalidError) {
+      logAuthEvent("warn", "oauth.callback.rejected", {
+        requestId,
+        provider: "google",
+        reason: "state_invalid",
+      });
       return buildFailureRedirect(request, failureRedirect, "state_invalid");
     }
-    console.error("Google OAuth callback failed", error);
-    console.error("Google OAuth callback failed", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.constructor.name : typeof error,
+    logAuthError("oauth.callback.failed", error, {
+      requestId,
+      provider: "google",
     });
     return buildFailureRedirect(request, failureRedirect, "oauth_failed");
   }

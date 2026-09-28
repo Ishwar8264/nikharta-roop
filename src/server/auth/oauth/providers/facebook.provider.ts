@@ -114,8 +114,6 @@ export const facebookProvider: OAuthProvider = {
       picture?: { data?: { url?: string } };
     };
 
-    console.log("FACEBOOK ME:", JSON.stringify(me));
-
     if (!me.id) throw new OAuthExchangeFailedError("Missing Facebook user id");
     if (!me.email) throw new OAuthEmailMissingError();
 

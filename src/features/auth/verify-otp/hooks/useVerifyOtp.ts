@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { routes } from "@/config/routes";
@@ -44,7 +43,6 @@ interface UseVerifyOtpResult {
  * server remains authoritative; this is only a courtesy.
  */
 export function useVerifyOtp(email: string): UseVerifyOtpResult {
-  const router = useRouter();
   const [step, setStep] = useState<Step>("send");
   const [code, setCode] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -103,11 +101,9 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
     try {
       await verifyOtpApi({ email, code });
 
-      // Server has set session cookies — the browser is now signed in.
-      // refresh() re-fetches Server Components so the header's user menu
-      // reflects the new session before the home page renders.
-      router.refresh();
-      router.replace(routes.home);
+      // Force a fresh document request so Server Components read the session
+      // cookies before rendering the authenticated destination.
+      window.location.replace(routes.dashboard);
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);

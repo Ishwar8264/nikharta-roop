@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 
 import { setSessionCookies } from "@/server/auth/cookies";
 import {
+  createAuthRequestId,
+  logAuthError,
+  logAuthEvent,
+} from "@/server/auth/auth.logger";
+import {
   AccountDeactivatedError,
   EmailNotVerifiedError,
   InvalidCredentialsError,
@@ -21,6 +26,7 @@ import { loginUser } from "@/server/modules/auth/auth.service";
  * The route itself stays thin — parsing, validation, status codes only.
  */
 export async function POST(request: Request): Promise<Response> {
+  const requestId = createAuthRequestId(request);
   let body: unknown;
 
   try {
@@ -68,22 +74,35 @@ export async function POST(request: Request): Promise<Response> {
     );
 
     setSessionCookies(response, result);
+    logAuthEvent("info", "login.succeeded", { requestId });
 
     return response;
   } catch (error) {
     if (error instanceof InvalidCredentialsError) {
+      logAuthEvent("warn", "login.rejected", {
+        requestId,
+        reason: "invalid_credentials",
+      });
       return NextResponse.json({ message: error.message }, { status: 401 });
     }
 
     if (error instanceof EmailNotVerifiedError) {
+      logAuthEvent("warn", "login.rejected", {
+        requestId,
+        reason: "email_not_verified",
+      });
       return NextResponse.json({ message: error.message }, { status: 403 });
     }
 
     if (error instanceof AccountDeactivatedError) {
+      logAuthEvent("warn", "login.rejected", {
+        requestId,
+        reason: "account_deactivated",
+      });
       return NextResponse.json({ message: error.message }, { status: 403 });
     }
 
-    console.error("User login failed", error);
+    logAuthError("login.failed", error, { requestId });
     return NextResponse.json({ message: "Unable to sign in" }, { status: 500 });
   }
 }
