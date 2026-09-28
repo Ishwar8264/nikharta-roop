@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
 
-import {
-  createAuthRequestId,
-  logAuthError,
-  logAuthEvent,
-} from "@/server/auth/auth.logger";
 import { setSessionCookies } from "@/server/auth/cookies";
 import { issueTokenPair } from "@/server/auth/token.service";
 import { getCurrentUser } from "@/server/modules/auth/auth.service";
@@ -31,7 +26,6 @@ import { verifyOtpCode } from "@/server/modules/otp/otp.service";
  * whether the identifier exists.
  */
 export async function POST(request: Request): Promise<Response> {
-  const requestId = createAuthRequestId(request);
   let body: unknown;
 
   try {
@@ -68,7 +62,6 @@ export async function POST(request: Request): Promise<Response> {
     // because the OTP itself was valid.
     const user = await getCurrentUser(result.userId);
     if (!user) {
-      logAuthEvent("warn", "otp.verification.user_missing", { requestId });
       return NextResponse.json(
         { message: "Unable to verify code" },
         { status: 500 },
@@ -97,7 +90,6 @@ export async function POST(request: Request): Promise<Response> {
     // Sets accessToken, refreshToken, and a fresh csrfToken cookie — same
     // contract as the login route, so the browser lands signed-in.
     setSessionCookies(response, tokens);
-    logAuthEvent("info", "otp.verification.succeeded", { requestId });
 
     return response;
   } catch (error) {
@@ -113,7 +105,6 @@ export async function POST(request: Request): Promise<Response> {
       return NextResponse.json({ message: error.message }, { status: 429 });
     }
 
-    logAuthError("otp.verification.failed", error, { requestId });
     return NextResponse.json(
       { message: "Unable to verify code" },
       { status: 500 },

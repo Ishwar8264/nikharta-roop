@@ -2,11 +2,6 @@ import { NextResponse } from "next/server";
 
 import { setSessionCookies } from "@/server/auth/cookies";
 import {
-  createAuthRequestId,
-  logAuthError,
-  logAuthEvent,
-} from "@/server/auth/auth.logger";
-import {
   AccountDeactivatedError,
   EmailNotVerifiedError,
   InvalidCredentialsError,
@@ -26,23 +21,11 @@ import { loginUser } from "@/server/modules/auth/auth.service";
  * The route itself stays thin — parsing, validation, status codes only.
  */
 export async function POST(request: Request): Promise<Response> {
-  const requestId = createAuthRequestId(request);
   let body: unknown;
-
-  logAuthEvent("info", "login.attempted", {
-    requestId,
-    method: "password",
-  });
 
   try {
     body = await request.json();
   } catch {
-    logAuthEvent("warn", "login.rejected", {
-      requestId,
-      method: "password",
-      reason: "invalid_json",
-      status: 400,
-    });
     return NextResponse.json(
       { message: "Request body must be valid JSON" },
       { status: 400 },
@@ -52,12 +35,6 @@ export async function POST(request: Request): Promise<Response> {
   const validation = loginUserSchema.safeParse(body);
 
   if (!validation.success) {
-    logAuthEvent("warn", "login.rejected", {
-      requestId,
-      method: "password",
-      reason: "validation_failed",
-      status: 400,
-    });
     return NextResponse.json(
       {
         message: "Validation failed",
@@ -91,50 +68,21 @@ export async function POST(request: Request): Promise<Response> {
     );
 
     setSessionCookies(response, result);
-    logAuthEvent("info", "login.succeeded", {
-      requestId,
-      method: "password",
-      sessionIssued: true,
-      status: 200,
-    });
 
     return response;
   } catch (error) {
     if (error instanceof InvalidCredentialsError) {
-      logAuthEvent("warn", "login.rejected", {
-        requestId,
-        method: "password",
-        reason: "invalid_credentials",
-        status: 401,
-      });
       return NextResponse.json({ message: error.message }, { status: 401 });
     }
 
     if (error instanceof EmailNotVerifiedError) {
-      logAuthEvent("warn", "login.rejected", {
-        requestId,
-        method: "password",
-        reason: "email_not_verified",
-        status: 403,
-      });
       return NextResponse.json({ message: error.message }, { status: 403 });
     }
 
     if (error instanceof AccountDeactivatedError) {
-      logAuthEvent("warn", "login.rejected", {
-        requestId,
-        method: "password",
-        reason: "account_deactivated",
-        status: 403,
-      });
       return NextResponse.json({ message: error.message }, { status: 403 });
     }
 
-    logAuthError("login.failed", error, {
-      requestId,
-      method: "password",
-      status: 500,
-    });
     return NextResponse.json({ message: "Unable to sign in" }, { status: 500 });
   }
 }
