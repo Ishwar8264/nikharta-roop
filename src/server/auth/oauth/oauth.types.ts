@@ -22,7 +22,8 @@ export type OAuthProviderId = "google" | "apple" | "facebook";
  */
 export interface OAuthUserInfo {
   providerUserId: string;
-  email: string;
+  /** Some providers legitimately omit email; their stable subject remains usable. */
+  email: string | null;
   emailVerified: boolean;
   name: string | null;
   avatar: string | null;

@@ -3,7 +3,6 @@ import "server-only";
 import { logAuthEvent } from "@/server/auth/auth.logger";
 
 import {
-  OAuthEmailMissingError,
   OAuthExchangeFailedError,
   OAuthProviderNotConfiguredError,
 } from "../oauth.errors";
@@ -117,15 +116,14 @@ export const facebookProvider: OAuthProvider = {
     };
 
     if (!me.id) throw new OAuthExchangeFailedError("Missing Facebook user id");
-    if (!me.email) throw new OAuthEmailMissingError();
 
-    // Facebook does not sign the email; the fact that we received it from
-    // the authenticated Graph call is the verification. Treat it as trusted
-    // because the call required a token Facebook only issues to us.
+    // Facebook may omit email when the account has none or the permission is
+    // unavailable. Its provider user id is still a stable authenticated
+    // identity, so first-time users can safely have an email-less account.
     const info: OAuthUserInfo = {
       providerUserId: me.id,
-      email: me.email.toLowerCase(),
-      emailVerified: true,
+      email: me.email?.toLowerCase() ?? null,
+      emailVerified: Boolean(me.email),
       name: me.name ?? null,
       avatar: me.picture?.data?.url ?? null,
     };
