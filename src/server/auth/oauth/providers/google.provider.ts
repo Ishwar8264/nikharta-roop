@@ -106,6 +106,16 @@ export const googleProvider: OAuthProvider = {
     const payload = ticket.getPayload();
     if (!payload) throw new OAuthIdTokenInvalidError();
     if (!payload.sub) throw new OAuthIdTokenInvalidError("Missing subject");
+
+    console.log(
+      "GOOGLE PAYLOAD:",
+      JSON.stringify({
+        sub: payload.sub,
+        email: payload.email,
+        email_verified: payload.email_verified,
+        tokens,
+      }),
+    );
     if (!payload.email) throw new OAuthEmailMissingError();
 
     // Google ID tokens carry `email_verified`; only a verified email is
