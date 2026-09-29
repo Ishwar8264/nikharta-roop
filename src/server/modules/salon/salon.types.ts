@@ -1,6 +1,10 @@
 import type { z } from "zod";
 
-import type { SalonCategory, SalonMemberRole } from "@/generated/prisma/client";
+import type {
+  DayOfWeek,
+  SalonCategory,
+  SalonMemberRole,
+} from "@/generated/prisma/client";
 
 import type {
   addSalonMemberSchema,
@@ -38,6 +42,32 @@ export interface PublicSalon {
   images: string[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Opening-hours row embedded in the public salon detail response. */
+export interface SalonWorkingHour {
+  day: DayOfWeek;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+}
+
+/** Lightweight service card embedded in the public salon detail response. */
+export interface SalonServicePreview {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  duration: number;
+  images: string[];
+  category: { name: string; slug: string } | null;
+}
+
+/** Public salon detail shape with only relations rendered by the detail UI. */
+export interface PublicSalonDetail extends PublicSalon {
+  workingHours: SalonWorkingHour[];
+  services: SalonServicePreview[];
+  _count: { services: number; products: number };
 }
 
 /** Salon row that includes the caller's role, used for management views. */

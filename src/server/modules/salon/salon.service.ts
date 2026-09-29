@@ -16,6 +16,7 @@ import {
   addSalonMember,
   countSalonOwners,
   createSalonWithOwner,
+  findSalonDetailBySlug,
   findSalonBySlug,
   findSalonForViewer,
   findSalonMemberById,
@@ -27,12 +28,14 @@ import {
   softDeleteSalonById,
   updateSalonById,
 } from "./salon.repository";
+import { toPublicSalonDetail } from "./salon.mapper";
 import type {
   AddSalonMemberInput,
   CreateSalonInput,
   ListSalonsQuery,
   PaginatedSalons,
   PublicSalon,
+  PublicSalonDetail,
   PublicSalonMember,
   SalonWithViewerRole,
   UpdateSalonInput,
@@ -64,7 +67,14 @@ export async function listSalons(
  * Slug is the public identifier, so this endpoint never leaks internal ids
  * beyond what the listing endpoint already exposes.
  */
-export async function getSalonBySlug(slug: string): Promise<PublicSalon> {
+export async function getSalonBySlug(slug: string): Promise<PublicSalonDetail> {
+  const salon = await findSalonDetailBySlug(slug);
+  if (!salon) throw new SalonNotFoundError();
+  return toPublicSalonDetail(salon);
+}
+
+/** Loads active salon columns without detail-only relations. */
+export async function getSalonSummaryBySlug(slug: string): Promise<PublicSalon> {
   const salon = await findSalonBySlug(slug);
   if (!salon) throw new SalonNotFoundError();
   return salon;

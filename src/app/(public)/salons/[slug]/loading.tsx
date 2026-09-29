@@ -28,13 +28,26 @@ export default function SalonDetailLoading() {
           </div>
 
           <div className="space-y-3">
+            <Skeleton className="h-6 w-28" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Skeleton className="h-64 w-full rounded-xl" />
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+          </div>
+
+          <div className="space-y-3">
             <Skeleton className="h-6 w-24" />
             <Skeleton className="h-72 w-full rounded-xl" />
           </div>
         </div>
 
-        <aside>
+        <aside className="space-y-4">
+          <Skeleton className="h-72 w-full rounded-xl" />
           <Skeleton className="h-48 w-full rounded-xl" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
         </aside>
       </div>
     </div>

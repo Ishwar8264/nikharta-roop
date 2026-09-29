@@ -1223,7 +1223,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               description: "Salon detail",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/SalonResponse" },
+                  schema: { $ref: "#/components/schemas/SalonDetailResponse" },
                 },
               },
             },
@@ -3770,6 +3770,105 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               required: ["salon"],
               properties: {
                 salon: { $ref: "#/components/schemas/Salon" },
+              },
+            },
+          },
+        },
+        SalonWorkingHour: {
+          type: "object",
+          required: ["day", "openTime", "closeTime", "isClosed"],
+          properties: {
+            day: {
+              type: "string",
+              enum: [
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY",
+                "SUNDAY",
+              ],
+            },
+            openTime: { type: "string", pattern: "^\\d{2}:\\d{2}$" },
+            closeTime: { type: "string", pattern: "^\\d{2}:\\d{2}$" },
+            isClosed: { type: "boolean" },
+          },
+        },
+        SalonServicePreview: {
+          type: "object",
+          required: [
+            "id",
+            "name",
+            "slug",
+            "price",
+            "duration",
+            "images",
+            "category",
+          ],
+          properties: {
+            id: { $ref: "#/components/schemas/ResourceId" },
+            name: { type: "string" },
+            slug: { type: "string" },
+            price: { type: "number", minimum: 0 },
+            duration: { type: "integer", minimum: 5 },
+            images: {
+              type: "array",
+              items: { type: "string", format: "uri" },
+            },
+            category: {
+              oneOf: [
+                { type: "null" },
+                {
+                  type: "object",
+                  required: ["name", "slug"],
+                  properties: {
+                    name: { type: "string" },
+                    slug: { type: "string" },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        SalonDetail: {
+          allOf: [
+            { $ref: "#/components/schemas/Salon" },
+            {
+              type: "object",
+              required: ["workingHours", "services", "_count"],
+              properties: {
+                workingHours: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/SalonWorkingHour" },
+                },
+                services: {
+                  type: "array",
+                  maxItems: 6,
+                  items: { $ref: "#/components/schemas/SalonServicePreview" },
+                },
+                _count: {
+                  type: "object",
+                  required: ["services", "products"],
+                  properties: {
+                    services: { type: "integer", minimum: 0 },
+                    products: { type: "integer", minimum: 0 },
+                  },
+                },
+              },
+            },
+          ],
+        },
+        SalonDetailResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: { type: "string", const: "Salon retrieved" },
+            data: {
+              type: "object",
+              required: ["salon"],
+              properties: {
+                salon: { $ref: "#/components/schemas/SalonDetail" },
               },
             },
           },

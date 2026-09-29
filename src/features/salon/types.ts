@@ -1,4 +1,4 @@
-import type { SalonCategory } from "@/generated/prisma/client";
+import type { DayOfWeek, SalonCategory } from "@/generated/prisma/client";
 
 /**
  * Public salon shape returned by listSalons / getSalonBySlug.
@@ -35,6 +35,32 @@ export interface PublicSalon {
   /** ISO string once JSON-serialized over HTTP; Date on the server. */
   createdAt: string | Date;
   updatedAt: string | Date;
+}
+
+/** Client-safe working-hours shape embedded in salon detail responses. */
+export interface SalonWorkingHour {
+  day: DayOfWeek;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+}
+
+/** Client-safe service preview shape embedded in salon detail responses. */
+export interface SalonServicePreview {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  duration: number;
+  images: string[];
+  category: { name: string; slug: string } | null;
+}
+
+/** Detail response with the public relations required by the detail page. */
+export interface PublicSalonDetail extends PublicSalon {
+  workingHours: SalonWorkingHour[];
+  services: SalonServicePreview[];
+  _count: { services: number; products: number };
 }
 
 export interface PaginatedSalons {
