@@ -13,6 +13,17 @@ enum PlatformRole {
   USER
 }
 
+// ---------- ENUMS ----------
+enum MediaPurpose {
+  GENERAL
+  SALON
+  PRODUCT
+  SERVICE
+  BLOG
+  AVATAR
+  REVIEW
+}
+
 enum SalonMemberRole {
   OWNER
   MANAGER
@@ -158,10 +169,44 @@ model User {
   primaryAppointments  Appointment[]        @relation("AppointmentPrimaryStaff")
   appointmentServices  AppointmentService[] @relation("AppointmentServiceStaff")
   staffSkills          StaffServiceSkill[]
+  mediaAssets MediaAsset[]
 
   @@index([role])
   @@index([deletedAt])
 }
+
+// ---------- MEDIA ----------
+model MediaAsset {
+  id       String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+
+  url      String
+  publicId String @unique // Cloudinary public_id — delete/transform ke liye
+  folder   String // "nikharta-roop/{userId}"
+
+  // Cloudinary metadata
+  width  Int?
+  height Int?
+  format String?
+  bytes  Int?
+
+  // Categorization for library filters
+  purpose MediaPurpose @default(GENERAL)
+
+  // Soft link — orphan cleanup ke liye. NULL = library me pada hai, kahin attach nahi.
+  attachedToType String? // "SALON" | "PRODUCT" | "SERVICE" | "BLOG"
+  attachedToId   String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, purpose, deletedAt])
+  @@index([attachedToType, attachedToId])
+}
+
 
 model Otp {
   id          String     @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
