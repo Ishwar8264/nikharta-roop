@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { logDevApiEvent, unexpectedApiError } from "@/server/api/dev-response";
 import { getAuthContext } from "@/server/auth/session";
 import { ServiceCategorySlugConflictError } from "@/server/modules/service/service.errors";
 import {
@@ -39,6 +40,10 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     const result = await listServiceCategories(validation.data);
+    logDevApiEvent("service-categories.list.success", {
+      count: result.items.length,
+      hasMore: result.hasMore,
+    });
 
     return NextResponse.json(
       {
@@ -52,10 +57,10 @@ export async function GET(request: Request): Promise<Response> {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Category listing failed", error);
-    return NextResponse.json(
-      { message: "Unable to list service categories" },
-      { status: 500 },
+    return unexpectedApiError(
+      "service-categories.list.failed",
+      error,
+      "Unable to list service categories",
     );
   }
 }
@@ -112,20 +117,28 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const category = await createServiceCategory(validation.data);
+    logDevApiEvent("service-categories.create.success", {
+      userId: auth.sub,
+      categoryId: category.id,
+    });
 
     return NextResponse.json(
       { message: "Category created", data: { category } },
       { status: 201 },
     );
   } catch (error) {
+    logDevApiEvent("service-categories.create.rejected", {
+      userId: auth.sub,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     if (error instanceof ServiceCategorySlugConflictError) {
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
 
-    console.error("Category creation failed", error);
-    return NextResponse.json(
-      { message: "Unable to create category" },
-      { status: 500 },
+    return unexpectedApiError(
+      "service-categories.create.failed",
+      error,
+      "Unable to create category",
     );
   }
 }

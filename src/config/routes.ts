@@ -13,6 +13,9 @@ export const routes = {
   salonCreate: "/salons/create",
   salonDetail: (slug: string) => `/salons/${slug}`,
   salonServices: (slug: string) => `/salons/${slug}/services`,
+  salonServiceCreate: (slug: string) => `/salons/${slug}/services/create`,
+  salonServiceDetail: (salonSlug: string, serviceSlug: string) =>
+    `/salons/${salonSlug}/services/${serviceSlug}`,
   salonBooking: (slug: string) => `/salons/${slug}/book`,
   blog: "/blog",
   blogPost: (slug: string) => `/blog/${slug}`,

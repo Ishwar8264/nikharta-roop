@@ -12,6 +12,10 @@ const slugSchema = z
     "Slug must contain only lowercase letters, numbers, and hyphens",
   );
 
+const serviceSlugSchema = slugSchema.refine((slug) => slug !== "create", {
+  message: "This service slug is reserved",
+});
+
 const optionalUrlSchema = z
   .string({ error: "URL must be a string" })
   .trim()
@@ -87,7 +91,7 @@ export const createServiceSchema = z.strictObject({
     .trim()
     .min(2, "Name must contain at least 2 characters")
     .max(120, "Name must contain at most 120 characters"),
-  slug: slugSchema.optional(),
+  slug: serviceSlugSchema.optional(),
   categoryId: resourceIdSchema.optional(),
   price: z
     .number({ error: "Price must be a number" })

@@ -68,11 +68,20 @@ export function SalonServiceCard({
           </span>
         </div>
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3">
+        <div className="mt-auto flex flex-wrap items-center gap-3 border-t border-border pt-3">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" aria-hidden="true" />
             {service.duration} min
           </span>
+          <NavLink
+            href={routes.salonServiceDetail(salonSlug, service.slug)}
+            variant="ghost"
+            size="sm"
+            markActive={false}
+            className="ml-auto"
+          >
+            Details
+          </NavLink>
           <NavLink
             href={`${routes.salonBooking(salonSlug)}?service=${encodeURIComponent(service.slug)}`}
             variant="outline"

@@ -80,6 +80,24 @@ export async function getSalonSummaryBySlug(slug: string): Promise<PublicSalon> 
   return salon;
 }
 
+/** Loads a salon only when the caller can manage its catalogue. */
+export async function getSalonForServiceManagement(
+  slug: string,
+  userId: string,
+): Promise<SalonWithViewerRole> {
+  const publicSalon = await findSalonBySlug(slug);
+  if (!publicSalon) throw new SalonNotFoundError();
+
+  const salon = await findSalonForViewer({
+    salonId: publicSalon.id,
+    userId,
+  });
+  if (!salon) throw new SalonNotFoundError();
+
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  return salon;
+}
+
 /**
  * Creates a salon and records the caller as its initial OWNER.
  *

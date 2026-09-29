@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { ArrowRight, Scissors } from "lucide-react";
+import { ArrowRight, Plus, Scissors } from "lucide-react";
 
 import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { NavLink } from "@/components/shared/nav-link";
 import { routes } from "@/config/routes";
 import { SalonServiceCard } from "@/features/salon/components/details/service-card";
-import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
+import { getSession } from "@/lib/auth/get-session";
+import {
+  SalonNotFoundError,
+  SalonRoleInsufficientError,
+} from "@/server/modules/salon/salon.errors";
 import { isResourceId } from "@/server/modules/salon/salon.helpers";
-import { getSalonSummaryBySlug } from "@/server/modules/salon/salon.service";
+import {
+  getSalonForServiceManagement,
+  getSalonSummaryBySlug,
+} from "@/server/modules/salon/salon.service";
 import { listSalonServices } from "@/server/modules/service/service.service";
 
 interface PageProps {
@@ -45,8 +52,9 @@ export default async function SalonServicesPage({
 
   let salon;
   let result;
+  let user;
   try {
-    [salon, result] = await Promise.all([
+    [salon, result, user] = await Promise.all([
       getSalon(slug),
       listSalonServices(slug, {
         cursor,
@@ -54,26 +62,54 @@ export default async function SalonServicesPage({
         sortBy: "createdAt",
         sortOrder: "desc",
       }),
+      getSession(),
     ]);
   } catch (error) {
     if (error instanceof SalonNotFoundError) notFound();
     throw error;
   }
 
+  let canManageServices = false;
+  if (user) {
+    try {
+      await getSalonForServiceManagement(slug, user.id);
+      canManageServices = true;
+    } catch (error) {
+      if (
+        !(error instanceof SalonNotFoundError) &&
+        !(error instanceof SalonRoleInsufficientError)
+      ) {
+        throw error;
+      }
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <BackButton href={routes.salonDetail(slug)} variant="secondary" />
 
-      <header className="mt-8 max-w-2xl">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-          {salon.name}
-        </p>
-        <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-          Services
-        </h1>
-        <p className="mt-3 text-muted-foreground">
-          Browse available treatments, prices and appointment durations.
-        </p>
+      <header className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+            {salon.name}
+          </p>
+          <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+            Services
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            Browse available treatments, prices and appointment durations.
+          </p>
+        </div>
+        {canManageServices ? (
+          <NavLink
+            href={routes.salonServiceCreate(slug)}
+            variant="default"
+            markActive={false}
+            icon={<Plus className="h-4 w-4" />}
+          >
+            Add service
+          </NavLink>
+        ) : null}
       </header>
 
       {result.items.length > 0 ? (
