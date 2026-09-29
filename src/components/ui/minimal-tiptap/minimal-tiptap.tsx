@@ -20,7 +20,7 @@ export interface MinimalTiptapProps extends Omit<
   "onUpdate"
 > {
   value?: Content
-  onChange?: (value: Content) => void
+  onChange?: (value: Content, editor: Editor) => void
   className?: string
   editorContentClassName?: string
 }

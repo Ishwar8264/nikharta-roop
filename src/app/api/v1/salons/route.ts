@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getAuthContext } from "@/server/auth/session";
-import { SlugConflictError } from "@/server/modules/salon/salon.errors";
+import {
+  SalonPlaceConflictError,
+  SlugConflictError,
+} from "@/server/modules/salon/salon.errors";
 import {
   createSalonSchema,
   listSalonsQuerySchema,
@@ -109,7 +112,33 @@ export async function POST(request: Request): Promise<Response> {
     );
   } catch (error) {
     if (error instanceof SlugConflictError) {
-      return NextResponse.json({ message: error.message }, { status: 409 });
+      console.warn("Salon creation conflict", {
+        ownerId: auth.sub,
+        field: "slug",
+        message: error.message,
+      });
+      return NextResponse.json(
+        {
+          message: error.message,
+          errors: [{ field: "slug", message: error.message }],
+        },
+        { status: 409 },
+      );
+    }
+
+    if (error instanceof SalonPlaceConflictError) {
+      console.warn("Salon creation conflict", {
+        ownerId: auth.sub,
+        field: "placeId",
+        message: error.message,
+      });
+      return NextResponse.json(
+        {
+          message: error.message,
+          errors: [{ field: "placeId", message: error.message }],
+        },
+        { status: 409 },
+      );
     }
 
     console.error("Salon creation failed", error);

@@ -24,14 +24,15 @@ import { fileToBase64, getOutput, randomId } from "../utils"
 import { useThrottle } from "../hooks/use-throttle"
 import { toast } from "sonner"
 
-export interface UseMinimalTiptapEditorProps extends UseEditorOptions {
+export interface UseMinimalTiptapEditorProps
+  extends Omit<UseEditorOptions, "onUpdate" | "onBlur"> {
   value?: Content
   output?: "html" | "json" | "text" | "markdown"
   placeholder?: string
   editorClassName?: string
   throttleDelay?: number
-  onUpdate?: (content: Content) => void
-  onBlur?: (content: Content) => void
+  onUpdate?: (content: Content, editor: Editor) => void
+  onBlur?: (content: Content, editor: Editor) => void
   uploader?: (file: File) => Promise<string>
 }
 
@@ -226,12 +227,12 @@ export const useMinimalTiptapEditor = ({
   ...props
 }: UseMinimalTiptapEditorProps) => {
   const throttledSetValue = useThrottle(
-    (value: Content) => onUpdate?.(value),
+    (value: Content, editor: Editor) => onUpdate?.(value, editor),
     throttleDelay
   )
 
   const handleUpdate = React.useCallback(
-    (editor: Editor) => throttledSetValue(getOutput(editor, output)),
+    (editor: Editor) => throttledSetValue(getOutput(editor, output), editor),
     [output, throttledSetValue]
   )
 
@@ -247,7 +248,7 @@ export const useMinimalTiptapEditor = ({
   )
 
   const handleBlur = React.useCallback(
-    (editor: Editor) => onBlur?.(getOutput(editor, output)),
+    (editor: Editor) => onBlur?.(getOutput(editor, output), editor),
     [output, onBlur]
   )
 

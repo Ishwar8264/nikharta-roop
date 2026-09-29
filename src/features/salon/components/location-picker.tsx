@@ -63,6 +63,7 @@ interface LocationPickerProps {
   disabled?: boolean;
   latitudeError?: string;
   longitudeError?: string;
+  placeError?: string;
   className?: string;
 }
 
@@ -108,6 +109,7 @@ export function LocationPicker({
   disabled,
   latitudeError,
   longitudeError,
+  placeError,
   className,
 }: LocationPickerProps) {
   const [query, setQuery] = useState("");
@@ -342,6 +344,11 @@ export function LocationPicker({
       </p>
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {placeError ? (
+        <p role="alert" className="text-xs text-destructive">
+          {placeError}
+        </p>
+      ) : null}
 
       {/* Map */}
       <LocationMap

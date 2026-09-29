@@ -92,7 +92,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en-IN" suppressHydrationWarning>
-      <body className={`${inter.variable} ${playfair.variable} antialiased`}>
+      <body
+        suppressHydrationWarning
+        className={`${inter.variable} ${playfair.variable} antialiased`}
+      >
         <ThemeProvider>
           <AuthProvider user={user}>
             <TooltipProvider>{children}</TooltipProvider>

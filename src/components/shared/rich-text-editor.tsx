@@ -1,6 +1,6 @@
 "use client";
 
-import type { Content } from "@tiptap/react";
+import type { Content, Editor } from "@tiptap/react";
 import { Loader2 } from "lucide-react";
 import { useCallback } from "react";
 
@@ -9,11 +9,20 @@ import { MinimalTiptapEditor } from "../ui/minimal-tiptap";
 
 type EditorOutput = "html" | "json" | "text" | "markdown";
 
+export interface RichTextEditorOutputs {
+  text: string;
+  html: string;
+  json: string;
+}
+
 interface RichTextEditorProps {
   /** Controlled value. Format must match `output`. */
   value: string;
   /** Fires with the editor's serialized output on every change. */
   onChange: (value: string) => void;
+  /** Receives all persisted representations from the same editor state. */
+  onOutputsChange?: (outputs: RichTextEditorOutputs) => void;
+  onBlur?: () => void;
   /** Serialization format. Defaults to "html". */
   output?: EditorOutput;
   placeholder?: string;
@@ -42,6 +51,8 @@ interface RichTextEditorProps {
 export function RichTextEditor({
   value,
   onChange,
+  onOutputsChange,
+  onBlur,
   output = "html",
   placeholder,
   disabled,
@@ -52,7 +63,7 @@ export function RichTextEditor({
   onCharacterCountChange,
 }: RichTextEditorProps) {
   const handleChange = useCallback(
-    (next: Content) => {
+    (next: Content, editor: Editor) => {
       const serialized =
         typeof next === "string"
           ? next
@@ -61,9 +72,15 @@ export function RichTextEditor({
             : JSON.stringify(next);
 
       onChange(serialized);
+      const isEmpty = editor.isEmpty;
+      onOutputsChange?.({
+        text: isEmpty ? "" : editor.getText(),
+        html: isEmpty ? "" : editor.getHTML(),
+        json: isEmpty ? "" : JSON.stringify(editor.getJSON()),
+      });
       onCharacterCountChange?.(serialized.length);
     },
-    [onChange, onCharacterCountChange],
+    [onChange, onCharacterCountChange, onOutputsChange],
   );
 
   if (isLoading) {
@@ -86,6 +103,7 @@ export function RichTextEditor({
     <MinimalTiptapEditor
       value={value || ""}
       onChange={handleChange}
+      onBlur={onBlur}
       output={output}
       placeholder={placeholder}
       editable={!disabled}

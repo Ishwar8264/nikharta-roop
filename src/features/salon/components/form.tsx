@@ -97,7 +97,7 @@ export function SalonForm() {
   const shortDescription =
     useWatch({ control, name: "shortDescription" }) ?? "";
 
-  const descriptionHtml = useWatch({ control, name: "descriptionHtml" }) ?? "";
+  const description = useWatch({ control, name: "description" }) ?? "";
 
   useEffect(() => {
     if (!slugWasEdited) {
@@ -233,6 +233,21 @@ export function SalonForm() {
                   <RichTextEditor
                     value={field.value ?? ""}
                     onChange={field.onChange}
+                    onOutputsChange={({ text, html, json }) => {
+                      setValue("description", text || undefined, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                      setValue("descriptionHtml", html || undefined, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                      setValue("descriptionJson", json || undefined, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                    }}
+                    onBlur={field.onBlur}
                     output="html"
                     placeholder="What makes this salon special?"
                     disabled={isLoading}
@@ -241,11 +256,15 @@ export function SalonForm() {
                     className="text-right text-xs text-muted-foreground"
                     aria-live="polite"
                   >
-                    {descriptionHtml.length}/20000 characters
+                    {description.length}/5000 characters
                   </p>
                   <FieldError
                     id="description-error"
-                    message={errors.descriptionHtml?.message}
+                    message={
+                      errors.description?.message ??
+                      errors.descriptionHtml?.message ??
+                      errors.descriptionJson?.message
+                    }
                   />
                 </div>
               )}
@@ -309,6 +328,7 @@ export function SalonForm() {
               disabled={isLoading}
               latitudeError={errors.lat?.message}
               longitudeError={errors.lng?.message}
+              placeError={errors.placeId?.message}
               onChange={({
                 latitude: lat,
                 longitude: lng,
@@ -352,8 +372,10 @@ export function SalonForm() {
                     shouldTouch: true,
                     shouldValidate: true,
                   });
-                if (placeId)
-                  setValue("placeId", placeId, { shouldDirty: true });
+                setValue("placeId", placeId, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
               }}
             />
           </Section>

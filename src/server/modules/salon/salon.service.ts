@@ -9,6 +9,7 @@ import {
   LastOwnerRemovalError,
   SalonMemberExistsError,
   SalonNotFoundError,
+  SalonPlaceConflictError,
   SlugConflictError,
 } from "./salon.errors";
 import {
@@ -112,6 +113,9 @@ export async function createSalon(
 
       return created;
     } catch (error) {
+      if (isUniqueConstraintViolation(error, "placeId")) {
+        throw new SalonPlaceConflictError();
+      }
       if (!isUniqueConstraintViolation(error, "slug")) throw error;
       if (input.slug) throw new SlugConflictError();
     }
@@ -164,6 +168,9 @@ export async function updateSalon(
 
     return updated;
   } catch (error) {
+    if (isUniqueConstraintViolation(error, "placeId")) {
+      throw new SalonPlaceConflictError();
+    }
     if (isUniqueConstraintViolation(error, "slug")) {
       throw new SlugConflictError();
     }
@@ -409,5 +416,23 @@ function isUniqueConstraintViolation(error: unknown, field: string): boolean {
 
   const target = error.meta?.target;
   if (Array.isArray(target)) return target.includes(field);
-  return typeof target === "string" && target.includes(field);
+  if (typeof target === "string" && target.includes(field)) return true;
+
+  // Prisma 7 driver adapters keep the Postgres constraint inside the nested
+  // adapter error instead of exposing `meta.target` as older clients did.
+  const adapterError = error.meta?.driverAdapterError as
+    | {
+        cause?: {
+          constraint?: { fields?: string[]; index?: string };
+        };
+      }
+    | undefined;
+  const constraint = adapterError?.cause?.constraint;
+
+  if (constraint?.fields?.includes(field)) return true;
+  if (constraint?.index?.includes(field)) return true;
+
+  // Keep compatibility with adapters that expose only the rendered
+  // constraint name, for example `Salon_placeId_key`.
+  return error.message.includes(field);
 }

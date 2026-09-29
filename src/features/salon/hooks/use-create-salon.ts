@@ -21,7 +21,7 @@ interface UseCreateSalonResult {
  *
  * Why two error buckets:
  *   - fieldErrors: 400 responses carry per-field issues that map to inputs
- *   - error: 409 (slug taken), 401 (session lost), 500, network
+ *   - error: form-level copy for conflicts, auth, server, and network errors
  *
  * Why the caller handles navigation:
  * The form may want to redirect to the salon detail, show a toast, or keep
@@ -69,8 +69,17 @@ export function useCreateSalon(): UseCreateSalonResult {
             if (!map[field]) map[field] = message;
           }
           setFieldErrors(map);
+        } else if (e.status === 409 && data?.errors?.length) {
+          const map: Record<string, string> = {};
+          for (const { field, message } of data.errors) {
+            if (!map[field]) map[field] = message;
+          }
+          setFieldErrors(map);
+          // Conflicts must remain visible even when their field is below the
+          // fold (the location picker is far down this long form).
+          setError(e.message);
         } else if (e.status === 409) {
-          setFieldErrors({ slug: e.message });
+          setError(e.message);
         } else {
           setError(e.message);
         }
