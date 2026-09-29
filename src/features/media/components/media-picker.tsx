@@ -10,6 +10,7 @@ import { UploadPane } from "./upload-pane";
 interface MediaPickerProps {
   value: UploadedImage[];
   onChange: (next: UploadedImage[]) => void;
+  onUploadComplete?: () => void;
   mode?: "single" | "multiple";
   max?: number;
   defaultTab?: "upload" | "library";
@@ -22,6 +23,7 @@ interface MediaPickerProps {
 export function MediaPicker({
   value,
   onChange,
+  onUploadComplete,
   mode = "multiple",
   max = 10,
   defaultTab = "upload",
@@ -32,15 +34,20 @@ export function MediaPicker({
 }: MediaPickerProps) {
   return (
     <Tabs defaultValue={defaultTab} className={cn("w-full", className)}>
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="upload">Upload New</TabsTrigger>
-        <TabsTrigger value="library">Select from Gallery</TabsTrigger>
+      <TabsList className="flex w-full">
+        <TabsTrigger value="upload" className="flex-1">
+          Upload New
+        </TabsTrigger>
+        <TabsTrigger value="library" className="flex-1">
+          Select from Gallery
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="upload" className="mt-4">
         <UploadPane
           value={value}
           onChange={onChange}
+          onUploadComplete={onUploadComplete}
           maxFiles={max}
           maxSizeMB={maxSizeMB}
           accept={accept}

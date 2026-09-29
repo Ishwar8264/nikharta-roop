@@ -1,9 +1,8 @@
 "use client";
 
-import { UploadCloud } from "lucide-react";
+import { CheckCircle2, Loader2, UploadCloud, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { signUpload } from "../actions";
@@ -14,6 +13,8 @@ import type { UploadedImage, UploadTask } from "../types";
 interface UploadPaneProps {
   value: UploadedImage[];
   onChange: (next: UploadedImage[]) => void;
+  /** Fired after every file in a batch succeeds — used for auto-close. */
+  onUploadComplete?: () => void;
   maxFiles?: number;
   maxSizeMB?: number;
   accept?: string[];
@@ -22,21 +23,10 @@ interface UploadPaneProps {
 
 const DEFAULT_ACCEPT = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 
-/**
- * Upload tab — dropzone plus progress list.
- *
- * Why serial uploads:
- * Parallel uploads saturate the connection pool and every progress bar
- * crawls. One at a time completes images in the order the user added them.
- *
- * Why the parent owns `value` (finished URLs) but not tasks:
- * The parent only cares about the payload it will submit. Progress, previews
- * and per-file errors are transient UI state — hoisting them would force
- * every consumer form to carry upload bookkeeping it does not use.
- */
 export function UploadPane({
   value,
   onChange,
+  onUploadComplete,
   maxFiles = 10,
   maxSizeMB = 5,
   accept = DEFAULT_ACCEPT,
@@ -72,15 +62,8 @@ export function UploadPane({
       }));
       setTasks((prev) => [...prev, ...newTasks]);
 
-      let signature;
-      try {
-        signature = await signUpload();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not start upload");
-        return;
-      }
-
       const uploaded: UploadedImage[] = [];
+      let failures = 0;
 
       for (const task of newTasks) {
         setTasks((prev) =>
@@ -90,6 +73,7 @@ export function UploadPane({
         );
 
         try {
+          const signature = await signUpload();
           const result = await uploadToCloudinary({
             file: task.file,
             signature,
@@ -99,7 +83,6 @@ export function UploadPane({
               ),
           });
 
-          // Persist to our DB so it appears in the library tab.
           await saveMedia(result);
 
           uploaded.push(result);
@@ -111,6 +94,7 @@ export function UploadPane({
             ),
           );
         } catch (e) {
+          failures += 1;
           setTasks((prev) =>
             prev.map((t) =>
               t.id === task.id
@@ -128,12 +112,38 @@ export function UploadPane({
       if (uploaded.length > 0) {
         onChange([...value, ...uploaded]);
       }
+
+      // Auto-close only when the whole batch succeeded.
+      if (failures === 0 && uploaded.length > 0) {
+        setTimeout(() => {
+          setTasks((prev) =>
+            prev.filter((t) => !newTasks.some((nt) => nt.id === t.id)),
+          );
+          onUploadComplete?.();
+        }, 700);
+      }
     },
-    [accept, maxFiles, maxSizeMB, onChange, remaining, value],
+    [accept, maxFiles, maxSizeMB, onChange, remaining, value, onUploadComplete],
+  );
+
+  const doneCount = tasks.filter((t) => t.status === "done").length;
+  const overallProgress =
+    tasks.length > 0
+      ? Math.round(
+          tasks.reduce(
+            (sum, t) => sum + (t.status === "done" ? 100 : t.progress),
+            0,
+          ) / tasks.length,
+        )
+      : 0;
+
+  const isUploading = tasks.some(
+    (t) => t.status === "uploading" || t.status === "pending",
   );
 
   return (
     <div className="space-y-4">
+      {/* Dropzone */}
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -168,7 +178,7 @@ export function UploadPane({
           Drag and drop files here, or click to select files
         </p>
         <p className="text-[11px] text-muted-foreground/80">
-          Supports: IMAGE · Max {maxFiles} files · Max {maxSizeMB}MB each
+          Max {maxFiles} files · Max {maxSizeMB}MB each · JPG, PNG, WebP, AVIF
         </p>
 
         <input
@@ -187,10 +197,31 @@ export function UploadPane({
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
+      {/* Overall progress — visible while uploading */}
+      {isUploading ? (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium text-foreground">
+              Uploading {doneCount}/{tasks.length}
+            </span>
+            <span className="tabular-nums text-muted-foreground">
+              {overallProgress}%
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary transition-[width] duration-300"
+              style={{ width: `${overallProgress}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Per-file list — horizontal progress with % */}
       {tasks.length > 0 ? (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+        <div className="space-y-2">
           {tasks.map((task) => (
-            <TaskTile
+            <TaskRow
               key={task.id}
               task={task}
               onRemove={() => {
@@ -205,7 +236,7 @@ export function UploadPane({
   );
 }
 
-function TaskTile({
+function TaskRow({
   task,
   onRemove,
 }: {
@@ -213,44 +244,65 @@ function TaskTile({
   onRemove: () => void;
 }) {
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={task.previewUrl}
-        alt=""
-        className="h-full w-full object-cover"
-      />
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-2.5">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={task.previewUrl}
+          alt=""
+          className="h-full w-full object-cover"
+        />
+      </div>
 
-      {task.status === "uploading" || task.status === "pending" ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-background/70 backdrop-blur-sm">
-          <span className="text-[11px] font-semibold text-foreground">
-            {task.progress}%
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <p className="truncate text-xs font-medium text-foreground">
+            {task.file.name}
+          </p>
+          <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-foreground">
+            {task.status === "done" ? "Done" : `${task.progress}%`}
           </span>
-          <div className="h-1 w-12 overflow-hidden rounded-full bg-border">
+        </div>
+
+        {task.status === "error" ? (
+          <p className="truncate text-[11px] text-destructive">
+            {task.error ?? "Upload failed"}
+          </p>
+        ) : (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full bg-primary transition-[width] duration-200"
+              className={cn(
+                "h-full transition-[width] duration-200",
+                task.status === "done" ? "bg-emerald-500" : "bg-primary",
+              )}
               style={{ width: `${task.progress}%` }}
             />
           </div>
-        </div>
-      ) : null}
+        )}
+      </div>
 
-      {task.status === "error" ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-destructive/80 p-2 text-center text-[10px] font-medium text-destructive-foreground">
-          {task.error ?? "Failed"}
-        </div>
-      ) : null}
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={onRemove}
-        aria-label="Remove"
-        className="absolute right-1 top-1 h-6 w-6 rounded-full bg-background/90 opacity-0 group-hover:opacity-100"
-      >
-        ×
-      </Button>
+      <div className="flex shrink-0 items-center">
+        {task.status === "done" ? (
+          <CheckCircle2
+            className="h-4 w-4 text-emerald-500"
+            aria-hidden="true"
+          />
+        ) : task.status === "error" ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label="Remove"
+            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <Loader2
+            className="h-4 w-4 animate-spin text-primary"
+            aria-hidden="true"
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -12,12 +12,6 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
-/**
- * Leaflet's default marker icon URLs break under bundlers — the icon is
- * resolved relative to the JS file at runtime and ends up 404ing. Pointing
- * the URLs at unpkg's CDN pins them to a known version and sidesteps the
- * whole asset-loader problem without shipping the images ourselves.
- */
 const MARKER_ICON = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl:
@@ -37,14 +31,6 @@ interface LocationMapProps {
   className?: string;
 }
 
-/**
- * Draggable-pin map. Click anywhere or drag the marker to set coordinates.
- *
- * Why a separate component from LocationPicker:
- * react-leaflet touches `window` at import time. Isolating it here lets the
- * parent statically render the search bar and inputs while only this piece
- * defers to the client via next/dynamic.
- */
 export default function LocationMap({
   latitude,
   longitude,
@@ -71,6 +57,7 @@ export default function LocationMap({
 
       <ClickCatcher onChange={onChange} />
       <Recenter center={center} />
+      <MapResizer />
 
       <Marker
         position={center}
@@ -88,7 +75,6 @@ export default function LocationMap({
   );
 }
 
-/** Converts any map click into a coordinate change. */
 function ClickCatcher({
   onChange,
 }: {
@@ -105,17 +91,32 @@ function ClickCatcher({
   return null;
 }
 
-/**
- * Keeps the map viewport in sync when the parent changes coordinates via
- * search or geolocation. Without this the marker moves but the viewport
- * stays where the user last scrolled.
- */
 function Recenter({ center }: { center: [number, number] }) {
   const map = useMap();
 
   useEffect(() => {
     map.setView(center, map.getZoom(), { animate: true });
   }, [center, map]);
+
+  return null;
+}
+
+/**
+ * Fixes Leaflet's layout-shift bug: the map caches its container size at
+ * mount and never re-measures when the parent grows/shrinks. Watching the
+ * container with a ResizeObserver keeps the tiles aligned with the box.
+ */
+function MapResizer() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
 
   return null;
 }

@@ -1,12 +1,12 @@
 "use client";
 
-import { Grid3x3, ImageIcon, List, Loader2, Search } from "lucide-react";
+import { Grid3x3, ImageIcon, List, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+import { SearchInput } from "@/components/shared";
 import { listMedia } from "../actions";
 import type { MediaAsset, UploadedImage } from "../types";
 import { MediaCard } from "./media-card";
@@ -21,24 +21,6 @@ interface GalleryPaneProps {
   disabled?: boolean;
 }
 
-/**
- * Gallery tab — browse and select from the user's library.
- *
- * Why local search:
- * After the first fetch the list is in memory. Client-side filtering is
- * instant and needs no round trip.
- *
- * Why the fetch lives in an effect with an AbortController:
- * The request is external I/O, which is what effects exist for. The
- * controller prevents a late response from a mounted-then-unmounted
- * component from writing state onto a dead tree — a real risk when the
- * user closes the dialog before the fetch resolves.
- *
- * Why no setIsLoading(true) in the effect:
- * Initial state already is `true`. Setting it again on mount would be a
- * synchronous setState inside the effect body, which React 19 flags as a
- * cascading render.
- */
 export function GalleryPane({
   value,
   onChange,
@@ -107,18 +89,16 @@ export function GalleryPane({
 
   return (
     <div className="space-y-3">
-      {/* Toolbar */}
+      {/* Toolbar — sticky so it stays visible while scrolling */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
+          <SearchInput
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
             placeholder="Search media…"
-            className="h-9 pl-8 text-sm"
+            aria-label="Search media"
+            size="sm"
+            className="flex-1"
           />
         </div>
 
@@ -161,7 +141,7 @@ export function GalleryPane({
           </p>
         </div>
       ) : view === "grid" ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((asset) => (
             <MediaCard
               key={asset.id}

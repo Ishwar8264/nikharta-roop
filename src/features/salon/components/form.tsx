@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -22,7 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
-import { ImageUploader, type UploadedImage } from "@/features/media";
+import type { UploadedImage } from "@/features/media";
+import { MediaPickerDialog } from "@/features/media/components/media-picker-dialog";
 
 import { useCreateSalon } from "../hooks/use-create-salon";
 import {
@@ -42,6 +44,8 @@ const CATEGORIES = [
 
 const DEFAULT_VALUES = {
   name: "",
+  slug: undefined,
+  description: undefined,
   category: "UNISEX",
   address: "",
   city: "",
@@ -51,17 +55,14 @@ const DEFAULT_VALUES = {
   timezone: "Asia/Kolkata",
   lat: Number.NaN,
   lng: Number.NaN,
+  placeId: undefined,
+  phone: undefined,
+  email: undefined,
   images: [],
+  seoTitle: undefined,
+  seoDescription: undefined,
 } satisfies CreateSalonFormInput;
 
-/**
- * Creates a salon with touch-first validation and change-based revalidation.
- *
- * Why React Hook Form owns every submitted value:
- * Native inputs, controlled widgets, uploads, and map coordinates must feed
- * one payload. That prevents visible input values from drifting from the
- * state that is actually submitted.
- */
 export function SalonForm() {
   const router = useRouter();
   const { create, isLoading, error, fieldErrors } = useCreateSalon();
@@ -94,7 +95,6 @@ export function SalonForm() {
     }
   }, [name, setValue, slugWasEdited]);
 
-  // Backend field messages remain authoritative and are shown unchanged.
   useEffect(() => {
     for (const [field, message] of Object.entries(fieldErrors)) {
       setError(field as keyof CreateSalonFormInput, {
@@ -103,6 +103,15 @@ export function SalonForm() {
       });
     }
   }, [fieldErrors, setError]);
+
+  function syncImages(next: UploadedImage[]) {
+    setImages(next);
+    setValue(
+      "images",
+      next.map((im) => im.url),
+      { shouldDirty: true, shouldTouch: true, shouldValidate: true },
+    );
+  }
 
   async function submit(values: CreateSalonFormValues) {
     const created = await create(values);
@@ -224,6 +233,7 @@ export function SalonForm() {
               <Field
                 id="city"
                 label="City"
+                placeholder="Mumbai"
                 autoComplete="address-level2"
                 disabled={isLoading}
                 error={errors.city?.message}
@@ -232,6 +242,7 @@ export function SalonForm() {
               <Field
                 id="state"
                 label="State"
+                placeholder="Maharashtra"
                 autoComplete="address-level1"
                 disabled={isLoading}
                 error={errors.state?.message}
@@ -240,6 +251,7 @@ export function SalonForm() {
               <Field
                 id="zip"
                 label="PIN code"
+                placeholder="400050"
                 inputMode="numeric"
                 autoComplete="postal-code"
                 disabled={isLoading}
@@ -336,6 +348,7 @@ export function SalonForm() {
               id="email"
               label="Email"
               type="email"
+              placeholder="hello@salon.com"
               autoComplete="email"
               disabled={isLoading}
               error={errors.email?.message}
@@ -349,24 +362,70 @@ export function SalonForm() {
             title="Gallery"
             description="Up to 20 images. The first one becomes the cover."
           >
-            <ImageUploader
-              value={images}
-              onChange={(nextImages) => {
-                setImages(nextImages);
-                setValue(
-                  "images",
-                  nextImages.map((image) => image.url),
-                  {
-                    shouldDirty: true,
-                    shouldTouch: true,
-                    shouldValidate: true,
-                  },
-                );
-              }}
-              maxFiles={20}
-              maxSizeMB={5}
-              disabled={isLoading}
-            />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {images.map((image, index) => (
+                <div
+                  key={image.publicId}
+                  className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
+                >
+                  <Image
+                    src={image.url}
+                    alt=""
+                    fill
+                    sizes="200px"
+                    className="object-cover"
+                  />
+                  {!isLoading ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        syncImages(images.filter((_, i) => i !== index))
+                      }
+                      aria-label="Remove image"
+                      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-sm transition-opacity hover:bg-destructive hover:text-destructive-foreground group-hover:opacity-100 focus-visible:opacity-100"
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+
+              {images.length < 20 ? (
+                <MediaPickerDialog
+                  title="Add media"
+                  description="Upload new images or pick from your library."
+                  value={images}
+                  onChange={syncImages}
+                  mode="multiple"
+                  max={20}
+                  maxSizeMB={5}
+                  trigger={
+                    <div className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-3 text-center transition-colors hover:border-primary/40 hover:bg-muted/30">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                        <ImagePlus className="h-5 w-5" aria-hidden="true" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-semibold text-foreground">
+                          Add media
+                        </p>
+                        <p className="text-[10px] leading-tight text-muted-foreground">
+                          JPG · PNG · WebP · AVIF
+                        </p>
+                        <p className="text-[10px] leading-tight text-muted-foreground">
+                          Max 5MB
+                        </p>
+                      </div>
+                    </div>
+                  }
+                />
+              ) : null}
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              {images.length}/20 images
+              {images.length > 0 ? " · First image becomes the cover" : ""}
+            </p>
+
             <FieldError id="images-error" message={errors.images?.message} />
           </Section>
 
@@ -377,6 +436,7 @@ export function SalonForm() {
             <Field
               id="seoTitle"
               label="SEO title"
+              placeholder="Best unisex salon in Bandra"
               disabled={isLoading}
               error={errors.seoTitle?.message}
               {...register("seoTitle", {
@@ -392,6 +452,7 @@ export function SalonForm() {
                 id="seoDescription"
                 rows={3}
                 maxLength={160}
+                placeholder="Haircuts, styling, and grooming for the whole family."
                 disabled={isLoading}
                 aria-invalid={errors.seoDescription ? true : undefined}
                 aria-describedby={
@@ -449,7 +510,6 @@ interface FormControlProps {
   children: React.ReactNode;
 }
 
-/** Keeps labels, controls, and accessible error text consistently spaced. */
 function FormControl({ id, label, error, children }: FormControlProps) {
   return (
     <div className="space-y-1.5">
@@ -460,7 +520,6 @@ function FormControl({ id, label, error, children }: FormControlProps) {
   );
 }
 
-/** Renders one stable, screen-reader discoverable field error. */
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
     <p id={id} role="alert" className="text-xs text-destructive">
@@ -469,7 +528,6 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   ) : null;
 }
 
-/** Visually groups related fields without hiding the linear form flow. */
 function Section({
   title,
   description,
