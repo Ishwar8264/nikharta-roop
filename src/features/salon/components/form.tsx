@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
 import { FormHeader } from "@/components/shared";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,13 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import type { UploadedImage } from "@/features/media";
 import { MediaPickerDialog } from "@/features/media/components/media-picker-dialog";
 
+import { RichTextEditor } from "@/components/shared/rich-text-editor";
 import { useCreateSalon } from "../hooks/use-create-salon";
 import {
   createSalonSchema,
@@ -97,6 +97,8 @@ export function SalonForm() {
   const shortDescription =
     useWatch({ control, name: "shortDescription" }) ?? "";
 
+  const descriptionHtml = useWatch({ control, name: "descriptionHtml" }) ?? "";
+
   useEffect(() => {
     if (!slugWasEdited) {
       setValue("slug", slugify(name), { shouldValidate: false });
@@ -127,11 +129,7 @@ export function SalonForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(submit)}
-      data-form-rounded="true"
-      noValidate
-    >
+    <form onSubmit={handleSubmit(submit)} data-form-rounded="true" noValidate>
       <Card className="gap-0 overflow-visible py-0">
         <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
           <FormHeader
@@ -226,26 +224,32 @@ export function SalonForm() {
               {shortDescription.length}/280 characters
             </p>
 
-            <FormControl
-              id="description"
-              label="Description"
-              error={errors.description?.message}
-            >
-              <Textarea
-                id="description"
-                rows={6}
-                maxLength={5000}
-                placeholder="What makes this salon special?"
-                disabled={isLoading}
-                aria-invalid={errors.description ? true : undefined}
-                aria-describedby={
-                  errors.description ? "description-error" : undefined
-                }
-                {...register("description", {
-                  setValueAs: (value: string) => value || undefined,
-                })}
-              />
-            </FormControl>
+            <Controller
+              name="descriptionHtml"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label htmlFor="description">Description</Label>
+                  <RichTextEditor
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    output="html"
+                    placeholder="What makes this salon special?"
+                    disabled={isLoading}
+                  />
+                  <p
+                    className="text-right text-xs text-muted-foreground"
+                    aria-live="polite"
+                  >
+                    {descriptionHtml.length}/20000 characters
+                  </p>
+                  <FieldError
+                    id="description-error"
+                    message={errors.descriptionHtml?.message}
+                  />
+                </div>
+              )}
+            />
           </Section>
 
           <Section

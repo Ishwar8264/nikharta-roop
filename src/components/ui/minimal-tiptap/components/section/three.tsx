@@ -107,9 +107,9 @@ const MemoizedColorPicker = React.memo<{
   onColorChange: (value: string) => void
 }>(({ palette, selectedColor, inverse, onColorChange }) => (
   <ToggleGroup
-    type="single"
-    value={selectedColor}
-    onValueChange={(value: string) => {
+    value={[selectedColor]}
+    onValueChange={(values) => {
+      const value = values.at(-1)
       if (value) onColorChange(value)
     }}
     className="gap-1.5"

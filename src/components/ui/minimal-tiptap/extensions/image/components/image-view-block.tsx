@@ -260,6 +260,8 @@ export const ImageViewBlock: React.FC<NodeViewProps> = ({
                   setImageState((prev) => ({ ...prev, isZoomed: false }))
                 }
               >
+                {/* Blob/data editor images cannot use Next Image optimization. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   className={cn(
                     "h-auto rounded object-contain transition-shadow",

@@ -65,7 +65,7 @@ export const MarkdownPaste = Extension.create({
               // Only prevent default if insertion succeeded
               event.preventDefault()
               return true
-            } catch (err) {
+            } catch {
               // Fall back to default paste behavior
               return false
             }
@@ -77,4 +77,3 @@ export const MarkdownPaste = Extension.create({
 })
 
 export default MarkdownPaste
-

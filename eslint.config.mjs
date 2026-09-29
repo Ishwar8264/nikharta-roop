@@ -13,6 +13,18 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["src/components/ui/minimal-tiptap/**/*.{ts,tsx}"],
+    rules: {
+      // Vendored editor primitives measure DOM refs and coordinate resize
+      // state in effects. They are valid client patterns but intentionally
+      // outside React Compiler optimization until the upstream code changes.
+      "react-hooks/refs": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

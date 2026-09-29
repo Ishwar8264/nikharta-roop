@@ -59,11 +59,6 @@ export const LinkPopoverBlock: React.FC<LinkPopoverBlockProps> = ({
         <ToolbarButton
           tooltip={copyTitle}
           onClick={handleCopy}
-          tooltipOptions={{
-            onPointerDownOutside: (e) => {
-              if (e.target === e.currentTarget) e.preventDefault()
-            },
-          }}
         >
           <CopyIcon />
         </ToolbarButton>
