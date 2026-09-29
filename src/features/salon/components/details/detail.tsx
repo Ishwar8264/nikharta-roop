@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { BackButton } from "@/components/shared/back-button";
 import { CoverImage } from "@/components/shared/cover-image";
+import { RichTextContent } from "@/components/shared/rich-text-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
@@ -26,6 +27,11 @@ interface SalonDetailProps {
 export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
   const cover = salon.images[0];
   const gallery = salon.images.slice(1);
+  const hasDescription = [
+    salon.descriptionHtml,
+    salon.descriptionJson,
+    salon.description,
+  ].some((value) => Boolean(value?.trim()));
   const directionsHref = `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}`;
 
   return (
@@ -77,12 +83,19 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
       {/* Content + Sidebar */}
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_320px]">
         <div className="space-y-10">
-          {salon.description ? (
-            <section className="space-y-3">
-              <h2 className="font-heading text-xl font-semibold">About</h2>
-              <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                {salon.description}
-              </p>
+          {hasDescription ? (
+            <section className="space-y-3" aria-labelledby="salon-about-title">
+              <h2
+                id="salon-about-title"
+                className="font-heading text-xl font-semibold"
+              >
+                About
+              </h2>
+              <RichTextContent
+                html={salon.descriptionHtml}
+                json={salon.descriptionJson}
+                text={salon.description}
+              />
             </section>
           ) : null}
 
