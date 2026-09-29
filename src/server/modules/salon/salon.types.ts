@@ -19,7 +19,10 @@ export interface PublicSalon {
   id: string;
   name: string;
   slug: string;
+  shortDescription: string | null;
   description: string | null;
+  descriptionHtml: string | null;
+  descriptionJson: string | null;
   category: SalonCategory;
   address: string;
   city: string;
@@ -33,8 +36,6 @@ export interface PublicSalon {
   phone: string | null;
   email: string | null;
   images: string[];
-  seoTitle: string | null;
-  seoDescription: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -15,7 +15,10 @@ export interface PublicSalon {
   id: string;
   name: string;
   slug: string;
+  shortDescription: string | null;
   description: string | null;
+  descriptionHtml: string | null;
+  descriptionJson: string | null;
   category: SalonCategory;
   address: string;
   city: string;
@@ -29,8 +32,6 @@ export interface PublicSalon {
   phone: string | null;
   email: string | null;
   images: string[];
-  seoTitle: string | null;
-  seoDescription: string | null;
   /** ISO string once JSON-serialized over HTTP; Date on the server. */
   createdAt: string | Date;
   updatedAt: string | Date;

@@ -45,7 +45,10 @@ const CATEGORIES = [
 const DEFAULT_VALUES = {
   name: "",
   slug: undefined,
+  shortDescription: undefined,
   description: undefined,
+  descriptionHtml: undefined,
+  descriptionJson: undefined,
   category: "UNISEX",
   address: "",
   city: "",
@@ -59,8 +62,6 @@ const DEFAULT_VALUES = {
   phone: undefined,
   email: undefined,
   images: [],
-  seoTitle: undefined,
-  seoDescription: undefined,
 } satisfies CreateSalonFormInput;
 
 export function SalonForm() {
@@ -87,7 +88,8 @@ export function SalonForm() {
   const name = useWatch({ control, name: "name" });
   const latitude = useWatch({ control, name: "lat" });
   const longitude = useWatch({ control, name: "lng" });
-  const seoDescription = useWatch({ control, name: "seoDescription" }) ?? "";
+  const shortDescription =
+    useWatch({ control, name: "shortDescription" }) ?? "";
 
   useEffect(() => {
     if (!slugWasEdited) {
@@ -188,6 +190,26 @@ export function SalonForm() {
               />
             </div>
 
+            <Field
+              id="shortDescription"
+              label="Short description"
+              placeholder="A concise summary shown in salon cards and previews"
+              maxLength={280}
+              disabled={isLoading}
+              error={errors.shortDescription?.message}
+              aria-describedby="shortDescription-count"
+              {...register("shortDescription", {
+                setValueAs: (value: string) => value || undefined,
+              })}
+            />
+            <p
+              id="shortDescription-count"
+              className="text-right text-xs text-muted-foreground"
+              aria-live="polite"
+            >
+              {shortDescription.length}/280 characters
+            </p>
+
             <FormControl
               id="description"
               label="Description"
@@ -195,7 +217,8 @@ export function SalonForm() {
             >
               <Textarea
                 id="description"
-                rows={4}
+                rows={6}
+                maxLength={5000}
                 placeholder="What makes this salon special?"
                 disabled={isLoading}
                 aria-invalid={errors.description ? true : undefined}
@@ -362,64 +385,67 @@ export function SalonForm() {
             title="Gallery"
             description="Up to 20 images. The first one becomes the cover."
           >
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {images.map((image, index) => (
-                <div
-                  key={image.publicId}
-                  className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
-                >
-                  <Image
-                    src={image.url}
-                    alt=""
-                    fill
-                    sizes="200px"
-                    className="object-cover"
-                  />
-                  {!isLoading ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        syncImages(images.filter((_, i) => i !== index))
-                      }
-                      aria-label="Remove image"
-                      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-sm transition-opacity hover:bg-destructive hover:text-destructive-foreground group-hover:opacity-100 focus-visible:opacity-100"
-                    >
-                      <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                  ) : null}
-                </div>
-              ))}
-
-              {images.length < 20 ? (
-                <MediaPickerDialog
-                  title="Add media"
-                  description="Upload new images or pick from your library."
-                  value={images}
-                  onChange={syncImages}
-                  mode="multiple"
-                  max={20}
-                  maxSizeMB={5}
-                  trigger={
-                    <div className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-3 text-center transition-colors hover:border-primary/40 hover:bg-muted/30">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                        <ImagePlus className="h-5 w-5" aria-hidden="true" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-semibold text-foreground">
-                          Add media
-                        </p>
-                        <p className="text-[10px] leading-tight text-muted-foreground">
-                          JPG · PNG · WebP · AVIF
-                        </p>
-                        <p className="text-[10px] leading-tight text-muted-foreground">
-                          Max 5MB
-                        </p>
-                      </div>
+            {images.length < 20 ? (
+              <MediaPickerDialog
+                title="Add media"
+                description="Upload new images or pick from your library."
+                value={images}
+                onChange={syncImages}
+                mode="multiple"
+                max={20}
+                maxSizeMB={5}
+                disabled={isLoading}
+                trigger={
+                  <div className="flex min-h-44 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border px-6 py-8 text-center transition-colors hover:border-primary/40 hover:bg-muted/30">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                      <ImagePlus className="h-6 w-6" aria-hidden="true" />
                     </div>
-                  }
-                />
-              ) : null}
-            </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-foreground">
+                        Add media
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Upload new images or choose from your media library
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        JPG · PNG · WebP · AVIF · Max 5MB
+                      </p>
+                    </div>
+                  </div>
+                }
+              />
+            ) : null}
+
+            {images.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {images.map((image, index) => (
+                  <div
+                    key={image.publicId}
+                    className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
+                  >
+                    <Image
+                      src={image.url}
+                      alt=""
+                      fill
+                      sizes="200px"
+                      className="object-cover"
+                    />
+                    {!isLoading ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          syncImages(images.filter((_, i) => i !== index))
+                        }
+                        aria-label="Remove image"
+                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-sm transition-opacity hover:bg-destructive hover:text-destructive-foreground group-hover:opacity-100 focus-visible:opacity-100"
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             <p className="text-xs text-muted-foreground">
               {images.length}/20 images
@@ -427,51 +453,6 @@ export function SalonForm() {
             </p>
 
             <FieldError id="images-error" message={errors.images?.message} />
-          </Section>
-
-          <Section
-            title="Search engine listing"
-            description="Optional. Leave blank to auto-generate from the name and description."
-          >
-            <Field
-              id="seoTitle"
-              label="SEO title"
-              placeholder="Best unisex salon in Bandra"
-              disabled={isLoading}
-              error={errors.seoTitle?.message}
-              {...register("seoTitle", {
-                setValueAs: (value: string) => value || undefined,
-              })}
-            />
-            <FormControl
-              id="seoDescription"
-              label="SEO description"
-              error={errors.seoDescription?.message}
-            >
-              <Textarea
-                id="seoDescription"
-                rows={3}
-                maxLength={160}
-                placeholder="Haircuts, styling, and grooming for the whole family."
-                disabled={isLoading}
-                aria-invalid={errors.seoDescription ? true : undefined}
-                aria-describedby={
-                  errors.seoDescription
-                    ? "seoDescription-error seoDescription-count"
-                    : "seoDescription-count"
-                }
-                {...register("seoDescription", {
-                  setValueAs: (value: string) => value || undefined,
-                })}
-              />
-            </FormControl>
-            <p
-              id="seoDescription-count"
-              className="text-right text-xs text-muted-foreground"
-              aria-live="polite"
-            >
-              {seoDescription.length}/160 characters
-            </p>
           </Section>
         </CardContent>
 

@@ -76,10 +76,23 @@ export const createSalonSchema = z.strictObject({
     .min(2, "Name must contain at least 2 characters")
     .max(120, "Name must contain at most 120 characters"),
   slug: slugSchema.optional(),
+  shortDescription: z
+    .string({ error: "Short description must be a string" })
+    .trim()
+    .max(280, "Short description must contain at most 280 characters")
+    .optional(),
   description: z
     .string({ error: "Description must be a string" })
     .trim()
-    .max(2000, "Description must contain at most 2000 characters")
+    .max(5000, "Description must contain at most 5000 characters")
+    .optional(),
+  descriptionHtml: z
+    .string({ error: "HTML description must be a string" })
+    .max(20000, "HTML description is too long")
+    .optional(),
+  descriptionJson: z
+    .string({ error: "JSON description must be a string" })
+    .max(50000, "JSON description is too long")
     .optional(),
   category: z
     .enum(["MALE", "FEMALE", "UNISEX", "KIDS"], {
@@ -147,16 +160,6 @@ export const createSalonSchema = z.strictObject({
     .array(optionalUrlSchema, { error: "Images must be an array of URLs" })
     .max(20, "At most 20 images are allowed")
     .default([]),
-  seoTitle: z
-    .string({ error: "SEO title must be a string" })
-    .trim()
-    .max(70, "SEO title must contain at most 70 characters")
-    .optional(),
-  seoDescription: z
-    .string({ error: "SEO description must be a string" })
-    .trim()
-    .max(160, "SEO description must contain at most 160 characters")
-    .optional(),
 });
 
 /**
@@ -174,12 +177,13 @@ export const updateSalonSchema = createSalonSchema
     country: createSalonSchema.shape.country.removeDefault().optional(),
     timezone: createSalonSchema.shape.timezone.removeDefault().optional(),
     images: createSalonSchema.shape.images.removeDefault().optional(),
+    shortDescription: createSalonSchema.shape.shortDescription.nullable(),
     description: createSalonSchema.shape.description.nullable(),
+    descriptionHtml: createSalonSchema.shape.descriptionHtml.nullable(),
+    descriptionJson: createSalonSchema.shape.descriptionJson.nullable(),
     placeId: createSalonSchema.shape.placeId.nullable(),
     phone: createSalonSchema.shape.phone.nullable(),
     email: createSalonSchema.shape.email.nullable(),
-    seoTitle: createSalonSchema.shape.seoTitle.nullable(),
-    seoDescription: createSalonSchema.shape.seoDescription.nullable(),
   })
   .refine(
     (input) => Object.values(input).some((value) => value !== undefined),

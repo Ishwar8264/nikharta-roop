@@ -339,7 +339,10 @@ function buildSalonCreateInput(
   return {
     name: input.name,
     slug,
+    shortDescription: input.shortDescription ?? null,
     description: input.description ?? null,
+    descriptionHtml: input.descriptionHtml ?? null,
+    descriptionJson: input.descriptionJson ?? null,
     category: input.category,
     address: input.address,
     city: input.city,
@@ -353,8 +356,6 @@ function buildSalonCreateInput(
     phone: input.phone ?? null,
     email: input.email ?? null,
     images: input.images,
-    seoTitle: input.seoTitle ?? null,
-    seoDescription: input.seoDescription ?? null,
   };
 }
 
@@ -374,7 +375,16 @@ function buildSalonUpdateInput(
 
   if (input.name !== undefined) data.name = input.name;
   if (input.slug !== undefined) data.slug = input.slug;
+  if (input.shortDescription !== undefined) {
+    data.shortDescription = input.shortDescription;
+  }
   if (input.description !== undefined) data.description = input.description;
+  if (input.descriptionHtml !== undefined) {
+    data.descriptionHtml = input.descriptionHtml;
+  }
+  if (input.descriptionJson !== undefined) {
+    data.descriptionJson = input.descriptionJson;
+  }
   if (input.category !== undefined) data.category = input.category;
   if (input.address !== undefined) data.address = input.address;
   if (input.city !== undefined) data.city = input.city;
@@ -388,10 +398,6 @@ function buildSalonUpdateInput(
   if (input.phone !== undefined) data.phone = input.phone;
   if (input.email !== undefined) data.email = input.email;
   if (input.images !== undefined) data.images = input.images;
-  if (input.seoTitle !== undefined) data.seoTitle = input.seoTitle;
-  if (input.seoDescription !== undefined) {
-    data.seoDescription = input.seoDescription;
-  }
 
   return data;
 }

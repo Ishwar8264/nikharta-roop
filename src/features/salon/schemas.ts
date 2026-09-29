@@ -28,10 +28,23 @@ export const createSalonSchema = z.strictObject({
     .min(2, "Name must contain at least 2 characters")
     .max(120, "Name must contain at most 120 characters"),
   slug: slugSchema.optional(),
-  description: z
-    .string()
+  shortDescription: z
+    .string({ error: "Short description must be a string" })
     .trim()
-    .max(2000, "Description must contain at most 2000 characters")
+    .max(280, "Short description must contain at most 280 characters")
+    .optional(),
+  description: z
+    .string({ error: "Description must be a string" })
+    .trim()
+    .max(5000, "Description must contain at most 5000 characters")
+    .optional(),
+  descriptionHtml: z
+    .string({ error: "HTML description must be a string" })
+    .max(20000, "HTML description is too long")
+    .optional(),
+  descriptionJson: z
+    .string({ error: "JSON description must be a string" })
+    .max(50000, "JSON description is too long")
     .optional(),
   category: z.enum(["MALE", "FEMALE", "UNISEX", "KIDS"]).default("UNISEX"),
   address: z
@@ -93,16 +106,6 @@ export const createSalonSchema = z.strictObject({
     })
     .max(20, "At most 20 images are allowed")
     .default([]),
-  seoTitle: z
-    .string()
-    .trim()
-    .max(70, "SEO title must contain at most 70 characters")
-    .optional(),
-  seoDescription: z
-    .string()
-    .trim()
-    .max(160, "SEO description must contain at most 160 characters")
-    .optional(),
 });
 
 export type CreateSalonFormInput = z.input<typeof createSalonSchema>;

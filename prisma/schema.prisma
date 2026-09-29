@@ -253,28 +253,29 @@ model SocialAccount {
 
 // ---------- SALON & STAFF ----------
 model Salon {
-  id          String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
-  name        String
-  slug        String        @unique
-  description String?
-  category    SalonCategory @default(UNISEX)
-  address     String
-  city        String
-  state       String
-  zip         String
-  country     String        @default("IN")
-  timezone    String        @default("Asia/Kolkata")
-  lat         Float
-  lng         Float
-  placeId     String?       @unique
+  id       String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  name     String
+  slug     String        @unique
+  category SalonCategory @default(UNISEX)
+
+  shortDescription String?
+  description      String?
+  descriptionHtml  String?
+  descriptionJson  String?
+
+  address  String
+  city     String
+  state    String
+  zip      String
+  country  String  @default("IN")
+  timezone String  @default("Asia/Kolkata")
+  lat      Float
+  lng      Float
+  placeId  String? @unique
 
   phone  String?
   email  String?
   images String[] // Gallery
-
-  // SEO
-  seoTitle       String?
-  seoDescription String?
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?

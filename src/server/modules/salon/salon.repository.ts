@@ -14,7 +14,10 @@ const PUBLIC_SALON_SELECT = {
   id: true,
   name: true,
   slug: true,
+  shortDescription: true,
   description: true,
+  descriptionHtml: true,
+  descriptionJson: true,
   category: true,
   address: true,
   city: true,
@@ -28,8 +31,6 @@ const PUBLIC_SALON_SELECT = {
   phone: true,
   email: true,
   images: true,
-  seoTitle: true,
-  seoDescription: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.SalonSelect;
@@ -61,6 +62,12 @@ export async function listActiveSalons(input: {
       ? {
           OR: [
             { name: { contains: input.search, mode: "insensitive" } },
+            {
+              shortDescription: {
+                contains: input.search,
+                mode: "insensitive",
+              },
+            },
             { description: { contains: input.search, mode: "insensitive" } },
           ],
         }
