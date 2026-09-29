@@ -46,6 +46,7 @@ export const routes = {
 
   // ─── System ───
   designSystem: "/design-system",
+  sessionRefresh: "/session/refresh",
 } as const;
 
 export type Routes = typeof routes;

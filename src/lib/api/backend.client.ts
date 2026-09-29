@@ -45,6 +45,7 @@ const BASE_URL = "/api/v1";
 const CSRF_COOKIE = "csrfToken";
 const CSRF_HEADER = "x-csrf-token";
 const REFRESH_PATH = "/api/v1/auth/refresh";
+const REFRESH_LOCK_NAME = "auth-refresh";
 
 /**
  * Endpoints where a 401 means "bad credentials", not "expired session".
@@ -103,11 +104,14 @@ function readCsrfToken(): string | null {
 async function attemptRefresh(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
 
-  refreshInFlight = (async () => {
+  refreshInFlight = withRefreshLock(async () => {
+    const csrf = readCsrfToken();
+
     try {
       const res = await fetch(REFRESH_PATH, {
         method: "POST",
         credentials: "include",
+        headers: csrf ? { [CSRF_HEADER]: csrf } : undefined,
       });
 
       if (res.ok) {
@@ -124,9 +128,49 @@ async function attemptRefresh(): Promise<boolean> {
     } finally {
       refreshInFlight = null;
     }
-  })();
+  });
 
   return refreshInFlight;
+}
+
+/**
+ * Serializes refresh rotation across browser tabs when the Web Locks API is
+ * available.
+ *
+ * Why:
+ * The in-memory promise only protects one tab. Without a browser-wide lock,
+ * two tabs can submit the same single-use refresh token and trigger replay
+ * protection, which revokes the user's active sessions.
+ */
+async function withRefreshLock(task: () => Promise<boolean>): Promise<boolean> {
+  if (typeof navigator === "undefined" || !("locks" in navigator)) {
+    return task();
+  }
+
+  const csrfBeforeWaiting = readCsrfToken();
+
+  return navigator.locks.request(REFRESH_LOCK_NAME, async () => {
+    // A changed CSRF cookie proves another tab already rotated the session
+    // while this tab waited. Reuse its fresh cookies instead of rotating again.
+    if (csrfBeforeWaiting && readCsrfToken() !== csrfBeforeWaiting) {
+      emit("auth:refreshed");
+      return true;
+    }
+
+    return task();
+  });
+}
+
+/**
+ * Restores a cookie-backed browser session by rotating its refresh token.
+ *
+ * Why exported:
+ * Protected document navigations cannot rotate cookies during Server
+ * Component rendering, so the recovery page uses the same guarded refresh
+ * operation as API retries.
+ */
+export function refreshSession(): Promise<boolean> {
+  return attemptRefresh();
 }
 
 /** Dispatches a CustomEvent in the browser only (no-op during SSR). */
