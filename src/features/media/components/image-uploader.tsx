@@ -6,6 +6,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { saveMedia } from "../actions/save-media";
 import { signUpload } from "../actions/sign-upload";
 import { uploadToCloudinary } from "../lib/upload-to-cloudinary";
 import type { UploadedImage, UploadTask } from "../types";
@@ -101,27 +102,8 @@ export function ImageUploader({
       }));
       setTasks((prev) => [...prev, ...newTasks]);
 
-      // Sign once for the whole batch — the signature is per-request but
-      // the folder and timestamp are identical, and Cloudinary accepts the
-      // same signature for multiple uploads within the 1-hour window.
-      let signature;
-      try {
-        signature = await signUpload();
-      } catch (error) {
-        setGlobalError(
-          error instanceof Error ? error.message : "Could not start upload",
-        );
-        setTasks((prev) =>
-          prev.map((t) =>
-            newTasks.some((n) => n.id === t.id)
-              ? { ...t, status: "error", error: "Not signed" }
-              : t,
-          ),
-        );
-        return;
-      }
-
       // Serial upload — see component doc for why.
+      const completed = [...value];
       for (const task of newTasks) {
         setTasks((prev) =>
           prev.map((t) =>
@@ -130,6 +112,9 @@ export function ImageUploader({
         );
 
         try {
+          // Each file gets its own signed public ID, so uploads cannot
+          // overwrite one another or escape the current user's namespace.
+          const signature = await signUpload();
           const result = await uploadToCloudinary({
             file: task.file,
             signature,
@@ -139,18 +124,14 @@ export function ImageUploader({
               );
             },
           });
+          await saveMedia(result);
 
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === task.id
-                ? { ...t, status: "done", result, progress: 100 }
-                : t,
-            ),
-          );
+          URL.revokeObjectURL(task.previewUrl);
+          setTasks((prev) => prev.filter((item) => item.id !== task.id));
 
           // Notify the parent only after the asset is fully stored.
-          onChange([...value, result]);
-          // Note: `value` here is the closure value — see the note below.
+          completed.push(result);
+          onChange([...completed]);
         } catch (error) {
           setTasks((prev) =>
             prev.map((t) =>

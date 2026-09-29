@@ -37,14 +37,15 @@ export function uploadToCloudinary({
   onProgress,
   signal,
 }: UploadOptions): Promise<UploadedImage> {
-  const { cloudName, apiKey, timestamp, signature: signed, folder } = signature;
+  const { cloudName, apiKey, timestamp, signature: signed, publicId } =
+    signature;
 
   const formData = new FormData();
   formData.append("file", file);
   formData.append("api_key", apiKey);
   formData.append("timestamp", String(timestamp));
   formData.append("signature", signed);
-  formData.append("folder", folder);
+  formData.append("public_id", publicId);
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();

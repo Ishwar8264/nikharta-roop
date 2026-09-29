@@ -10,6 +10,7 @@ import { blogPaths, blogSchemas } from "./blog.openapi";
 import { couponPaths, couponSchemas } from "./coupon.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
+import { mediaPaths, mediaSchemas } from "./media.openapi";
 import { notificationPaths, notificationSchemas } from "./notification.openapi";
 import { oauthPaths, oauthSchemas } from "./oauth.openapi";
 import { reviewPaths, reviewSchemas } from "./review.openapi";
@@ -76,6 +77,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "Notifications",
         description: "User inbox and delivery attempts",
+      },
+      {
+        name: "Media",
+        description: "Private media library and Cloudinary asset metadata",
       },
       {
         name: "Blog",
@@ -2938,6 +2943,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       ...appointmentPaths,
       ...reviewPaths,
       ...favoritePaths,
+      ...mediaPaths,
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -4549,6 +4555,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         ...appointmentSchemas,
         ...reviewSchemas,
         ...favoriteSchemas,
+        ...mediaSchemas,
         WorkingHoursDay: {
           type: "object",
           required: ["id", "day", "openTime", "closeTime", "isClosed"],
