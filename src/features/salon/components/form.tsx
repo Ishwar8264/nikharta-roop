@@ -8,7 +8,13 @@ import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { FormHeader } from "@/components/shared";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -121,9 +127,19 @@ export function SalonForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(submit)} noValidate>
-      <Card className="overflow-visible py-0">
-        <CardContent className="space-y-10 px-5 py-6 sm:px-8 sm:py-8">
+    <form
+      onSubmit={handleSubmit(submit)}
+      data-form-rounded="true"
+      noValidate
+    >
+      <Card className="gap-0 overflow-visible py-0">
+        <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
+          <FormHeader
+            title="Create a salon"
+            description="Fill in the details below. You can edit everything later."
+          />
+        </CardHeader>
+        <CardContent className="space-y-10 px-5 py-5 sm:px-8 sm:py-5">
           <FormError>{error}</FormError>
 
           <Section
@@ -164,7 +180,7 @@ export function SalonForm() {
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger
                       id="category"
-                      className="h-11 w-full sm:w-56"
+                      className="h-11 w-full rounded-md sm:w-56"
                       disabled={isLoading}
                       onBlur={field.onBlur}
                       aria-invalid={errors.category ? true : undefined}
@@ -396,7 +412,7 @@ export function SalonForm() {
                 maxSizeMB={5}
                 disabled={isLoading}
                 trigger={
-                  <div className="flex min-h-44 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border px-6 py-8 text-center transition-colors hover:border-primary/40 hover:bg-muted/30">
+                  <div className="flex min-h-44 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-md border-2 border-dashed border-border px-6 py-8 text-center transition-colors hover:border-primary/40 hover:bg-muted/30">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
                       <ImagePlus className="h-6 w-6" aria-hidden="true" />
                     </div>

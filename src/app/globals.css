@@ -281,6 +281,16 @@
   border-radius: 0;
 }
 
+/* Card forms opt into one consistent radius without changing auth/search UI. */
+:where(
+  [data-form-rounded="true"] [data-slot="input"],
+  [data-form-rounded="true"] [data-slot="textarea"],
+  [data-form-rounded="true"] [data-slot="select-trigger"],
+  [data-form-rounded="true"] .phone-input .phone-input__control
+) {
+  border-radius: var(--radius-md);
+}
+
 /* Leaflet — keep tiles/controls under our popovers and dropdowns. */
 .leaflet-container {
   z-index: 0 !important;

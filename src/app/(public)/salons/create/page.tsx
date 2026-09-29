@@ -21,16 +21,7 @@ export default async function NewSalonPage() {
   if (!user) redirect("/login?redirect=%2Fsalons%2Fcreate");
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
-      <header className="mb-10">
-        <h1 className="font-heading text-3xl font-bold tracking-tight">
-          Create a salon
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Fill in the details below. You can edit everything later.
-        </p>
-      </header>
-
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
       <SalonForm />
     </div>
   );
