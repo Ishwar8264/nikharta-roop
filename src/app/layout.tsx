@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { siteConfig } from "@/config/site";
 import { getSession } from "@/lib/auth/get-session";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/features/auth/components/authProvider";
 import "./globals.css";
 
@@ -93,7 +94,9 @@ export default async function RootLayout({
     <html lang="en-IN" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} antialiased`}>
         <ThemeProvider>
-          <AuthProvider user={user}>{children}</AuthProvider>
+          <AuthProvider user={user}>
+            <TooltipProvider>{children}</TooltipProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
