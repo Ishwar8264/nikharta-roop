@@ -10,6 +10,7 @@ export const routes = {
   // ─── Public ───
   home: "/",
   salons: "/salons",
+  salonCreate: "/salons/create",
   salonDetail: (slug: string) => `/salons/${slug}`,
   salonBooking: (slug: string) => `/salons/${slug}/book`,
   services: "/services",

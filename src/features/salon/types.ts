@@ -58,3 +58,14 @@ export const SALON_CATEGORIES: { value: SalonCategory; label: string }[] = [
 ];
 
 export type { SalonCategory };
+
+export interface CreateSalonResponse {
+  message: string;
+  data: { salon: PublicSalon };
+}
+
+/** Field-level validation error from the backend's 400 response. */
+export interface FieldError {
+  field: string;
+  message: string;
+}
