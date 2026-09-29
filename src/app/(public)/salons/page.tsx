@@ -1,12 +1,10 @@
+import { SearchX } from "lucide-react";
 import type { Metadata } from "next";
 
-import {
-  EmptyState,
-  FilterBar,
-  Pagination,
-  SalonCard,
-} from "@/features/salon/components";
-import { SalonFilters } from "@/features/salon/types";
+import { EmptyState, Pagination } from "@/components/shared";
+import { ClearLink } from "@/components/shared/clear-link";
+import type { SalonFilters } from "@/features/salon";
+import { FilterBar, SalonCard } from "@/features/salon";
 import { listSalons } from "@/server/modules/salon/salon.service";
 
 export const metadata: Metadata = {
@@ -81,7 +79,20 @@ export default async function SalonsPage({ searchParams }: SalonsPageProps) {
       <FilterBar initial={filters} />
 
       {result.items.length === 0 ? (
-        <EmptyState filtered={hasFilters} />
+        <EmptyState
+          icon={SearchX}
+          title={hasFilters ? "No salons match your filters" : "No salons yet"}
+          description={
+            hasFilters
+              ? "Try removing a filter or searching for a different city."
+              : "We are onboarding salons in your area. Check back soon."
+          }
+          action={
+            hasFilters ? (
+              <ClearLink href="/salons" label="Clear filters" />
+            ) : null
+          }
+        />
       ) : (
         <>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -93,7 +104,12 @@ export default async function SalonsPage({ searchParams }: SalonsPageProps) {
           <Pagination
             hasMore={result.hasMore}
             nextCursor={result.nextCursor}
-            baseParams={baseParams}
+            buildHref={(cursor) => {
+              const p = new URLSearchParams(baseParams.toString());
+              p.set("cursor", cursor);
+              return `?${p.toString()}`;
+            }}
+            label="Load more salons"
           />
         </>
       )}

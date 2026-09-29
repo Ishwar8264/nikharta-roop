@@ -56,3 +56,5 @@ export const SALON_CATEGORIES: { value: SalonCategory; label: string }[] = [
   { value: "FEMALE", label: "Women" },
   { value: "KIDS", label: "Kids" },
 ];
+
+export type { SalonCategory };
