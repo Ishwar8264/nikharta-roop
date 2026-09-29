@@ -74,7 +74,7 @@ export function SalonServiceCard({
             {service.duration} min
           </span>
           <NavLink
-            href={routes.salonBooking(salonSlug)}
+            href={`${routes.salonBooking(salonSlug)}?service=${encodeURIComponent(service.slug)}`}
             variant="outline"
             size="sm"
             markActive={false}
