@@ -20,8 +20,6 @@ interface PostRow {
   views: number;
   published: boolean;
   publishedAt: Date | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
   metaKeywords: string | null;
   canonicalUrl: string | null;
   noIndex: boolean;
@@ -64,8 +62,6 @@ export function toPublicBlogPost(row: PostRow): PublicBlogPost {
     views: row.views,
     published: row.published,
     publishedAt: row.publishedAt,
-    seoTitle: row.seoTitle,
-    seoDescription: row.seoDescription,
     metaKeywords: row.metaKeywords,
     canonicalUrl: row.canonicalUrl,
     noIndex: row.noIndex,

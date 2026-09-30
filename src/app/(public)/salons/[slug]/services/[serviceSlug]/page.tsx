@@ -31,16 +31,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const service = await getService(slug, serviceSlug);
     const description =
-      service.seoDescription ??
       service.shortDescription ??
       service.description?.slice(0, 160) ??
       `${service.name} salon service.`;
 
     return {
-      title: service.seoTitle ?? service.name,
+      title: service.name,
       description,
       openGraph: {
-        title: service.seoTitle ?? service.name,
+        title: service.name,
         description,
         images: service.images[0] ? [service.images[0]] : undefined,
         type: "website",

@@ -52,8 +52,6 @@ const DEFAULT_VALUES: CreateServiceFormValues = {
   description: undefined,
   descriptionHtml: undefined,
   descriptionJson: undefined,
-  seoTitle: undefined,
-  seoDescription: undefined,
   images: [],
 };
 
@@ -88,8 +86,6 @@ export function CreateServiceForm({
   const description = useWatch({ control, name: "description" }) ?? "";
   const shortDescription =
     useWatch({ control, name: "shortDescription" }) ?? "";
-  const seoDescription =
-    useWatch({ control, name: "seoDescription" }) ?? "";
 
   useEffect(() => {
     if (!slugWasEdited) {
@@ -351,37 +347,6 @@ export function CreateServiceForm({
             <InlineError id="images-error" message={errors.images?.message} />
           </FormSection>
 
-          <FormSection
-            title="Search preview"
-            description="Optional title and description for search engines."
-          >
-            <Field
-              id="seoTitle"
-              label="SEO title"
-              maxLength={70}
-              disabled={isLoading}
-              error={errors.seoTitle?.message}
-              {...register("seoTitle", {
-                setValueAs: (value: string) => value || undefined,
-              })}
-            />
-            <FormControl
-              id="seoDescription"
-              label="SEO description"
-              error={errors.seoDescription?.message}
-            >
-              <Textarea
-                id="seoDescription"
-                rows={3}
-                maxLength={160}
-                disabled={isLoading}
-                {...register("seoDescription", {
-                  setValueAs: (value: string) => value || undefined,
-                })}
-              />
-              <CharacterCount value={seoDescription} max={160} />
-            </FormControl>
-          </FormSection>
 
           <Controller
             name="isActive"

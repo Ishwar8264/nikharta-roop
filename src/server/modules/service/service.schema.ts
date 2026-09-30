@@ -122,16 +122,6 @@ export const createServiceSchema = z.strictObject({
     .string({ error: "JSON description must be a string" })
     .max(50000, "JSON description is too long")
     .optional(),
-  seoTitle: z
-    .string({ error: "SEO title must be a string" })
-    .trim()
-    .max(70, "SEO title must contain at most 70 characters")
-    .optional(),
-  seoDescription: z
-    .string({ error: "SEO description must be a string" })
-    .trim()
-    .max(160, "SEO description must contain at most 160 characters")
-    .optional(),
   images: z
     .array(optionalUrlSchema, { error: "Images must be an array of URLs" })
     .max(10, "At most 10 images are allowed")
@@ -156,8 +146,6 @@ export const updateServiceSchema = createServiceSchema
     description: createServiceSchema.shape.description.nullable(),
     descriptionHtml: createServiceSchema.shape.descriptionHtml.nullable(),
     descriptionJson: createServiceSchema.shape.descriptionJson.nullable(),
-    seoTitle: createServiceSchema.shape.seoTitle.nullable(),
-    seoDescription: createServiceSchema.shape.seoDescription.nullable(),
   })
   .refine(
     (input) => Object.values(input).some((value) => value !== undefined),

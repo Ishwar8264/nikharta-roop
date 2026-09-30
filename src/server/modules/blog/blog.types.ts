@@ -43,9 +43,10 @@ export interface PublicCategory {
   id: string;
   name: string;
   slug: string;
+  shortDescription: string | null;
   description: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
+  descriptionHtml: string | null;
+  descriptionJson: string | null;
 }
 
 /**
@@ -69,8 +70,6 @@ export interface PublicBlogPost {
   views: number;
   published: boolean;
   publishedAt: Date | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
   metaKeywords: string | null;
   canonicalUrl: string | null;
   noIndex: boolean;

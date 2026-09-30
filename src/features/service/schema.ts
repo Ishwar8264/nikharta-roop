@@ -51,14 +51,6 @@ export const createServiceFormSchema = z.strictObject({
   ),
   descriptionHtml: optionalText(20000, "HTML description is too long"),
   descriptionJson: optionalText(50000, "JSON description is too long"),
-  seoTitle: optionalText(
-    70,
-    "SEO title must contain at most 70 characters",
-  ),
-  seoDescription: optionalText(
-    160,
-    "SEO description must contain at most 160 characters",
-  ),
   images: z
     .array(optionalUrl)
     .max(10, "At most 10 images are allowed"),

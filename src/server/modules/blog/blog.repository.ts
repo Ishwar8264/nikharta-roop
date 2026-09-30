@@ -17,8 +17,6 @@ const PUBLIC_POST_SELECT = {
   views: true,
   published: true,
   publishedAt: true,
-  seoTitle: true,
-  seoDescription: true,
   metaKeywords: true,
   canonicalUrl: true,
   noIndex: true,
@@ -29,9 +27,10 @@ const PUBLIC_POST_SELECT = {
       id: true,
       name: true,
       slug: true,
+      shortDescription: true,
       description: true,
-      seoTitle: true,
-      seoDescription: true,
+      descriptionHtml: true,
+      descriptionJson: true,
     },
   },
   tags: { select: { id: true, name: true, slug: true } },
@@ -282,9 +281,10 @@ export async function listCategories(input: {
       id: true,
       name: true,
       slug: true,
+      shortDescription: true,
       description: true,
-      seoTitle: true,
-      seoDescription: true,
+      descriptionHtml: true,
+      descriptionJson: true,
     },
     orderBy: [{ name: "asc" }, { id: "asc" }],
     take: input.limit + 1,
@@ -320,9 +320,10 @@ export async function categoryExistsById(id: string): Promise<boolean> {
 export async function createCategory(data: {
   name: string;
   slug: string;
+  shortDescription: string | null;
   description: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
+  descriptionHtml: string | null;
+  descriptionJson: string | null;
 }) {
   return prisma.blogCategory.create({
     data,
@@ -330,9 +331,10 @@ export async function createCategory(data: {
       id: true,
       name: true,
       slug: true,
+      shortDescription: true,
       description: true,
-      seoTitle: true,
-      seoDescription: true,
+      descriptionHtml: true,
+      descriptionJson: true,
     },
   });
 }

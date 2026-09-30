@@ -123,8 +123,6 @@ export async function createSalonProduct(
       description: input.description ?? null,
       descriptionHtml: input.descriptionHtml ?? null,
       descriptionJson: input.descriptionJson ?? null,
-      seoTitle: input.seoTitle ?? null,
-      seoDescription: input.seoDescription ?? null,
       images: input.images,
     });
 
@@ -197,10 +195,6 @@ export async function updateSalonProduct(
   }
   if (input.descriptionJson !== undefined) {
     data.descriptionJson = input.descriptionJson;
-  }
-  if (input.seoTitle !== undefined) data.seoTitle = input.seoTitle;
-  if (input.seoDescription !== undefined) {
-    data.seoDescription = input.seoDescription;
   }
   if (input.images !== undefined) data.images = input.images;
 

@@ -20,8 +20,6 @@ const PUBLIC_SERVICE_SELECT = {
   description: true,
   descriptionHtml: true,
   descriptionJson: true,
-  seoTitle: true,
-  seoDescription: true,
   images: true,
   createdAt: true,
   updatedAt: true,

@@ -452,14 +452,15 @@ const blogTagSchema: OpenAPIV3_1.SchemaObject = {
 
 const blogCategorySchema: OpenAPIV3_1.SchemaObject = {
   type: "object",
-  required: ["id", "name", "slug", "description", "seoTitle", "seoDescription"],
+  required: ["id", "name", "slug", "shortDescription", "description", "descriptionHtml", "descriptionJson"],
   properties: {
     id: { $ref: "#/components/schemas/ResourceId" },
     name: { type: "string" },
     slug: { type: "string" },
+    shortDescription: { type: ["string", "null"] },
     description: { type: ["string", "null"] },
-    seoTitle: { type: ["string", "null"] },
-    seoDescription: { type: ["string", "null"] },
+    descriptionHtml: { type: ["string", "null"] },
+    descriptionJson: { type: ["string", "null"] },
   },
 };
 
@@ -483,8 +484,6 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       "views",
       "published",
       "publishedAt",
-      "seoTitle",
-      "seoDescription",
       "metaKeywords",
       "canonicalUrl",
       "noIndex",
@@ -508,8 +507,6 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       views: { type: "integer", minimum: 0 },
       published: { type: "boolean" },
       publishedAt: { type: ["string", "null"], format: "date-time" },
-      seoTitle: { type: ["string", "null"] },
-      seoDescription: { type: ["string", "null"] },
       metaKeywords: { type: ["string", "null"] },
       canonicalUrl: { type: ["string", "null"], format: "uri" },
       noIndex: { type: "boolean" },
@@ -576,8 +573,6 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
         default: [],
         items: { type: "string", minLength: 1, maxLength: 60 },
       },
-      seoTitle: { type: "string", maxLength: 70 },
-      seoDescription: { type: "string", maxLength: 160 },
       metaKeywords: { type: "string", maxLength: 255 },
       canonicalUrl: { type: "string", format: "uri", maxLength: 2048 },
       noIndex: { type: "boolean", default: false },
@@ -613,8 +608,6 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
         maxItems: 20,
         items: { type: "string", minLength: 1, maxLength: 60 },
       },
-      seoTitle: { type: ["string", "null"], maxLength: 70 },
-      seoDescription: { type: ["string", "null"], maxLength: 160 },
       metaKeywords: { type: ["string", "null"], maxLength: 255 },
       canonicalUrl: {
         type: ["string", "null"],
@@ -661,9 +654,10 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
         minLength: 2,
         maxLength: 120,
       },
+      shortDescription: { type: "string", maxLength: 280 },
       description: { type: "string", maxLength: 500 },
-      seoTitle: { type: "string", maxLength: 70 },
-      seoDescription: { type: "string", maxLength: 160 },
+      descriptionHtml: { type: "string", maxLength: 20000 },
+      descriptionJson: { type: "string", maxLength: 50000 },
     },
   },
   BlogPostResponse: {
