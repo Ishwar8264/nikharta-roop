@@ -9,7 +9,9 @@ import { NavLink } from "@/components/shared/nav-link";
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
 import { siteConfig } from "@/config/site";
-import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
+import { getSession } from "@/lib/auth/get-session";
+import { SalonNotFoundError, SalonRoleInsufficientError } from "@/server/modules/salon/salon.errors";
+import { getSalonForServiceManagement } from "@/server/modules/salon/salon.service";
 import { ServiceNotFoundError } from "@/server/modules/service/service.errors";
 import { getSalonService } from "@/server/modules/service/service.service";
 
@@ -31,16 +33,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const service = await getService(slug, serviceSlug);
     const description =
-      service.seoDescription ??
       service.shortDescription ??
       service.description?.slice(0, 160) ??
       `${service.name} salon service.`;
 
     return {
-      title: service.seoTitle ?? service.name,
+      title: service.name,
       description,
       openGraph: {
-        title: service.seoTitle ?? service.name,
+        title: service.name,
         description,
         images: service.images[0] ? [service.images[0]] : undefined,
         type: "website",
@@ -69,6 +70,16 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
   }
 
   const description = service.description ?? service.shortDescription;
+  const user = await getSession();
+  let canManage = false;
+  if (user) {
+    try {
+      await getSalonForServiceManagement(slug, user.id);
+      canManage = true;
+    } catch (error) {
+      if (!(error instanceof SalonNotFoundError) && !(error instanceof SalonRoleInsufficientError)) throw error;
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
@@ -140,6 +151,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
           >
             Book this service
           </NavLink>
+          {canManage ? <NavLink href={routes.salonServiceEdit(slug, service.id)} variant="outline" markActive={false} className="mt-3 w-full justify-center">Edit service</NavLink> : null}
         </aside>
       </div>
     </main>

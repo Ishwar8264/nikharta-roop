@@ -37,8 +37,6 @@ export interface PublicService {
   description: string | null;
   descriptionHtml: string | null;
   descriptionJson: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
   images: string[];
   createdAt: Date;
   updatedAt: Date;

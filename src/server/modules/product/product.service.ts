@@ -23,6 +23,7 @@ import {
   findProductById,
   findProductBySlug,
   listCategories,
+  listManagedProductsBySalon,
   listProductsBySalon,
   productSlugExistsInSalon,
   softDeleteProductById,
@@ -77,6 +78,41 @@ export async function getSalonProduct(
   return toPublicProduct(product);
 }
 
+/** Returns all non-deleted products after checking salon management access. */
+export async function listManagedSalonProducts(
+  actorId: string,
+  salonRef: string,
+  cursor?: string,
+): Promise<PaginatedProducts> {
+  const salonId = await resolveSalonId(salonRef);
+  if (!salonId) throw new SalonNotFoundError();
+  const salon = await findSalonForViewer({ salonId, userId: actorId });
+  if (!salon) throw new SalonNotFoundError();
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  const result = await listManagedProductsBySalon(salonId, cursor);
+  return {
+    items: result.items.map(toPublicProduct),
+    hasMore: result.hasMore,
+    nextCursor: result.nextCursor,
+  };
+}
+
+/** Loads one product, including inactive entries, for its management form. */
+export async function getManagedSalonProduct(
+  actorId: string,
+  salonRef: string,
+  productId: string,
+): Promise<PublicProduct> {
+  const salonId = await resolveSalonId(salonRef);
+  if (!salonId) throw new SalonNotFoundError();
+  const salon = await findSalonForViewer({ salonId, userId: actorId });
+  if (!salon) throw new SalonNotFoundError();
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  const product = await findProductById(productId);
+  if (!product || product.salonId !== salonId) throw new ProductNotFoundError();
+  return toPublicProduct(product);
+}
+
 /**
  * Creates a product inside a salon the caller manages.
  *
@@ -123,8 +159,6 @@ export async function createSalonProduct(
       description: input.description ?? null,
       descriptionHtml: input.descriptionHtml ?? null,
       descriptionJson: input.descriptionJson ?? null,
-      seoTitle: input.seoTitle ?? null,
-      seoDescription: input.seoDescription ?? null,
       images: input.images,
     });
 
@@ -197,10 +231,6 @@ export async function updateSalonProduct(
   }
   if (input.descriptionJson !== undefined) {
     data.descriptionJson = input.descriptionJson;
-  }
-  if (input.seoTitle !== undefined) data.seoTitle = input.seoTitle;
-  if (input.seoDescription !== undefined) {
-    data.seoDescription = input.seoDescription;
   }
   if (input.images !== undefined) data.images = input.images;
 
@@ -275,6 +305,18 @@ export async function listProductCategories(
   query: ListCategoriesQuery,
 ): Promise<PaginatedCategories> {
   return listCategories(query);
+}
+
+/** Loads the complete paginated category vocabulary for product forms. */
+export async function listAllProductCategories(): Promise<PublicCategory[]> {
+  const categories: PublicCategory[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await listProductCategories({ cursor, limit: 100 });
+    categories.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
+  return categories;
 }
 
 /**

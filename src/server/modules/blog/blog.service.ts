@@ -147,8 +147,6 @@ export async function createDraftPost(
       readingTime: computeReadingTime(input.content),
       published: false,
       publishedAt: null,
-      seoTitle: input.seoTitle ?? null,
-      seoDescription: input.seoDescription ?? null,
       metaKeywords: input.metaKeywords ?? null,
       canonicalUrl: input.canonicalUrl ?? null,
       noIndex: input.noIndex,
@@ -215,10 +213,6 @@ export async function patchPost(
   if (input.contentJson !== undefined) data.contentJson = input.contentJson;
   if (input.coverImage !== undefined) data.coverImage = input.coverImage;
   if (input.categoryId !== undefined) data.categoryId = input.categoryId;
-  if (input.seoTitle !== undefined) data.seoTitle = input.seoTitle;
-  if (input.seoDescription !== undefined) {
-    data.seoDescription = input.seoDescription;
-  }
   if (input.metaKeywords !== undefined) data.metaKeywords = input.metaKeywords;
   if (input.canonicalUrl !== undefined) data.canonicalUrl = input.canonicalUrl;
   if (input.noIndex !== undefined) data.noIndex = input.noIndex;
@@ -474,9 +468,10 @@ export async function createBlogCategory(
     const created = await createCategory({
       name: input.name,
       slug,
+      shortDescription: input.shortDescription ?? null,
       description: input.description ?? null,
-      seoTitle: input.seoTitle ?? null,
-      seoDescription: input.seoDescription ?? null,
+      descriptionHtml: input.descriptionHtml ?? null,
+      descriptionJson: input.descriptionJson ?? null,
     });
 
     writeAuditLog({

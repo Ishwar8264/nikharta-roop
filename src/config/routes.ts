@@ -12,8 +12,22 @@ export const routes = {
   salons: "/salons",
   salonCreate: "/salons/create",
   salonDetail: (slug: string) => `/salons/${slug}`,
+  salonManage: (slug: string) => `/salons/${slug}/manage`,
   salonServices: (slug: string) => `/salons/${slug}/services`,
   salonServiceCreate: (slug: string) => `/salons/${slug}/services/create`,
+  salonServicesManage: (slug: string) => `/salons/${slug}/manage/services`,
+  salonServiceEdit: (slug: string, serviceId: string) =>
+    `/salons/${slug}/manage/services/${serviceId}`,
+  serviceCategoriesManage: "/service-categories/manage",
+  salonProducts: (slug: string) => `/salons/${slug}/products`,
+  salonProductDetail: (slug: string, productSlug: string) =>
+    `/salons/${slug}/products/${productSlug}`,
+  salonProductCreate: (slug: string) =>
+    `/salons/${slug}/manage/products/create`,
+  salonProductsManage: (slug: string) => `/salons/${slug}/manage/products`,
+  salonProductEdit: (slug: string, productId: string) =>
+    `/salons/${slug}/manage/products/${productId}`,
+  productCategoriesManage: "/product-categories/manage",
   salonServiceDetail: (salonSlug: string, serviceSlug: string) =>
     `/salons/${salonSlug}/services/${serviceSlug}`,
   salonBooking: (slug: string) => `/salons/${slug}/book`,

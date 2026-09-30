@@ -99,16 +99,6 @@ export const createBlogPostSchema = z.strictObject({
     )
     .max(20, "At most 20 tags are allowed")
     .default([]),
-  seoTitle: z
-    .string({ error: "SEO title must be a string" })
-    .trim()
-    .max(70, "SEO title must contain at most 70 characters")
-    .optional(),
-  seoDescription: z
-    .string({ error: "SEO description must be a string" })
-    .trim()
-    .max(160, "SEO description must contain at most 160 characters")
-    .optional(),
   metaKeywords: z
     .string({ error: "Meta keywords must be a string" })
     .trim()
@@ -133,8 +123,6 @@ export const updateBlogPostSchema = createBlogPostSchema
     contentJson: createBlogPostSchema.shape.contentJson.nullable(),
     coverImage: createBlogPostSchema.shape.coverImage.nullable(),
     categoryId: createBlogPostSchema.shape.categoryId.nullable(),
-    seoTitle: createBlogPostSchema.shape.seoTitle.nullable(),
-    seoDescription: createBlogPostSchema.shape.seoDescription.nullable(),
     metaKeywords: createBlogPostSchema.shape.metaKeywords.nullable(),
     canonicalUrl: createBlogPostSchema.shape.canonicalUrl.nullable(),
     tldr: createBlogPostSchema.shape.tldr.nullable(),
@@ -212,21 +200,14 @@ export const createCategorySchema = z.strictObject({
     .min(2, "Name must contain at least 2 characters")
     .max(80, "Name must contain at most 80 characters"),
   slug: slugSchema.optional(),
+  shortDescription: z.string().trim().max(280).optional(),
   description: z
     .string({ error: "Description must be a string" })
     .trim()
     .max(500, "Description must contain at most 500 characters")
     .optional(),
-  seoTitle: z
-    .string({ error: "SEO title must be a string" })
-    .trim()
-    .max(70, "SEO title must contain at most 70 characters")
-    .optional(),
-  seoDescription: z
-    .string({ error: "SEO description must be a string" })
-    .trim()
-    .max(160, "SEO description must contain at most 160 characters")
-    .optional(),
+  descriptionHtml: z.string().max(20000).optional(),
+  descriptionJson: z.string().max(50000).optional(),
 });
 
 /** Public list of categories. */

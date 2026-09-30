@@ -20,8 +20,6 @@ const PUBLIC_PRODUCT_SELECT = {
   description: true,
   descriptionHtml: true,
   descriptionJson: true,
-  seoTitle: true,
-  seoDescription: true,
   images: true,
   createdAt: true,
   updatedAt: true,
@@ -100,6 +98,27 @@ export async function listProductsBySalon(
   const hasMore = rows.length > input.limit;
   const items = hasMore ? rows.slice(0, input.limit) : rows;
 
+  return {
+    items,
+    hasMore,
+    nextCursor: hasMore ? (items[items.length - 1]?.id ?? null) : null,
+  };
+}
+
+/** Lists active and inactive products for management with bounded pagination. */
+export async function listManagedProductsBySalon(
+  salonId: string,
+  cursor?: string,
+) {
+  const rows = await prisma.product.findMany({
+    where: { salonId, deletedAt: null },
+    select: PUBLIC_PRODUCT_SELECT,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 51,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+  const hasMore = rows.length > 50;
+  const items = hasMore ? rows.slice(0, 50) : rows;
   return {
     items,
     hasMore,

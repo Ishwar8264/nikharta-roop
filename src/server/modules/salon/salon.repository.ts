@@ -180,12 +180,10 @@ export async function findSalonForViewer(input: {
 
   if (!salon) return null;
 
-  const [membership] = salon.members;
-  if (!membership) return null;
-
   const { members, ...rest } = salon;
+  if (members.length === 0) return null;
 
-  return { ...rest, viewerRole: members[0]!.role };
+  return { ...rest, viewerRole: members[0].role };
 }
 
 /** Returns true when the given slug is already taken. */

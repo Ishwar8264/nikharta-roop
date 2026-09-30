@@ -32,7 +32,6 @@ const CATEGORY_LABEL: Record<PublicSalonDetail["category"], string> = {
 
 interface SalonDetailProps {
   salon: PublicSalonDetail;
-  /** Wire this once the auth check on the page is in place. */
   canEdit?: boolean;
 }
 
@@ -83,11 +82,13 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
         </div>
 
         {canEdit ? (
-          <Button variant="outline" className="shrink-0">
-            <Link href={routes.salonDetail(salon.slug) + "/edit"}>
-              <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-              Edit salon
-            </Link>
+          <Button
+            variant="outline"
+            className="shrink-0"
+            render={<Link href={routes.salonManage(salon.slug)} />}
+          >
+            <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+            Manage salon
           </Button>
         ) : null}
       </header>
@@ -236,13 +237,16 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
               </p>
               <p className="text-xs text-muted-foreground">Services</p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4">
+            <Link
+              href={routes.salonProducts(salon.slug)}
+              className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
               <Package className="h-4 w-4 text-primary" aria-hidden="true" />
               <p className="mt-2 text-xl font-semibold">
                 {salon._count.products}
               </p>
               <p className="text-xs text-muted-foreground">Products</p>
-            </div>
+            </Link>
           </div>
         </aside>
       </div>

@@ -21,8 +21,6 @@ interface ProductRowForMapper {
   description: string | null;
   descriptionHtml: string | null;
   descriptionJson: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
   images: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -51,8 +49,6 @@ export function toPublicProduct(row: ProductRowForMapper): PublicProduct {
     description: row.description,
     descriptionHtml: row.descriptionHtml,
     descriptionJson: row.descriptionJson,
-    seoTitle: row.seoTitle,
-    seoDescription: row.seoDescription,
     images: row.images,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

@@ -101,16 +101,14 @@ export default async function SalonServicesPage({
           </p>
         </div>
         {canManageServices ? (
-          <NavLink
-            href={routes.salonServiceCreate(slug)}
-            variant="default"
-            markActive={false}
-            icon={<Plus className="h-4 w-4" />}
-          >
-            Add service
-          </NavLink>
+          <div className="flex flex-wrap gap-2">
+            <NavLink href={routes.salonServicesManage(slug)} variant="outline" markActive={false}>Manage services</NavLink>
+            <NavLink href={routes.salonServiceCreate(slug)} variant="default" markActive={false} icon={<Plus className="h-4 w-4" />}>Add service</NavLink>
+          </div>
         ) : null}
       </header>
+
+      {user?.role === "SUPER_ADMIN" ? <NavLink href={routes.serviceCategoriesManage} markActive={false} className="mt-4 inline-flex text-sm text-primary">Manage global categories</NavLink> : null}
 
       {result.items.length > 0 ? (
         <>

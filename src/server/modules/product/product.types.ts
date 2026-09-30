@@ -36,8 +36,6 @@ export interface PublicProduct {
   description: string | null;
   descriptionHtml: string | null;
   descriptionJson: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
   images: string[];
   createdAt: Date;
   updatedAt: Date;

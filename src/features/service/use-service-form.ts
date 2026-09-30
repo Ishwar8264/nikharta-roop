@@ -4,27 +4,27 @@ import { useState } from "react";
 
 import { ApiError } from "@/lib/api/backend.client";
 
-import { createServiceApi } from "./api";
+import { createServiceApi, updateServiceApi } from "./api";
 import {
   createServiceFormSchema,
   type CreateServiceFormValues,
 } from "./schema";
-import type { ApiFieldError, CreatedService } from "./types";
+import type { ApiFieldError, CreatedService, SalonService } from "./types";
 
 interface CreateServiceState {
-  create: (input: CreateServiceFormValues) => Promise<CreatedService | null>;
+  save: (input: CreateServiceFormValues) => Promise<CreatedService | null>;
   error: string | null;
   fieldErrors: Record<string, string>;
   isLoading: boolean;
 }
 
-/** Submits a service and preserves backend validation messages verbatim. */
-export function useCreateService(salonRef: string): CreateServiceState {
+/** Creates or updates a service and preserves backend validation messages. */
+export function useServiceForm(salonRef: string, initialService?: SalonService): CreateServiceState {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  async function create(
+  async function save(
     input: CreateServiceFormValues,
   ): Promise<CreatedService | null> {
     setError(null);
@@ -38,6 +38,17 @@ export function useCreateService(salonRef: string): CreateServiceState {
 
     setIsLoading(true);
     try {
+      if (initialService) {
+        const changes: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(validation.data)) {
+          const previous = initialService[key as keyof SalonService];
+          const next = value === undefined ? null : value;
+          if (JSON.stringify(next) !== JSON.stringify(previous)) changes[key] = next;
+        }
+        if (Object.keys(changes).length === 0) return initialService;
+        const response = await updateServiceApi(salonRef, initialService.id, changes);
+        return response.data.service;
+      }
       const response = await createServiceApi(salonRef, validation.data);
       return response.data.service;
     } catch (caught) {
@@ -56,7 +67,7 @@ export function useCreateService(salonRef: string): CreateServiceState {
     }
   }
 
-  return { create, error, fieldErrors, isLoading };
+  return { save, error, fieldErrors, isLoading };
 }
 
 function toFieldErrorMap(
