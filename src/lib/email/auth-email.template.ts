@@ -2,6 +2,9 @@ import "server-only";
 
 import { siteConfig } from "@/config/site";
 
+/** Matches the inline attachment id used by the email delivery layer. */
+export const AUTH_EMAIL_LOGO_CONTENT_ID = "nikharta-roop-logo";
+
 interface AuthEmailMessage {
   subject: string;
   html: string;
@@ -55,10 +58,6 @@ export function createPasswordResetEmail(code: string): AuthEmailMessage {
 
 /** Builds the shared email-client-safe shell for authentication messages. */
 function renderAuthEmail(content: AuthEmailContent): string {
-  const logoUrl = new URL(
-    "/brand/logo/nikharta-roop-mark-light-512.png",
-    siteConfig.url,
-  ).toString();
   const websiteUrl = new URL("/", siteConfig.url).toString();
   const spacedCode = content.code.split("").join("&nbsp;");
 
@@ -89,7 +88,7 @@ function renderAuthEmail(content: AuthEmailContent): string {
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="vertical-align:middle; padding-right:12px;">
-                          <img src="${logoUrl}" width="58" height="58" alt="" style="display:block; width:58px; height:58px; object-fit:contain; border:0;" />
+                          <img src="cid:${AUTH_EMAIL_LOGO_CONTENT_ID}" width="58" height="58" alt="" style="display:block; width:58px; height:58px; object-fit:contain; border:0;" />
                         </td>
                         <td style="vertical-align:middle;">
                           <a href="${websiteUrl}" style="color:#321827; font-family:Georgia,'Times New Roman',serif; font-size:24px; line-height:30px; font-weight:700; text-decoration:none;">${siteConfig.name}</a>
