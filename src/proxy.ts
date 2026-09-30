@@ -6,7 +6,11 @@ import {
   rateLimitHeaders,
   standardLimiter,
 } from "@/lib/rate-limit";
-import { ACCESS_COOKIE_NAME } from "@/server/auth/auth.constants";
+import { routes } from "@/config/routes";
+import {
+  ACCESS_COOKIE_NAME,
+  CSRF_COOKIE_NAME,
+} from "@/server/auth/auth.constants";
 import { isMutationRequestTrusted } from "@/server/auth/csrf";
 import { verifyAccessToken } from "@/server/auth/jwt";
 
@@ -254,6 +258,18 @@ function clientIp(request: NextRequest): string {
 /** Returns JSON for APIs and preserves the destination for page sign-in. */
 function unauthorizedResponse(request: NextRequest): NextResponse {
   if (!request.nextUrl.pathname.startsWith("/api/")) {
+    // The access cookie is deliberately short-lived while the CSRF cookie
+    // shares the refresh-session lifetime. Its presence lets document
+    // navigations attempt cookie rotation before requiring another login.
+    if (request.cookies.has(CSRF_COOKIE_NAME)) {
+      const recoveryUrl = new URL(routes.sessionRefresh, request.url);
+      recoveryUrl.searchParams.set(
+        "redirect",
+        `${request.nextUrl.pathname}${request.nextUrl.search}`,
+      );
+      return NextResponse.redirect(recoveryUrl);
+    }
+
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set(
       "redirect",

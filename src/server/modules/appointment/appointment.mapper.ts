@@ -70,6 +70,12 @@ interface AppointmentRow {
   payment: PaymentRow | null;
   createdAt: Date;
   updatedAt: Date;
+  salon: {
+    id: string;
+    name: string;
+    slug: string;
+    timezone: string;
+  };
 }
 
 /** Converts a Prisma appointment row into the public API shape. */
@@ -93,6 +99,7 @@ export function toPublicAppointment(row: AppointmentRow): PublicAppointment {
     payment: row.payment ? toPublicPayment(row.payment) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    salon: row.salon,
   };
 }
 

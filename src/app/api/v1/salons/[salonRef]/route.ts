@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAuthContext } from "@/server/auth/session";
 import {
+  SalonPlaceConflictError,
   SalonNotFoundError,
   SalonRoleInsufficientError,
   SlugConflictError,
@@ -162,6 +163,10 @@ export async function PATCH(
     }
 
     if (error instanceof SlugConflictError) {
+      return NextResponse.json({ message: error.message }, { status: 409 });
+    }
+
+    if (error instanceof SalonPlaceConflictError) {
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
 

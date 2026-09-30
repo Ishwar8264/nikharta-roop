@@ -17,6 +17,7 @@ export const siteConfig = {
   contact: {
     email: "nikharta.roop.salon@gmail.com",
     phone: "+91 82648 82518",
+    grievanceEmail: "nikharta.roop.salon@gmail.com",
   },
   social: {
     instagram: "https://www.instagram.com/nikharta.roop/",

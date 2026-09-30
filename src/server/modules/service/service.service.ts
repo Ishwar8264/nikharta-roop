@@ -337,7 +337,9 @@ async function generateSlugOrFail(
   try {
     return await generateUniqueSlug(
       name,
-      (candidate) => serviceSlugExistsInSalon(salonId, candidate),
+      async (candidate) =>
+        candidate === "create" ||
+        (await serviceSlugExistsInSalon(salonId, candidate)),
       "service",
     );
   } catch {

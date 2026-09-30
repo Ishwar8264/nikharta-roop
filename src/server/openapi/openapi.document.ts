@@ -10,6 +10,7 @@ import { blogPaths, blogSchemas } from "./blog.openapi";
 import { couponPaths, couponSchemas } from "./coupon.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
+import { mediaPaths, mediaSchemas } from "./media.openapi";
 import { notificationPaths, notificationSchemas } from "./notification.openapi";
 import { oauthPaths, oauthSchemas } from "./oauth.openapi";
 import { reviewPaths, reviewSchemas } from "./review.openapi";
@@ -76,6 +77,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "Notifications",
         description: "User inbox and delivery attempts",
+      },
+      {
+        name: "Media",
+        description: "Private media library and Cloudinary asset metadata",
       },
       {
         name: "Blog",
@@ -1218,7 +1223,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               description: "Salon detail",
               content: {
                 "application/json": {
-                  schema: { $ref: "#/components/schemas/SalonResponse" },
+                  schema: { $ref: "#/components/schemas/SalonDetailResponse" },
                 },
               },
             },
@@ -2938,6 +2943,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       ...appointmentPaths,
       ...reviewPaths,
       ...favoritePaths,
+      ...mediaPaths,
       "/api/v1/health": {
         get: {
           tags: ["System"],
@@ -3611,7 +3617,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "id",
             "name",
             "slug",
+            "shortDescription",
             "description",
+            "descriptionHtml",
+            "descriptionJson",
             "category",
             "address",
             "city",
@@ -3625,8 +3634,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             "phone",
             "email",
             "images",
-            "seoTitle",
-            "seoDescription",
             "createdAt",
             "updatedAt",
           ],
@@ -3634,7 +3641,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
             id: { $ref: "#/components/schemas/ResourceId" },
             name: { type: "string" },
             slug: { type: "string" },
+            shortDescription: { type: ["string", "null"] },
             description: { type: ["string", "null"] },
+            descriptionHtml: { type: ["string", "null"] },
+            descriptionJson: { type: ["string", "null"] },
             category: {
               type: "string",
               enum: ["MALE", "FEMALE", "UNISEX", "KIDS"],
@@ -3654,8 +3664,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               type: "array",
               items: { type: "string", format: "uri" },
             },
-            seoTitle: { type: ["string", "null"] },
-            seoDescription: { type: ["string", "null"] },
             createdAt: { type: "string", format: "date-time" },
             updatedAt: { type: "string", format: "date-time" },
           },
@@ -3672,7 +3680,10 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               minLength: 2,
               maxLength: 80,
             },
-            description: { type: "string", maxLength: 2000 },
+            shortDescription: { type: "string", maxLength: 280 },
+            description: { type: "string", maxLength: 5000 },
+            descriptionHtml: { type: "string", maxLength: 20000 },
+            descriptionJson: { type: "string", maxLength: 50000 },
             category: {
               type: "string",
               enum: ["MALE", "FEMALE", "UNISEX", "KIDS"],
@@ -3700,8 +3711,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               maxItems: 20,
               default: [],
             },
-            seoTitle: { type: "string", maxLength: 70 },
-            seoDescription: { type: "string", maxLength: 160 },
           },
         },
         UpdateSalonRequest: {
@@ -3716,7 +3725,19 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               minLength: 2,
               maxLength: 80,
             },
-            description: { type: "string", maxLength: 2000 },
+            shortDescription: {
+              type: ["string", "null"],
+              maxLength: 280,
+            },
+            description: { type: ["string", "null"], maxLength: 5000 },
+            descriptionHtml: {
+              type: ["string", "null"],
+              maxLength: 20000,
+            },
+            descriptionJson: {
+              type: ["string", "null"],
+              maxLength: 50000,
+            },
             category: {
               type: "string",
               enum: ["MALE", "FEMALE", "UNISEX", "KIDS"],
@@ -3737,8 +3758,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               items: { type: "string", format: "uri" },
               maxItems: 20,
             },
-            seoTitle: { type: "string", maxLength: 70 },
-            seoDescription: { type: "string", maxLength: 160 },
           },
         },
         SalonResponse: {
@@ -3751,6 +3770,105 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
               required: ["salon"],
               properties: {
                 salon: { $ref: "#/components/schemas/Salon" },
+              },
+            },
+          },
+        },
+        SalonWorkingHour: {
+          type: "object",
+          required: ["day", "openTime", "closeTime", "isClosed"],
+          properties: {
+            day: {
+              type: "string",
+              enum: [
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY",
+                "SUNDAY",
+              ],
+            },
+            openTime: { type: "string", pattern: "^\\d{2}:\\d{2}$" },
+            closeTime: { type: "string", pattern: "^\\d{2}:\\d{2}$" },
+            isClosed: { type: "boolean" },
+          },
+        },
+        SalonServicePreview: {
+          type: "object",
+          required: [
+            "id",
+            "name",
+            "slug",
+            "price",
+            "duration",
+            "images",
+            "category",
+          ],
+          properties: {
+            id: { $ref: "#/components/schemas/ResourceId" },
+            name: { type: "string" },
+            slug: { type: "string" },
+            price: { type: "number", minimum: 0 },
+            duration: { type: "integer", minimum: 5 },
+            images: {
+              type: "array",
+              items: { type: "string", format: "uri" },
+            },
+            category: {
+              oneOf: [
+                { type: "null" },
+                {
+                  type: "object",
+                  required: ["name", "slug"],
+                  properties: {
+                    name: { type: "string" },
+                    slug: { type: "string" },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        SalonDetail: {
+          allOf: [
+            { $ref: "#/components/schemas/Salon" },
+            {
+              type: "object",
+              required: ["workingHours", "services", "_count"],
+              properties: {
+                workingHours: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/SalonWorkingHour" },
+                },
+                services: {
+                  type: "array",
+                  maxItems: 6,
+                  items: { $ref: "#/components/schemas/SalonServicePreview" },
+                },
+                _count: {
+                  type: "object",
+                  required: ["services", "products"],
+                  properties: {
+                    services: { type: "integer", minimum: 0 },
+                    products: { type: "integer", minimum: 0 },
+                  },
+                },
+              },
+            },
+          ],
+        },
+        SalonDetailResponse: {
+          type: "object",
+          required: ["message", "data"],
+          properties: {
+            message: { type: "string", const: "Salon retrieved" },
+            data: {
+              type: "object",
+              required: ["salon"],
+              properties: {
+                salon: { $ref: "#/components/schemas/SalonDetail" },
               },
             },
           },
@@ -4549,6 +4667,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         ...appointmentSchemas,
         ...reviewSchemas,
         ...favoriteSchemas,
+        ...mediaSchemas,
         WorkingHoursDay: {
           type: "object",
           required: ["id", "day", "openTime", "closeTime", "isClosed"],

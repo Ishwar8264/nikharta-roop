@@ -10,9 +10,13 @@ export const routes = {
   // ─── Public ───
   home: "/",
   salons: "/salons",
+  salonCreate: "/salons/create",
   salonDetail: (slug: string) => `/salons/${slug}`,
+  salonServices: (slug: string) => `/salons/${slug}/services`,
+  salonServiceCreate: (slug: string) => `/salons/${slug}/services/create`,
+  salonServiceDetail: (salonSlug: string, serviceSlug: string) =>
+    `/salons/${salonSlug}/services/${serviceSlug}`,
   salonBooking: (slug: string) => `/salons/${slug}/book`,
-  services: "/services",
   blog: "/blog",
   blogPost: (slug: string) => `/blog/${slug}`,
   about: "/about",
@@ -45,6 +49,7 @@ export const routes = {
 
   // ─── System ───
   designSystem: "/design-system",
+  sessionRefresh: "/session/refresh",
 } as const;
 
 export type Routes = typeof routes;

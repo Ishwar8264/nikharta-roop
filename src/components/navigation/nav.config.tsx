@@ -13,7 +13,6 @@ import type { FooterGroup, NavItem } from "./nav.types";
 export const publicNav: NavItem[] = [
   { label: "Home", href: routes.home, icon: "home" },
   { label: "Salons", href: routes.salons, icon: "scissors" },
-  { label: "Services", href: routes.services, icon: "sparkles" },
   { label: "Blog", href: routes.blog, icon: "notebook" },
   { label: "About", href: routes.about, icon: "info" },
 ];
@@ -39,7 +38,6 @@ export const footerNav: FooterGroup[] = [
     title: "Explore",
     items: [
       { label: "Salons", href: routes.salons },
-      { label: "Services", href: routes.services },
       { label: "AI Assistant", href: routes.ai },
       { label: "Blog", href: routes.blog },
     ],

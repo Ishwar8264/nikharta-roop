@@ -30,6 +30,14 @@ export class SlugConflictError extends Error {
   }
 }
 
+/** Thrown when another salon already uses the selected map place. */
+export class SalonPlaceConflictError extends Error {
+  constructor() {
+    super("A salon already exists at this selected place");
+    this.name = "SalonPlaceConflictError";
+  }
+}
+
 /** Thrown when the target user is already a member of the salon. */
 export class SalonMemberExistsError extends Error {
   constructor() {

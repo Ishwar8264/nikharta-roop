@@ -29,6 +29,9 @@ export const PUBLIC_APPOINTMENT_SELECT = {
   rescheduledFrom: true,
   createdAt: true,
   updatedAt: true,
+  salon: {
+    select: { id: true, name: true, slug: true, timezone: true },
+  },
   services: {
     select: {
       serviceId: true,

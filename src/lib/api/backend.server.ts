@@ -63,9 +63,9 @@ export class ApiError extends Error {
  * against. `NEXT_PUBLIC_APP_URL` is the single source of truth for the
  * origin, shared with client-side code.
  */
-const BASE_URL = `${
-  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"
-}/api/v1`;
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/v1`;
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 

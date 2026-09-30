@@ -55,12 +55,6 @@ export const comingSoonPages = {
       "We are preparing a smooth appointment flow so your next salon visit takes only a few taps.",
     icon: CalendarDays,
   },
-  services: {
-    title: "Find your perfect service",
-    description:
-      "Browse beauty and wellness services, compare options, and find exactly what suits you.",
-    icon: Sparkles,
-  },
   blog: {
     title: "Fresh beauty stories are coming",
     description:

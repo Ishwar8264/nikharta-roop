@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAuthContext } from "@/server/auth/session";
+import { logDevApiEvent, unexpectedApiError } from "@/server/api/dev-response";
 import {
   AppointmentAccessDeniedError,
   AppointmentOutsideSalonHoursError,
@@ -51,6 +52,11 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     const result = await listMyAppointments(auth.sub, validation.data);
+    logDevApiEvent("appointments.list.success", {
+      userId: auth.sub,
+      count: result.items.length,
+      hasMore: result.hasMore,
+    });
 
     return NextResponse.json(
       {
@@ -61,10 +67,10 @@ export async function GET(request: Request): Promise<Response> {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Appointment listing failed", error);
-    return NextResponse.json(
-      { message: "Unable to list appointments" },
-      { status: 500 },
+    return unexpectedApiError(
+      "appointments.list.failed",
+      error,
+      "Unable to list appointments",
     );
   }
 }
@@ -105,12 +111,21 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const appointment = await createAppointment(auth.sub, validation.data);
+    logDevApiEvent("appointments.create.success", {
+      userId: auth.sub,
+      appointmentId: appointment.id,
+      salonId: appointment.salonId,
+    });
 
     return NextResponse.json(
       { message: "Appointment created", data: { appointment } },
       { status: 201 },
     );
   } catch (error) {
+    logDevApiEvent("appointments.create.rejected", {
+      userId: auth.sub,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     if (error instanceof SalonNotFoundError) {
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
@@ -140,10 +155,10 @@ export async function POST(request: Request): Promise<Response> {
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
 
-    console.error("Appointment creation failed", error);
-    return NextResponse.json(
-      { message: "Unable to create appointment" },
-      { status: 500 },
+    return unexpectedApiError(
+      "appointments.create.failed",
+      error,
+      "Unable to create appointment",
     );
   }
 }

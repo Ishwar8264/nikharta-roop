@@ -88,6 +88,12 @@ export interface PublicAppointment {
   payment: PublicPayment | null;
   createdAt: Date;
   updatedAt: Date;
+  salon: {
+    id: string;
+    name: string;
+    slug: string;
+    timezone: string;
+  };
 }
 
 /** Cursor-paginated appointments. */

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { logDevApiEvent, unexpectedApiError } from "@/server/api/dev-response";
 import { getAuthContext } from "@/server/auth/session";
 import {
   SalonNotFoundError,
@@ -65,6 +66,11 @@ export async function GET(
       paramValidation.data.salonRef,
       queryValidation.data,
     );
+    logDevApiEvent("services.list.success", {
+      salonRef: paramValidation.data.salonRef,
+      count: result.items.length,
+      hasMore: result.hasMore,
+    });
 
     return NextResponse.json(
       {
@@ -82,10 +88,10 @@ export async function GET(
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
 
-    console.error("Service listing failed", error);
-    return NextResponse.json(
-      { message: "Unable to list services" },
-      { status: 500 },
+    return unexpectedApiError(
+      "services.list.failed",
+      error,
+      "Unable to list services",
     );
   }
 }
@@ -159,12 +165,22 @@ export async function POST(
       paramValidation.data.salonRef,
       bodyValidation.data,
     );
+    logDevApiEvent("services.create.success", {
+      userId: auth.sub,
+      salonRef: paramValidation.data.salonRef,
+      serviceId: service.id,
+    });
 
     return NextResponse.json(
       { message: "Service created", data: { service } },
       { status: 201 },
     );
   } catch (error) {
+    logDevApiEvent("services.create.rejected", {
+      userId: auth.sub,
+      salonRef: paramValidation.data.salonRef,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     if (error instanceof SalonNotFoundError) {
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
@@ -181,10 +197,10 @@ export async function POST(
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
 
-    console.error("Service creation failed", error);
-    return NextResponse.json(
-      { message: "Unable to create service" },
-      { status: 500 },
+    return unexpectedApiError(
+      "services.create.failed",
+      error,
+      "Unable to create service",
     );
   }
 }

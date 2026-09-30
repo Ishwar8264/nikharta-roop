@@ -253,7 +253,8 @@
     color: var(--popover-foreground);
     border-color: var(--border);
     border-radius: 0;
-    box-shadow: 0 10px 30px color-mix(in oklch, var(--foreground) 15%, transparent);
+    box-shadow: 0 10px 30px
+      color-mix(in oklch, var(--foreground) 15%, transparent);
   }
 
   .phone-input .iti__search-input {
@@ -278,4 +279,26 @@
 ) {
   height: 2.75rem;
   border-radius: 0;
+}
+
+/* Card forms opt into one consistent radius without changing auth/search UI. */
+:where(
+  [data-form-rounded="true"] [data-slot="input"],
+  [data-form-rounded="true"] [data-slot="textarea"],
+  [data-form-rounded="true"] [data-slot="select-trigger"],
+  [data-form-rounded="true"] .phone-input .phone-input__control
+) {
+  border-radius: var(--radius-md);
+}
+
+/* Leaflet — keep tiles/controls under our popovers and dropdowns. */
+.leaflet-container {
+  z-index: 0 !important;
+}
+.leaflet-pane {
+  z-index: 0 !important;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1 !important;
 }

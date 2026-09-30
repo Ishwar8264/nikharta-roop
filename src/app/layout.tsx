@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { siteConfig } from "@/config/site";
 import { getSession } from "@/lib/auth/get-session";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/features/auth/components/authProvider";
 import "./globals.css";
 
@@ -21,8 +23,55 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Nikharta Roop",
-  description: "Premium salon booking platform",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: `${siteConfig.name} | Salon Booking in India`,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description:
+    "Discover salons, compare services, and manage beauty appointments with Nikharta Roop.",
+  applicationName: siteConfig.name,
+  category: "beauty",
+  keywords: [
+    "salon booking",
+    "beauty salon India",
+    "book salon appointment",
+    "salon services",
+    "Nikharta Roop",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} | Salon Booking in India`,
+    description:
+      "Discover salons, compare services, and manage beauty appointments.",
+    url: "/",
+    images: [
+      {
+        url: "/brand/logo/nikharta-roop-light.jpg",
+        alt: `${siteConfig.name} salon booking platform`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteConfig.name} | Salon Booking in India`,
+    description:
+      "Discover salons, compare services, and manage beauty appointments.",
+    images: ["/brand/logo/nikharta-roop-light.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 /**
@@ -42,10 +91,15 @@ export default async function RootLayout({
   const user = await getSession();
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${playfair.variable} antialiased`}>
+    <html lang="en-IN" suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className={`${inter.variable} ${playfair.variable} antialiased`}
+      >
         <ThemeProvider>
-          <AuthProvider user={user}>{children}</AuthProvider>
+          <AuthProvider user={user}>
+            <TooltipProvider>{children}</TooltipProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

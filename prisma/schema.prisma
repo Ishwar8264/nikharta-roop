@@ -13,6 +13,17 @@ enum PlatformRole {
   USER
 }
 
+// ---------- ENUMS ----------
+enum MediaPurpose {
+  GENERAL
+  SALON
+  PRODUCT
+  SERVICE
+  BLOG
+  AVATAR
+  REVIEW
+}
+
 enum SalonMemberRole {
   OWNER
   MANAGER
@@ -158,10 +169,44 @@ model User {
   primaryAppointments  Appointment[]        @relation("AppointmentPrimaryStaff")
   appointmentServices  AppointmentService[] @relation("AppointmentServiceStaff")
   staffSkills          StaffServiceSkill[]
+  mediaAssets MediaAsset[]
 
   @@index([role])
   @@index([deletedAt])
 }
+
+// ---------- MEDIA ----------
+model MediaAsset {
+  id       String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+
+  url      String
+  publicId String @unique // Cloudinary public_id — delete/transform ke liye
+  folder   String // "nikharta-roop/{userId}"
+
+  // Cloudinary metadata
+  width  Int?
+  height Int?
+  format String?
+  bytes  Int?
+
+  // Categorization for library filters
+  purpose MediaPurpose @default(GENERAL)
+
+  // Soft link — orphan cleanup ke liye. NULL = library me pada hai, kahin attach nahi.
+  attachedToType String? // "SALON" | "PRODUCT" | "SERVICE" | "BLOG"
+  attachedToId   String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, purpose, deletedAt])
+  @@index([attachedToType, attachedToId])
+}
+
 
 model Otp {
   id          String     @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
@@ -208,28 +253,29 @@ model SocialAccount {
 
 // ---------- SALON & STAFF ----------
 model Salon {
-  id          String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
-  name        String
-  slug        String        @unique
-  description String?
-  category    SalonCategory @default(UNISEX)
-  address     String
-  city        String
-  state       String
-  zip         String
-  country     String        @default("IN")
-  timezone    String        @default("Asia/Kolkata")
-  lat         Float
-  lng         Float
-  placeId     String?       @unique
+  id       String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  name     String
+  slug     String        @unique
+  category SalonCategory @default(UNISEX)
+
+  shortDescription String?
+  description      String?
+  descriptionHtml  String?
+  descriptionJson  String?
+
+  address  String
+  city     String
+  state    String
+  zip      String
+  country  String  @default("IN")
+  timezone String  @default("Asia/Kolkata")
+  lat      Float
+  lng      Float
+  placeId  String? @unique
 
   phone  String?
   email  String?
   images String[] // Gallery
-
-  // SEO
-  seoTitle       String?
-  seoDescription String?
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?

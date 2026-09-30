@@ -1,3 +1,5 @@
+import { forwardRef } from "react";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -14,30 +16,33 @@ import { cn } from "@/lib/utils";
  * Four near-identical blocks per form would drift in spacing, aria wiring,
  * and error rendering. One component keeps the a11y contract in one place.
  */
-interface FieldProps {
+interface FieldProps
+  extends Omit<React.ComponentProps<typeof Input>, "id" | "type"> {
   id: string;
   label: string;
   type?: string;
-  autoComplete?: string;
-  placeholder?: string;
   icon?: React.ReactNode;
   error?: string;
-  disabled?: boolean;
-  defaultValue?: string;
 }
 
-export function Field({
-  id,
-  label,
-  type = "text",
-  autoComplete,
-  placeholder,
-  icon,
-  error,
-  disabled,
-  defaultValue,
-}: FieldProps) {
+export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
+  {
+    id,
+    label,
+    type = "text",
+    icon,
+    error,
+    className,
+    name,
+    "aria-describedby": ariaDescribedBy,
+    ...inputProps
+  },
+  ref,
+) {
   const errorId = `${id}-error`;
+  const describedBy =
+    [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(" ") ||
+    undefined;
 
   return (
     <div className="space-y-1.5">
@@ -52,18 +57,17 @@ export function Field({
           </span>
         ) : null}
         <Input
+          {...inputProps}
+          ref={ref}
           id={id}
-          name={id}
+          name={name ?? id}
           type={type}
-          autoComplete={autoComplete}
-          placeholder={placeholder}
-          disabled={disabled}
-          defaultValue={defaultValue}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
+          aria-describedby={describedBy}
           className={cn(
             "placeholder:text-muted-foreground/80",
             icon && "pl-10!",
+            className,
           )}
         />
       </div>
@@ -74,4 +78,6 @@ export function Field({
       ) : null}
     </div>
   );
-}
+});
+
+Field.displayName = "Field";

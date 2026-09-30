@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { logDevApiEvent, unexpectedApiError } from "@/server/api/dev-response";
 import { getAuthContext } from "@/server/auth/session";
 import {
   SalonNotFoundError,
@@ -57,6 +58,10 @@ export async function GET(
       validation.data.salonRef,
       validation.data.serviceRef,
     );
+    logDevApiEvent("services.detail.success", {
+      salonRef: validation.data.salonRef,
+      serviceId: service.id,
+    });
 
     return NextResponse.json(
       { message: "Service retrieved", data: { service } },
@@ -71,10 +76,10 @@ export async function GET(
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
 
-    console.error("Service lookup failed", error);
-    return NextResponse.json(
-      { message: "Unable to retrieve service" },
-      { status: 500 },
+    return unexpectedApiError(
+      "services.detail.failed",
+      error,
+      "Unable to retrieve service",
     );
   }
 }
@@ -149,12 +154,23 @@ export async function PATCH(
       paramValidation.data.serviceRef,
       bodyValidation.data,
     );
+    logDevApiEvent("services.update.success", {
+      userId: auth.sub,
+      salonRef: paramValidation.data.salonRef,
+      serviceId: service.id,
+    });
 
     return NextResponse.json(
       { message: "Service updated", data: { service } },
       { status: 200 },
     );
   } catch (error) {
+    logDevApiEvent("services.update.rejected", {
+      userId: auth.sub,
+      salonRef: paramValidation.data.salonRef,
+      serviceId: paramValidation.data.serviceRef,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     if (error instanceof SalonNotFoundError) {
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
@@ -175,10 +191,10 @@ export async function PATCH(
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
 
-    console.error("Service update failed", error);
-    return NextResponse.json(
-      { message: "Unable to update service" },
-      { status: 500 },
+    return unexpectedApiError(
+      "services.update.failed",
+      error,
+      "Unable to update service",
     );
   }
 }
@@ -226,12 +242,23 @@ export async function DELETE(
       paramValidation.data.salonRef,
       paramValidation.data.serviceRef,
     );
+    logDevApiEvent("services.delete.success", {
+      userId: auth.sub,
+      salonRef: paramValidation.data.salonRef,
+      serviceId: paramValidation.data.serviceRef,
+    });
 
     return NextResponse.json(
       { message: "Service deleted", data: null },
       { status: 200 },
     );
   } catch (error) {
+    logDevApiEvent("services.delete.rejected", {
+      userId: auth.sub,
+      salonRef: paramValidation.data.salonRef,
+      serviceId: paramValidation.data.serviceRef,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     if (error instanceof SalonNotFoundError) {
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
@@ -244,10 +271,10 @@ export async function DELETE(
       return NextResponse.json({ message: error.message }, { status: 403 });
     }
 
-    console.error("Service deletion failed", error);
-    return NextResponse.json(
-      { message: "Unable to delete service" },
-      { status: 500 },
+    return unexpectedApiError(
+      "services.delete.failed",
+      error,
+      "Unable to delete service",
     );
   }
 }

@@ -14,7 +14,10 @@ const PUBLIC_SALON_SELECT = {
   id: true,
   name: true,
   slug: true,
+  shortDescription: true,
   description: true,
+  descriptionHtml: true,
+  descriptionJson: true,
   category: true,
   address: true,
   city: true,
@@ -28,8 +31,6 @@ const PUBLIC_SALON_SELECT = {
   phone: true,
   email: true,
   images: true,
-  seoTitle: true,
-  seoDescription: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.SalonSelect;
@@ -61,6 +62,12 @@ export async function listActiveSalons(input: {
       ? {
           OR: [
             { name: { contains: input.search, mode: "insensitive" } },
+            {
+              shortDescription: {
+                contains: input.search,
+                mode: "insensitive",
+              },
+            },
             { description: { contains: input.search, mode: "insensitive" } },
           ],
         }
@@ -88,8 +95,54 @@ export async function listActiveSalons(input: {
 /** Loads a single salon by slug, excluding soft-deleted rows. */
 export async function findSalonBySlug(slug: string) {
   return prisma.salon.findFirst({
-    where: { slug, deletedAt: null },
+    where: { slug, deletedAt: null, isActive: true },
     select: PUBLIC_SALON_SELECT,
+  });
+}
+
+/**
+ * Loads the public detail projection without private or unbounded relations.
+ *
+ * Why separate from the list projection:
+ * Listing cards need only salon columns, while detail renders opening hours
+ * and a bounded service preview. Keeping separate projections prevents every
+ * list row from paying for detail-only joins.
+ */
+export async function findSalonDetailBySlug(slug: string) {
+  return prisma.salon.findFirst({
+    where: { slug, deletedAt: null, isActive: true },
+    select: {
+      ...PUBLIC_SALON_SELECT,
+      workingHours: {
+        select: {
+          day: true,
+          openTime: true,
+          closeTime: true,
+          isClosed: true,
+        },
+        orderBy: { day: "asc" },
+      },
+      services: {
+        where: { isActive: true, deletedAt: null },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          price: true,
+          duration: true,
+          images: true,
+          category: { select: { name: true, slug: true } },
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 6,
+      },
+      _count: {
+        select: {
+          services: { where: { isActive: true, deletedAt: null } },
+          products: { where: { isActive: true, deletedAt: null } },
+        },
+      },
+    },
   });
 }
 

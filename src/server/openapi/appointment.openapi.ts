@@ -911,6 +911,7 @@ export const appointmentSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "notes",
             "cancelReason",
             "rescheduledFrom",
+            "salon",
             "services",
             "payment",
             "createdAt",
@@ -951,6 +952,16 @@ export const appointmentSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
                 { $ref: "#/components/schemas/ResourceId" },
                 { type: "null" },
               ],
+            },
+            salon: {
+              type: "object",
+              required: ["id", "name", "slug", "timezone"],
+              properties: {
+                id: { $ref: "#/components/schemas/ResourceId" },
+                name: { type: "string" },
+                slug: { type: "string" },
+                timezone: { type: "string" },
+              },
             },
             services: {
               type: "array",
@@ -1002,6 +1013,12 @@ export const appointmentSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               },
             },
             notes: { type: "string", maxLength: 2000 },
+            couponCode: {
+              type: "string",
+              minLength: 3,
+              maxLength: 32,
+              pattern: "^[A-Za-z0-9-]+$",
+            },
           },
         },
         CancelAppointmentRequest: {

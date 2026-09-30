@@ -9,12 +9,14 @@ import {
   LastOwnerRemovalError,
   SalonMemberExistsError,
   SalonNotFoundError,
+  SalonPlaceConflictError,
   SlugConflictError,
 } from "./salon.errors";
 import {
   addSalonMember,
   countSalonOwners,
   createSalonWithOwner,
+  findSalonDetailBySlug,
   findSalonBySlug,
   findSalonForViewer,
   findSalonMemberById,
@@ -26,12 +28,14 @@ import {
   softDeleteSalonById,
   updateSalonById,
 } from "./salon.repository";
+import { toPublicSalonDetail } from "./salon.mapper";
 import type {
   AddSalonMemberInput,
   CreateSalonInput,
   ListSalonsQuery,
   PaginatedSalons,
   PublicSalon,
+  PublicSalonDetail,
   PublicSalonMember,
   SalonWithViewerRole,
   UpdateSalonInput,
@@ -63,9 +67,34 @@ export async function listSalons(
  * Slug is the public identifier, so this endpoint never leaks internal ids
  * beyond what the listing endpoint already exposes.
  */
-export async function getSalonBySlug(slug: string): Promise<PublicSalon> {
+export async function getSalonBySlug(slug: string): Promise<PublicSalonDetail> {
+  const salon = await findSalonDetailBySlug(slug);
+  if (!salon) throw new SalonNotFoundError();
+  return toPublicSalonDetail(salon);
+}
+
+/** Loads active salon columns without detail-only relations. */
+export async function getSalonSummaryBySlug(slug: string): Promise<PublicSalon> {
   const salon = await findSalonBySlug(slug);
   if (!salon) throw new SalonNotFoundError();
+  return salon;
+}
+
+/** Loads a salon only when the caller can manage its catalogue. */
+export async function getSalonForServiceManagement(
+  slug: string,
+  userId: string,
+): Promise<SalonWithViewerRole> {
+  const publicSalon = await findSalonBySlug(slug);
+  if (!publicSalon) throw new SalonNotFoundError();
+
+  const salon = await findSalonForViewer({
+    salonId: publicSalon.id,
+    userId,
+  });
+  if (!salon) throw new SalonNotFoundError();
+
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
   return salon;
 }
 
@@ -112,6 +141,9 @@ export async function createSalon(
 
       return created;
     } catch (error) {
+      if (isUniqueConstraintViolation(error, "placeId")) {
+        throw new SalonPlaceConflictError();
+      }
       if (!isUniqueConstraintViolation(error, "slug")) throw error;
       if (input.slug) throw new SlugConflictError();
     }
@@ -164,6 +196,9 @@ export async function updateSalon(
 
     return updated;
   } catch (error) {
+    if (isUniqueConstraintViolation(error, "placeId")) {
+      throw new SalonPlaceConflictError();
+    }
     if (isUniqueConstraintViolation(error, "slug")) {
       throw new SlugConflictError();
     }
@@ -339,7 +374,10 @@ function buildSalonCreateInput(
   return {
     name: input.name,
     slug,
+    shortDescription: input.shortDescription ?? null,
     description: input.description ?? null,
+    descriptionHtml: input.descriptionHtml ?? null,
+    descriptionJson: input.descriptionJson ?? null,
     category: input.category,
     address: input.address,
     city: input.city,
@@ -353,8 +391,6 @@ function buildSalonCreateInput(
     phone: input.phone ?? null,
     email: input.email ?? null,
     images: input.images,
-    seoTitle: input.seoTitle ?? null,
-    seoDescription: input.seoDescription ?? null,
   };
 }
 
@@ -374,7 +410,16 @@ function buildSalonUpdateInput(
 
   if (input.name !== undefined) data.name = input.name;
   if (input.slug !== undefined) data.slug = input.slug;
+  if (input.shortDescription !== undefined) {
+    data.shortDescription = input.shortDescription;
+  }
   if (input.description !== undefined) data.description = input.description;
+  if (input.descriptionHtml !== undefined) {
+    data.descriptionHtml = input.descriptionHtml;
+  }
+  if (input.descriptionJson !== undefined) {
+    data.descriptionJson = input.descriptionJson;
+  }
   if (input.category !== undefined) data.category = input.category;
   if (input.address !== undefined) data.address = input.address;
   if (input.city !== undefined) data.city = input.city;
@@ -388,10 +433,6 @@ function buildSalonUpdateInput(
   if (input.phone !== undefined) data.phone = input.phone;
   if (input.email !== undefined) data.email = input.email;
   if (input.images !== undefined) data.images = input.images;
-  if (input.seoTitle !== undefined) data.seoTitle = input.seoTitle;
-  if (input.seoDescription !== undefined) {
-    data.seoDescription = input.seoDescription;
-  }
 
   return data;
 }
@@ -403,5 +444,23 @@ function isUniqueConstraintViolation(error: unknown, field: string): boolean {
 
   const target = error.meta?.target;
   if (Array.isArray(target)) return target.includes(field);
-  return typeof target === "string" && target.includes(field);
+  if (typeof target === "string" && target.includes(field)) return true;
+
+  // Prisma 7 driver adapters keep the Postgres constraint inside the nested
+  // adapter error instead of exposing `meta.target` as older clients did.
+  const adapterError = error.meta?.driverAdapterError as
+    | {
+        cause?: {
+          constraint?: { fields?: string[]; index?: string };
+        };
+      }
+    | undefined;
+  const constraint = adapterError?.cause?.constraint;
+
+  if (constraint?.fields?.includes(field)) return true;
+  if (constraint?.index?.includes(field)) return true;
+
+  // Keep compatibility with adapters that expose only the rendered
+  // constraint name, for example `Salon_placeId_key`.
+  return error.message.includes(field);
 }
