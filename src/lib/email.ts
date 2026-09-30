@@ -1,8 +1,12 @@
 import "server-only";
 
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { Resend } from "resend";
 
 import {
+  AUTH_EMAIL_LOGO_CONTENT_ID,
   createOtpEmail,
   createPasswordResetEmail,
 } from "@/lib/email/auth-email.template";
@@ -13,6 +17,7 @@ const configuredEmailFrom = process.env.EMAIL_FROM;
 const emailFrom = configuredEmailFrom ?? "onboarding@resend.dev";
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
+let logoContentPromise: Promise<Buffer> | undefined;
 
 /**
  * Sends a verification code to the given email address.
@@ -35,6 +40,7 @@ export async function sendOtpEmail(to: string, code: string): Promise<void> {
     from: emailFrom,
     to,
     ...message,
+    attachments: [await getLogoAttachment()],
   });
 
   if (error) {
@@ -59,6 +65,7 @@ export async function sendPasswordResetEmail(
     from: emailFrom,
     to,
     ...message,
+    attachments: [await getLogoAttachment()],
   });
 
   if (error) {
@@ -74,4 +81,24 @@ function assertEmailConfiguration(): void {
   ) {
     throw new Error("RESEND_API_KEY and EMAIL_FROM are required in production");
   }
+}
+
+/** Loads the brand mark once and embeds it so mail clients need no remote URL. */
+async function getLogoAttachment() {
+  logoContentPromise ??= readFile(
+    path.join(
+      process.cwd(),
+      "public",
+      "brand",
+      "logo",
+      "nikharta-roop-mark-light-512.png",
+    ),
+  );
+
+  return {
+    content: await logoContentPromise,
+    filename: "nikharta-roop-logo.png",
+    contentType: "image/png",
+    contentId: AUTH_EMAIL_LOGO_CONTENT_ID,
+  };
 }
