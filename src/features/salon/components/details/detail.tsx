@@ -32,7 +32,6 @@ const CATEGORY_LABEL: Record<PublicSalonDetail["category"], string> = {
 
 interface SalonDetailProps {
   salon: PublicSalonDetail;
-  /** Wire this once the auth check on the page is in place. */
   canEdit?: boolean;
 }
 
@@ -83,11 +82,9 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
         </div>
 
         {canEdit ? (
-          <Button variant="outline" className="shrink-0">
-            <Link href={routes.salonDetail(salon.slug) + "/edit"}>
-              <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-              Edit salon
-            </Link>
+          <Button variant="outline" className="shrink-0" render={<Link href={routes.salonManage(salon.slug)} />}>
+            <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+            Manage salon
           </Button>
         ) : null}
       </header>

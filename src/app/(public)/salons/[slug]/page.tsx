@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { SalonDetail } from "@/features/salon/components/details/detail";
+import { getSession } from "@/lib/auth/get-session";
 import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
+import { findSalonForViewer } from "@/server/modules/salon/salon.repository";
 import { getSalonBySlug } from "@/server/modules/salon/salon.service";
 
 interface PageProps {
@@ -57,5 +59,9 @@ export default async function SalonDetailPage({ params }: PageProps) {
     throw error;
   }
 
-  return <SalonDetail salon={salon} />;
+  const user = await getSession();
+  const membership = user
+    ? await findSalonForViewer({ salonId: salon.id, userId: user.id })
+    : null;
+  return <SalonDetail salon={salon} canEdit={membership?.viewerRole === "OWNER" || membership?.viewerRole === "MANAGER"} />;
 }
