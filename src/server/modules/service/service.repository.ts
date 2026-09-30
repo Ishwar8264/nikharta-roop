@@ -124,6 +124,20 @@ export async function listServicesBySalon(
   };
 }
 
+/** Lists active and inactive, non-deleted services for salon management. */
+export async function listManagedServicesBySalon(salonId: string, cursor?: string) {
+  const rows = await prisma.service.findMany({
+    where: { salonId, deletedAt: null },
+    select: PUBLIC_SERVICE_SELECT,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 51,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+  const hasMore = rows.length > 50;
+  const items = hasMore ? rows.slice(0, 50) : rows;
+  return { items, hasMore, nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null };
+}
+
 /** Loads a single active service by slug within a salon. */
 export async function findServiceBySlug(salonId: string, slug: string) {
   return prisma.service.findFirst({

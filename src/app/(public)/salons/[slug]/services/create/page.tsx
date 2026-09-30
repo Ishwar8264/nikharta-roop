@@ -8,7 +8,7 @@ import {
   SalonRoleInsufficientError,
 } from "@/server/modules/salon/salon.errors";
 import { getSalonForServiceManagement } from "@/server/modules/salon/salon.service";
-import { listServiceCategories } from "@/server/modules/service/service.service";
+import { listAllServiceCategories } from "@/server/modules/service/service.service";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -41,14 +41,14 @@ export default async function CreateSalonServicePage({ params }: PageProps) {
     throw error;
   }
 
-  const categories = await listServiceCategories({ limit: 50 });
+  const categories = await listAllServiceCategories();
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
       <CreateServiceForm
         salonName={salon.name}
         salonSlug={salon.slug}
-        categories={categories.items}
+        categories={categories}
       />
     </main>
   );

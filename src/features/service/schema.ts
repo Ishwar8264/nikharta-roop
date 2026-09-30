@@ -29,7 +29,7 @@ export const createServiceFormSchema = z.strictObject({
       message: "This service slug is reserved",
     })
     .optional(),
-  categoryId: z.string().length(48, "Category must be valid").optional(),
+  categoryId: z.string().regex(/^(?:[a-f0-9]{48}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i, "Resource ID must be a valid identifier").optional(),
   price: z
     .number({ error: "Price must be a number" })
     .min(0, "Price cannot be negative")

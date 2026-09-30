@@ -26,19 +26,22 @@ import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import type { UploadedImage } from "@/features/media";
 import { MediaPickerDialog } from "@/features/media/components/media-picker-dialog";
+import { ApiError } from "@/lib/api/backend.client";
 
+import { deleteServiceApi } from "./api";
 import {
   createServiceFormSchema,
   slugifyServiceName,
   type CreateServiceFormValues,
 } from "./schema";
-import type { ServiceCategoryOption } from "./types";
-import { useCreateService } from "./use-create-service";
+import type { SalonService, ServiceCategoryOption } from "./types";
+import { useServiceForm } from "./use-service-form";
 
 interface CreateServiceFormProps {
   salonName: string;
   salonSlug: string;
   categories: ServiceCategoryOption[];
+  initialService?: SalonService;
 }
 
 const DEFAULT_VALUES: CreateServiceFormValues = {
@@ -55,17 +58,22 @@ const DEFAULT_VALUES: CreateServiceFormValues = {
   images: [],
 };
 
-/** Renders the complete salon-service creation workflow. */
+/** Renders the shared salon-service creation and editing workflow. */
 export function CreateServiceForm({
   salonName,
   salonSlug,
   categories,
+  initialService,
 }: CreateServiceFormProps) {
   const router = useRouter();
-  const { create, error, fieldErrors, isLoading } =
-    useCreateService(salonSlug);
-  const [images, setImages] = useState<UploadedImage[]>([]);
-  const [slugWasEdited, setSlugWasEdited] = useState(false);
+  const { save, error, fieldErrors, isLoading } =
+    useServiceForm(initialService?.salonId ?? salonSlug, initialService);
+  const [images, setImages] = useState<UploadedImage[]>(
+    initialService?.images.map((url) => ({ url, publicId: url })) ?? [],
+  );
+  const [slugWasEdited, setSlugWasEdited] = useState(Boolean(initialService));
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     control,
@@ -76,7 +84,21 @@ export function CreateServiceForm({
     setValue,
   } = useForm<CreateServiceFormValues>({
     resolver: zodResolver(createServiceFormSchema),
-    defaultValues: DEFAULT_VALUES,
+    defaultValues: initialService
+      ? {
+          name: initialService.name,
+          slug: initialService.slug,
+          categoryId: initialService.categoryId ?? undefined,
+          price: initialService.price,
+          duration: initialService.duration,
+          isActive: initialService.isActive,
+          shortDescription: initialService.shortDescription ?? undefined,
+          description: initialService.description ?? undefined,
+          descriptionHtml: initialService.descriptionHtml ?? undefined,
+          descriptionJson: initialService.descriptionJson ?? undefined,
+          images: initialService.images,
+        }
+      : DEFAULT_VALUES,
     mode: "onTouched",
     reValidateMode: "onChange",
     shouldFocusError: true,
@@ -112,11 +134,25 @@ export function CreateServiceForm({
   }
 
   async function submit(values: CreateServiceFormValues): Promise<void> {
-    const service = await create(values);
+    const service = await save(values);
     if (!service) return;
 
-    router.push(routes.salonServiceDetail(salonSlug, service.slug));
+    router.push(initialService || !service.isActive ? routes.salonServicesManage(salonSlug) : routes.salonServiceDetail(salonSlug, service.slug));
     router.refresh();
+  }
+
+  async function removeService(): Promise<void> {
+    if (!initialService || !window.confirm(`Delete ${initialService.name}?`)) return;
+    setDeleteError(null);
+    setIsDeleting(true);
+    try {
+      await deleteServiceApi(initialService.salonId, initialService.id);
+      router.push(routes.salonServicesManage(salonSlug));
+      router.refresh();
+    } catch (caught) {
+      setDeleteError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -124,8 +160,8 @@ export function CreateServiceForm({
       <Card className="gap-0 overflow-visible py-0">
         <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
           <FormHeader
-            title="Create a service"
-            description={`Add a bookable service to ${salonName}.`}
+            title={initialService ? "Edit service" : "Create a service"}
+            description={initialService ? `Update ${initialService.name} at ${salonName}.` : `Add a bookable service to ${salonName}.`}
           />
         </CardHeader>
 
@@ -384,14 +420,23 @@ export function CreateServiceForm({
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                Creating…
+                {initialService ? "Saving…" : "Creating…"}
               </>
             ) : (
-              "Create service"
+              initialService ? "Save changes" : "Create service"
             )}
           </Button>
         </CardFooter>
       </Card>
+      {initialService ? (
+        <section className="mt-8 space-y-3 rounded-xl border border-destructive/40 p-5">
+          <h2 className="text-lg font-semibold">Delete service</h2>
+          {deleteError ? <p role="alert" className="text-sm text-destructive">{deleteError}</p> : null}
+          <Button type="button" variant="destructive" onClick={removeService} disabled={isLoading || isDeleting}>
+            {isDeleting ? "Deleting…" : "Delete service"}
+          </Button>
+        </section>
+      ) : null}
     </form>
   );
 }

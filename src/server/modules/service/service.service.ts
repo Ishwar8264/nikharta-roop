@@ -22,6 +22,7 @@ import {
   findServiceById,
   findServiceBySlug,
   listCategories,
+  listManagedServicesBySalon,
   listServicesBySalon,
   resolveSalonId,
   serviceSlugExistsInSalon,
@@ -74,6 +75,29 @@ export async function getSalonService(
   const service = await findServiceBySlug(salonId, slug);
   if (!service) throw new ServiceNotFoundError();
 
+  return toPublicService(service);
+}
+
+/** Returns all non-deleted services after verifying salon management access. */
+export async function listManagedSalonServices(actorId: string, salonRef: string, cursor?: string): Promise<PaginatedServices> {
+  const salonId = await resolveSalonId(salonRef);
+  if (!salonId) throw new SalonNotFoundError();
+  const salon = await findSalonForViewer({ salonId, userId: actorId });
+  if (!salon) throw new SalonNotFoundError();
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  const result = await listManagedServicesBySalon(salonId, cursor);
+  return { items: result.items.map(toPublicService), hasMore: result.hasMore, nextCursor: result.nextCursor };
+}
+
+/** Loads one service, including inactive entries, for its management form. */
+export async function getManagedSalonService(actorId: string, salonRef: string, serviceId: string): Promise<PublicService> {
+  const salonId = await resolveSalonId(salonRef);
+  if (!salonId) throw new SalonNotFoundError();
+  const salon = await findSalonForViewer({ salonId, userId: actorId });
+  if (!salon) throw new SalonNotFoundError();
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  const service = await findServiceById(serviceId);
+  if (!service || service.salonId !== salonId) throw new ServiceNotFoundError();
   return toPublicService(service);
 }
 
@@ -275,6 +299,18 @@ export async function listServiceCategories(
     hasMore: result.hasMore,
     nextCursor: result.nextCursor,
   };
+}
+
+/** Loads the full category vocabulary for service forms across API pages. */
+export async function listAllServiceCategories(): Promise<PublicCategory[]> {
+  const categories: PublicCategory[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await listServiceCategories({ cursor, limit: 100 });
+    categories.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
+  return categories;
 }
 
 /**
