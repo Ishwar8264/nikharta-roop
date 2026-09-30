@@ -46,6 +46,7 @@ const CSRF_COOKIE = "csrfToken";
 const CSRF_HEADER = "x-csrf-token";
 const REFRESH_PATH = "/api/v1/auth/refresh";
 const REFRESH_LOCK_NAME = "auth-refresh";
+const LAST_REFRESH_STORAGE_KEY = "auth:last-refresh-at";
 
 /**
  * Endpoints where a 401 means "bad credentials", not "expired session".
@@ -102,7 +103,12 @@ function readCsrfToken(): string | null {
  * The util itself never redirects; navigation is not a transport concern.
  */
 async function attemptRefresh(): Promise<boolean> {
-  if (refreshInFlight) return refreshInFlight;
+  if (refreshInFlight) {
+    authDevLog("refresh_joined_in_flight");
+    return refreshInFlight;
+  }
+
+  authDevLog("refresh_started", { hasCsrfCookie: readCsrfToken() !== null });
 
   refreshInFlight = withRefreshLock(async () => {
     const csrf = readCsrfToken();
@@ -114,16 +120,24 @@ async function attemptRefresh(): Promise<boolean> {
         headers: csrf ? { [CSRF_HEADER]: csrf } : undefined,
       });
 
+      authDevLog("refresh_response", { status: res.status });
+
       if (res.ok) {
+        recordRefreshTime();
+        authDevLog("refresh_succeeded");
         emit("auth:refreshed");
         return true;
       }
 
+      authDevLog("refresh_rejected", { status: res.status });
       emit("auth:expired");
       return false;
-    } catch {
+    } catch (error) {
       // Network failure during refresh — leave the session alone. The next
       // request will retry; clearing state here would log out on flaky wifi.
+      authDevLog("refresh_network_error", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
       return false;
     } finally {
       refreshInFlight = null;
@@ -144,15 +158,20 @@ async function attemptRefresh(): Promise<boolean> {
  */
 async function withRefreshLock(task: () => Promise<boolean>): Promise<boolean> {
   if (typeof navigator === "undefined" || !("locks" in navigator)) {
+    authDevLog("refresh_lock_unavailable");
     return task();
   }
 
   const csrfBeforeWaiting = readCsrfToken();
 
   return navigator.locks.request(REFRESH_LOCK_NAME, async () => {
+    authDevLog("refresh_lock_acquired");
+
     // A changed CSRF cookie proves another tab already rotated the session
     // while this tab waited. Reuse its fresh cookies instead of rotating again.
     if (csrfBeforeWaiting && readCsrfToken() !== csrfBeforeWaiting) {
+      recordRefreshTime();
+      authDevLog("refresh_reused_from_other_tab");
       emit("auth:refreshed");
       return true;
     }
@@ -171,6 +190,46 @@ async function withRefreshLock(task: () => Promise<boolean>): Promise<boolean> {
  */
 export function refreshSession(): Promise<boolean> {
   return attemptRefresh();
+}
+
+/** Returns the last successful browser refresh time without exposing tokens. */
+export function getLastRefreshTime(): number | null {
+  if (typeof window === "undefined") return null;
+
+  let stored: string | null;
+  try {
+    stored = window.localStorage.getItem(LAST_REFRESH_STORAGE_KEY);
+  } catch {
+    // Storage can be disabled by privacy settings. Refresh still works; each
+    // tab simply falls back to its own in-memory timer and the browser lock.
+    authDevLog("refresh_storage_unavailable");
+    return null;
+  }
+
+  if (!stored) return null;
+
+  const timestamp = Number(stored);
+  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null;
+}
+
+/** Writes auth lifecycle diagnostics in development without credential data. */
+export function authDevLog(
+  event: string,
+  details: Record<string, boolean | number | string> = {},
+): void {
+  if (process.env.NODE_ENV === "production") return;
+  console.debug(`[auth] ${event}`, details);
+}
+
+/** Shares refresh cadence across tabs; the stored value has no auth authority. */
+function recordRefreshTime(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(LAST_REFRESH_STORAGE_KEY, String(Date.now()));
+  } catch {
+    authDevLog("refresh_storage_unavailable");
+  }
 }
 
 /** Dispatches a CustomEvent in the browser only (no-op during SSR). */
@@ -231,8 +290,10 @@ async function request<T>(
    * won't help — the caller needs to handle it (redirect, show error).
    */
   if (res.status === 401 && retry && !NO_REFRESH_PATHS.has(path)) {
+    authDevLog("request_unauthorized_refreshing", { method, path });
     const refreshed = await attemptRefresh();
     if (refreshed) {
+      authDevLog("request_retrying_after_refresh", { method, path });
       return request<T>(method, path, options, false);
     }
   }
