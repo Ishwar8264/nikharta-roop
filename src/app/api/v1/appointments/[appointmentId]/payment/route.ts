@@ -5,6 +5,7 @@ import {
   AppointmentAccessDeniedError,
   AppointmentNotFoundError,
   PaymentAlreadyExistsError,
+  PaymentAmountMismatchError,
   PaymentNotFoundError,
 } from "@/server/modules/appointment/appointment.errors";
 import {
@@ -89,6 +90,9 @@ export async function POST(
     }
     if (error instanceof PaymentAlreadyExistsError) {
       return NextResponse.json({ message: error.message }, { status: 409 });
+    }
+    if (error instanceof PaymentAmountMismatchError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
     console.error("Payment record failed", error);

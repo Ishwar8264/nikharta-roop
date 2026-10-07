@@ -43,7 +43,15 @@ export interface PublicAppointment {
     serviceId: string;
     staffId: string | null;
     price: number;
-    service: BookingService & { images: string[] };
+    // The price lives on the line (price-at-booking-time); the service shape
+    // carries identity + duration only, matching the REST response shape.
+    service: {
+      id: string;
+      name: string;
+      slug: string;
+      duration: number;
+      images: string[];
+    };
     staff: { id: string; name: string | null; avatar: string | null } | null;
   }>;
   payment: { status: string; method: string; amount: number } | null;

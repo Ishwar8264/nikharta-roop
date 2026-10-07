@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { routes } from "@/config/routes";
@@ -10,9 +9,6 @@ import { FIELD } from "../../shared/constants";
 import { loginSchema } from "../../shared/schemas";
 import type { FieldError, LoginInput } from "../../shared/types";
 import { loginApi } from "../api/login";
-
-const EMAIL_NOT_VERIFIED_MESSAGE =
-  "Please verify your email before signing in";
 
 interface UseLoginResult {
   login: (input: LoginInput) => Promise<void>;
@@ -26,7 +22,12 @@ interface UseLoginResult {
  *
  * Why two error buckets:
  *   - fieldErrors: client OR server validation issues (400 with `errors[]`)
- *   - error: form-level failures (401 invalid creds, 403 unverified, 500)
+ *   - error: form-level failures (401 invalid creds/deactivated, 500)
+ *
+ * The server returns the same 401 response for unknown emails, wrong
+ * passwords, and unverified accounts, so no branch here may treat any of
+ * them specially — doing so would re-create the enumeration signal the API
+ * removed. The verification OTP is re-sent server-side to real owners.
  *
  * Why router.refresh() before navigation:
  * The login route sets cookies, but Server Components already rendered with
@@ -35,7 +36,6 @@ interface UseLoginResult {
  * server-rendered user menu would still show "Sign in" until a hard reload.
  */
 export function useLogin(): UseLoginResult {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -77,17 +77,11 @@ export function useLogin(): UseLoginResult {
           }
           setFieldErrors(map);
           setError("Please fix the highlighted fields");
-        } else if (
-          e.status === 403 &&
-          e.message === EMAIL_NOT_VERIFIED_MESSAGE
-        ) {
-          // The verification flow owns sending and validating the OTP. Keep
-          // the validated email so the user does not need to enter it again.
-          router.replace(routes.verifyOtpForEmail(parsed.data.email));
         } else {
-          // Invalid credentials, deactivated accounts, and server failures
-          // surface as a banner. A 401 must NOT be field-mapped because that
-          // could leak whether the email or password was wrong.
+          // Invalid credentials, unverified accounts, deactivated accounts,
+          // and server failures all surface as a banner. A 401 must NOT be
+          // field-mapped because that could leak whether the email or
+          // password was wrong.
           setError(e.message);
         }
       } else {

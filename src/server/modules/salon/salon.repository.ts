@@ -77,7 +77,7 @@ export async function listActiveSalons(input: {
   const rows = await prisma.salon.findMany({
     where,
     select: PUBLIC_SALON_SELECT,
-    orderBy: { id: "asc" },
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
     take: input.limit + 1,
     ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
   });

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { timingSafeEqual } from "node:crypto";
+
 import { Redis } from "@upstash/redis";
 
 import { CRON_LOCK_PREFIX, CRON_LOCK_TTL_SECONDS } from "./cron.config";
@@ -176,5 +178,13 @@ export function verifyCronSecret(request: Request): boolean {
     return false;
   }
   const header = request.headers.get("authorization");
-  return header === `Bearer ${expected}`;
+  const prefix = "Bearer ";
+  if (!header || !header.startsWith(prefix)) return false;
+
+  const provided = Buffer.from(header.slice(prefix.length));
+  const expectedBuffer = Buffer.from(expected);
+
+  // Constant-time comparison so the secret cannot be extracted via timing.
+  if (provided.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(provided, expectedBuffer);
 }

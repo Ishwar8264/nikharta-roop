@@ -48,6 +48,7 @@ import {
   AppointmentStartTimeInPastError,
   AppointmentTerminalStateError,
   PaymentAlreadyExistsError,
+  PaymentAmountMismatchError,
   PaymentNotFoundError,
 } from "./appointment.errors";
 import { toPublicAppointment, toPublicPayment } from "./appointment.mapper";
@@ -271,6 +272,25 @@ export async function createAppointment(
     });
   }
 
+  // Secondary staff (per-line assignments) are validated against their own
+  // service window. The DB exclusion constraint only covers the primary
+  // `Appointment.staffId`, so without this a secondary staff member could be
+  // booked into two overlapping appointments.
+  let lineOffsetMs = 0;
+  for (const line of lines) {
+    const lineStart = new Date(startTime.getTime() + lineOffsetMs);
+    lineOffsetMs += line.duration * 60 * 1000;
+
+    if (!line.staffUserId || line.staffUserId === primaryStaffUserId) continue;
+
+    await validateStaffAvailability({
+      salonId,
+      staffUserId: line.staffUserId,
+      startTime: lineStart,
+      endTime: new Date(lineStart.getTime() + line.duration * 60 * 1000),
+    });
+  }
+
   const subtotal = lines.reduce((sum, line) => sum + line.price, 0);
 
   // Evaluate the coupon before opening the transaction. The result carries
@@ -308,10 +328,15 @@ export async function createAppointment(
       })),
       // Reserve a coupon slot inside the same transaction. If the limit was
       // reached between evaluation and the write, this throws and the whole
-      // booking rolls back — no phantom appointment.
+      // booking rolls back — no phantom appointment. The per-user limit is
+      // enforced here too, under the same serializable transaction.
       onAfterCreate: couponId
         ? async (transaction) => {
-            const reserved = await tryReserveCouponSlot(transaction, couponId!);
+            const reserved = await tryReserveCouponSlot(
+              transaction,
+              couponId!,
+              customerId,
+            );
             if (!reserved) {
               const err = new Error("COUPON_LIMIT_REACHED") as Error & {
                 code?: string;
@@ -643,6 +668,14 @@ export async function recordPayment(
 
   const existing = await findPaymentByAppointmentId(appointmentId);
   if (existing) throw new PaymentAlreadyExistsError();
+
+  // Until a payment gateway lands, the amount is derived server-side. Trusting
+  // a client-supplied amount would let a customer mark a full-price
+  // appointment PAID with amount 0 (or any value) for CASH.
+  const expectedAmount = Number(appointment.totalPrice);
+  if (input.amount !== expectedAmount) {
+    throw new PaymentAmountMismatchError();
+  }
 
   // Online payments arrive pending until a gateway callback confirms them.
   // Cash is captured immediately.
