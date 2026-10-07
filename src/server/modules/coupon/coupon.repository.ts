@@ -162,12 +162,36 @@ export async function countUserCouponUsage(input: {
  * `updateMany` makes the database the arbiter — exactly one write succeeds
  * when the limit would be exceeded.
  *
+ * `userId` folds the per-user limit into the same reservation. Counting the
+ * user's appointments inside the caller's serializable transaction means a
+ * concurrent second booking for the same user is arbitrated by the database
+ * (predicate conflict aborts one of them) instead of racing a separate
+ * read outside the transaction.
+ *
  * Returns true on success, false when the coupon has reached its limit.
  */
 export async function tryReserveCouponSlot(
   transaction: Prisma.TransactionClient,
   couponId: string,
+  userId?: string,
 ): Promise<boolean> {
+  const coupon = await transaction.coupon.findUnique({
+    where: { id: couponId },
+    select: { perUserLimit: true },
+  });
+  if (!coupon) return false;
+
+  if (userId) {
+    const userUsage = await transaction.appointment.count({
+      where: {
+        customerId: userId,
+        couponId,
+        status: { notIn: ["CANCELLED"] },
+      },
+    });
+    if (userUsage > coupon.perUserLimit) return false;
+  }
+
   const updated = await transaction.coupon.updateMany({
     where: {
       id: couponId,

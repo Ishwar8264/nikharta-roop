@@ -117,3 +117,11 @@ export class PaymentNotFoundError extends Error {
     this.name = "PaymentNotFoundError";
   }
 }
+
+/** Thrown when a recorded payment amount does not match the appointment total. */
+export class PaymentAmountMismatchError extends Error {
+  constructor() {
+    super("Payment amount must match the appointment total");
+    this.name = "PaymentAmountMismatchError";
+  }
+}

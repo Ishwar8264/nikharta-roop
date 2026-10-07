@@ -87,13 +87,19 @@ export const sendMessageSchema = z.strictObject({
       z
         .object({
           id: z.string({ error: "Message id must be a string" }).optional(),
-          role: z.enum(["user", "assistant", "system"], {
-            error: "Role must be user, assistant, or system",
+          // The system prompt is server-owned; accepting a client-supplied
+          // "system" role would let callers re-instruct the model (prompt
+          // injection) via the chat endpoint.
+          role: z.enum(["user", "assistant"], {
+            error: "Role must be user or assistant",
           }),
           parts: z
             .array(z.unknown(), { error: "Parts must be an array" })
             .optional(),
-          content: z.string().optional(),
+          content: z
+            .string()
+            .max(16_000, "Message content must contain at most 16000 characters")
+            .optional(),
         })
         .refine((input) => Boolean(input.parts || input.content), {
           message: "Message must include either `parts` or `content`",

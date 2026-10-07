@@ -719,6 +719,8 @@ model AiChat {
   createdAt DateTime     @default(now())
   messages  AiMessage[]
   usageLogs AiUsageLog[]
+
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model AiMessage {
@@ -729,6 +731,8 @@ model AiMessage {
   content   String
   tokens    Int      @default(0)
   createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
 }
 
 // ---------- BLOG SYSTEM ----------

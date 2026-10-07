@@ -9,7 +9,7 @@ import { revokeSession } from "@/server/modules/auth/auth.service";
 /** Revokes one active session owned by the authenticated user. */
 export async function DELETE(
   request: Request,
-  context: RouteContext<"/api/v1/auth/session/[id]">,
+  context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const auth = await getAuthContext(request);
 

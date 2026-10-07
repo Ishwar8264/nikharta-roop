@@ -76,7 +76,13 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     if (error instanceof EmailNotVerifiedError) {
-      return NextResponse.json({ message: error.message }, { status: 403 });
+      // Same status + message as invalid credentials so the endpoint cannot
+      // be used to enumerate registered-but-unverified accounts. The service
+      // re-sends the verification code to the real owner as a side effect.
+      return NextResponse.json(
+        { message: "Invalid email or password" },
+        { status: 401 },
+      );
     }
 
     if (error instanceof AccountDeactivatedError) {

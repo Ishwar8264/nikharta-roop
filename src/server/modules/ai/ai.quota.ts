@@ -136,13 +136,30 @@ export async function recordUsage(input: {
   totalTokens: number;
 }): Promise<void> {
   try {
-    await prisma.userAiUsage.update({
-      where: { userId: input.userId },
-      data: {
-        dailyUsed: { increment: input.totalTokens },
-        weeklyUsed: { increment: input.totalTokens },
-        monthlyUsed: { increment: input.totalTokens },
+    // Conditional increments keep each counter capped at its own limit even
+    // when concurrent streams passed the `enforceQuota` check together — the
+    // WHERE clause makes the database the arbiter instead of the
+    // read-then-write in the caller.
+    await prisma.userAiUsage.updateMany({
+      where: {
+        userId: input.userId,
+        dailyUsed: { lt: prisma.userAiUsage.fields.dailyLimit },
       },
+      data: { dailyUsed: { increment: input.totalTokens } },
+    });
+    await prisma.userAiUsage.updateMany({
+      where: {
+        userId: input.userId,
+        weeklyUsed: { lt: prisma.userAiUsage.fields.weeklyLimit },
+      },
+      data: { weeklyUsed: { increment: input.totalTokens } },
+    });
+    await prisma.userAiUsage.updateMany({
+      where: {
+        userId: input.userId,
+        monthlyUsed: { lt: prisma.userAiUsage.fields.monthlyLimit },
+      },
+      data: { monthlyUsed: { increment: input.totalTokens } },
     });
   } catch (error) {
     console.error("AI usage increment failed", input.userId, error);

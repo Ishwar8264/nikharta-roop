@@ -115,8 +115,9 @@ const createExtensions = ({
         })
       )
     },
-    onImageRemoved({ id, src }) {
-      console.log("Image removed", { id, src })
+    onImageRemoved() {
+      // Blob URLs are revoked by the image component on unmount; nothing to do
+      // here beyond letting the editor drop the node.
     },
     onValidationError(errors) {
       errors.forEach((error) => {

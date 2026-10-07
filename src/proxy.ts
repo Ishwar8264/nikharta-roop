@@ -245,8 +245,18 @@ function extractAccessToken(request: NextRequest): string | null {
   return request.cookies.get(ACCESS_COOKIE_NAME)?.value ?? null;
 }
 
-/** Extracts the client IP, preferring the proxy-set forwarding header. */
+/** Extracts the client IP for rate limiting.
+ *
+ * The platform-provided `request.ip` (Vercel) is preferred because it cannot
+ * be spoofed by the caller. Forwarded headers are only consulted as a
+ * fallback for local development — a caller can rotate them freely, so any
+ * deployment that is reachable without a trusted proxy should configure
+ * Upstash analytics or a proxy-aware IP source.
+ */
 function clientIp(request: NextRequest): string {
+  const platformIp = (request as NextRequest & { ip?: string }).ip;
+  if (platformIp) return platformIp;
+
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
     const first = forwarded.split(",")[0]?.trim();

@@ -100,12 +100,18 @@ export function clearOAuthFlowCookies(response: NextResponse): void {
 /** Resolves a configured OAuth destination without allowing another origin. */
 export function resolveOAuthRedirect(request: Request, target: string): URL {
   const requestUrl = new URL(request.url);
-  const destination = new URL(target, requestUrl.origin);
+
+  // The request URL's origin derives from the Host header, which a client can
+  // poison on self-hosted setups. When APP_ORIGIN is configured (production),
+  // trust that instead — the callback carries session cookies, so the
+  // redirect must never leave the configured origin.
+  const trustedOrigin = process.env.APP_ORIGIN ?? requestUrl.origin;
+  const destination = new URL(target, trustedOrigin);
 
   // OAuth destinations are deployment configuration, but treating them as
   // trusted URLs would turn one bad value into an external post-login redirect.
-  if (destination.origin !== requestUrl.origin) {
-    return new URL("/login?error=oauth_failed", requestUrl.origin);
+  if (destination.origin !== trustedOrigin) {
+    return new URL("/login?error=oauth_failed", trustedOrigin);
   }
 
   return destination;

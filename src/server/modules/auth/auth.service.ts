@@ -10,6 +10,7 @@ import {
   type TokenPair,
 } from "@/server/auth/token.service";
 import { PasswordUnchangedError } from "@/server/modules/password/password.errors";
+import { sendOtp } from "@/server/modules/otp/otp.service";
 
 import {
   AccountDeactivatedError,
@@ -126,6 +127,12 @@ export async function loginUser(
 
   // If the identifier used is unverified, block login until it is verified.
   if (!user.emailVerified) {
+    // Silently re-issue a verification code so a real user still finds a
+    // fresh OTP in their inbox. Failures and cooldown violations are ignored —
+    // the login response must stay indistinguishable from invalid credentials.
+    if (user.email) {
+      sendOtp({ email: user.email }).catch(() => undefined);
+    }
     throw new EmailNotVerifiedError();
   }
 
