@@ -249,3 +249,96 @@ adminSalonVerification: "/admin/salons/verification",                    // revi
 - [ ] Mutations have toasts; destructive actions have dialogs.
 - [ ] `tsc --noEmit`, `pnpm lint`, `pnpm build` all pass.
 - [ ] Manual checks from each feature's Acceptance section verified with seeded data.
+
+---
+
+# Appendix A — Exact File Tree (no guessing)
+
+```
+src/config/routes.ts                                   # MODIFY — add Section 5 routes
+src/app/
+  (public)/salons/[slug]/
+    packages/page.tsx                                  # NEW — public packages
+    manage/
+      templates/page.tsx                               # NEW — activation (server)
+      packages/page.tsx                                # NEW — manage list (server)
+      packages/create/page.tsx                         # NEW — create form page (server wrapper)
+      packages/[packageId]/page.tsx                    # NEW — edit form page (server wrapper)
+      verification/page.tsx                            # NEW — owner status + submit (server)
+      coupons/page.tsx                                 # NEW — manage list (server)
+      settings/page.tsx                                # NEW — settings form (server)
+      customers/[customerId]/notes/page.tsx            # NEW — notes (server)
+  appointments/[id]/page.tsx                           # MODIFY — add Payments ledger card
+  admin/
+    layout.tsx                                         # NEW — SUPER_ADMIN gate + chrome
+    salons/verification/page.tsx                       # NEW — admin review queue
+src/features/
+  catalog/{api.ts,activation-panel.tsx,index.ts,types.ts}              # NEW
+  package/{api.ts,package-form.tsx,package-cards.tsx,index.ts,types.ts,schemas.ts}
+  verification/{api.ts,verification-panel.tsx,index.ts,types.ts}
+  coupon/{api.ts,coupon-form.tsx,coupon-table.tsx,index.ts,types.ts}   # NEW (server module already exists)
+  payment/{api.ts,payment-ledger.tsx,record-payment-dialog.tsx,index.ts,types.ts}
+  salon-settings/{api.ts,settings-form.tsx,index.ts,types.ts}
+  customer-note/{api.ts,notes-timeline.tsx,index.ts,types.ts}
+src/app/sitemap.ts                                     # MODIFY — add package URLs
+```
+
+# Appendix B — Canonical Import Paths
+
+| Need | Import |
+| --- | --- |
+| Client API (mutations) | `import { api } from "@/lib/api/backend.client"` — auto CSRF + refresh |
+| Server session | `import { getSession } from "@/lib/auth/get-session"` |
+| Catalog service (server pages) | `import { listCatalogTemplates, listSalonActivatedTemplates } from "@/server/modules/catalog/catalog.service"` |
+| Package service | `@/server/modules/package/package.service` — `listSalonPackageCatalog`, `getPublicPackage`, `createSalonPackage`, `updateSalonPackage`, `deleteSalonPackage` |
+| Verification service | `@/server/modules/verification/verification.service` — `getSalonVerification`, `submitSalonVerification`, `reviewSalonVerification` |
+| Coupon service | `@/server/modules/coupon/coupon.service` — `listSalonCoupons`, `createSalonCoupon`, `updateSalonCoupon`, `deactivateSalonCoupon` |
+| Payment service | `@/server/modules/payment/payment.service` — `listAppointmentTransactions`, `recordAppointmentTransaction` |
+| Settings service | `@/server/modules/salon-settings/salon-settings.service` — `getSalonSettings`, `updateSalonSettings` |
+| Notes service | `@/server/modules/customer-note/customer-note.service` — `listCustomerNotes`, `createCustomerNote`, `deleteCustomerNote` |
+| Salon management guard (server pages) | `getSalonForServiceManagement(slug, userId)` from `@/server/modules/salon/salon.service` — throws `SalonNotFoundError` / `SalonRoleInsufficientError` → map to `notFound()` |
+| INR formatting | copy `appointmentPriceFormatter` from `src/features/appointment/format.ts` |
+
+# Appendix C — Golden Reference Files (copy these patterns)
+
+| Building this | Copy the pattern from |
+| --- | --- |
+| Public server page (list) | `src/app/(public)/salons/[slug]/products/page.tsx` |
+| Manage server page + role guard | `src/app/(public)/salons/[slug]/manage/services/page.tsx` |
+| Manage form page + navigation | `src/app/(public)/salons/[slug]/manage/products/create/page.tsx` + `src/features/product/product-form.tsx` |
+| Client API module | `src/features/salon/api/manage.ts` |
+| Client mutation hook | `src/features/salon/hooks/use-create-salon.ts` |
+| Empty state | `src/components/shared/empty-state.tsx` (usage: products list page) |
+| Page error boundary | `src/app/(public)/salons/[slug]/error.tsx` |
+| Metadata + canonical | `src/app/(public)/salons/page.tsx` |
+| Dialog + form + toast flow | `src/features/product/product-form.tsx` (delete confirm via dialog) |
+| Toggle optimistic pattern | none yet — implement as described in 6.1 with rollback |
+
+# Appendix D — Admin Section Bootstrap (does not exist yet)
+
+There is **no admin UI today** — only `/api/v1/admin/*` routes. Create it fresh:
+
+1. `src/app/admin/layout.tsx` — Server Component: `getSession()`; if `user.role !== "SUPER_ADMIN"` → `notFound()`; render minimal chrome (brand + "Admin" label + link to salon directory).
+2. `src/app/admin/salons/verification/page.tsx` — server page listing PENDING verifications (call `prisma.salonVerification.findMany({ where: { status: "PENDING" }, include: { salon: true } })` — or add a small `listPendingVerifications()` to `verification.repository.ts`; prefer the repository function).
+3. Review actions run client-side through `features/verification/api.ts` → `POST /api/v1/admin/salons/{salonRef}/verification/review`.
+4. `metadata: { title: "Salon verification queue | Admin" }`, `robots: noindex` on all admin pages.
+
+# Appendix E — Coming-Soon Entries to Remove
+
+In `src/config/coming-soon.ts`, remove entries as they land:
+- Packages → after 6.3 · Salon settings → after 6.7 · AI/loyalty/favorites etc. remain until their own features land.
+- The dashboard home (`/dashboard`) should gain a "Verification status" banner card when 6.4 lands even if the rest stays coming-soon.
+
+# Appendix F — Do-Nots (things that will break the build or UX)
+
+1. **Never** call `api` (`backend.client`) inside a Server Component or a `server-only` module — it touches `document.cookie` and will silently no-op.
+2. **Never** import anything from `src/server/**` into a Client Component — modules are marked `server-only`. Share shapes via duplicated types in `features/<name>/types.ts` (see how `features/appointment/types.ts` mirrors the server types).
+3. **Never** hardcode URLs — always `routes.*`.
+4. **Never** create a new button/card/input component — reuse `components/ui/*` and `components/shared/*`.
+5. **Never** self-fetch `/api/v1` from a Server Component — call the service layer directly.
+6. **Never** invent new color values — use the tokens in Section 1.
+7. **Never** skip `loading.tsx`/`error.tsx` on async pages.
+8. **Never** mutate state that affects money without a server round-trip (no optimistic updates on payments).
+9. **Never** touch the OpenAPI files unless a new endpoint ships — they are generated-by-hand and verified; if an endpoint changes, update `src/server/openapi/<module>.openapi.ts` too.
+10. **Never** merge UI changes without running `tsc --noEmit && pnpm lint && pnpm build`.
+
