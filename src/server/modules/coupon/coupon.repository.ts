@@ -25,6 +25,7 @@ const ADMIN_COUPON_SELECT = {
   validFrom: true,
   validUntil: true,
   isActive: true,
+  salonId: true,
   createdAt: true,
 } as const satisfies Prisma.CouponSelect;
 
@@ -54,12 +55,15 @@ export async function listCoupons(input: {
   limit: number;
   search?: string;
   isActive?: boolean;
+  salonId?: string;
 }) {
   const where: Prisma.CouponWhereInput = {
     ...(input.search
       ? { code: { contains: input.search.toUpperCase(), mode: "insensitive" } }
       : {}),
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+    // undefined = platform-wide (admin list); a salon id = salon-scoped list.
+    ...(input.salonId ? { salonId: input.salonId } : {}),
   };
 
   const rows = await prisma.coupon.findMany({

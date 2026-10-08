@@ -15,7 +15,8 @@ Final review ke baad ka plan: **marketplace banna hai, aur aise banna hai ki fut
 
 ## Phase A — Marketplace launch ke liye (abhi karo)
 
-> ✅ **IMPLEMENTED** — branch `phase-a-marketplace-schema`, migration `20261008041933_phase_a_marketplace_schema`. Schema + migration + seed (13 catalog templates) ready. Service-layer APIs abhi banana baaki hai.
+> ✅ **SCHEMA** — branch `phase-a-marketplace-schema`, migration `20261008041933_phase_a_marketplace_schema`.
+> ✅ **APIs** — branch `phase-a-apis`. Modules: catalog (+activation), package, verification, salon-coupons, payment-transactions, salon-settings, customer-note. OpenAPI spec generation abhi pending hai.
 
 ### 1. Salon verification + trust
 ```prisma

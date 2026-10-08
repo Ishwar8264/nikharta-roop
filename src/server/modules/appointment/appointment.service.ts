@@ -303,6 +303,8 @@ export async function createAppointment(
       code: input.couponCode,
       subtotal,
       userId: customerId,
+      // Salon-scoped coupons must match the salon being booked.
+      salonId,
     });
     couponId = coupon.couponId;
     discount = coupon.discountAmount;

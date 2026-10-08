@@ -62,6 +62,7 @@ const PUBLIC_GET_PATHS = new Set<string>([
   "/api/v1/blog/categories",
   "/api/v1/blog/tags",
   "/api/v1/coupons/validate",
+  "/api/v1/catalog/templates",
 ]);
 
 /**
@@ -82,6 +83,9 @@ const PUBLIC_GET_PATTERNS: RegExp[] = [
   /^\/api\/v1\/salons\/[^/]+\/products\/[^/]+$/,
   /^\/api\/v1\/salons\/[^/]+\/working-hours$/,
   /^\/api\/v1\/salons\/[^/]+\/availability$/,
+  /^\/api\/v1\/salons\/[^/]+\/templates$/,
+  /^\/api\/v1\/salons\/[^/]+\/packages$/,
+  /^\/api\/v1\/salons\/[^/]+\/packages\/[^/]+$/,
   /^\/api\/v1\/services\/[^/]+\/reviews$/,
   /^\/api\/v1\/products\/[^/]+\/reviews$/,
   /^\/api\/v1\/staff\/[^/]+\/ratings$/,

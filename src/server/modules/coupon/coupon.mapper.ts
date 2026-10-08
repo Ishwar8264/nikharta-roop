@@ -36,6 +36,7 @@ interface AdminCouponRow {
   validFrom: Date;
   validUntil: Date;
   isActive: boolean;
+  salonId: string | null;
   createdAt: Date;
 }
 
@@ -73,6 +74,7 @@ export function toAdminCouponView(row: AdminCouponRow): AdminCouponView {
     validFrom: row.validFrom,
     validUntil: row.validUntil,
     isActive: row.isActive,
+    salonId: row.salonId,
     createdAt: row.createdAt,
   };
 }
