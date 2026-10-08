@@ -7,13 +7,25 @@ import { aiPaths, aiSchemas } from "./ai.openapi";
 import { appointmentPaths, appointmentSchemas } from "./appointment.openapi";
 import { auditPaths, auditSchemas } from "./audit.openapi";
 import { blogPaths, blogSchemas } from "./blog.openapi";
+import { catalogPaths, catalogSchemas } from "./catalog.openapi";
 import { couponPaths, couponSchemas } from "./coupon.openapi";
+import {
+  customerNotePaths,
+  customerNoteSchemas,
+} from "./customer-note.openapi";
 import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
 import { mediaPaths, mediaSchemas } from "./media.openapi";
 import { notificationPaths, notificationSchemas } from "./notification.openapi";
 import { oauthPaths, oauthSchemas } from "./oauth.openapi";
+import { packagePaths, packageSchemas } from "./package.openapi";
+import { paymentPaths, paymentSchemas } from "./payment.openapi";
 import { reviewPaths, reviewSchemas } from "./review.openapi";
+import { settingsPaths, settingsSchemas } from "./settings.openapi";
+import {
+  verificationPaths,
+  verificationSchemas,
+} from "./verification.openapi";
 const errorResponseSchema: OpenAPIV3_1.SchemaObject = {
   type: "object",
   required: ["message"],
@@ -36,7 +48,20 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       title: "Nikharta Roop API",
       version: "1.0.0",
       description:
-        "Interactive API documentation for the Nikharta Roop platform.",
+        "Salon marketplace API — discover salons, book appointments, manage " +
+        "catalog, packages, coupons, payments, and verification.\n\n" +
+        "**Quick start**\n" +
+        "- Public endpoints (salon directory, catalog, packages) need no auth.\n" +
+        "- For everything else, sign in via `/api/v1/auth/login` and use the " +
+        "returned `accessToken` (Authorize button → bearerAuth), or rely on " +
+        "the httpOnly cookie for browser flows.\n" +
+        "- Cookie-authenticated mutations additionally require the " +
+        "`x-csrf-token` header copied from the `csrfToken` cookie.\n" +
+        "- All lists are cursor-paginated (`meta.nextCursor`).",
+      contact: {
+        name: "Nikharta Roop",
+        email: "nikharta.roop.salon@gmail.com",
+      },
     },
     servers: [
       {
@@ -96,6 +121,34 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       {
         name: "OAuth",
         description: "Social sign-in via Google, Apple, and Facebook",
+      },
+      {
+        name: "Catalog & Activation",
+        description:
+          "Platform service/package templates and salon activation (5-minute onboarding)",
+      },
+      {
+        name: "Packages",
+        description: "Salon combos and bridal packages",
+      },
+      {
+        name: "Verification",
+        description:
+          "Salon KYC — owner submits documents, SUPER_ADMIN approves",
+      },
+      {
+        name: "Payments",
+        description:
+          "Advance / final / refund transactions with idempotent retries",
+      },
+      {
+        name: "Salon Settings",
+        description:
+          "Buffer time, advance booking window, cancellation rules, walk-ins",
+      },
+      {
+        name: "Customer Notes",
+        description: "Internal staff notes about customers",
       },
     ],
     paths: {
@@ -2934,6 +2987,12 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       },
       ...oauthPaths,
       ...couponPaths,
+      ...catalogPaths,
+      ...packagePaths,
+      ...verificationPaths,
+      ...paymentPaths,
+      ...settingsPaths,
+      ...customerNotePaths,
       ...adminPaths,
       ...aiPaths,
       ...auditPaths,
@@ -4642,6 +4701,12 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         },
         ...oauthSchemas,
         ...couponSchemas,
+        ...catalogSchemas,
+        ...packageSchemas,
+        ...verificationSchemas,
+        ...paymentSchemas,
+        ...settingsSchemas,
+        ...customerNoteSchemas,
         ...adminSchemas,
         ...aiSchemas,
         ...auditSchemas,
