@@ -16,6 +16,7 @@ import {
   notifyAppointmentCancelled,
   notifyAppointmentConfirmed,
 } from "@/server/modules/notification/notification.service";
+import { findOrCreateSettings } from "@/server/modules/salon-settings/salon-settings.repository";
 import { awardPointsForCompletedAppointment } from "../loyalty/loyalty.service";
 import {
   assertCanManagePayment,
@@ -311,6 +312,10 @@ export async function createAppointment(
   }
   const totalPrice = subtotal - discount;
 
+  // The salon's buffer is enforced inside the serializable re-check too, so
+  // the transactional arbiter and the outer availability checks agree.
+  const settings = await findOrCreateSettings(salonId);
+
   try {
     const id = await createAppointmentWithServices({
       customerId,
@@ -323,6 +328,7 @@ export async function createAppointment(
       totalPrice,
       couponId,
       notes: input.notes ?? null,
+      bufferMinutes: settings.bufferMinutes,
       services: lines.map((l) => ({
         serviceId: l.serviceId,
         staffId: l.staffUserId,
@@ -742,6 +748,9 @@ export async function getAvailability(
   if (!timezone) throw new SalonNotFoundError();
   const offset = timezoneOffsetMinutes(timezone);
 
+  // The salon's cleanup/setup gap widens every busy window in slot math.
+  const settings = await findOrCreateSettings(salonId);
+
   const day = getDayOfWeek(query.date);
 
   const [salonHours, staffSchedule, onLeave] = await Promise.all([
@@ -792,6 +801,7 @@ export async function getAvailability(
         : null,
     staffOnLeave: onLeave,
     totalDurationMinutes: totalDuration,
+    bufferMinutes: settings.bufferMinutes,
     busy: busy.map((a) => ({
       startMinutes: toLocalMinutesSinceMidnight(a.startTime, offset),
       endMinutes: toLocalMinutesSinceMidnight(a.endTime, offset),
@@ -858,12 +868,16 @@ async function validateStaffAvailability(input: {
 
   if (onLeave) throw new AppointmentStaffOnLeaveError();
 
+  // The salon's buffer widens the conflict window on both sides — a booking
+  // too close to an existing one fails here, matching the slot grid.
+  const settings = await findOrCreateSettings(input.salonId);
   const overlaps = await findOverlappingAppointments(
     input.staffUserId,
     input.salonId,
     input.startTime,
     input.endTime,
     input.excludeAppointmentId,
+    settings.bufferMinutes,
   );
   if (overlaps.length > 0) throw new AppointmentSlotTakenError();
 }

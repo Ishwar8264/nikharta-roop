@@ -113,6 +113,7 @@ export async function findSalonDetailBySlug(slug: string) {
     where: { slug, deletedAt: null, isActive: true },
     select: {
       ...PUBLIC_SALON_SELECT,
+      verification: { select: { status: true } },
       workingHours: {
         select: {
           day: true,
@@ -208,8 +209,10 @@ export async function createSalonWithOwner(input: {
   data: Prisma.SalonCreateInput;
 }) {
   return prisma.$transaction(async (transaction) => {
+    // New salons start hidden: they go live only after a SUPER_ADMIN
+    // approves their verification (the review flow flips isActive to true).
     const salon = await transaction.salon.create({
-      data: input.data,
+      data: { ...input.data, isActive: false },
       select: PUBLIC_SALON_SELECT,
     });
 
@@ -219,6 +222,12 @@ export async function createSalonWithOwner(input: {
         salonId: salon.id,
         role: "OWNER",
       },
+    });
+
+    // The verification row drives the review queue — PENDING until the
+    // owner submits documents and an admin approves.
+    await transaction.salonVerification.create({
+      data: { salonId: salon.id, status: "PENDING" },
     });
 
     return salon;

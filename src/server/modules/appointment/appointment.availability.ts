@@ -59,6 +59,8 @@ interface ComputeSlotsInput {
   totalDurationMinutes: number;
   /** Existing appointments for this staff on this date (minutes-since-midnight). */
   busy: BusyInterval[];
+  /** Minimum gap between bookings (salon setting). Extends busy windows both sides. */
+  bufferMinutes: number;
   /** Current time in the salon's local timezone — past slots are excluded. */
   now: { date: string; minutesSinceMidnight: number };
 }
@@ -89,7 +91,15 @@ export function computeAvailableSlots(
   if (windowEnd <= windowStart) return [];
   if (windowEnd - windowStart < input.totalDurationMinutes) return [];
 
-  const busy = [...input.busy].sort((a, b) => a.startMinutes - b.startMinutes);
+  // The buffer (cleanup/setup gap) extends every existing booking on both
+  // sides, so a candidate slot must clear not just the booking itself but
+  // also the required gap around it.
+  const busy = input.busy
+    .map((interval) => ({
+      startMinutes: Math.max(0, interval.startMinutes - input.bufferMinutes),
+      endMinutes: interval.endMinutes + input.bufferMinutes,
+    }))
+    .sort((a, b) => a.startMinutes - b.startMinutes);
   const isToday = input.now.date === input.date;
   const nowMinutes = isToday ? input.now.minutesSinceMidnight : -1;
 

@@ -67,9 +67,16 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
       {/* Header */}
       <header className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <Badge variant="secondary">
-            {CATEGORY_LABEL[salon.category] ?? salon.category}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">
+              {CATEGORY_LABEL[salon.category] ?? salon.category}
+            </Badge>
+            {salon.verification?.status === "VERIFIED" ? (
+              <Badge className="bg-success/10 text-success focus-visible:ring-success/20 dark:bg-success/20">
+                ✓ Verified
+              </Badge>
+            ) : null}
+          </div>
           <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
             {salon.name}
           </h1>

@@ -4,6 +4,7 @@ import type {
   DayOfWeek,
   SalonCategory,
   SalonMemberRole,
+  SalonVerificationStatus,
 } from "@/generated/prisma/client";
 
 import type {
@@ -68,6 +69,8 @@ export interface PublicSalonDetail extends PublicSalon {
   workingHours: SalonWorkingHour[];
   services: SalonServicePreview[];
   _count: { services: number; products: number };
+  /** Null for legacy salons created before verification existed. */
+  verification: { status: SalonVerificationStatus } | null;
 }
 
 /** Salon row that includes the caller's role, used for management views. */
