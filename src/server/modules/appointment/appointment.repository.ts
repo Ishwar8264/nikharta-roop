@@ -252,14 +252,17 @@ export async function findOverlappingAppointments(
   startTime: Date,
   endTime: Date,
   excludeId?: string,
+  bufferMinutes = 0,
 ) {
   return prisma.appointment.findMany({
     where: {
       staffId: staffUserId,
       salonId,
       status: { in: ["SCHEDULED", "CONFIRMED", "IN_PROGRESS"] },
-      startTime: { lt: endTime },
-      endTime: { gt: startTime },
+      // The window is widened by the salon's buffer on both sides, so a
+      // booking too close to an existing one is treated as a conflict.
+      startTime: { lt: new Date(endTime.getTime() + bufferMinutes * 60_000) },
+      endTime: { gt: new Date(startTime.getTime() - bufferMinutes * 60_000) },
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
     select: { id: true, startTime: true, endTime: true },
@@ -308,6 +311,8 @@ export async function createAppointmentWithServices(input: {
   notes: string | null;
   rescheduledFrom?: string;
   replacesAppointmentId?: string;
+  /** Salon's minimum gap between bookings — widens the conflict window. */
+  bufferMinutes?: number;
   services: Array<{
     serviceId: string;
     staffId: string | null;
@@ -319,14 +324,20 @@ export async function createAppointmentWithServices(input: {
     async (transaction) => {
       // Re-run the overlap check inside the transaction. If another writer
       // committed between our outer check and now, this is where we find out.
+      // The buffer widens the window on both sides, matching the outer check.
       if (input.staffId) {
+        const bufferMs = (input.bufferMinutes ?? 0) * 60_000;
         const conflict = await transaction.appointment.findFirst({
           where: {
             staffId: input.staffId,
             salonId: input.salonId,
             status: { in: ["SCHEDULED", "CONFIRMED", "IN_PROGRESS"] },
-            startTime: { lt: input.endTime },
-            endTime: { gt: input.startTime },
+            startTime: {
+              lt: new Date(input.endTime.getTime() + bufferMs),
+            },
+            endTime: {
+              gt: new Date(input.startTime.getTime() - bufferMs),
+            },
             ...(input.replacesAppointmentId
               ? { id: { not: input.replacesAppointmentId } }
               : {}),
