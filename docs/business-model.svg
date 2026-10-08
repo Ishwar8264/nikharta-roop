@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1180" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a5a44"/>
+    </marker>
+    <marker id="arrGold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8860b"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1560" height="1180" fill="#faf6f0"/>
+  <rect x="0" y="0" width="1560" height="96" fill="#321827"/>
+
+  <text x="780" y="44" text-anchor="middle" fill="#f1c86b" font-size="30" font-weight="bold">NIKHARTA ROOP — Salon Marketplace Business Model</text>
+  <text x="780" y="74" text-anchor="middle" fill="#e8d5c8" font-size="17">Listing = FREE hamesha · Paisa tab banao jab salon ko customer mile ya premium features chahiye</text>
+
+  <!-- ============ LEFT: CUSTOMERS ============ -->
+  <text x="240" y="140" text-anchor="middle" fill="#321827" font-size="21" font-weight="bold">👤 CUSTOMERS (poore India se)</text>
+  <rect x="40" y="160" width="400" height="74" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <text x="240" y="192" text-anchor="middle" fill="#321827" font-size="15.5" font-weight="600">🔍 Search — city, service, rating se salon dhundo</text>
+  <text x="240" y="214" text-anchor="middle" fill="#6b5a50" font-size="13">"Lajpat Nagar me bridal makeup"</text>
+
+  <rect x="40" y="250" width="400" height="74" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <text x="240" y="282" text-anchor="middle" fill="#321827" font-size="15.5" font-weight="600">📅 Book — staff + time slot + package choose karo</text>
+  <text x="240" y="304" text-anchor="middle" fill="#6b5a50" font-size="13">Real-time availability, koi phone call nahi</text>
+
+  <rect x="40" y="340" width="400" height="74" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <text x="240" y="372" text-anchor="middle" fill="#321827" font-size="15.5" font-weight="600">💳 Pay online — UPI / Card / advance token</text>
+  <text x="240" y="394" text-anchor="middle" fill="#6b5a50" font-size="13">Platform commission yahi se deduct hota hai</text>
+
+  <rect x="40" y="430" width="400" height="74" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <text x="240" y="462" text-anchor="middle" fill="#321827" font-size="15.5" font-weight="600">⭐ Review + loyalty points + reminders</text>
+  <text x="240" y="484" text-anchor="middle" fill="#6b5a50" font-size="13">Dubara book karo, points redeem karo</text>
+
+  <!-- ============ RIGHT: SALONS ============ -->
+  <text x="1320" y="140" text-anchor="middle" fill="#321827" font-size="21" font-weight="bold">💈 SALON OWNERS (tum + koi bhi India me)</text>
+  <rect x="1120" y="160" width="400" height="74" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <text x="1320" y="192" text-anchor="middle" fill="#321827" font-size="15.5" font-weight="600">🏪 Register + salon list karo — 0₹ FREE</text>
+  <text x="1320" y="214" text-anchor="middle" fill="#6b5a50" font-size="13">Verification ke baad live (trust ke liye)</text>
+
+  <rect x="1120" y="250" width="400" height="74" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <text x="1320" y="282" text-anchor="middle" fill="#321827" font-size="15.5" font-weight="600">⚡ Templates ACTIVATE karo + price set karo</text>
+  <text x="1320" y="304" text-anchor="middle" fill="#6b5a50" font-size="13">Platform ke ready services/packages — bas toggle ON</text>
+
+  <rect x="1120" y="340" width="400" height="74" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <text x="1320" y="372" text-anchor="middle" fill="#321827" font-size="15.5" font-weight="600">🗓️ Staff schedule + bookings manage karo</text>
+  <text x="1320" y="394" text-anchor="middle" fill="#6b5a50" font-size="13">Calendar, leaves, walk-ins, packages</text>
+
+  <rect x="1120" y="430" width="400" height="74" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <text x="1320" y="462" text-anchor="middle" fill="#321827" font-size="15.5" font-weight="600">💰 Payout — booking ka paisa receive karo</text>
+  <text x="1320" y="484" text-anchor="middle" fill="#6b5a50" font-size="13">Commission minus karke seedha account me</text>
+
+  <!-- ============ CENTER: PLATFORM ============ -->
+  <rect x="500" y="130" width="560" height="56" rx="14" fill="#321827"/>
+  <text x="780" y="164" text-anchor="middle" fill="#f1c86b" font-size="20" font-weight="bold">🏛️ NIKHARTA ROOP PLATFORM</text>
+
+  <rect x="500" y="204" width="560" height="56" rx="10" fill="#f1e3c8" stroke="#d4b96a"/>
+  <text x="780" y="228" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">Salon listing + verification (KYC)</text>
+  <text x="780" y="247" text-anchor="middle" fill="#6b5a50" font-size="12.5">Jo bhi India me salon hai — list ho sakta hai</text>
+
+  <rect x="500" y="274" width="560" height="56" rx="10" fill="#f1e3c8" stroke="#d4b96a"/>
+  <text x="780" y="298" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">📦 Service + Package catalog (ready templates)</text>
+  <text x="780" y="317" text-anchor="middle" fill="#6b5a50" font-size="12.5">Hair, Skin, Bridal, Men's grooming... salon bas activate kare</text>
+
+  <rect x="500" y="344" width="560" height="56" rx="10" fill="#f1e3c8" stroke="#d4b96a"/>
+  <text x="780" y="368" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">⚙️ Booking engine — availability, slots, staff matching</text>
+  <text x="780" y="387" text-anchor="middle" fill="#6b5a50" font-size="12.5">Double-booking impossible, reminders automatic</text>
+
+  <rect x="500" y="414" width="560" height="56" rx="10" fill="#f1e3c8" stroke="#d4b96a"/>
+  <text x="780" y="438" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">💸 Payments + commission settlement</text>
+  <text x="780" y="457" text-anchor="middle" fill="#6b5a50" font-size="12.5">UPI/Card via gateway → commission cut → payout</text>
+
+  <rect x="500" y="484" width="560" height="56" rx="10" fill="#f1e3c8" stroke="#d4b96a"/>
+  <text x="780" y="508" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">⭐ Reviews · loyalty · notifications · analytics</text>
+  <text x="780" y="527" text-anchor="middle" fill="#6b5a50" font-size="12.5">Trust system jo salon ko customer deta hai</text>
+
+  <!-- arrows left <-> center -->
+  <line x1="440" y1="197" x2="500" y2="222" stroke="#8a5a44" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="440" y1="287" x2="500" y2="296" stroke="#8a5a44" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="440" y1="377" x2="500" y2="368" stroke="#8a5a44" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="440" y1="467" x2="500" y2="440" stroke="#8a5a44" stroke-width="2" marker-end="url(#arr)"/>
+  <!-- arrows right <-> center -->
+  <line x1="1120" y1="197" x2="1060" y2="222" stroke="#8a5a44" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="1120" y1="287" x2="1060" y2="296" stroke="#8a5a44" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="1120" y1="377" x2="1060" y2="368" stroke="#8a5a44" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="1120" y1="467" x2="1060" y2="440" stroke="#8a5a44" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ============ BOTTOM: MONEY ============ -->
+  <rect x="40" y="620" width="1480" height="60" rx="14" fill="#321827"/>
+  <text x="780" y="657" text-anchor="middle" fill="#f1c86b" font-size="22" font-weight="bold">💰 PAISA KAISE BANEGA — 4 LAYERS (ek sath chal sakti hai)</text>
+
+  <!-- layer 1 -->
+  <rect x="40" y="700" width="340" height="150" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <rect x="40" y="700" width="340" height="40" rx="12" fill="#2e7d32"/>
+  <text x="210" y="726" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">LAYER 1 · Listing — FREE</text>
+  <text x="210" y="760" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">₹0 — hamesha free</text>
+  <text x="210" y="782" text-anchor="middle" fill="#6b5a50" font-size="12.5">Kyunki: salon supply chahiye.</text>
+  <text x="210" y="800" text-anchor="middle" fill="#6b5a50" font-size="12.5">Paid listing = koi join nahi karega</text>
+  <text x="210" y="822" text-anchor="middle" fill="#2e7d32" font-size="12.5" font-weight="600">(Google Maps/JustDial bhi free hai)</text>
+
+  <!-- layer 2 -->
+  <rect x="410" y="700" width="340" height="150" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <rect x="410" y="700" width="340" height="40" rx="12" fill="#b8860b"/>
+  <text x="580" y="726" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">LAYER 2 · Commission</text>
+  <text x="580" y="760" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">10–15% sirf ONLINE booking pe</text>
+  <text x="580" y="782" text-anchor="middle" fill="#6b5a50" font-size="12.5">Salon ko customer mila tabhi</text>
+  <text x="580" y="800" text-anchor="middle" fill="#6b5a50" font-size="12.5">platform ko paisa — "success fee"</text>
+  <text x="580" y="822" text-anchor="middle" fill="#8a5a44" font-size="12.5" font-weight="600">Swiggy/Zomato wala model</text>
+
+  <!-- layer 3 -->
+  <rect x="780" y="700" width="340" height="150" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <rect x="780" y="700" width="340" height="40" rx="12" fill="#1a5f8a"/>
+  <text x="950" y="726" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">LAYER 3 · Subscription (Pro)</text>
+  <text x="950" y="760" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">₹999–1999/month — power features</text>
+  <text x="950" y="782" text-anchor="middle" fill="#6b5a50" font-size="12.5">Packages, staff analytics, SMS marketing,</text>
+  <text x="950" y="800" text-anchor="middle" fill="#6b5a50" font-size="12.5">multi-branch, 0% ya kam commission</text>
+  <text x="950" y="822" text-anchor="middle" fill="#1a5f8a" font-size="12.5" font-weight="600">Serious salon ke liye</text>
+
+  <!-- layer 4 -->
+  <rect x="1150" y="700" width="370" height="150" rx="12" fill="#ffffff" stroke="#c9b8ac" filter="url(#shadow)"/>
+  <rect x="1150" y="700" width="370" height="40" rx="12" fill="#7b1fa2"/>
+  <text x="1335" y="726" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">LAYER 4 · Featured Boost</text>
+  <text x="1335" y="760" text-anchor="middle" fill="#321827" font-size="14.5" font-weight="600">City me TOP pe dikhna — paid</text>
+  <text x="1335" y="782" text-anchor="middle" fill="#6b5a50" font-size="12.5">"Lajpat Nagar me #1 Featured"</text>
+  <text x="1335" y="800" text-anchor="middle" fill="#6b5a50" font-size="12.5">₹500–3000/month per city</text>
+  <text x="1335" y="822" text-anchor="middle" fill="#7b1fa2" font-size="12.5" font-weight="600">Jo growth chahta hai wo leta hai</text>
+
+  <!-- money arrows -->
+  <line x1="210" y1="850" x2="210" y2="880" stroke="#2e7d32" stroke-width="0"/>
+  <line x1="210" y1="858" x2="700" y2="940" stroke="#b8860b" stroke-width="2.5" marker-end="url(#arrGold)" stroke-dasharray="6 4"/>
+  <line x1="580" y1="850" x2="720" y2="940" stroke="#b8860b" stroke-width="2.5" marker-end="url(#arrGold)" stroke-dasharray="6 4"/>
+  <line x1="950" y1="850" x2="820" y2="940" stroke="#1a5f8a" stroke-width="2.5" marker-end="url(#arrGold)" stroke-dasharray="6 4"/>
+  <line x1="1335" y1="850" x2="900" y2="940" stroke="#7b1fa2" stroke-width="2.5" marker-end="url(#arrGold)" stroke-dasharray="6 4"/>
+
+  <!-- bottom result -->
+  <rect x="640" y="952" width="440" height="76" rx="14" fill="#321827"/>
+  <text x="860" y="984" text-anchor="middle" fill="#f1c86b" font-size="17" font-weight="bold">PLATFORM REVENUE</text>
+  <text x="860" y="1008" text-anchor="middle" fill="#e8d5c8" font-size="13">Commission + Pro subscription + Featured</text>
+
+  <!-- phase timeline -->
+  <rect x="40" y="1060" width="1480" height="90" rx="12" fill="#f1e3c8" stroke="#d4b96a"/>
+  <text x="80" y="1092" fill="#321827" font-size="16" font-weight="bold">🚀 Kab kya launch karna (roadmap):</text>
+  <text x="80" y="1120" fill="#321827" font-size="14">PHASE 1 (abhi): Listing FREE + booking + Commission 10–15% → customers aur salons dono aaye</text>
+  <text x="80" y="1142" fill="#321827" font-size="14">PHASE 2 (50+ salons): Pro Subscription ₹999/mo — packages, analytics, SMS marketing → stable monthly income</text>
+</svg>

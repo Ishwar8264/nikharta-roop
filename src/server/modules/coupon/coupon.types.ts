@@ -37,6 +37,8 @@ export interface AdminCouponView {
   validFrom: Date;
   validUntil: Date;
   isActive: boolean;
+  /** null = platform-wide; set = only usable at that salon. */
+  salonId: string | null;
   createdAt: Date;
 }
 

@@ -2,6 +2,11 @@ import "server-only";
 
 import type { DiscountType } from "@/generated/prisma/client";
 
+import { assertRoleAtLeast } from "@/server/modules/salon/salon.authorization";
+import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
+import { findSalonForViewer } from "@/server/modules/salon/salon.repository";
+import { resolveSalonId } from "@/server/modules/service/service.repository";
+
 import {
   CouponCodeConflictError,
   CouponInvalidDiscountError,
@@ -89,6 +94,8 @@ export async function evaluateCoupon(input: {
   code: string;
   subtotal: number;
   userId: string | null;
+  /** Salon the coupon is being applied at — required for salon-scoped coupons. */
+  salonId?: string | null;
 }): Promise<{
   ok: boolean;
   discountAmount: number;
@@ -115,6 +122,18 @@ export async function evaluateCoupon(input: {
       discountAmount: 0,
       finalTotal: input.subtotal,
       reason: "This coupon is not active",
+    };
+  }
+
+  // Salon-scoped coupons only apply at their own salon. The public validate
+  // endpoint has no salon context, so such coupons simply fail there — the
+  // booking path supplies the salon id and works normally.
+  if (view.salonId && view.salonId !== input.salonId) {
+    return {
+      ok: false,
+      discountAmount: 0,
+      finalTotal: input.subtotal,
+      reason: "This coupon is not valid for this salon",
     };
   }
 
@@ -226,11 +245,14 @@ export async function assertCouponUsable(input: {
   code: string;
   subtotal: number;
   userId: string;
+  /** Salon the coupon is applied at — enforces salon-scoped coupons. */
+  salonId?: string;
 }): Promise<{ couponId: string; discountAmount: number }> {
   const result = await evaluateCoupon({
     code: input.code,
     subtotal: input.subtotal,
     userId: input.userId,
+    salonId: input.salonId ?? null,
   });
 
   if (!result.ok || !result.coupon) {
@@ -290,7 +312,14 @@ export async function createAdminCoupon(
   input: CreateCouponInput,
 ): Promise<AdminCouponView> {
   assertAdmin(callerRole);
+  return createCouponScoped(input, null);
+}
 
+/** Shared create logic — `salonId: null` = platform-wide, set = salon-owned. */
+async function createCouponScoped(
+  input: CreateCouponInput,
+  salonId: string | null,
+): Promise<AdminCouponView> {
   const taken = await couponCodeExists(input.code);
   if (taken) throw new CouponCodeConflictError();
 
@@ -306,6 +335,7 @@ export async function createAdminCoupon(
     validFrom: new Date(input.validFrom),
     validUntil: new Date(input.validUntil),
     isActive: input.isActive,
+    salonId,
   });
 
   return toAdminCouponView(created);
@@ -327,9 +357,29 @@ export async function updateAdminCoupon(
   input: UpdateCouponInput,
 ): Promise<AdminCouponView> {
   assertAdmin(callerRole);
+  return updateCouponScoped(couponId, input, null);
+}
 
+/**
+ * Shared update logic.
+ *
+ * Why:
+ * Zod already validated the shape of the patch in isolation. Here we
+ * additionally re-check the invariants against the merged state — for
+ * example, sending a smaller `maxDiscount` alongside a larger existing
+ * `discountValue` would fail the cross-field rules that only exist on the
+ * create schema. The `salonId` argument also scopes the update: an admin may
+ * only touch platform-wide coupons, a salon only its own.
+ */
+async function updateCouponScoped(
+  couponId: string,
+  input: UpdateCouponInput,
+  salonId: string | null,
+): Promise<AdminCouponView> {
   const existing = await findCouponById(couponId);
-  if (!existing) throw new CouponNotFoundError();
+  if (!existing || existing.salonId !== salonId) {
+    throw new CouponNotFoundError();
+  }
 
   const merged = {
     discountType: input.discountType ?? existing.discountType,
@@ -415,10 +465,85 @@ export async function deactivateAdminCoupon(
   couponId: string,
 ): Promise<AdminCouponView> {
   assertAdmin(callerRole);
+  return deactivateCouponScoped(couponId, null);
+}
 
+/** Shared deactivation — soft, so historical appointments keep their link. */
+async function deactivateCouponScoped(
+  couponId: string,
+  salonId: string | null,
+): Promise<AdminCouponView> {
   const existing = await findCouponById(couponId);
-  if (!existing) throw new CouponNotFoundError();
+  if (!existing || existing.salonId !== salonId) {
+    throw new CouponNotFoundError();
+  }
 
   const updated = await updateCouponById(couponId, { isActive: false });
   return toAdminCouponView(updated);
+}
+
+// ---------- Salon-owned coupons ----------
+
+/** Loads a salon for a coupon-management operation and asserts MANAGER+. */
+async function loadManagedSalon(callerId: string, salonRef: string) {
+  const salonId = await resolveSalonId(salonRef);
+  if (!salonId) throw new SalonNotFoundError();
+
+  const salon = await findSalonForViewer({ salonId, userId: callerId });
+  if (!salon) throw new SalonNotFoundError();
+
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  return salonId;
+}
+
+/** Lists a salon's own coupons. MANAGER+. */
+export async function listSalonCoupons(
+  callerId: string,
+  salonRef: string,
+  query: ListCouponsQuery,
+): Promise<PaginatedAdminCoupons> {
+  const salonId = await loadManagedSalon(callerId, salonRef);
+  const result = await listCoupons({ ...query, salonId });
+  return {
+    items: result.items.map(toAdminCouponView),
+    hasMore: result.hasMore,
+    nextCursor: result.nextCursor,
+  };
+}
+
+/**
+ * Creates a salon-owned coupon. MANAGER+.
+ *
+ * Why:
+ * The coupon is pinned to the salon, so it can only ever apply to bookings
+ * at that salon (the booking path enforces the scope during evaluation).
+ */
+export async function createSalonCoupon(
+  callerId: string,
+  salonRef: string,
+  input: CreateCouponInput,
+): Promise<AdminCouponView> {
+  const salonId = await loadManagedSalon(callerId, salonRef);
+  return createCouponScoped(input, salonId);
+}
+
+/** Updates one of the salon's own coupons. MANAGER+. */
+export async function updateSalonCoupon(
+  callerId: string,
+  salonRef: string,
+  couponId: string,
+  input: UpdateCouponInput,
+): Promise<AdminCouponView> {
+  const salonId = await loadManagedSalon(callerId, salonRef);
+  return updateCouponScoped(couponId, input, salonId);
+}
+
+/** Deactivates one of the salon's own coupons. MANAGER+. */
+export async function deactivateSalonCoupon(
+  callerId: string,
+  salonRef: string,
+  couponId: string,
+): Promise<AdminCouponView> {
+  const salonId = await loadManagedSalon(callerId, salonRef);
+  return deactivateCouponScoped(couponId, salonId);
 }

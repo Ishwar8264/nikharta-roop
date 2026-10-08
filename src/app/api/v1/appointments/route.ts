@@ -21,6 +21,13 @@ import {
   createAppointment,
   listMyAppointments,
 } from "@/server/modules/appointment/appointment.service";
+import {
+  CouponMinOrderNotMetError,
+  CouponNotActiveError,
+  CouponNotFoundError,
+  CouponPerUserLimitReachedError,
+  CouponUsageLimitReachedError,
+} from "@/server/modules/coupon/coupon.errors";
 import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
 
 /** Lists the authenticated user's own appointments. */
@@ -153,6 +160,21 @@ export async function POST(request: Request): Promise<Response> {
     }
     if (error instanceof AppointmentSlotTakenError) {
       return NextResponse.json({ message: error.message }, { status: 409 });
+    }
+    if (error instanceof CouponNotFoundError) {
+      return NextResponse.json({ message: error.message }, { status: 404 });
+    }
+    if (error instanceof CouponNotActiveError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
+    if (
+      error instanceof CouponUsageLimitReachedError ||
+      error instanceof CouponPerUserLimitReachedError
+    ) {
+      return NextResponse.json({ message: error.message }, { status: 409 });
+    }
+    if (error instanceof CouponMinOrderNotMetError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
     return unexpectedApiError(

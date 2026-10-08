@@ -248,6 +248,164 @@ export const couponPaths = {
       },
     },
   },
+  "/api/v1/salons/{salonRef}/coupons": {
+    get: {
+      tags: ["Coupons"],
+      summary: "List a salon's own coupons",
+      description:
+        "Coupons created by this salon (salon-scoped). MANAGER+.",
+      operationId: "listSalonCoupons",
+      security: authenticatedRead,
+      parameters: [
+        {
+          name: "salonRef",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        },
+        { $ref: "#/components/parameters/CursorParam" },
+        {
+          name: "limit",
+          in: "query",
+          required: false,
+          schema: { type: "integer", minimum: 1, maximum: 100, default: 50 },
+        },
+        {
+          name: "search",
+          in: "query",
+          schema: { type: "string", minLength: 2, maxLength: 32 },
+        },
+        {
+          name: "isActive",
+          in: "query",
+          schema: { type: "string", enum: ["true", "false"] },
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Paginated salon coupon list",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CouponListResponse" },
+            },
+          },
+        },
+        "401": { $ref: "#/components/responses/Unauthorized" },
+        "403": { $ref: "#/components/responses/Forbidden" },
+        "404": errorResponse("Salon not found"),
+      },
+    },
+    post: {
+      tags: ["Coupons"],
+      summary: "Create a salon-owned coupon",
+      description:
+        "The coupon is pinned to the salon and only applies to bookings " +
+        "at that salon. MANAGER+.",
+      operationId: "createSalonCoupon",
+      security: authenticatedMutation,
+      parameters: [
+        {
+          name: "salonRef",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/CreateCouponRequest" },
+          },
+        },
+      },
+      responses: {
+        "201": {
+          description: "Coupon created",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CouponResponse" },
+            },
+          },
+        },
+        "400": validationResponse,
+        "401": { $ref: "#/components/responses/Unauthorized" },
+        "403": { $ref: "#/components/responses/Forbidden" },
+        "404": errorResponse("Salon not found"),
+        "409": errorResponse("Coupon code already exists"),
+      },
+    },
+  },
+  "/api/v1/salons/{salonRef}/coupons/{couponId}": {
+    patch: {
+      tags: ["Coupons"],
+      summary: "Update a salon-owned coupon",
+      description: "Partial update of the salon's own coupon. MANAGER+.",
+      operationId: "updateSalonCoupon",
+      security: authenticatedMutation,
+      parameters: [
+        {
+          name: "salonRef",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        },
+        idParameter("couponId"),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/UpdateCouponRequest" },
+          },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Coupon updated",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CouponResponse" },
+            },
+          },
+        },
+        "400": validationResponse,
+        "401": { $ref: "#/components/responses/Unauthorized" },
+        "403": { $ref: "#/components/responses/Forbidden" },
+        "404": errorResponse("Salon or coupon not found"),
+      },
+    },
+    delete: {
+      tags: ["Coupons"],
+      summary: "Deactivate a salon-owned coupon",
+      description:
+        "Soft-deactivates so historical bookings keep their reference. MANAGER+.",
+      operationId: "deactivateSalonCoupon",
+      security: authenticatedMutation,
+      parameters: [
+        {
+          name: "salonRef",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        },
+        idParameter("couponId"),
+      ],
+      responses: {
+        "200": {
+          description: "Coupon deactivated",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/CouponResponse" },
+            },
+          },
+        },
+        "401": { $ref: "#/components/responses/Unauthorized" },
+        "403": { $ref: "#/components/responses/Forbidden" },
+        "404": errorResponse("Salon or coupon not found"),
+      },
+    },
+  },
 } as unknown as OpenAPIV3_1.PathsObject;
 
 const couponDiscountTypeSchema: OpenAPIV3_1.SchemaObject = {
