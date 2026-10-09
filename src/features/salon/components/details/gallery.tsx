@@ -3,9 +3,11 @@ import Image from "next/image";
 interface SalonGalleryProps {
   images: string[];
   name: string;
+  /** Load the hero image eagerly when it also appears in the gallery. */
+  eagerImageSrc?: string;
 }
 
-export function SalonGallery({ images, name }: SalonGalleryProps) {
+export function SalonGallery({ images, name, eagerImageSrc }: SalonGalleryProps) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {images.map((url, index) => (
@@ -17,6 +19,7 @@ export function SalonGallery({ images, name }: SalonGalleryProps) {
             src={url}
             alt={`${name} — photo ${index + 1}`}
             fill
+            loading={url === eagerImageSrc ? "eager" : "lazy"}
             sizes="(max-width: 640px) 50vw, 33vw"
             className="object-cover"
           />

@@ -18,7 +18,7 @@ import { CoverImage } from "@/components/shared/cover-image";
 import { RichTextContent } from "@/components/shared/rich-text-content";
 import { NavLink } from "@/components/shared/nav-link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { FavoriteButton } from "@/features/favorite";
 import { routes } from "@/config/routes";
 import type { PublicSalonDetail } from "@/server/modules/salon/salon.types";
@@ -116,13 +116,13 @@ export function SalonDetail({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button
-            render={<Link href={routes.salonBooking(salon.slug)} />}
-            size="lg"
+          <Link
+            href={routes.salonBooking(salon.slug)}
+            className={buttonVariants({ size: "lg" })}
           >
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
             Book appointment
-          </Button>
+          </Link>
           {currentUserId ? (
             <FavoriteButton
               targetType="salon"
@@ -133,14 +133,13 @@ export function SalonDetail({
             />
           ) : null}
           {canEdit ? (
-            <Button
-              variant="outline"
-              size="lg"
-              render={<Link href={routes.salonManage(salon.slug)} />}
+            <Link
+              href={routes.salonManage(salon.slug)}
+              className={buttonVariants({ variant: "outline", size: "lg" })}
             >
               <Pencil className="h-4 w-4" aria-hidden="true" />
               Manage
-            </Button>
+            </Link>
           ) : null}
         </div>
       </header>
@@ -216,7 +215,7 @@ export function SalonDetail({
           {gallery.length > 0 ? (
             <section id="gallery" className="scroll-mt-24 space-y-3">
               <h2 className="font-heading text-xl font-semibold">Gallery</h2>
-              <SalonGallery images={gallery} name={salon.name} />
+              <SalonGallery images={gallery} name={salon.name} eagerImageSrc={banner} />
             </section>
           ) : null}
 
@@ -360,14 +359,13 @@ export function SalonDetail({
           without scrolling back to the top. Hidden on >= sm where the
           in-header Book button is always in view. */}
       <div className="sticky bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:hidden">
-        <Button
-          render={<Link href={routes.salonBooking(salon.slug)} />}
-          className="w-full"
-          size="lg"
+        <Link
+          href={routes.salonBooking(salon.slug)}
+          className={buttonVariants({ size: "lg", className: "w-full" })}
         >
           <CalendarDays className="h-4 w-4" aria-hidden="true" />
           Book appointment at {salon.name}
-        </Button>
+        </Link>
       </div>
     </article>
   );
