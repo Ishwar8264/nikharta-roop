@@ -25,7 +25,12 @@ import { FormError } from "@/features/auth/shared/components/form-error";
 import { ApiError } from "@/lib/api/backend.client";
 import { cn } from "@/lib/utils";
 
-import { createCouponApi, updateCouponApi } from "./api";
+import {
+  createAdminCouponApi,
+  createCouponApi,
+  updateAdminCouponApi,
+  updateCouponApi,
+} from "./api";
 import {
   buildDiscountSummary,
   couponFormSchema,
@@ -37,7 +42,13 @@ import {
 import type { CouponView, DiscountType } from "./types";
 
 interface CouponFormProps {
-  salonSlug: string;
+  /**
+   * Salon slug — required for salon-scoped coupons. Omit (and pass `admin`)
+   * for platform-wide admin coupons.
+   */
+  salonSlug?: string;
+  /** When true, the form posts to `/admin/coupons` instead of the salon scope. */
+  admin?: boolean;
   /** When present, the form is in edit mode — `code` becomes read-only. */
   initial?: CouponView;
   onSaved: () => void;
@@ -75,10 +86,16 @@ function useApiError() {
  */
 export function CouponForm({
   salonSlug,
+  admin = false,
   initial,
   onSaved,
   onCancel,
 }: CouponFormProps) {
+  if (!admin && !salonSlug) {
+    throw new Error(
+      "CouponForm requires either `salonSlug` (salon scope) or `admin: true` (platform scope).",
+    );
+  }
   const apiError = useApiError();
   const [busy, setBusy] = useState(false);
 
@@ -185,7 +202,11 @@ export function CouponForm({
           validUntil,
           isActive: values.isActive,
         };
-        await updateCouponApi(salonSlug, initial.id, body);
+        if (admin) {
+          await updateAdminCouponApi(initial.id, body);
+        } else {
+          await updateCouponApi(salonSlug as string, initial.id, body);
+        }
         toast.success(`${values.code} updated.`);
       } else {
         const body = {
@@ -204,7 +225,11 @@ export function CouponForm({
           validUntil,
           isActive: values.isActive,
         };
-        await createCouponApi(salonSlug, body);
+        if (admin) {
+          await createAdminCouponApi(body);
+        } else {
+          await createCouponApi(salonSlug as string, body);
+        }
         toast.success(`${values.code} created — ready for customers.`);
       }
       onSaved();

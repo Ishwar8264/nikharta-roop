@@ -40,12 +40,36 @@ export default async function AdminLayout({
             <Brand size="sm" href={routes.home} />
             <Badge variant="secondary">Admin</Badge>
           </div>
-          <nav className="flex items-center gap-4 text-sm">
+          <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             <Link
               href={routes.adminSalonVerification}
               className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               Verification queue
+            </Link>
+            <Link
+              href={routes.adminUsers}
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Users
+            </Link>
+            <Link
+              href={routes.adminCoupons}
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Coupons
+            </Link>
+            <Link
+              href={routes.adminAiUsage}
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              AI usage
+            </Link>
+            <Link
+              href={routes.adminAuditLogs}
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Audit logs
             </Link>
             <Link
               href={routes.salons}
