@@ -18,6 +18,7 @@ const PUBLIC_REVIEW_SELECT = {
 /** Columns returned for public staff ratings. */
 const PUBLIC_STAFF_RATING_SELECT = {
   id: true,
+  staffId: true,
   rating: true,
   comment: true,
   createdAt: true,
@@ -326,6 +327,22 @@ export async function listStaffRatings(
     hasMore,
     nextCursor: hasMore ? (items[items.length - 1]?.id ?? null) : null,
   };
+}
+
+/**
+ * All ratings left for one appointment.
+ *
+ * Why no pagination:
+ * The unique constraint on `(appointmentId, staffId)` caps this at one row
+ * per staff member on the appointment — typically 0 or 1 row. A cursor would
+ * be dead weight.
+ */
+export async function listStaffRatingsByAppointment(appointmentId: string) {
+  return prisma.staffRating.findMany({
+    where: { appointmentId },
+    select: PUBLIC_STAFF_RATING_SELECT,
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+  });
 }
 
 export async function staffRatingSummary(staffId: string) {

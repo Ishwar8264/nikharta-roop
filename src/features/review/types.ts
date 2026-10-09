@@ -74,3 +74,63 @@ export interface ReviewMutationResponse {
   message: string;
   data: { review: PublicReview };
 }
+
+// ---------- Staff ratings ----------
+
+/**
+ * Browser-safe mirror of the server `PublicStaffRating`.
+ *
+ * Same rationale as `PublicReview` above: server modules carry `server-only`,
+ * so the public shape is mirrored here to keep Client Components free of
+ * `src/server/**` imports. `createdAt` is an ISO string over the wire.
+ */
+export interface PublicStaffRating {
+  id: string;
+  staffId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  appointmentId: string | null;
+  customer: {
+    id: string;
+    name: string | null;
+    avatar: string | null;
+  };
+}
+
+/**
+ * A staff member the customer can rate for a completed appointment.
+ *
+ * The appointment's primary staff (`Appointment.staffId`) is the only member
+ * the create endpoint will accept today; the per-service staff on
+ * `AppointmentService` feeds the avatar/name shown next to the rating form.
+ */
+export interface RateableStaffMember {
+  id: string;
+  name: string | null;
+  avatar: string | null;
+}
+
+/** Body for POST /appointments/{appointmentId}/staff-ratings. */
+export interface CreateStaffRatingBody {
+  rating: number;
+  comment?: string | null;
+}
+
+/** Body for PATCH /staff-ratings/{ratingId}. */
+export interface UpdateStaffRatingBody {
+  rating?: number;
+  comment?: string | null;
+}
+
+/** Response envelope for GET /appointments/{appointmentId}/staff-ratings. */
+export interface StaffRatingListResponse {
+  message: string;
+  data: PublicStaffRating[];
+}
+
+/** Response envelope for POST/PATCH on a single staff rating. */
+export interface StaffRatingMutationResponse {
+  message: string;
+  data: { rating: PublicStaffRating };
+}

@@ -17,6 +17,7 @@ interface ReviewRow {
 
 interface StaffRatingRow {
   id: string;
+  staffId: string;
   rating: number;
   comment: string | null;
   createdAt: Date;
@@ -44,6 +45,7 @@ export function toPublicReview(row: ReviewRow): PublicReview {
 export function toPublicStaffRating(row: StaffRatingRow): PublicStaffRating {
   return {
     id: row.id,
+    staffId: row.staffId,
     rating: row.rating,
     comment: row.comment,
     createdAt: row.createdAt,

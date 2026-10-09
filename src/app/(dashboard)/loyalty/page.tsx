@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { BalanceCard } from "@/features/loyalty/balance-card";
 import { getSession } from "@/lib/auth/get-session";
 import { routes } from "@/config/routes";
 import { getBalance, listTransactions } from "@/server/modules/loyalty/loyalty.service";
@@ -16,12 +16,6 @@ const txnDateFormatter = new Intl.DateTimeFormat("en-IN", {
   day: "numeric",
   month: "short",
   year: "numeric",
-});
-
-const inrFormatter = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
 });
 
 /** Customer loyalty dashboard — balance + transaction history. */
@@ -43,20 +37,7 @@ export default async function LoyaltyPage() {
         </p>
       </header>
 
-      <Card>
-        <CardContent className="flex flex-wrap items-end justify-between gap-4 p-6">
-          <div>
-            <p className="text-sm text-muted-foreground">Available points</p>
-            <p className="mt-1 font-heading text-5xl font-semibold tabular-nums">
-              {balance.points.toLocaleString("en-IN")}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Worth {inrFormatter.format(balance.pointsValueRupees)} · earn 1 point per ₹{balance.earnRatePerRupee}
-            </p>
-          </div>
-          <Button>Redeem points</Button>
-        </CardContent>
-      </Card>
+      <BalanceCard balance={balance} />
 
       <section className="space-y-3">
         <h2 className="font-heading text-xl font-semibold">Activity</h2>

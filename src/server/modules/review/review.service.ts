@@ -26,6 +26,7 @@ import {
   listProductReviews,
   listServiceReviews,
   listStaffRatings,
+  listStaffRatingsByAppointment,
   loadPublicProductReview,
   loadPublicServiceReview,
   loadPublicStaffRating,
@@ -221,6 +222,29 @@ export async function removeProductReview(
 }
 
 // ---------- Staff ratings ----------
+
+/**
+ * Lists the ratings left on one appointment for the caller.
+ *
+ * Why ownership is enforced here:
+ * A staff rating is the customer's private feedback about a specific visit.
+ * Only the appointment's customer may read their own ratings via this path —
+ * salon staff see ratings through the staff-scoped public list endpoint
+ * (`GET /staff/{staffUserId}/ratings`). Mirrors the POST handler's auth.
+ */
+export async function listStaffRatingsForAppointment(
+  userId: string,
+  appointmentId: string,
+): Promise<PublicStaffRating[]> {
+  const appointment = await findAppointmentForRating(appointmentId);
+  if (!appointment) throw new ReviewAppointmentNotFoundError();
+  if (appointment.customerId !== userId) {
+    throw new ReviewNotAppointmentCustomerError();
+  }
+
+  const rows = await listStaffRatingsByAppointment(appointmentId);
+  return rows.map(toPublicStaffRating);
+}
 
 /** Public list of ratings for a staff member. */
 export async function listRatingsForStaff(
