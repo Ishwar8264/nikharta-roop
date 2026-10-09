@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  AlertCircle,
+  Ban,
   CheckCircle2,
   Clock,
   FileText,
@@ -8,7 +10,6 @@ import {
   Plus,
   Trash2,
   X,
-  XCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -336,7 +337,7 @@ function StatusBanner({ status, reason, onResubmit }: StatusBannerProps) {
     return (
       <Banner
         tone="destructive"
-        icon={<XCircle className="h-5 w-5" aria-hidden="true" />}
+        icon={<AlertCircle className="h-5 w-5" aria-hidden="true" />}
         title="Verification rejected"
         body={
           reason ? (
@@ -362,7 +363,7 @@ function StatusBanner({ status, reason, onResubmit }: StatusBannerProps) {
   return (
     <Banner
       tone="destructive"
-      icon={<XCircle className="h-5 w-5" aria-hidden="true" />}
+      icon={<Ban className="h-5 w-5" aria-hidden="true" />}
       title="Listing suspended"
       body={
         reason ? (
@@ -403,13 +404,13 @@ function Banner({ tone, icon, title, body, action }: BannerProps) {
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 rounded-xl border border-l-4 p-4 sm:flex-row sm:items-center sm:justify-between",
         tone === "success" &&
-          "border-success/30 bg-success/10 text-success-foreground",
+          "border-success/30 border-l-success bg-success/10 text-success-foreground",
         tone === "warning" &&
-          "border-warning/30 bg-warning/10 text-warning-foreground",
+          "border-warning/30 border-l-warning bg-warning/10 text-warning-foreground",
         tone === "destructive" &&
-          "border-destructive/30 bg-destructive/10 text-destructive",
+          "border-destructive/30 border-l-destructive bg-destructive/10 text-destructive",
       )}
     >
       <div className="flex items-start gap-3">
@@ -533,7 +534,12 @@ function StepDocuments({
               key={doc.tempId}
               className="flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center"
             >
-              <DocumentThumb url={doc.url} alt={`Document ${index + 1}`} />
+              <DocumentThumb
+                url={doc.url}
+                alt={`Document ${index + 1}`}
+                onRemove={disabled ? undefined : () => onRemove(doc.tempId)}
+                removeLabel={`Remove document ${index + 1}`}
+              />
               <div className="flex-1 space-y-1.5">
                 <Label htmlFor={`kind-${doc.tempId}`}>Document kind</Label>
                 <Select
@@ -609,26 +615,50 @@ function StepDocuments({
   );
 }
 
-/** Square thumbnail for an uploaded document URL. */
-function DocumentThumb({ url, alt }: { url: string; alt: string }) {
+/** Square thumbnail for an uploaded document URL. Optional overlay remove
+ *  button sits at the top-right corner so the thumbnail itself is the
+ *  affordance — the dedicated "Replace"/trash row below remains for explicit
+ *  flows. */
+function DocumentThumb({
+  url,
+  alt,
+  onRemove,
+  removeLabel = "Remove document",
+}: {
+  url: string;
+  alt: string;
+  onRemove?: () => void;
+  removeLabel?: string;
+}) {
   const isImage = /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url);
-  if (isImage) {
-    return (
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border">
-        <Image
-          src={url}
-          alt={alt}
-          fill
-          sizes="64px"
-          className="object-cover"
-          loading="lazy"
-        />
-      </div>
-    );
-  }
   return (
-    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
-      <FileText className="h-6 w-6" aria-hidden="true" />
+    <div className="relative h-16 w-16 shrink-0">
+      <div className="relative h-full w-full overflow-hidden rounded-lg border bg-muted">
+        {isImage ? (
+          <Image
+            src={url}
+            alt={alt}
+            fill
+            sizes="64px"
+            className="object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+            <FileText className="h-6 w-6" aria-hidden="true" />
+          </div>
+        )}
+      </div>
+      {onRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={removeLabel}
+          className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-destructive shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      ) : null}
     </div>
   );
 }

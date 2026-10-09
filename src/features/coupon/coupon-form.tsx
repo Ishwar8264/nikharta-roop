@@ -1,7 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import {
+  CalendarClock,
+  CheckCircle2,
+  Loader2,
+  Receipt,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -118,6 +123,8 @@ export function CouponForm({
   const discountValue = useWatch({ control, name: "discountValue" }) ?? 0;
   const minOrderAmount = useWatch({ control, name: "minOrderAmount" });
   const maxDiscount = useWatch({ control, name: "maxDiscount" });
+  const validFrom = useWatch({ control, name: "validFrom" }) ?? "";
+  const validUntil = useWatch({ control, name: "validUntil" }) ?? "";
 
   // Keep the code field uppercased as the user types — the server does the
   // same in its `couponCodeSchema` transform, so the preview matches what will
@@ -140,6 +147,20 @@ export function CouponForm({
       }),
     [discountType, discountValue, minOrderAmount, maxDiscount],
   );
+
+  const showQuickFill = !validFrom && !validUntil && !initial;
+
+  /** Pre-fills the validity window with now → now + 30 days. */
+  function fillNext30Days() {
+    const now = new Date();
+    const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    setValue("validFrom", toDatetimeLocal(now.toISOString()), {
+      shouldDirty: true,
+    });
+    setValue("validUntil", toDatetimeLocal(end.toISOString()), {
+      shouldDirty: true,
+    });
+  }
 
   async function submit(values: CouponFormValues) {
     apiError.setMessage(null);
@@ -221,13 +242,15 @@ export function CouponForm({
             {...register("code")}
           />
           {code ? (
-            <p className="text-xs text-muted-foreground">
-              Customers will enter{" "}
-              <span className="font-mono uppercase text-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Preview</span>
+              <span
+                aria-label={`Coupon code preview: ${code}`}
+                className="inline-flex items-center rounded-md border border-primary/30 bg-primary/5 px-2 py-0.5 font-mono text-sm font-semibold uppercase tracking-wider text-primary"
+              >
                 {code}
               </span>
-              .
-            </p>
+            </div>
           ) : (
             <p className="text-xs text-muted-foreground">
               Letters, digits, and hyphens. We uppercase it for you.
@@ -274,10 +297,11 @@ export function CouponForm({
                       }
                       aria-pressed={selected}
                       className={cn(
-                        "rounded-lg border px-3 py-2 text-left transition-colors",
+                        "relative rounded-lg border p-3 text-left transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                         selected
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/40",
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                          : "border-border hover:border-primary/40 hover:bg-muted/40",
                       )}
                     >
                       <span className="block text-sm font-medium">
@@ -286,6 +310,12 @@ export function CouponForm({
                       <span className="block text-xs text-muted-foreground">
                         {option.hint}
                       </span>
+                      {selected ? (
+                        <CheckCircle2
+                          className="absolute right-2 top-2 h-4 w-4 text-primary"
+                          aria-hidden="true"
+                        />
+                      ) : null}
                     </button>
                   );
                 })}
@@ -402,35 +432,60 @@ export function CouponForm({
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Field
-              id="validFrom"
-              label="Starts"
-              type="datetime-local"
-              disabled={busy}
-              error={errors.validFrom?.message}
-              {...register("validFrom")}
-            />
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label>Validity period</Label>
+            {showQuickFill ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={fillNext30Days}
+                className="gap-1 text-primary hover:bg-primary/5"
+              >
+                <CalendarClock className="h-4 w-4" aria-hidden="true" />
+                Set to next 30 days
+              </Button>
+            ) : null}
           </div>
-          <div className="space-y-1.5">
-            <Field
-              id="validUntil"
-              label="Ends"
-              type="datetime-local"
-              disabled={busy}
-              error={errors.validUntil?.message}
-              {...register("validUntil")}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Field
+                id="validFrom"
+                label="Starts"
+                type="datetime-local"
+                disabled={busy}
+                error={errors.validFrom?.message}
+                {...register("validFrom")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Field
+                id="validUntil"
+                label="Ends"
+                type="datetime-local"
+                disabled={busy}
+                error={errors.validUntil?.message}
+                {...register("validUntil")}
+              />
+            </div>
           </div>
         </div>
 
         <div
           role="status"
-          className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm"
+          className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm"
         >
-          <span className="text-muted-foreground">Preview: </span>
-          <span className="font-medium text-accent-foreground">{summary}</span>
+          <span className="mt-0.5 shrink-0 text-primary">
+            <Receipt className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Discount preview
+            </p>
+            <p className="font-semibold text-foreground">{summary}</p>
+          </div>
         </div>
       </div>
 
