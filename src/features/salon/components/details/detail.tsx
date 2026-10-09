@@ -1,12 +1,15 @@
 import {
   ArrowRight,
+  CalendarDays,
   Globe,
-  Mail,
+  Images,
   MapPin,
+  Mail,
   Package,
   Pencil,
   Phone,
   Scissors,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -30,6 +33,13 @@ const CATEGORY_LABEL: Record<PublicSalonDetail["category"], string> = {
   KIDS: "Kids",
 };
 
+/** Sticky in-page sub-nav. Mobile-first horizontal scroll, no JS. */
+const SECTION_LINKS = [
+  { href: "#services", label: "Services", icon: Scissors },
+  { href: "#gallery", label: "Gallery", icon: Images },
+  { href: "#location", label: "Location", icon: MapPin },
+] as const;
+
 interface SalonDetailProps {
   salon: PublicSalonDetail;
   canEdit?: boolean;
@@ -50,7 +60,6 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
       <BackButton href="/salons" variant="secondary" />
 
       {/* Cover */}
-
       <div className="relative">
         {cover ? (
           <CoverImage
@@ -71,13 +80,18 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
             <Badge variant="secondary">
               {CATEGORY_LABEL[salon.category] ?? salon.category}
             </Badge>
+            <Badge className="gap-1 bg-muted text-foreground" variant="default">
+              <MapPin className="h-3 w-3" aria-hidden="true" />
+              {salon.city}
+            </Badge>
             {salon.verification?.status === "VERIFIED" ? (
-              <Badge className="bg-success/10 text-success focus-visible:ring-success/20 dark:bg-success/20">
-                ✓ Verified
+              <Badge className="gap-1 bg-success/10 text-success focus-visible:ring-success/20 dark:bg-success/20">
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
+                Verified
               </Badge>
             ) : null}
           </div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
             {salon.name}
           </h1>
           <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
@@ -88,23 +102,81 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
           </p>
         </div>
 
-        {canEdit ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
-            variant="outline"
-            className="shrink-0"
-            render={<Link href={routes.salonManage(salon.slug)} />}
+            render={<Link href={routes.salonBooking(salon.slug)} />}
+            size="lg"
           >
-            <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-            Manage salon
+            <CalendarDays className="h-4 w-4" aria-hidden="true" />
+            Book appointment
           </Button>
-        ) : null}
+          {canEdit ? (
+            <Button
+              variant="outline"
+              size="lg"
+              render={<Link href={routes.salonManage(salon.slug)} />}
+            >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+              Manage
+            </Button>
+          ) : null}
+        </div>
       </header>
 
+      {/* Sticky sub-nav — in-page anchors + links to the dedicated
+          Packages / Products routes. `scroll-mt-24` on each target keeps
+          the sticky bar from covering the section heading on jump. */}
+      <nav
+        aria-label="Salon sections"
+        className="sticky top-0 z-30 mt-2 border-y border-border bg-background/80 px-2 backdrop-blur"
+      >
+        <ul className="flex items-center gap-1 overflow-x-auto py-2 text-sm">
+          {SECTION_LINKS.map((link) => (
+            <li key={link.href}>
+              <a
+                href={link.href}
+                className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <link.icon className="h-4 w-4" aria-hidden="true" />
+                {link.label}
+              </a>
+            </li>
+          ))}
+          <li aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border sm:block" />
+          <li>
+            <NavLink
+              href={routes.salonPackages(salon.slug)}
+              variant="link"
+              markActive={false}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 hover:bg-muted"
+            >
+              <Package className="h-4 w-4" aria-hidden="true" />
+              Packages
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              href={routes.salonProducts(salon.slug)}
+              variant="link"
+              markActive={false}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 hover:bg-muted"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Products
+            </NavLink>
+          </li>
+        </ul>
+      </nav>
+
       {/* Content + Sidebar */}
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_320px]">
+      <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_320px]">
         <div className="space-y-10">
           {hasDescription ? (
-            <section className="space-y-3" aria-labelledby="salon-about-title">
+            <section
+              id="about"
+              aria-labelledby="salon-about-title"
+              className="scroll-mt-24 space-y-3"
+            >
               <h2
                 id="salon-about-title"
                 className="font-heading text-xl font-semibold"
@@ -120,13 +192,17 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
           ) : null}
 
           {gallery.length > 0 ? (
-            <section className="space-y-3">
+            <section id="gallery" className="scroll-mt-24 space-y-3">
               <h2 className="font-heading text-xl font-semibold">Gallery</h2>
               <SalonGallery images={gallery} name={salon.name} />
             </section>
           ) : null}
 
-          <section className="space-y-4" aria-labelledby="services-title">
+          <section
+            id="services"
+            aria-labelledby="services-title"
+            className="scroll-mt-24 space-y-4"
+          >
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2
@@ -175,7 +251,7 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
             )}
           </section>
 
-          <section className="space-y-3">
+          <section id="location" className="scroll-mt-24 space-y-3">
             <h2 className="font-heading text-xl font-semibold">Location</h2>
             <SalonMapPreview
               latitude={salon.lat}
@@ -185,7 +261,7 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
           </section>
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <SalonWorkingHours
             hours={salon.workingHours}
             timezone={salon.timezone}
@@ -256,6 +332,20 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
             </Link>
           </div>
         </aside>
+      </div>
+
+      {/* Sticky mobile book bar — full-width primary CTA, always reachable
+          without scrolling back to the top. Hidden on >= sm where the
+          in-header Book button is always in view. */}
+      <div className="sticky bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:hidden">
+        <Button
+          render={<Link href={routes.salonBooking(salon.slug)} />}
+          className="w-full"
+          size="lg"
+        >
+          <CalendarDays className="h-4 w-4" aria-hidden="true" />
+          Book appointment at {salon.name}
+        </Button>
       </div>
     </article>
   );

@@ -21,7 +21,7 @@ export interface PublicPackage {
   isActive: boolean;
   services: Array<{
     serviceId: string;
-    service: { id: string; name: string; slug: string };
+    service: { id: string; name: string; slug: string; price: number };
   }>;
   createdAt: Date;
   updatedAt: Date;

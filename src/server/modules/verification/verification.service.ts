@@ -14,9 +14,11 @@ import {
 import {
   applyVerificationDecision,
   findVerificationBySalonId,
+  listPendingVerifications as findPendingVerifications,
   submitVerification,
 } from "./verification.repository";
 import type {
+  PendingVerificationRow,
   PublicSalonVerification,
   ReviewVerificationInput,
   SubmitVerificationInput,
@@ -102,4 +104,23 @@ export async function reviewSalonVerification(
     reason: input.reason ?? null,
     reviewerId: callerId,
   });
+}
+
+/**
+ * Lists every PENDING verification with the salon fields the admin queue
+ * renders. SUPER_ADMIN only.
+ *
+ * Why mirror the role check here:
+ * The proxy already gates `/api/v1/admin/*`, but the admin Server Component
+ * calls this directly. Asserting here keeps the function safe if it is ever
+ * reused from a non-admin-prefixed surface, and matches the defense-in-depth
+ * pattern used by `reviewSalonVerification`.
+ */
+export async function listPendingVerifications(
+  callerRole: string,
+): Promise<PendingVerificationRow[]> {
+  if (callerRole !== "SUPER_ADMIN") {
+    throw new AdminAccessDeniedError();
+  }
+  return findPendingVerifications();
 }

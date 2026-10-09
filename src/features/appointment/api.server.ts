@@ -1,14 +1,21 @@
 import "server-only";
 
 import { getSession } from "@/lib/auth/get-session";
+import type { PaymentTransaction } from "@/features/payment/types";
 import {
   AppointmentAccessDeniedError,
   AppointmentNotFoundError,
 } from "@/server/modules/appointment/appointment.errors";
 import {
+  SalonNotFoundError,
+  SalonRoleInsufficientError,
+} from "@/server/modules/salon/salon.errors";
+import {
   getAppointment as getAppointmentFromService,
+  listAppointmentsForSalon,
   listMyAppointments,
 } from "@/server/modules/appointment/appointment.service";
+import { listAppointmentTransactions } from "@/server/modules/payment/payment.service";
 
 import type { AppointmentStatus, PublicAppointment } from "./types";
 
@@ -44,11 +51,73 @@ export async function listAppointments(input: {
 }
 
 /**
+ * Loads the salon-side appointment list for the signed-in caller.
+ *
+ * Why a separate helper (and not `listAppointments`):
+ * The customer list (`listAppointments`) walks the caller's own bookings;
+ * the salon list (`listAppointmentsForSalon`) walks a salon's bookings with
+ * a MANAGER+ access check, plus cursor/status/from/to query parameters the
+ * customer list never accepts. Sharing one function would force the customer
+ * path to ignore half its parameters and the salon path to inherit
+ * customer-only fields (like `upcoming`). Splitting them keeps each shape
+ * honest.
+ *
+ * Why call the service directly (per analysis-report.md recommendation #13):
+ * The page is a Server Component — same process as the service. An HTTP
+ * self-fetch would round-trip through cookies + JSON re-serialization for
+ * no benefit. The service still runs the MANAGER+ access check, so this is
+ * not a trust bypass.
+ *
+ * Why defensive null returns (matches `getAppointment`):
+ * The page already gates on `getSalonForServiceManagement` (MANAGER+), so
+ * `SalonNotFoundError` / `SalonRoleInsufficientError` /
+ * `AppointmentAccessDeniedError` are race conditions — the salon or the
+ * caller's membership changed between the two calls. Returning `null` lets
+ * the page render an empty list instead of throwing a 500.
+ */
+export async function listSalonAppointmentsServer(
+  salonRef: string,
+  input: {
+    cursor?: string;
+    status?: AppointmentStatus;
+    from?: string;
+    to?: string;
+    limit?: number;
+  },
+): Promise<{
+  items: PublicAppointment[];
+  nextCursor: string | null;
+  hasMore: boolean;
+} | null> {
+  const user = await getSession();
+  if (!user) return null;
+
+  try {
+    return await listAppointmentsForSalon(user.id, salonRef, {
+      cursor: input.cursor,
+      limit: input.limit ?? 50,
+      status: input.status,
+      from: input.from,
+      to: input.to,
+    });
+  } catch (error) {
+    if (error instanceof SalonNotFoundError) return null;
+    if (error instanceof SalonRoleInsufficientError) return null;
+    if (error instanceof AppointmentAccessDeniedError) return null;
+    throw error;
+  }
+}
+
+/**
  * Loads one appointment the caller is allowed to view.
  *
  * Returns null for appointments that do not exist or belong to someone else,
  * matching the "existence and ownership share one response" convention of the
  * REST endpoint, so callers can render notFound() uniformly.
+ *
+ * The returned appointment carries `viewerCanRecordPayment` (true when the
+ * caller is a salon MANAGER or OWNER) so the appointment detail page can
+ * gate the "Record payment" button without an extra membership lookup.
  */
 export async function getAppointment(
   id: string,
@@ -61,6 +130,57 @@ export async function getAppointment(
   } catch (error) {
     if (error instanceof AppointmentNotFoundError) return null;
     if (error instanceof AppointmentAccessDeniedError) return null;
+    throw error;
+  }
+}
+
+/**
+ * Loads the payment transactions for an appointment the caller may view.
+ *
+ * Used by the appointment detail page's "Payments" ledger. Returns the empty
+ * shape on auth/missing/access-denied so a broken ledger never breaks the
+ * rest of the page — the surrounding `getAppointment` call already gates the
+ * main content via `notFound()`, so by the time we reach this helper the
+ * appointment is known to exist; the catch is defense in depth for races
+ * (e.g. the appointment is deleted between the two calls).
+ *
+ * Why we serialize `createdAt` to ISO strings here:
+ * The service returns `Date` objects (server types). The client
+ * `PaymentTransaction` shape uses `string` for `createdAt` because the same
+ * type is used for the JSON HTTP response from `listTransactionsApi`. Mapping
+ * here keeps one consistent wire shape on both paths.
+ */
+export async function listAppointmentTransactionsServer(
+  appointmentId: string,
+): Promise<{
+  items: PaymentTransaction[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}> {
+  const user = await getSession();
+  if (!user) {
+    return { items: [], nextCursor: null, hasMore: false };
+  }
+
+  try {
+    const result = await listAppointmentTransactions(user.id, appointmentId, {
+      limit: 100,
+    });
+    return {
+      items: result.items.map((txn) => ({
+        ...txn,
+        createdAt: txn.createdAt.toISOString(),
+      })),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    };
+  } catch (error) {
+    if (error instanceof AppointmentNotFoundError) {
+      return { items: [], nextCursor: null, hasMore: false };
+    }
+    if (error instanceof AppointmentAccessDeniedError) {
+      return { items: [], nextCursor: null, hasMore: false };
+    }
     throw error;
   }
 }

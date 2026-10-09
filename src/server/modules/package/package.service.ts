@@ -38,12 +38,24 @@ function toPublicPackage(row: {
   isActive: boolean;
   services: Array<{
     serviceId: string;
-    service: { id: string; name: string; slug: string };
+    service: {
+      id: string;
+      name: string;
+      slug: string;
+      price: { toNumber(): number } | number;
+    };
   }>;
   createdAt: Date;
   updatedAt: Date;
 }): PublicPackage {
-  return { ...row, price: Number(row.price) };
+  return {
+    ...row,
+    price: Number(row.price),
+    services: row.services.map((line) => ({
+      ...line,
+      service: { ...line.service, price: Number(line.service.price) },
+    })),
+  };
 }
 
 /** Lists a salon's active packages. Public endpoint. */
@@ -78,6 +90,31 @@ export async function getPublicPackage(
   const found = await findPackageBySlug(salonId, slug);
   if (!found) throw new PackageNotFoundError();
   return toPublicPackage(found);
+}
+
+/**
+ * Loads a package by id for a salon manager.
+ *
+ * Why:
+ * The manage edit page receives the package id in the URL — the same id the
+ * PATCH/DELETE endpoints use — so a slug-based lookup would always miss.
+ * Inactive packages are editable too (owners tune price/details before
+ * re-activating), so we don't filter on `isActive`. Salon ownership is checked
+ * so a manager of salon A can't read salon B's packages by guessing ids.
+ */
+export async function getManagedSalonPackage(
+  callerId: string,
+  salonRef: string,
+  packageRef: string,
+): Promise<PublicPackage> {
+  const salonId = await loadManagedSalon(callerId, salonRef);
+
+  const existing = await findPackageById(packageRef);
+  if (!existing || existing.salonId !== salonId) {
+    throw new PackageNotFoundError();
+  }
+
+  return toPublicPackage(existing);
 }
 
 /** Loads a salon for a management operation and asserts MANAGER+. */

@@ -223,11 +223,15 @@ export const packageSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       serviceId: { type: "string" },
       service: {
         type: "object",
-        required: ["id", "name", "slug"],
+        required: ["id", "name", "slug", "price"],
         properties: {
           id: { type: "string" },
           name: { type: "string" },
           slug: { type: "string" },
+          price: {
+            type: "number",
+            description: "Standalone service price in INR — lets clients compute package savings.",
+          },
         },
       },
     },

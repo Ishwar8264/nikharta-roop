@@ -47,3 +47,42 @@ export async function createAppointment(
   }>("/appointments", input);
   return response.data.appointment;
 }
+
+/**
+ * Drives an appointment through its lifecycle (confirm, start, complete,
+ * cancel, mark no-show).
+ *
+ * Why a thin wrapper:
+ * The PATCH `/api/v1/appointments/{id}/status` route validates the body
+ * against `updateAppointmentStatusSchema` and runs the full access + state
+ * machine checks (`assertCanTransitionStatus`, `TERMINAL_STATUSES`,
+ * `ALLOWED_TRANSITIONS`). The client only needs to send `{ status, reason? }`
+ * and let the server be the source of truth. The browser-side copy of the
+ * transition map (in `salon-appointment-detail.tsx`) is purely for UI gating —
+ * the server rejects illegal transitions regardless of what the client shows.
+ *
+ * `targetStatus` is constrained to the non-terminal statuses the schema
+ * accepts (SCHEDULED and RESCHEDULED are intentionally absent — those are
+ * never valid *target* states from the manage UI).
+ */
+export async function updateAppointmentStatusApi(
+  appointmentId: string,
+  input: {
+    status:
+      | "CONFIRMED"
+      | "IN_PROGRESS"
+      | "COMPLETED"
+      | "CANCELLED"
+      | "NO_SHOW";
+    reason?: string;
+  },
+): Promise<PublicAppointment> {
+  const response = await api.patch<{
+    message: string;
+    data: { appointment: PublicAppointment };
+  }>(
+    `/appointments/${encodeURIComponent(appointmentId)}/status`,
+    input,
+  );
+  return response.data.appointment;
+}

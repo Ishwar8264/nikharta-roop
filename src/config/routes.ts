@@ -31,6 +31,27 @@ export const routes = {
   salonServiceDetail: (salonSlug: string, serviceSlug: string) =>
     `/salons/${salonSlug}/services/${serviceSlug}`,
   salonBooking: (slug: string) => `/salons/${slug}/book`,
+  salonPackages: (slug: string) => `/salons/${slug}/packages`,
+
+  // ─── Salon manage — Phase A ───
+  salonAppointmentsManage: (slug: string) =>
+    `/salons/${slug}/manage/appointments`,
+  salonAppointmentManageDetail: (slug: string, appointmentId: string) =>
+    `/salons/${slug}/manage/appointments/${appointmentId}`,
+  salonStaffManage: (slug: string) => `/salons/${slug}/manage/staff`,
+  salonStaffDetail: (slug: string, staffId: string) =>
+    `/salons/${slug}/manage/staff/${staffId}`,
+  salonPackagesManage: (slug: string) => `/salons/${slug}/manage/packages`,
+  salonPackageEdit: (slug: string, packageId: string) =>
+    `/salons/${slug}/manage/packages/${packageId}`,
+  salonPackageCreate: (slug: string) => `/salons/${slug}/manage/packages/create`,
+  salonTemplatesManage: (slug: string) => `/salons/${slug}/manage/templates`,
+  salonVerification: (slug: string) => `/salons/${slug}/manage/verification`,
+  salonCouponsManage: (slug: string) => `/salons/${slug}/manage/coupons`,
+  salonSettingsManage: (slug: string) => `/salons/${slug}/manage/settings`,
+  salonCustomerNotes: (slug: string, customerId: string) =>
+    `/salons/${slug}/manage/customers/${customerId}/notes`,
+  adminSalonVerification: "/admin/salons/verification",
   blog: "/blog",
   blogPost: (slug: string) => `/blog/${slug}`,
   about: "/about",

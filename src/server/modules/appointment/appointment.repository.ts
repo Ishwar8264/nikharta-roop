@@ -32,6 +32,9 @@ export const PUBLIC_APPOINTMENT_SELECT = {
   salon: {
     select: { id: true, name: true, slug: true, timezone: true },
   },
+  customer: {
+    select: { id: true, name: true, phone: true, avatar: true },
+  },
   services: {
     select: {
       serviceId: true,
