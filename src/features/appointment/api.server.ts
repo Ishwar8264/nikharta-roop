@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getSession } from "@/lib/auth/get-session";
+import type { PaymentTransaction } from "@/features/payment/types";
 import {
   AppointmentAccessDeniedError,
   AppointmentNotFoundError,
@@ -9,6 +10,7 @@ import {
   getAppointment as getAppointmentFromService,
   listMyAppointments,
 } from "@/server/modules/appointment/appointment.service";
+import { listAppointmentTransactions } from "@/server/modules/payment/payment.service";
 
 import type { AppointmentStatus, PublicAppointment } from "./types";
 
@@ -61,6 +63,57 @@ export async function getAppointment(
   } catch (error) {
     if (error instanceof AppointmentNotFoundError) return null;
     if (error instanceof AppointmentAccessDeniedError) return null;
+    throw error;
+  }
+}
+
+/**
+ * Loads the payment transactions for an appointment the caller may view.
+ *
+ * Used by the appointment detail page's "Payments" ledger. Returns the empty
+ * shape on auth/missing/access-denied so a broken ledger never breaks the
+ * rest of the page — the surrounding `getAppointment` call already gates the
+ * main content via `notFound()`, so by the time we reach this helper the
+ * appointment is known to exist; the catch is defense in depth for races
+ * (e.g. the appointment is deleted between the two calls).
+ *
+ * Why we serialize `createdAt` to ISO strings here:
+ * The service returns `Date` objects (server types). The client
+ * `PaymentTransaction` shape uses `string` for `createdAt` because the same
+ * type is used for the JSON HTTP response from `listTransactionsApi`. Mapping
+ * here keeps one consistent wire shape on both paths.
+ */
+export async function listAppointmentTransactionsServer(
+  appointmentId: string,
+): Promise<{
+  items: PaymentTransaction[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}> {
+  const user = await getSession();
+  if (!user) {
+    return { items: [], nextCursor: null, hasMore: false };
+  }
+
+  try {
+    const result = await listAppointmentTransactions(user.id, appointmentId, {
+      limit: 100,
+    });
+    return {
+      items: result.items.map((txn) => ({
+        ...txn,
+        createdAt: txn.createdAt.toISOString(),
+      })),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    };
+  } catch (error) {
+    if (error instanceof AppointmentNotFoundError) {
+      return { items: [], nextCursor: null, hasMore: false };
+    }
+    if (error instanceof AppointmentAccessDeniedError) {
+      return { items: [], nextCursor: null, hasMore: false };
+    }
     throw error;
   }
 }
