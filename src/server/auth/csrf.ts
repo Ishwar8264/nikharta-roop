@@ -71,6 +71,18 @@ export function isMutationRequestTrusted(request: NextRequest): boolean {
   const expectedOrigin = process.env.APP_ORIGIN ?? request.nextUrl.origin;
   if (origin && origin !== expectedOrigin) return false;
 
+  // Page Server Actions use Next.js origin/host validation rather than the
+  // API client's double-submit header. Require an explicit trusted origin;
+  // an action header must never bypass CSRF checks on API routes.
+  if (
+    request.method === "POST" &&
+    !/^\/api(?:\/|$)/.test(request.nextUrl.pathname) &&
+    Boolean(request.headers.get("next-action")) &&
+    origin === expectedOrigin
+  ) {
+    return true;
+  }
+
   if (hasBearerToken(request)) return true;
   if (PUBLIC_MUTATION_PATHS.has(request.nextUrl.pathname)) return true;
 

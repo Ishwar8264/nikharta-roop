@@ -48,24 +48,6 @@ export interface Limiter {
   limit(identifier: string): Promise<LimiterResult>;
 }
 
-export const authLimiter = createLimiter({
-  tokens: 10,
-  window: "1 m",
-  prefix: "ratelimit:auth",
-});
-
-export const standardLimiter = createLimiter({
-  tokens: 60,
-  window: "1 m",
-  prefix: "ratelimit:standard",
-});
-
-export const authenticatedLimiter = createLimiter({
-  tokens: 120,
-  window: "1 m",
-  prefix: "ratelimit:authenticated",
-});
-
 /** Builds the standard rate-limit response headers. */
 export function rateLimitHeaders(result: {
   limit: number;
@@ -124,3 +106,21 @@ function parseWindowMs(window: string): number {
   if (unit === "h") return amount * 60 * 60 * 1000;
   return amount * 60 * 1000;
 }
+
+export const authLimiter = createLimiter({
+  tokens: 10,
+  window: "1 m",
+  prefix: "ratelimit:auth",
+});
+
+export const standardLimiter = createLimiter({
+  tokens: 60,
+  window: "1 m",
+  prefix: "ratelimit:standard",
+});
+
+export const authenticatedLimiter = createLimiter({
+  tokens: 120,
+  window: "1 m",
+  prefix: "ratelimit:authenticated",
+});
