@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { NotesTimeline } from "@/features/customer-note";
@@ -67,12 +66,6 @@ export default async function CustomerNotesPage({ params }: PageProps) {
   return (
     <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
       <header className="space-y-2">
-        <Link
-          href={routes.salonManage(slug)}
-          className="text-sm text-primary underline"
-        >
-          Back to manage
-        </Link>
         <h1 className="font-heading text-3xl font-semibold">Customer notes</h1>
         <p className="text-muted-foreground">
           {salon.name} · {customerLabel}

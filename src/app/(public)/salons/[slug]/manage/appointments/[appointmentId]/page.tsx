@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -129,12 +128,6 @@ export default async function ManageSalonAppointmentDetailPage({
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <Link
-        href={routes.salonAppointmentsManage(slug)}
-        className="text-sm text-primary underline"
-      >
-        Back to appointments
-      </Link>
 
       <header className="mt-6 flex flex-wrap items-start gap-4">
         <Avatar size="lg">

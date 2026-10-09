@@ -66,12 +66,6 @@ export default async function ManageStaffPage({ params }: Props) {
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <header className="space-y-3">
-        <Link
-          href={routes.salonManage(slug)}
-          className="text-sm text-primary underline"
-        >
-          Back to manage
-        </Link>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="font-heading text-3xl font-semibold">Staff</h1>

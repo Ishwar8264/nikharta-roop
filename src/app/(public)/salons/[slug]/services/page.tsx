@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { ArrowRight, Plus, Scissors } from "lucide-react";
 
-import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { NavLink } from "@/components/shared/nav-link";
 import { routes } from "@/config/routes";
@@ -86,9 +85,9 @@ export default async function SalonServicesPage({
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <BackButton href={routes.salonDetail(slug)} variant="secondary" />
 
-      <header className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">
             {salon.name}

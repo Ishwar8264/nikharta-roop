@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { ArrowRight, Clock, Star } from "lucide-react";
 
-import { BackButton } from "@/components/shared/back-button";
 import { CoverImage } from "@/components/shared/cover-image";
 import { NavLink } from "@/components/shared/nav-link";
 import { Badge } from "@/components/ui/badge";
@@ -109,9 +108,9 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <BackButton href={routes.salonServices(slug)} variant="secondary" />
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.65fr)] lg:items-start">
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.65fr)] lg:items-start">
         <section aria-labelledby="service-title" className="min-w-0">
           <CoverImage
             src={service.images[0]}

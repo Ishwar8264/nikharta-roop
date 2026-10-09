@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Star } from "lucide-react";
 
-import { BackButton } from "@/components/shared/back-button";
 import { CoverImage } from "@/components/shared/cover-image";
 import { NavLink } from "@/components/shared/nav-link";
 import { RichTextContent } from "@/components/shared/rich-text-content";
@@ -85,8 +84,8 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <BackButton href={routes.salonProducts(slug)} variant="secondary" />
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+
+      <div className="grid gap-8 lg:grid-cols-2">
         <div className="space-y-4">
           <CoverImage
             src={product.images[0]}

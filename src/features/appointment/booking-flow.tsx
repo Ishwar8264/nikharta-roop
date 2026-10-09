@@ -4,7 +4,6 @@ import { CalendarDays, Check, Clock, Scissors, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { BackButton } from "@/components/shared/back-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -210,8 +209,8 @@ export function BookingFlow({
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-      <BackButton href={routes.salonDetail(salon.slug)} variant="secondary" />
-      <header className="mt-8">
+
+      <header>
         <p className="text-xs font-semibold uppercase tracking-widest text-primary">
           {salon.name}
         </p>

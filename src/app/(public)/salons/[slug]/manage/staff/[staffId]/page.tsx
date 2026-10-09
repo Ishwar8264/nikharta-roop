@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -107,12 +106,6 @@ export default async function ManageStaffDetailPage({ params }: Props) {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <header className="space-y-3">
-        <Link
-          href={routes.salonStaffManage(slug)}
-          className="text-sm text-primary underline"
-        >
-          Back to staff
-        </Link>
         <div className="flex items-start gap-4">
           <Avatar size="lg">
             {staff.user.avatar ? (

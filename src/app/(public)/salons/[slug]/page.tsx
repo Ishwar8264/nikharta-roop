@@ -79,13 +79,12 @@ export default async function SalonDetailPage({ params }: PageProps) {
       : Promise.resolve({ isFavorited: false, favoriteId: null }),
   ]);
 
+  const canManage = membership?.viewerRole === "OWNER" || membership?.viewerRole === "MANAGER";
+
   return (
     <SalonDetail
       salon={salon}
-      canEdit={
-        membership?.viewerRole === "OWNER" ||
-        membership?.viewerRole === "MANAGER"
-      }
+      canEdit={canManage}
       isFavorited={favoriteCheck.isFavorited}
       favoriteId={favoriteCheck.favoriteId}
       currentUserId={user?.id ?? null}

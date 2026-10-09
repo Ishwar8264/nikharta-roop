@@ -2,7 +2,6 @@ import { Gift, Info, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { NavLink } from "@/components/shared/nav-link";
 import { routes } from "@/config/routes";
@@ -96,9 +95,8 @@ export default async function SalonPackagesPage({ params }: Props) {
         />
       ) : null}
 
-      <BackButton href={routes.salonDetail(slug)} variant="secondary" />
 
-      <header className="mt-8 flex flex-wrap items-end justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-primary">{salon.name}</p>
           <h1 className="mt-2 font-heading text-3xl font-semibold">

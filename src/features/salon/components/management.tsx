@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -144,7 +143,6 @@ export function SalonManagement({ salon, currentUserId }: Props) {
   return (
     <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
       <header>
-        <Link className="text-sm text-primary underline" href={routes.salonDetail(salon.slug)}>Back to salon</Link>
         <h1 className="mt-4 font-heading text-3xl font-semibold">Manage {salon.name}</h1>
       </header>
 
