@@ -3,4 +3,5 @@ export {
   deleteNoteApi,
   listNotesApi,
 } from "./api";
-export type { CustomerNote } from "./api";
+export { NotesTimeline } from "./notes-timeline";
+export type { CustomerNote, NotesTimelineProps } from "./types";
