@@ -31,6 +31,7 @@ export interface PublicReview {
 /** Public shape of a staff rating. */
 export interface PublicStaffRating {
   id: string;
+  staffId: string;
   rating: number;
   comment: string | null;
   createdAt: Date;

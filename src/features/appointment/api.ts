@@ -49,6 +49,30 @@ export async function createAppointment(
 }
 
 /**
+ * Reschedules an appointment to a new start time.
+ *
+ * Why no `reason` field:
+ * The server's `rescheduleAppointmentSchema` is a `strictObject` over
+ * `{ startTime, staffId? }` — it rejects unknown keys. The route handler
+ * returns 400 on any extra field, so the client must send exactly that shape.
+ * `staffId` is optional: when omitted, the service reuses the appointment's
+ * existing staff (the reschedule flow only moves the time, never the staff).
+ */
+export async function rescheduleAppointmentApi(
+  appointmentId: string,
+  input: { startTime: string; staffId?: string },
+): Promise<PublicAppointment> {
+  const response = await api.post<{
+    message: string;
+    data: { appointment: PublicAppointment };
+  }>(
+    `/appointments/${encodeURIComponent(appointmentId)}/reschedule`,
+    input,
+  );
+  return response.data.appointment;
+}
+
+/**
  * Drives an appointment through its lifecycle (confirm, start, complete,
  * cancel, mark no-show).
  *

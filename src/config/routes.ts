@@ -49,9 +49,17 @@ export const routes = {
   salonVerification: (slug: string) => `/salons/${slug}/manage/verification`,
   salonCouponsManage: (slug: string) => `/salons/${slug}/manage/coupons`,
   salonSettingsManage: (slug: string) => `/salons/${slug}/manage/settings`,
+  salonWorkingHoursManage: (slug: string) =>
+    `/salons/${slug}/manage/working-hours`,
   salonCustomerNotes: (slug: string, customerId: string) =>
     `/salons/${slug}/manage/customers/${customerId}/notes`,
+
+  // ─── Admin ───
   adminSalonVerification: "/admin/salons/verification",
+  adminUsers: "/admin/users",
+  adminCoupons: "/admin/coupons",
+  adminAiUsage: "/admin/ai-usage",
+  adminAuditLogs: "/admin/audit-logs",
   blog: "/blog",
   blogPost: (slug: string) => `/blog/${slug}`,
   about: "/about",
@@ -81,6 +89,16 @@ export const routes = {
   settings: "/settings",
   notifications: "/notifications",
   ai: "/ai",
+  /**
+   * Deep link to a specific AI chat.
+   *
+   * Why a query string instead of `/ai/{chatId}`:
+   * The dashboard serves both the chat list and the open conversation from one
+   * route. A query param keeps the list + usage stats mounted while the panel
+   * swaps underneath, so navigating between chats is a single searchParam
+   * change — no layout shift, no extra route segment to maintain.
+   */
+  aiChat: (chatId: string) => `/ai?chat=${encodeURIComponent(chatId)}`,
 
   // ─── System ───
   designSystem: "/design-system",

@@ -290,6 +290,32 @@ export const reviewPaths = {
     },
   },
   "/api/v1/appointments/{appointmentId}/staff-ratings": {
+    get: {
+      tags: ["Reviews & Ratings"],
+      summary: "List staff ratings for an appointment",
+      description:
+        "Returns the caller's staff ratings for one appointment. Only the " +
+        "appointment customer may read their own ratings.",
+      operationId: "listStaffRatingsForAppointment",
+      security: authenticatedMutation,
+      parameters: [idParameter("appointmentId")],
+      responses: {
+        "200": {
+          description: "Ratings for the appointment",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/AppointmentStaffRatingListResponse",
+              },
+            },
+          },
+        },
+        "400": validationResponse,
+        "401": { $ref: "#/components/responses/Unauthorized" },
+        "403": errorResponse("Caller is not the appointment customer"),
+        "404": errorResponse("Appointment not found"),
+      },
+    },
     post: {
       tags: ["Reviews & Ratings"],
       summary: "Rate staff for a completed appointment",
@@ -425,6 +451,7 @@ export const reviewSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
     type: "object",
     required: [
       "id",
+      "staffId",
       "rating",
       "comment",
       "createdAt",
@@ -433,6 +460,7 @@ export const reviewSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
     ],
     properties: {
       id: { $ref: "#/components/schemas/ResourceId" },
+      staffId: { $ref: "#/components/schemas/ResourceId" },
       rating: ratingProperty,
       comment: commentProperty,
       createdAt: { type: "string", format: "date-time" },
@@ -550,6 +578,25 @@ export const reviewSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
         items: { $ref: "#/components/schemas/StaffRating" },
       },
       meta: { $ref: "#/components/schemas/ReviewPaginationMeta" },
+    },
+  },
+  /**
+   * Appointment-scoped staff rating list.
+   *
+   * Why a separate schema from `StaffRatingListResponse`:
+   * The appointment view is bounded by the unique constraint on
+   * `(appointmentId, staffId)` — at most one row per staff member — so there
+   * is no cursor/`hasMore` and no cross-staff aggregate `summary` to return.
+   */
+  AppointmentStaffRatingListResponse: {
+    type: "object",
+    required: ["message", "data"],
+    properties: {
+      message: { type: "string" },
+      data: {
+        type: "array",
+        items: { $ref: "#/components/schemas/StaffRating" },
+      },
     },
   },
   ReviewPaginationMeta: {

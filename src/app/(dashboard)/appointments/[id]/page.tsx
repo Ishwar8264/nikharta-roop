@@ -12,7 +12,42 @@ import {
   formatAppointmentDateTime,
 } from "@/features/appointment/format";
 import { PaymentLedger } from "@/features/payment";
+import { StaffRatingCard } from "@/features/review";
+import { listStaffRatingsForAppointmentServer } from "@/features/review/api.server";
+import type { RateableStaffMember } from "@/features/review";
+import { getSession } from "@/lib/auth/get-session";
 import { isResourceId } from "@/server/modules/salon/salon.helpers";
+
+/**
+ * Collects the staff members the customer can rate for this appointment.
+ *
+ * Why only the primary staff:
+ * The create endpoint binds a rating to `Appointment.staffId` (the primary
+ * staff) and rejects everything else via `ReviewNoStaffToRateError`. Showing
+ * a form for per-service staff that the API will not accept would be broken
+ * UX, so the card receives just the rateable member. The name/avatar are
+ * looked up from the service lines so the avatar matches what the customer
+ * saw during booking; if the primary staff is not on any line we fall back to
+ * a nameless entry so the card still renders.
+ */
+function collectRateableStaff(appointment: {
+  staffId: string | null;
+  services: Array<{
+    staff: { id: string; name: string | null; avatar: string | null } | null;
+  }>;
+}): RateableStaffMember[] {
+  if (!appointment.staffId) return [];
+  const fromLine = appointment.services
+    .map((line) => line.staff)
+    .find((staff) => staff?.id === appointment.staffId);
+  return [
+    fromLine ?? {
+      id: appointment.staffId,
+      name: null,
+      avatar: null,
+    },
+  ];
+}
 
 /** Shows one authorized appointment with services, totals, and payments. */
 export default async function AppointmentDetailPage({
@@ -31,6 +66,20 @@ export default async function AppointmentDetailPage({
   // button, but salon managers/owners viewing the same appointment do.
   const transactions = await listAppointmentTransactionsServer(id);
   const canRecord = appointment.viewerCanRecordPayment ?? false;
+
+  // Staff ratings are only available to the appointment's customer on a
+  // COMPLETED visit. Salon staff viewing the same appointment never see the
+  // rating form (the API rejects non-customers), so we gate the card here
+  // rather than relying on a 403 after submit. `getSession()` is cached per
+  // request, so this dedupes with the call inside `getAppointment`.
+  const session = await getSession();
+  const isCustomer =
+    session !== null && session.id === appointment.customerId;
+  const showRatingCard = appointment.status === "COMPLETED" && isCustomer;
+  const existingRatings = showRatingCard
+    ? await listStaffRatingsForAppointmentServer(appointment.id)
+    : [];
+  const rateableStaff = showRatingCard ? collectRateableStaff(appointment) : [];
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
@@ -105,6 +154,14 @@ export default async function AppointmentDetailPage({
         transactions={transactions.items}
         canRecord={canRecord}
       />
+
+      {showRatingCard ? (
+        <StaffRatingCard
+          appointmentId={appointment.id}
+          staffMembers={rateableStaff}
+          existingRatings={existingRatings}
+        />
+      ) : null}
 
       {appointment.notes ? (
         <section className="mt-4 rounded-xl border border-border bg-card p-5">
