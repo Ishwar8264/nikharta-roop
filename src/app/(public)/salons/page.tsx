@@ -8,6 +8,7 @@ import { routes } from "@/config/routes";
 import { getSession } from "@/lib/auth/get-session";
 import type { SalonFilters } from "@/features/salon";
 import { FilterBar, SalonCard } from "@/features/salon";
+import { SalonDirectoryLayout } from "@/features/salon/components/directory-layout";
 import { listSalons } from "@/server/modules/salon/salon.service";
 
 export const metadata: Metadata = {
@@ -72,7 +73,8 @@ export default async function SalonsPage({ searchParams }: SalonsPageProps) {
   if (filters.search) baseParams.set("search", filters.search);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <SalonDirectoryLayout isSignedIn={Boolean(user)}>
+      <section className="min-w-0" aria-labelledby="salon-directory-title">
       {/* Hero — warm gradient, value prop, and a clear entry to search */}
       <header className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-accent/15 px-5 py-8 sm:px-10 sm:py-12">
         <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-accent/20 blur-3xl" aria-hidden="true" />
@@ -81,7 +83,7 @@ export default async function SalonsPage({ searchParams }: SalonsPageProps) {
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
             Verified partners across India
           </span>
-          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h1 id="salon-directory-title" className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Find your next salon
           </h1>
           <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
@@ -143,7 +145,7 @@ export default async function SalonsPage({ searchParams }: SalonsPageProps) {
             {filters.city ? ` in ${filters.city}` : ""}
           </p>
 
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {result.items.map((salon) => (
               <SalonCard key={salon.id} salon={salon} />
             ))}
@@ -161,6 +163,7 @@ export default async function SalonsPage({ searchParams }: SalonsPageProps) {
           />
         </>
       )}
-    </main>
+      </section>
+    </SalonDirectoryLayout>
   );
 }

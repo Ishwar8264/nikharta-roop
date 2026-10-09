@@ -11,7 +11,7 @@ type NavLinkVariant = "link" | "default" | "outline" | "secondary" | "ghost";
 
 type NavLinkSize = "sm" | "md" | "lg";
 
-interface NavLinkProps extends Omit<ComponentProps<typeof Link>, "children"> {
+export interface NavLinkProps extends Omit<ComponentProps<typeof Link>, "children"> {
   children: ReactNode;
   /** Left icon slot. */
   icon?: ReactNode;
@@ -31,6 +31,11 @@ interface NavLinkProps extends Omit<ComponentProps<typeof Link>, "children"> {
   activeClassName?: string;
   /** Extra class on the spinner icon. */
   spinnerClassName?: string;
+  /** Optional visual shown instead of the default navigation spinner. */
+  pendingIndicator?: ReactNode;
+  pendingLabel?: string;
+  /** Reserve the status slot to prevent layout shifts during navigation. */
+  reservePendingSpace?: boolean;
 }
 
 const VARIANT_STYLES: Record<NavLinkVariant, string> = {
@@ -79,6 +84,9 @@ export function NavLink({
   markActive = true,
   activeClassName,
   spinnerClassName,
+  pendingIndicator,
+  pendingLabel = "Navigating",
+  reservePendingSpace = false,
   className,
   ...props
 }: NavLinkProps) {
@@ -116,7 +124,13 @@ export function NavLink({
       <span className="min-w-0 truncate">{children}</span>
 
       {showSpinner ? (
-        <NavLinkSpinner fallback={iconRight} className={spinnerClassName} />
+        <NavLinkSpinner
+          fallback={iconRight}
+          className={spinnerClassName}
+          indicator={pendingIndicator}
+          label={pendingLabel}
+          reserveSpace={reservePendingSpace}
+        />
       ) : iconRight ? (
         <span className="shrink-0" aria-hidden="true">
           {iconRight}
@@ -129,32 +143,38 @@ export function NavLink({
 function NavLinkSpinner({
   fallback,
   className,
+  indicator,
+  label,
+  reserveSpace,
 }: {
   fallback?: ReactNode;
   className?: string;
+  indicator?: ReactNode;
+  label: string;
+  reserveSpace: boolean;
 }) {
   const { pending } = useLinkStatus();
 
-  if (pending) {
-    return (
-      <Loader2
-        aria-hidden="true"
-        className={cn(
-          "h-3.5 w-3.5 shrink-0 animate-spin",
-          "text-muted-foreground",
-          className,
-        )}
-      />
-    );
-  }
+  if (!pending && !fallback && !reserveSpace) return null;
 
-  if (fallback) {
-    return (
-      <span className="shrink-0" aria-hidden="true">
-        {fallback}
-      </span>
-    );
-  }
-
-  return null;
+  return (
+    <span
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className={cn("inline-flex shrink-0 items-center justify-center", reserveSpace && "ml-auto size-4")}
+      data-pending={pending ? "true" : undefined}
+    >
+      {pending ? (
+        <>
+          <span aria-hidden="true">
+            {indicator ?? <Loader2 className={cn("h-3.5 w-3.5 animate-spin text-muted-foreground motion-reduce:animate-none", className)} />}
+          </span>
+          <span className="sr-only">{label}</span>
+        </>
+      ) : fallback ? (
+        <span aria-hidden="true">{fallback}</span>
+      ) : null}
+    </span>
+  );
 }
