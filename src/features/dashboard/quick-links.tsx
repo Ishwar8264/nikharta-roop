@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   CalendarDays,
+  Clock,
   FileText,
   Gift,
   Heart,
@@ -125,6 +126,12 @@ export function buildSalonManageLinks(salonSlug: string): QuickLink[] {
       icon: Settings,
       title: "Settings",
       description: "Booking rules, advance payments, and walk-ins.",
+    },
+    {
+      href: routes.salonWorkingHoursManage(salonSlug),
+      icon: Clock,
+      title: "Working hours",
+      description: "Weekly opening hours customers see on your page.",
     },
   ];
 }
