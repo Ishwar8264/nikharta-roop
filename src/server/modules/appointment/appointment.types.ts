@@ -94,6 +94,17 @@ export interface PublicAppointment {
     slug: string;
     timezone: string;
   };
+  /**
+   * True when the caller is a salon MANAGER or OWNER for the appointment's
+   * salon — the salon-side "Record payment" button on the appointment detail
+   * page is gated on this.
+   *
+   * Why optional:
+   * The field is computed by `getAppointment` after the viewer context is
+   * built. Other mappers (list/create/update paths) leave it unset; callers
+   * that don't care default to `undefined` → `false` at the page layer.
+   */
+  viewerCanRecordPayment?: boolean;
 }
 
 /** Cursor-paginated appointments. */

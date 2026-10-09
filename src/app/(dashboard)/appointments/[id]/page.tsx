@@ -25,10 +25,12 @@ export default async function AppointmentDetailPage({
   const appointment = await getAppointment(id);
   if (!appointment) notFound();
 
-  // Load the payment ledger in parallel-friendly order. We pass canRecord=
-  // false because this page is customer-facing; the salon-side manage screen
-  // (later phase) will own the record-payment flow.
+  // Load the payment ledger in parallel-friendly order. `canRecord` is
+  // server-resolved — true only when the viewer is a salon MANAGER+ for the
+  // appointment's salon — so customers never see the "Record payment"
+  // button, but salon managers/owners viewing the same appointment do.
   const transactions = await listAppointmentTransactionsServer(id);
+  const canRecord = appointment.viewerCanRecordPayment ?? false;
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
@@ -101,7 +103,7 @@ export default async function AppointmentDetailPage({
         appointmentId={appointment.id}
         totalPrice={appointment.totalPrice}
         transactions={transactions.items}
-        canRecord={false}
+        canRecord={canRecord}
       />
 
       {appointment.notes ? (

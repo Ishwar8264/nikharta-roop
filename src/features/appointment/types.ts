@@ -58,6 +58,14 @@ export interface PublicAppointment {
   salon: { id: string; name: string; slug: string; timezone: string };
   createdAt: string | Date;
   updatedAt: string | Date;
+  /**
+   * Server-computed flag: true when the viewer is a salon MANAGER or OWNER
+   * for the appointment's salon. Drives the salon-side "Record payment"
+   * button on the appointment detail page. Optional because the field is
+   * only populated by `getAppointment` (server); list/create/update paths
+   * omit it and the page layer defaults to `false`.
+   */
+  viewerCanRecordPayment?: boolean;
 }
 
 export interface CreateAppointmentInput {

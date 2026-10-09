@@ -51,6 +51,10 @@ export async function listAppointments(input: {
  * Returns null for appointments that do not exist or belong to someone else,
  * matching the "existence and ownership share one response" convention of the
  * REST endpoint, so callers can render notFound() uniformly.
+ *
+ * The returned appointment carries `viewerCanRecordPayment` (true when the
+ * caller is a salon MANAGER or OWNER) so the appointment detail page can
+ * gate the "Record payment" button without an extra membership lookup.
  */
 export async function getAppointment(
   id: string,
