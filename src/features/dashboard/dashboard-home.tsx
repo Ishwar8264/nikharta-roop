@@ -3,6 +3,7 @@ import { Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { CurrentUser } from "@/server/modules/auth/auth.types";
+import type { SalonOwnerStats } from "@/server/modules/salon/salon-stats.types";
 import type { SalonWithViewerRole } from "@/server/modules/salon/salon.types";
 import type { PublicSalonVerification } from "@/server/modules/verification/verification.types";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ import {
   QuickLinks,
   buildSalonManageLinks,
 } from "./quick-links";
+import { SalonStatsCard } from "./salon-stats-card";
 import { VerificationBanner } from "./verification-banner";
 
 interface DashboardHomeProps {
@@ -24,6 +26,12 @@ interface DashboardHomeProps {
    * component can branch purely on the row's presence.
    */
   verification: PublicSalonVerification | null;
+  /**
+   * At-a-glance stats for `ownedSalon`, or null when not an owner/manager.
+   * The page resolves this in parallel with `verification` so the stats
+   * card renders in the same wave as the banner above it.
+   */
+  stats: SalonOwnerStats | null;
 }
 
 /**
@@ -44,6 +52,7 @@ export function DashboardHome({
   user,
   ownedSalon,
   verification,
+  stats,
 }: DashboardHomeProps) {
   const greeting = user.name ?? "there";
 
@@ -75,6 +84,7 @@ export function DashboardHome({
             salonName={ownedSalon.name}
             verification={verification}
           />
+          <SalonStatsCard stats={stats} />
         </section>
       ) : null}
 

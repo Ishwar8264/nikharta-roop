@@ -1,4 +1,5 @@
 export { DashboardHome } from "./dashboard-home";
+export { SalonStatsCard } from "./salon-stats-card";
 export {
   buildSalonManageLinks,
   CUSTOMER_QUICK_LINKS,
