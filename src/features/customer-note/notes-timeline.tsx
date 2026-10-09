@@ -53,6 +53,7 @@ export function NotesTimeline({
   initial,
   currentUserId,
   currentUserRole,
+  customerName,
 }: NotesTimelineProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -131,6 +132,8 @@ export function NotesTimeline({
 
   return (
     <div className="space-y-8">
+      {customerName ? <CustomerHeader name={customerName} /> : null}
+
       <Composer
         value={draft}
         onChange={setDraft}
@@ -193,6 +196,35 @@ export function NotesTimeline({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+interface CustomerHeaderProps {
+  name: string;
+}
+
+/**
+ * Identifying header shown above the composer when the page has resolved a
+ * customer name. We render the `Avatar` with the customer's initial as the
+ * fallback (we intentionally do not pull the avatar URL through this client
+ * component — it would either need a separate fetch or a `next/image` domain
+ * entry, and a one-letter tile is enough orientation for staff).
+ */
+function CustomerHeader({ name }: CustomerHeaderProps) {
+  const trimmedName = name.trim();
+  const displayName = trimmedName || "Customer";
+  const initial = (trimmedName[0] ?? "?").toUpperCase();
+
+  return (
+    <header className="flex items-center gap-3 rounded-xl border bg-card p-4 ring-1 ring-foreground/5">
+      <Avatar size="lg">
+        <AvatarFallback>{initial}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">Customer</p>
+        <p className="truncate text-base font-medium">{displayName}</p>
+      </div>
+    </header>
   );
 }
 

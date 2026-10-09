@@ -12,6 +12,8 @@ import {
 } from "@/server/modules/salon/salon.errors";
 import { getSalonForServiceManagement } from "@/server/modules/salon/salon.service";
 import type { PublicCustomerNote } from "@/server/modules/customer-note/customer-note.types";
+import type { PublicCustomerSummary } from "@/server/modules/users/users.types";
+import { getCustomerSummary } from "@/server/modules/users/users.service";
 
 interface PageProps {
   params: Promise<{ slug: string; customerId: string }>;
@@ -23,10 +25,11 @@ export const metadata: Metadata = {
 };
 
 /**
- * Staff-facing notes timeline for one customer of one salon. The page only
- * needs the customer's id (the customer is reached via an appointment's
- * customer row), so we don't fetch a customer name — we surface the id
- * truncated for orientation instead.
+ * Staff-facing notes timeline for one customer of one salon. The page already
+ * gates on salon membership via `getSalonForServiceManagement`, so we can
+ * safely load the customer summary (name) alongside the notes in a single
+ * `Promise.all`. When the customer row is missing or soft-deleted we fall
+ * back to a truncated-id label so the page still renders.
  */
 export default async function CustomerNotesPage({ params }: PageProps) {
   const { slug, customerId } = await params;
@@ -41,10 +44,12 @@ export default async function CustomerNotesPage({ params }: PageProps) {
 
   let salon;
   let notes: PublicCustomerNote[];
+  let customer: PublicCustomerSummary | null;
   try {
-    [salon, notes] = await Promise.all([
+    [salon, notes, customer] = await Promise.all([
       getSalonForServiceManagement(slug, user.id),
       listCustomerNotes(user.id, slug, customerId),
+      getCustomerSummary(customerId),
     ]);
   } catch (error) {
     if (
@@ -56,7 +61,7 @@ export default async function CustomerNotesPage({ params }: PageProps) {
     throw error;
   }
 
-  const customerLabel = `Customer ${customerId.slice(-6)}`;
+  const customerLabel = customer?.name ?? `Customer ${customerId.slice(-6)}`;
 
   return (
     <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
@@ -82,6 +87,7 @@ export default async function CustomerNotesPage({ params }: PageProps) {
         }))}
         currentUserId={user.id}
         currentUserRole={salon.viewerRole}
+        customerName={customer?.name ?? undefined}
       />
     </main>
   );

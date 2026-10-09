@@ -9,6 +9,13 @@ export type { CustomerNote } from "./api";
  * STAFF), used to gate delete permissions: the author or any MANAGER+ may
  * delete a note. A loose `string` is allowed so it can flow straight from the
  * salon service's `SalonMemberRole` enum without re-narrowing here.
+ *
+ * `customerName` is the resolved display name of the customer the notes are
+ * about. When provided, the timeline renders an identifying header (an
+ * `Avatar` with the initial fallback + the name) above the composer so staff
+ * have orientation. When omitted (e.g. the customer row was soft-deleted or
+ * not yet seeded), the header is suppressed and the page subtitle's truncated
+ * id carries orientation alone.
  */
 export interface NotesTimelineProps {
   salonSlug: string;
@@ -16,4 +23,5 @@ export interface NotesTimelineProps {
   initial: CustomerNote[];
   currentUserId: string;
   currentUserRole: "OWNER" | "MANAGER" | "STAFF" | (string & {});
+  customerName?: string;
 }
