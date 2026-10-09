@@ -19,6 +19,34 @@ export async function findVerificationBySalonId(salonId: string) {
 }
 
 /**
+ * Lists PENDING verifications with the salon fields the admin queue needs.
+ *
+ * Why a separate repository function:
+ * The admin review page is the only surface that consumes this shape, and
+ * asking the service layer to expose it makes the role gate obvious. Ordering
+ * by `submittedAt` asc keeps the oldest submissions on top — the salon that
+ * waited longest should be reviewed first.
+ */
+export async function listPendingVerifications() {
+  return prisma.salonVerification.findMany({
+    where: { status: "PENDING" },
+    select: {
+      ...PUBLIC_VERIFICATION_SELECT,
+      submittedAt: true,
+      salon: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          city: true,
+        },
+      },
+    },
+    orderBy: { submittedAt: "asc" },
+  });
+}
+
+/**
  * Upserts the salon's verification into PENDING with fresh documents.
  *
  * Why upsert:

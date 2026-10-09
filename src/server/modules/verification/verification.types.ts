@@ -18,3 +18,24 @@ export interface PublicSalonVerification {
   reviewedAt: Date | null;
   reason: string | null;
 }
+
+/** Salon fields surfaced alongside each pending verification row. */
+export interface PendingVerificationSalon {
+  id: string;
+  slug: string;
+  name: string;
+  city: string;
+}
+
+/**
+ * One PENDING verification row in the admin review queue, joined with the
+ * salon fields the queue UI renders.
+ */
+export interface PendingVerificationRow {
+  status: SalonVerificationStatus;
+  documents: unknown | null;
+  submittedAt: Date | null;
+  reviewedAt: Date | null;
+  reason: string | null;
+  salon: PendingVerificationSalon;
+}
