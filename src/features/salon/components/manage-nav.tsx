@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  CalendarDays,
   ClipboardCheck,
   Package,
   Receipt,
@@ -31,6 +32,12 @@ interface ManageNavLink {
 /** Builds the salon-manage quick-link grid items for one salon. */
 function buildLinks(slug: string, verification: VerificationStatus): ManageNavLink[] {
   return [
+    {
+      href: routes.salonAppointmentsManage(slug),
+      icon: CalendarDays,
+      label: "Appointments",
+      description: "Today's bookings, status, and customers in the chair.",
+    },
     {
       href: routes.salonServicesManage(slug),
       icon: Scissors,

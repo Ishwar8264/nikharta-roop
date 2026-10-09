@@ -76,6 +76,12 @@ interface AppointmentRow {
     slug: string;
     timezone: string;
   };
+  customer: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    avatar: string | null;
+  };
 }
 
 /** Converts a Prisma appointment row into the public API shape. */
@@ -100,6 +106,7 @@ export function toPublicAppointment(row: AppointmentRow): PublicAppointment {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     salon: row.salon,
+    customer: row.customer,
   };
 }
 

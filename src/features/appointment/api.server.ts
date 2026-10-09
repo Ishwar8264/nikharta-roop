@@ -7,7 +7,12 @@ import {
   AppointmentNotFoundError,
 } from "@/server/modules/appointment/appointment.errors";
 import {
+  SalonNotFoundError,
+  SalonRoleInsufficientError,
+} from "@/server/modules/salon/salon.errors";
+import {
   getAppointment as getAppointmentFromService,
+  listAppointmentsForSalon,
   listMyAppointments,
 } from "@/server/modules/appointment/appointment.service";
 import { listAppointmentTransactions } from "@/server/modules/payment/payment.service";
@@ -43,6 +48,64 @@ export async function listAppointments(input: {
     limit: 20,
     status: input.status,
   });
+}
+
+/**
+ * Loads the salon-side appointment list for the signed-in caller.
+ *
+ * Why a separate helper (and not `listAppointments`):
+ * The customer list (`listAppointments`) walks the caller's own bookings;
+ * the salon list (`listAppointmentsForSalon`) walks a salon's bookings with
+ * a MANAGER+ access check, plus cursor/status/from/to query parameters the
+ * customer list never accepts. Sharing one function would force the customer
+ * path to ignore half its parameters and the salon path to inherit
+ * customer-only fields (like `upcoming`). Splitting them keeps each shape
+ * honest.
+ *
+ * Why call the service directly (per analysis-report.md recommendation #13):
+ * The page is a Server Component — same process as the service. An HTTP
+ * self-fetch would round-trip through cookies + JSON re-serialization for
+ * no benefit. The service still runs the MANAGER+ access check, so this is
+ * not a trust bypass.
+ *
+ * Why defensive null returns (matches `getAppointment`):
+ * The page already gates on `getSalonForServiceManagement` (MANAGER+), so
+ * `SalonNotFoundError` / `SalonRoleInsufficientError` /
+ * `AppointmentAccessDeniedError` are race conditions — the salon or the
+ * caller's membership changed between the two calls. Returning `null` lets
+ * the page render an empty list instead of throwing a 500.
+ */
+export async function listSalonAppointmentsServer(
+  salonRef: string,
+  input: {
+    cursor?: string;
+    status?: AppointmentStatus;
+    from?: string;
+    to?: string;
+    limit?: number;
+  },
+): Promise<{
+  items: PublicAppointment[];
+  nextCursor: string | null;
+  hasMore: boolean;
+} | null> {
+  const user = await getSession();
+  if (!user) return null;
+
+  try {
+    return await listAppointmentsForSalon(user.id, salonRef, {
+      cursor: input.cursor,
+      limit: input.limit ?? 50,
+      status: input.status,
+      from: input.from,
+      to: input.to,
+    });
+  } catch (error) {
+    if (error instanceof SalonNotFoundError) return null;
+    if (error instanceof SalonRoleInsufficientError) return null;
+    if (error instanceof AppointmentAccessDeniedError) return null;
+    throw error;
+  }
 }
 
 /**

@@ -95,6 +95,21 @@ export interface PublicAppointment {
     timezone: string;
   };
   /**
+   * Customer who booked the appointment.
+   *
+   * Why required (not optional):
+   * The schema makes `customer` a mandatory relation (`customerId String`
+   * with no `?`), so every appointment row has a customer. All mappers go
+   * through `PUBLIC_APPOINTMENT_SELECT` which now selects it — there is no
+   * "list without customer" path that could leave this undefined.
+   */
+  customer: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    avatar: string | null;
+  };
+  /**
    * True when the caller is a salon MANAGER or OWNER for the appointment's
    * salon — the salon-side "Record payment" button on the appointment detail
    * page is gated on this.
