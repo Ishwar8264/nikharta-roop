@@ -916,6 +916,7 @@ export const appointmentSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "payment",
             "createdAt",
             "updatedAt",
+            "customer",
           ],
           properties: {
             id: { $ref: "#/components/schemas/ResourceId" },
@@ -975,6 +976,27 @@ export const appointmentSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             },
             createdAt: { type: "string", format: "date-time" },
             updatedAt: { type: "string", format: "date-time" },
+            customer: {
+              type: "object",
+              required: ["id", "name", "phone", "avatar"],
+              description:
+                "The booking customer. Always present — the schema makes " +
+                "customerId non-nullable and all mappers select this relation.",
+              properties: {
+                id: { $ref: "#/components/schemas/ResourceId" },
+                name: { type: ["string", "null"] },
+                phone: { type: ["string", "null"] },
+                avatar: { type: ["string", "null"], format: "uri" },
+              },
+            },
+            viewerCanRecordPayment: {
+              type: "boolean",
+              description:
+                "True when the caller is a salon MANAGER or OWNER for the " +
+                "appointment's salon — gates the salon-side 'Record payment' " +
+                "button. Only populated by the appointment detail endpoint; " +
+                "list/create/update paths omit it.",
+            },
           },
         },
         CreateAppointmentRequest: {
