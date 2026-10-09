@@ -16,6 +16,7 @@ import {
   addSalonMember,
   countSalonOwners,
   createSalonWithOwner,
+  findOwnedSalonSummary as findOwnedSalonSummaryRepo,
   findSalonDetailBySlug,
   findSalonBySlug,
   findSalonForViewer,
@@ -78,6 +79,24 @@ export async function getSalonSummaryBySlug(slug: string): Promise<PublicSalon> 
   const salon = await findSalonBySlug(slug);
   if (!salon) throw new SalonNotFoundError();
   return salon;
+}
+
+/**
+ * Loads the most recent salon the caller owns or manages.
+ *
+ * Why a thin pass-through:
+ * The repository owns the Prisma projection. Exposing it from the service
+ * keeps the call site (`dashboard/page.tsx`) and other surfaces importing
+ * from `salon.service` consistent with the rest of the module — every public
+ * read goes through here, never directly to the repository, so audit and
+ * role rules remain in one place.
+ *
+ * Returns null when the caller is not an OWNER or MANAGER of any salon.
+ */
+export async function findOwnedSalonSummary(
+  userId: string,
+): Promise<SalonWithViewerRole | null> {
+  return findOwnedSalonSummaryRepo(userId);
 }
 
 /** Loads a salon only when the caller can manage its catalogue. */
