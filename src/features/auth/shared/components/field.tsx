@@ -23,6 +23,16 @@ interface FieldProps
   type?: string;
   icon?: React.ReactNode;
   error?: string;
+  /**
+   * Optional one-line explanation rendered under the input. Use it to spell
+   * out the *impact* of the field (what changes for the customer when this
+   * value moves), not just a restatement of the label.
+   *
+   * Why optional: every existing Field caller passes only `label` + `error`,
+   * and forcing a `description` would be a breaking change. Keeping it
+   * optional makes this an additive enhancement — no caller needs to touch.
+   */
+  description?: string;
 }
 
 export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
@@ -32,6 +42,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
     type = "text",
     icon,
     error,
+    description,
     className,
     name,
     "aria-describedby": ariaDescribedBy,
@@ -40,9 +51,15 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
   ref,
 ) {
   const errorId = `${id}-error`;
+  const descriptionId = `${id}-description`;
   const describedBy =
-    [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(" ") ||
-    undefined;
+    [
+      ariaDescribedBy,
+      description ? descriptionId : undefined,
+      error ? errorId : undefined,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
   return (
     <div className="space-y-1.5">
@@ -71,6 +88,11 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           )}
         />
       </div>
+      {description ? (
+        <p id={descriptionId} className="text-xs text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
       {error ? (
         <p id={errorId} className="text-xs text-destructive">
           {error}

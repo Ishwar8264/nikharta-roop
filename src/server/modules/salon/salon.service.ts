@@ -16,6 +16,7 @@ import {
   addSalonMember,
   countSalonOwners,
   createSalonWithOwner,
+  findOwnedSalonSummary as findOwnedSalonSummaryRepo,
   findSalonDetailBySlug,
   findSalonBySlug,
   findSalonForViewer,
@@ -80,6 +81,24 @@ export async function getSalonSummaryBySlug(slug: string): Promise<PublicSalon> 
   return salon;
 }
 
+/**
+ * Loads the most recent salon the caller owns or manages.
+ *
+ * Why a thin pass-through:
+ * The repository owns the Prisma projection. Exposing it from the service
+ * keeps the call site (`dashboard/page.tsx`) and other surfaces importing
+ * from `salon.service` consistent with the rest of the module — every public
+ * read goes through here, never directly to the repository, so audit and
+ * role rules remain in one place.
+ *
+ * Returns null when the caller is not an OWNER or MANAGER of any salon.
+ */
+export async function findOwnedSalonSummary(
+  userId: string,
+): Promise<SalonWithViewerRole | null> {
+  return findOwnedSalonSummaryRepo(userId);
+}
+
 /** Loads a salon only when the caller can manage its catalogue. */
 export async function getSalonForServiceManagement(
   slug: string,
@@ -95,6 +114,33 @@ export async function getSalonForServiceManagement(
   if (!salon) throw new SalonNotFoundError();
 
   assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  return salon;
+}
+
+/**
+ * Loads a salon only when the caller is at least STAFF.
+ *
+ * Why:
+ * Used by views where the entire salon team needs read access — e.g. customer
+ * notes — as opposed to catalogue management which is MANAGER+. The threshold
+ * is `STAFF` rather than `MANAGER` so any signed-in staff member can reach the
+ * page; finer-grained rules (such as who may delete a note) live in the
+ * feature service, not in this loader.
+ */
+export async function getSalonForStaffAccess(
+  slug: string,
+  userId: string,
+): Promise<SalonWithViewerRole> {
+  const publicSalon = await findSalonBySlug(slug);
+  if (!publicSalon) throw new SalonNotFoundError();
+
+  const salon = await findSalonForViewer({
+    salonId: publicSalon.id,
+    userId,
+  });
+  if (!salon) throw new SalonNotFoundError();
+
+  assertRoleAtLeast(salon.viewerRole, "STAFF");
   return salon;
 }
 

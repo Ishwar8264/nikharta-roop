@@ -1,4 +1,4 @@
-import { Gift } from "lucide-react";
+import { Gift, Info, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -120,16 +120,35 @@ export default async function SalonPackagesPage({ params }: Props) {
         ) : null}
       </header>
 
+      {packagesResult.items.length > 0 ? (
+        <div className="mt-6 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/10 p-4 text-sm">
+          <span className="mt-0.5 shrink-0 text-accent">
+            <Info className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="space-y-0.5">
+            <p className="font-medium text-accent-foreground">
+              Packages include every service listed on the card.
+            </p>
+            <p className="text-muted-foreground">
+              Pay one price for the whole combo — usually less than booking each
+              service separately. Strikethrough shows the à la carte total.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {packagesResult.items.length === 0 ? (
         <EmptyState
           icon={Gift}
           title="This salon hasn't added packages yet"
-          description="Services are still available to book individually."
+          description="Combos like bridal days and grooming resets will show up here once the salon publishes them. Services are still available to book individually."
           action={
             <NavLink
               href={routes.salonServices(slug)}
               variant="default"
+              size="lg"
               markActive={false}
+              iconRight={<Sparkles className="h-4 w-4" aria-hidden="true" />}
             >
               Browse services
             </NavLink>

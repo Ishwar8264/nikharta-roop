@@ -161,6 +161,12 @@ export async function listAppointmentsForSalon(
 
 /**
  * Loads a single appointment with authorization.
+ *
+ * The result carries `viewerCanRecordPayment`: true when the caller is a
+ * salon MANAGER or OWNER for the appointment's salon. This drives the
+ * "Record payment" button on the appointment detail page without an extra
+ * membership lookup at the page layer — the viewer context is already
+ * resolved here for the access check, so the role test is free.
  */
 export async function getAppointment(
   callerId: string,
@@ -177,7 +183,13 @@ export async function getAppointment(
   });
   assertCanViewAppointment(context);
 
-  return toPublicAppointment(appointment);
+  const publicAppointment = toPublicAppointment(appointment);
+  return {
+    ...publicAppointment,
+    viewerCanRecordPayment:
+      context.salonMemberRole !== null &&
+      hasRoleAtLeast(context.salonMemberRole, "MANAGER"),
+  };
 }
 
 /**

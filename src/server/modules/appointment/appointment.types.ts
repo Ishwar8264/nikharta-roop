@@ -94,6 +94,32 @@ export interface PublicAppointment {
     slug: string;
     timezone: string;
   };
+  /**
+   * Customer who booked the appointment.
+   *
+   * Why required (not optional):
+   * The schema makes `customer` a mandatory relation (`customerId String`
+   * with no `?`), so every appointment row has a customer. All mappers go
+   * through `PUBLIC_APPOINTMENT_SELECT` which now selects it — there is no
+   * "list without customer" path that could leave this undefined.
+   */
+  customer: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    avatar: string | null;
+  };
+  /**
+   * True when the caller is a salon MANAGER or OWNER for the appointment's
+   * salon — the salon-side "Record payment" button on the appointment detail
+   * page is gated on this.
+   *
+   * Why optional:
+   * The field is computed by `getAppointment` after the viewer context is
+   * built. Other mappers (list/create/update paths) leave it unset; callers
+   * that don't care default to `undefined` → `false` at the page layer.
+   */
+  viewerCanRecordPayment?: boolean;
 }
 
 /** Cursor-paginated appointments. */

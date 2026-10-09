@@ -37,8 +37,8 @@ export function SalonCard({ salon, className }: SalonCardProps) {
   return (
     <div
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all",
-        "hover:border-primary/30 hover:shadow-md",
+        "group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200",
+        "hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md",
         "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
         className,
       )}

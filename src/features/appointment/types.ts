@@ -56,8 +56,29 @@ export interface PublicAppointment {
   }>;
   payment: { status: string; method: string; amount: number } | null;
   salon: { id: string; name: string; slug: string; timezone: string };
+  /**
+   * Customer who booked the appointment. The server `PublicAppointment`
+   * carries this on every row (the relation is mandatory in the schema), so
+   * the client mirror makes it required too. Older responses that pre-date
+   * the field would silently satisfy the type via JSON — the salon-side list
+   * uses the additive shape, the customer list never reads it.
+   */
+  customer: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    avatar: string | null;
+  };
   createdAt: string | Date;
   updatedAt: string | Date;
+  /**
+   * Server-computed flag: true when the viewer is a salon MANAGER or OWNER
+   * for the appointment's salon. Drives the salon-side "Record payment"
+   * button on the appointment detail page. Optional because the field is
+   * only populated by `getAppointment` (server); list/create/update paths
+   * omit it and the page layer defaults to `false`.
+   */
+  viewerCanRecordPayment?: boolean;
 }
 
 export interface CreateAppointmentInput {

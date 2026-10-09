@@ -7,7 +7,7 @@ import type {
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
-import type { PublicSalonMember } from "./salon.types";
+import type { PublicSalonMember, SalonWithViewerRole } from "./salon.types";
 
 /** Columns safe to return on every public salon response. */
 const PUBLIC_SALON_SELECT = {
@@ -177,6 +177,57 @@ export async function findSalonForViewer(input: {
         take: 1,
       },
     },
+  });
+
+  if (!salon) return null;
+
+  const { members, ...rest } = salon;
+  if (members.length === 0) return null;
+
+  return { ...rest, viewerRole: members[0].role };
+}
+
+/**
+ * Loads the most recent salon the caller owns or manages.
+ *
+ * Why:
+ * The customer dashboard needs to surface salon-management shortcuts when
+ * the signed-in user is an OWNER or MANAGER. STAFF members do not manage
+ * catalogues from the customer dashboard — they have a separate surface —
+ * so we scope to OWNER/MANAGER only. Ordering by `updatedAt desc` keeps the
+ * row the user most recently touched on top, which matches the salon they
+ * expect to act on first.
+ *
+ * Why not call `findSalonForViewer` per salon:
+ * That helper needs a `salonId`. Without an index lookup it would force a
+ * scan of every membership, then a per-salon fetch. This single join returns
+ * the answer in one round trip and projects exactly the columns the
+ * dashboard needs.
+ *
+ * Why `members: { take: 1 }` instead of `members: { where: { role: { in: [...] } } }`:
+ * The outer `where` already constrains the membership rows to OWNER/MANAGER
+ * for this user, so filtering again in the relation is redundant. We only
+ * need the single role row to attach `viewerRole` to the projection.
+ */
+export async function findOwnedSalonSummary(
+  userId: string,
+): Promise<SalonWithViewerRole | null> {
+  const salon = await prisma.salon.findFirst({
+    where: {
+      deletedAt: null,
+      members: {
+        some: { userId, role: { in: ["OWNER", "MANAGER"] } },
+      },
+    },
+    select: {
+      ...PUBLIC_SALON_SELECT,
+      members: {
+        where: { userId },
+        select: { role: true },
+        take: 1,
+      },
+    },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
   });
 
   if (!salon) return null;
