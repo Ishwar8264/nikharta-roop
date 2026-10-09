@@ -49,9 +49,17 @@ export const routes = {
   salonVerification: (slug: string) => `/salons/${slug}/manage/verification`,
   salonCouponsManage: (slug: string) => `/salons/${slug}/manage/coupons`,
   salonSettingsManage: (slug: string) => `/salons/${slug}/manage/settings`,
+  salonWorkingHoursManage: (slug: string) =>
+    `/salons/${slug}/manage/working-hours`,
   salonCustomerNotes: (slug: string, customerId: string) =>
     `/salons/${slug}/manage/customers/${customerId}/notes`,
+
+  // ─── Admin ───
   adminSalonVerification: "/admin/salons/verification",
+  adminUsers: "/admin/users",
+  adminCoupons: "/admin/coupons",
+  adminAiUsage: "/admin/ai-usage",
+  adminAuditLogs: "/admin/audit-logs",
   blog: "/blog",
   blogPost: (slug: string) => `/blog/${slug}`,
   about: "/about",

@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   CalendarDays,
   ClipboardCheck,
+  Clock,
   Package,
   Receipt,
   Scissors,
@@ -87,6 +88,12 @@ function buildLinks(slug: string, verification: VerificationStatus): ManageNavLi
       icon: Settings,
       label: "Settings",
       description: "Booking buffer, advance payments, walk-ins.",
+    },
+    {
+      href: routes.salonWorkingHoursManage(slug),
+      icon: Clock,
+      label: "Working hours",
+      description: "Weekly opening hours customers see on your page.",
     },
     {
       href: routes.salonManage(slug),

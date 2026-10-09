@@ -384,4 +384,17 @@ export const api = {
 
   delete: <T>(path: string, options?: RequestOptions) =>
     request<T>("DELETE", path, options),
+
+  /**
+   * DELETE with a JSON body.
+   *
+   * Why a separate method:
+   * The shared `delete` signature types options as `RequestOptions` (no
+   * `json` field) because DELETE-with-body is rare. A handful of routes —
+   * notably `/auth/account` — require a body for a second-factor check, so
+   * this method exposes the capability without changing the call shape of
+   * every other DELETE caller.
+   */
+  deleteWithBody: <T>(path: string, json: unknown, options?: RequestOptions) =>
+    request<T>("DELETE", path, { ...options, json }),
 };

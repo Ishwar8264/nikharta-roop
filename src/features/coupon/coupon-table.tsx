@@ -20,7 +20,12 @@ import { Switch } from "@/components/ui/switch";
 import { ApiError } from "@/lib/api/backend.client";
 import { cn } from "@/lib/utils";
 
-import { deactivateCouponApi, updateCouponApi } from "./api";
+import {
+  deactivateAdminCouponApi,
+  deactivateCouponApi,
+  updateAdminCouponApi,
+  updateCouponApi,
+} from "./api";
 import {
   buildDiscountSummary,
   formatCouponDateTime,
@@ -28,7 +33,10 @@ import {
 import type { CouponView } from "./types";
 
 interface CouponTableProps {
-  salonSlug: string;
+  /** Required for salon scope; omit when `admin` is true. */
+  salonSlug?: string;
+  /** When true, rows mutate via the admin-scoped (`/admin/coupons`) endpoints. */
+  admin?: boolean;
   coupons: CouponView[];
   /** Informs the parent (manager) that the user clicked "Edit" on a row. */
   onEdit: (coupon: CouponView) => void;
@@ -37,10 +45,12 @@ interface CouponTableProps {
 /** Per-row actions shared by the mobile card and desktop row. */
 function CouponRowActions({
   salonSlug,
+  admin = false,
   coupon,
   onEdit,
 }: {
-  salonSlug: string;
+  salonSlug?: string;
+  admin?: boolean;
   coupon: CouponView;
   onEdit: (coupon: CouponView) => void;
 }) {
@@ -54,7 +64,13 @@ function CouponRowActions({
     const previous = isActive;
     setIsActive(next); // optimistic — visibility flag only, no money moves
     try {
-      await updateCouponApi(salonSlug, coupon.id, { isActive: next });
+      if (admin) {
+        await updateAdminCouponApi(coupon.id, { isActive: next });
+      } else {
+        await updateCouponApi(salonSlug as string, coupon.id, {
+          isActive: next,
+        });
+      }
       toast.success(
         next
           ? `${coupon.code} is active again.`
@@ -74,7 +90,11 @@ function CouponRowActions({
   async function handleDeactivate() {
     setDeactivating(true);
     try {
-      await deactivateCouponApi(salonSlug, coupon.id);
+      if (admin) {
+        await deactivateAdminCouponApi(coupon.id);
+      } else {
+        await deactivateCouponApi(salonSlug as string, coupon.id);
+      }
       toast.success(`${coupon.code} deactivated.`);
       setConfirmOpen(false);
       startTransition(() => router.refresh());
@@ -164,7 +184,12 @@ function usageLabel(coupon: CouponView): string {
  * Lists the salon's coupons with mobile cards and a desktop table. Toggle is
  * optimistic; edit and deactivate hand off to the manager and the API.
  */
-export function CouponTable({ salonSlug, coupons, onEdit }: CouponTableProps) {
+export function CouponTable({
+  salonSlug,
+  admin = false,
+  coupons,
+  onEdit,
+}: CouponTableProps) {
   if (coupons.length === 0) {
     return (
       <EmptyState
@@ -203,6 +228,7 @@ export function CouponTable({ salonSlug, coupons, onEdit }: CouponTableProps) {
             </p>
             <CouponRowActions
               salonSlug={salonSlug}
+              admin={admin}
               coupon={coupon}
               onEdit={onEdit}
             />
@@ -262,6 +288,7 @@ export function CouponTable({ salonSlug, coupons, onEdit }: CouponTableProps) {
                 <td className="px-4 py-3">
                   <CouponRowActions
                     salonSlug={salonSlug}
+                    admin={admin}
                     coupon={coupon}
                     onEdit={onEdit}
                   />
