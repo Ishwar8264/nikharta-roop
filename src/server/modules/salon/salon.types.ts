@@ -40,6 +40,8 @@ export interface PublicSalon {
   placeId: string | null;
   phone: string | null;
   email: string | null;
+  coverImage: string | null;
+  bannerImage: string | null;
   images: string[];
   createdAt: Date;
   updatedAt: Date;

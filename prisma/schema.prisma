@@ -299,7 +299,9 @@ model Salon {
 
   phone  String?
   email  String?
-  images String[] // Gallery
+  coverImage  String?
+  bannerImage String?
+  images      String[] // Gallery
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?

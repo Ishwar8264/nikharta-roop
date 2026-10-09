@@ -436,6 +436,8 @@ function buildSalonCreateInput(
     placeId: input.placeId ?? null,
     phone: input.phone ?? null,
     email: input.email ?? null,
+    coverImage: input.coverImage ?? null,
+    bannerImage: input.bannerImage ?? null,
     images: input.images,
   };
 }
@@ -478,6 +480,8 @@ function buildSalonUpdateInput(
   if (input.placeId !== undefined) data.placeId = input.placeId;
   if (input.phone !== undefined) data.phone = input.phone;
   if (input.email !== undefined) data.email = input.email;
+  if (input.coverImage !== undefined) data.coverImage = input.coverImage;
+  if (input.bannerImage !== undefined) data.bannerImage = input.bannerImage;
   if (input.images !== undefined) data.images = input.images;
 
   return data;

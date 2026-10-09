@@ -59,8 +59,8 @@ export function SalonDetail({
   favoriteId = null,
   currentUserId = null,
 }: SalonDetailProps) {
-  const cover = salon.images[0];
-  const gallery = salon.images.slice(1);
+  const banner = salon.bannerImage ?? salon.coverImage ?? salon.images[0];
+  const gallery = salon.images;
   const hasDescription = [
     salon.descriptionHtml,
     salon.descriptionJson,
@@ -72,16 +72,16 @@ export function SalonDetail({
     <article className="mx-auto w-full max-w-6xl space-y-2 py-2 ">
       <BackButton href="/salons" variant="secondary" />
 
-      {/* Cover */}
+      {/* Banner */}
       <div className="relative">
-        {cover ? (
+        {banner ? (
           <CoverImage
-            src={salon.images[0] ?? null}
+            src={banner}
             alt={salon.name}
             aspect="wide"
             rounded="md"
             priority
-            emptyLabel="No cover image"
+            emptyLabel="No banner image"
           />
         ) : null}
       </div>

@@ -18,7 +18,7 @@ interface Props {
   currentUserId: string;
 }
 
-type EditableField = "name" | "shortDescription" | "address" | "city" | "state" | "zip" | "phone" | "email";
+type EditableField = "coverImage" | "bannerImage" | "name" | "shortDescription" | "address" | "city" | "state" | "zip" | "phone" | "email";
 
 const fields: { key: EditableField; label: string; required?: boolean }[] = [
   { key: "name", label: "Name", required: true },
@@ -29,6 +29,8 @@ const fields: { key: EditableField; label: string; required?: boolean }[] = [
   { key: "zip", label: "ZIP", required: true },
   { key: "phone", label: "Phone" },
   { key: "email", label: "Email" },
+  { key: "coverImage", label: "Cover image URL" },
+  { key: "bannerImage", label: "Banner image URL" },
 ];
 
 /** Connects salon editing and owner-only roster actions to their API routes. */
@@ -44,6 +46,8 @@ export function SalonManagement({ salon, currentUserId }: Props) {
     zip: salon.zip,
     phone: salon.phone ?? "",
     email: salon.email ?? "",
+    coverImage: salon.coverImage ?? "",
+    bannerImage: salon.bannerImage ?? "",
   });
   const [members, setMembers] = useState<SalonMember[]>([]);
   const [memberError, setMemberError] = useState<string | null>(null);
@@ -150,7 +154,7 @@ export function SalonManagement({ salon, currentUserId }: Props) {
           {fields.map(({ key, label, required }) => (
             <div key={key} className="space-y-2">
               <Label htmlFor={`salon-${key}`}>{label}</Label>
-              <Input id={`salon-${key}`} value={values[key]} required={required} disabled={busy} type={key === "email" ? "email" : key === "phone" ? "tel" : "text"} onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))} />
+              <Input id={`salon-${key}`} value={values[key]} required={required} disabled={busy} type={key === "coverImage" || key === "bannerImage" ? "url" : key === "email" ? "email" : key === "phone" ? "tel" : "text"} onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))} />
             </div>
           ))}
         </div>

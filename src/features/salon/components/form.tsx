@@ -67,6 +67,8 @@ const DEFAULT_VALUES = {
   placeId: undefined,
   phone: undefined,
   email: undefined,
+  coverImage: undefined,
+  bannerImage: undefined,
   images: [],
 } satisfies CreateSalonFormInput;
 
@@ -74,6 +76,8 @@ export function SalonForm() {
   const router = useRouter();
   const { create, isLoading, error, fieldErrors } = useCreateSalon();
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [coverImages, setCoverImages] = useState<UploadedImage[]>([]);
+  const [bannerImages, setBannerImages] = useState<UploadedImage[]>([]);
   const [slugWasEdited, setSlugWasEdited] = useState(false);
 
   const {
@@ -424,8 +428,54 @@ export function SalonForm() {
           </Section>
 
           <Section
+            title="Cover and banner"
+            description="Choose a cover for salon cards and a banner for your salon page."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              {([
+                { field: "coverImage", label: "Cover image", selected: coverImages, setSelected: setCoverImages },
+                { field: "bannerImage", label: "Banner image", selected: bannerImages, setSelected: setBannerImages },
+              ] as const).map(({ field, label, selected, setSelected }) => (
+                <div key={field} className="space-y-2">
+                  <p className="text-sm font-medium">{label}</p>
+                  <MediaPickerDialog
+                    title={`Choose ${label.toLowerCase()}`}
+                    value={selected}
+                    onChange={(next) => {
+                      setSelected(next);
+                      setValue(field, next[0]?.url, {
+                        shouldDirty: true, shouldTouch: true, shouldValidate: true,
+                      });
+                    }}
+                    mode="single"
+                    max={1}
+                    maxSizeMB={5}
+                    disabled={isLoading}
+                    trigger={
+                      <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-md border border-dashed bg-muted">
+                        {selected[0] ? (
+                          <Image src={selected[0].url} alt={label} fill sizes="400px" className="object-cover" />
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Choose {label.toLowerCase()}</span>
+                        )}
+                      </div>
+                    }
+                  />
+                  {selected.length > 0 ? (
+                    <Button type="button" variant="outline" size="sm" disabled={isLoading} onClick={() => {
+                      setSelected([]);
+                      setValue(field, undefined, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                    }}>Remove {label.toLowerCase()}</Button>
+                  ) : null}
+                  <FieldError id={`${field}-error`} message={errors[field]?.message} />
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section
             title="Gallery"
-            description="Up to 20 images. The first one becomes the cover."
+            description="Up to 20 gallery images."
           >
             {images.length < 20 ? (
               <MediaPickerDialog
@@ -491,7 +541,6 @@ export function SalonForm() {
 
             <p className="text-xs text-muted-foreground">
               {images.length}/20 images
-              {images.length > 0 ? " · First image becomes the cover" : ""}
             </p>
 
             <FieldError id="images-error" message={errors.images?.message} />

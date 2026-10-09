@@ -31,7 +31,7 @@ interface SalonCardProps {
  * One real anchor, whole-card clickability, no nested links.
  */
 export function SalonCard({ salon, className }: SalonCardProps) {
-  const cover = salon.images[0];
+  const cover = salon.coverImage ?? salon.images[0];
   const location = [salon.city, salon.state].filter(Boolean).join(", ");
 
   return (

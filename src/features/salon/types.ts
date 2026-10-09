@@ -31,6 +31,8 @@ export interface PublicSalon {
   placeId: string | null;
   phone: string | null;
   email: string | null;
+  coverImage: string | null;
+  bannerImage: string | null;
   images: string[];
   /** ISO string once JSON-serialized over HTTP; Date on the server. */
   createdAt: string | Date;

@@ -156,6 +156,8 @@ export const createSalonSchema = z.strictObject({
     .pipe(z.email({ error: "Email format is invalid" }))
     .transform((email) => email.toLowerCase())
     .optional(),
+  coverImage: optionalUrlSchema.optional(),
+  bannerImage: optionalUrlSchema.optional(),
   images: z
     .array(optionalUrlSchema, { error: "Images must be an array of URLs" })
     .max(20, "At most 20 images are allowed")
@@ -181,6 +183,8 @@ export const updateSalonSchema = createSalonSchema
     description: createSalonSchema.shape.description.nullable(),
     descriptionHtml: createSalonSchema.shape.descriptionHtml.nullable(),
     descriptionJson: createSalonSchema.shape.descriptionJson.nullable(),
+    coverImage: createSalonSchema.shape.coverImage.nullable(),
+    bannerImage: createSalonSchema.shape.bannerImage.nullable(),
     placeId: createSalonSchema.shape.placeId.nullable(),
     phone: createSalonSchema.shape.phone.nullable(),
     email: createSalonSchema.shape.email.nullable(),

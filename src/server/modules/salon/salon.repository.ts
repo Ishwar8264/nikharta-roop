@@ -30,6 +30,8 @@ const PUBLIC_SALON_SELECT = {
   placeId: true,
   phone: true,
   email: true,
+  coverImage: true,
+  bannerImage: true,
   images: true,
   createdAt: true,
   updatedAt: true,

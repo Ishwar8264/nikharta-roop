@@ -728,6 +728,8 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             placeId: { type: ["string", "null"] },
             phone: { type: ["string", "null"] },
             email: { type: ["string", "null"], format: "email" },
+            coverImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+            bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },
@@ -773,6 +775,8 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             placeId: { type: "string", maxLength: 255 },
             phone: { type: "string", pattern: "^\\+[1-9]\\d{7,14}$" },
             email: { type: "string", format: "email", maxLength: 254 },
+            coverImage: { type: "string", format: "uri", maxLength: 2048 },
+            bannerImage: { type: "string", format: "uri", maxLength: 2048 },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },
@@ -821,6 +825,8 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             placeId: { type: "string", maxLength: 255 },
             phone: { type: "string", pattern: "^\\+[1-9]\\d{7,14}$" },
             email: { type: "string", format: "email", maxLength: 254 },
+            coverImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+            bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },
