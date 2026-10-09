@@ -89,6 +89,16 @@ export const routes = {
   settings: "/settings",
   notifications: "/notifications",
   ai: "/ai",
+  /**
+   * Deep link to a specific AI chat.
+   *
+   * Why a query string instead of `/ai/{chatId}`:
+   * The dashboard serves both the chat list and the open conversation from one
+   * route. A query param keeps the list + usage stats mounted while the panel
+   * swaps underneath, so navigating between chats is a single searchParam
+   * change — no layout shift, no extra route segment to maintain.
+   */
+  aiChat: (chatId: string) => `/ai?chat=${encodeURIComponent(chatId)}`,
 
   // ─── System ───
   designSystem: "/design-system",
