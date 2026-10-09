@@ -8,6 +8,7 @@ import {
   Settings,
   Shapes,
   Ticket,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -49,6 +50,12 @@ function buildLinks(slug: string, verification: VerificationStatus): ManageNavLi
       icon: Shapes,
       label: "Products",
       description: "Retail inventory and shelf items.",
+    },
+    {
+      href: routes.salonStaffManage(slug),
+      icon: Users,
+      label: "Staff",
+      description: "Schedules, leaves, and skills for your team.",
     },
     {
       href: routes.salonPackagesManage(slug),

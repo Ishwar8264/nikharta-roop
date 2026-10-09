@@ -38,6 +38,9 @@ export const routes = {
     `/salons/${slug}/manage/appointments`,
   salonAppointmentManageDetail: (slug: string, appointmentId: string) =>
     `/salons/${slug}/manage/appointments/${appointmentId}`,
+  salonStaffManage: (slug: string) => `/salons/${slug}/manage/staff`,
+  salonStaffDetail: (slug: string, staffId: string) =>
+    `/salons/${slug}/manage/staff/${staffId}`,
   salonPackagesManage: (slug: string) => `/salons/${slug}/manage/packages`,
   salonPackageEdit: (slug: string, packageId: string) =>
     `/salons/${slug}/manage/packages/${packageId}`,
