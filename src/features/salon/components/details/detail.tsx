@@ -19,6 +19,7 @@ import { RichTextContent } from "@/components/shared/rich-text-content";
 import { NavLink } from "@/components/shared/nav-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FavoriteButton } from "@/features/favorite";
 import { routes } from "@/config/routes";
 import type { PublicSalonDetail } from "@/server/modules/salon/salon.types";
 import { SalonGallery } from "./gallery";
@@ -43,9 +44,21 @@ const SECTION_LINKS = [
 interface SalonDetailProps {
   salon: PublicSalonDetail;
   canEdit?: boolean;
+  /** True when the signed-in viewer already has this salon in their favourites. */
+  isFavorited?: boolean;
+  /** The favorite row id, when known — needed to call DELETE on unfavorite. */
+  favoriteId?: string | null;
+  /** The signed-in viewer's id. When null, the heart is hidden (anonymous). */
+  currentUserId?: string | null;
 }
 
-export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
+export function SalonDetail({
+  salon,
+  canEdit,
+  isFavorited = false,
+  favoriteId = null,
+  currentUserId = null,
+}: SalonDetailProps) {
   const cover = salon.images[0];
   const gallery = salon.images.slice(1);
   const hasDescription = [
@@ -110,6 +123,15 @@ export function SalonDetail({ salon, canEdit }: SalonDetailProps) {
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
             Book appointment
           </Button>
+          {currentUserId ? (
+            <FavoriteButton
+              targetType="salon"
+              targetId={salon.id}
+              targetName={salon.name}
+              initial={isFavorited}
+              initialFavoriteId={favoriteId}
+            />
+          ) : null}
           {canEdit ? (
             <Button
               variant="outline"

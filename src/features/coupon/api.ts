@@ -86,3 +86,47 @@ export function deactivateCouponApi(salonRef: string, couponId: string) {
     `/salons/${encodeURIComponent(salonRef)}/coupons/${encodeURIComponent(couponId)}`,
   );
 }
+
+// ─── Admin-scoped (platform-wide) coupons ───
+//
+// Why separate wrappers:
+// Platform coupons live under `/admin/coupons` and have no `salonRef` path
+// segment. Sharing the salon-scoped signatures would force every admin call
+// to invent a fake `salonRef`; keeping the two scopes as siblings lets each
+// surface (manage page vs. admin page) reach for the right one.
+
+/** Lists platform-wide coupons. SUPER_ADMIN only. */
+export function listAdminCouponsApi(search?: string) {
+  const query = search ? `?search=${encodeURIComponent(search)}` : "";
+  return api.get<{
+    message: string;
+    data: CouponView[];
+    meta: { nextCursor: string | null; hasMore: boolean };
+  }>(`/admin/coupons${query}`);
+}
+
+/** Creates a platform-wide coupon. SUPER_ADMIN only. */
+export function createAdminCouponApi(body: CreateCouponBody) {
+  return api.post<{ message: string; data: { coupon: CouponView } }>(
+    "/admin/coupons",
+    body,
+  );
+}
+
+/** Updates a platform-wide coupon. SUPER_ADMIN only. */
+export function updateAdminCouponApi(
+  couponId: string,
+  body: UpdateCouponBody,
+) {
+  return api.patch<{ message: string; data: { coupon: CouponView } }>(
+    `/admin/coupons/${encodeURIComponent(couponId)}`,
+    body,
+  );
+}
+
+/** Deactivates (soft) a platform-wide coupon. SUPER_ADMIN only. */
+export function deactivateAdminCouponApi(couponId: string) {
+  return api.delete<{ message: string; data: { coupon: CouponView } }>(
+    `/admin/coupons/${encodeURIComponent(couponId)}`,
+  );
+}
