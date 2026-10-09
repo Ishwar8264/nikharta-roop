@@ -133,6 +133,7 @@ export async function findSalonDetailBySlug(slug: string) {
           slug: true,
           price: true,
           duration: true,
+          coverImage: true,
           images: true,
           category: { select: { name: true, slug: true } },
         },

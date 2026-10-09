@@ -30,6 +30,7 @@ import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import type { UploadedImage } from "@/features/media";
+import { ImagePickerField } from "@/features/media/components/image-picker-field";
 import { MediaPickerDialog } from "@/features/media/components/media-picker-dialog";
 import { ApiError } from "@/lib/api/backend.client";
 import type {
@@ -63,6 +64,8 @@ const DEFAULT_VALUES: ProductFormInput = {
   description: undefined,
   descriptionHtml: undefined,
   descriptionJson: undefined,
+  coverImage: undefined,
+  bannerImage: undefined,
   images: [],
 };
 
@@ -103,6 +106,8 @@ export function ProductForm({
           description: initialProduct.description ?? undefined,
           descriptionHtml: initialProduct.descriptionHtml ?? undefined,
           descriptionJson: initialProduct.descriptionJson ?? undefined,
+          coverImage: initialProduct.coverImage ?? undefined,
+          bannerImage: initialProduct.bannerImage ?? undefined,
           images: initialProduct.images,
         }
       : DEFAULT_VALUES,
@@ -362,6 +367,29 @@ export function ProductForm({
               </div>
             )}
           />
+          <section className="space-y-4" aria-labelledby="product-images">
+            <h2 id="product-images" className="text-lg font-semibold">Cover and banner</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(["coverImage", "bannerImage"] as const).map((name) => (
+                <Controller
+                  key={name}
+                  name={name}
+                  control={control}
+                  render={({ field }) => (
+                    <ImagePickerField
+                      id={`product-${name}`}
+                      label={name === "coverImage" ? "Cover image" : "Banner image"}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      disabled={busy}
+                      error={errors[name]?.message}
+                    />
+                  )}
+                />
+              ))}
+            </div>
+          </section>
           <section className="space-y-4" aria-labelledby="product-gallery">
             <h2 id="product-gallery" className="text-lg font-semibold">
               Gallery

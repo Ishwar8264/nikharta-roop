@@ -144,6 +144,7 @@ export async function createDraftPost(
       contentHtml: input.contentHtml ?? null,
       contentJson: input.contentJson ?? null,
       coverImage: input.coverImage ?? null,
+      bannerImage: input.bannerImage ?? null,
       readingTime: computeReadingTime(input.content),
       published: false,
       publishedAt: null,
@@ -212,6 +213,7 @@ export async function patchPost(
   if (input.contentHtml !== undefined) data.contentHtml = input.contentHtml;
   if (input.contentJson !== undefined) data.contentJson = input.contentJson;
   if (input.coverImage !== undefined) data.coverImage = input.coverImage;
+  if (input.bannerImage !== undefined) data.bannerImage = input.bannerImage;
   if (input.categoryId !== undefined) data.categoryId = input.categoryId;
   if (input.metaKeywords !== undefined) data.metaKeywords = input.metaKeywords;
   if (input.canonicalUrl !== undefined) data.canonicalUrl = input.canonicalUrl;

@@ -51,6 +51,8 @@ export const createServiceFormSchema = z.strictObject({
   ),
   descriptionHtml: optionalText(20000, "HTML description is too long"),
   descriptionJson: optionalText(50000, "JSON description is too long"),
+  coverImage: optionalUrl.optional(),
+  bannerImage: optionalUrl.optional(),
   images: z
     .array(optionalUrl)
     .max(10, "At most 10 images are allowed"),

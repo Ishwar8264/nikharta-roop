@@ -20,6 +20,8 @@ const PUBLIC_PRODUCT_SELECT = {
   description: true,
   descriptionHtml: true,
   descriptionJson: true,
+  coverImage: true,
+  bannerImage: true,
   images: true,
   createdAt: true,
   updatedAt: true,

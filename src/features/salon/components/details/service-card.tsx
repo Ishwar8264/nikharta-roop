@@ -13,6 +13,7 @@ interface ServiceCardData {
   slug: string;
   price: number;
   duration: number;
+  coverImage?: string | null;
   images: string[];
   category: { name: string; slug: string } | null;
 }
@@ -43,7 +44,7 @@ export function SalonServiceCard({
       )}
     >
       <CoverImage
-        src={service.images[0]}
+        src={service.coverImage ?? service.images[0]}
         alt={service.name}
         aspect="video"
         rounded="none"

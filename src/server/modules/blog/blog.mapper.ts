@@ -16,6 +16,7 @@ interface PostRow {
   contentHtml: string | null;
   contentJson: string | null;
   coverImage: string | null;
+  bannerImage: string | null;
   readingTime: number;
   views: number;
   published: boolean;
@@ -58,6 +59,7 @@ export function toPublicBlogPost(row: PostRow): PublicBlogPost {
     contentHtml: row.contentHtml,
     contentJson: row.contentJson,
     coverImage: row.coverImage,
+    bannerImage: row.bannerImage,
     readingTime: row.readingTime,
     views: row.views,
     published: row.published,

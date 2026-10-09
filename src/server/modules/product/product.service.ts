@@ -159,6 +159,8 @@ export async function createSalonProduct(
       description: input.description ?? null,
       descriptionHtml: input.descriptionHtml ?? null,
       descriptionJson: input.descriptionJson ?? null,
+      coverImage: input.coverImage ?? null,
+      bannerImage: input.bannerImage ?? null,
       images: input.images,
     });
 
@@ -232,6 +234,8 @@ export async function updateSalonProduct(
   if (input.descriptionJson !== undefined) {
     data.descriptionJson = input.descriptionJson;
   }
+  if (input.coverImage !== undefined) data.coverImage = input.coverImage;
+  if (input.bannerImage !== undefined) data.bannerImage = input.bannerImage;
   if (input.images !== undefined) data.images = input.images;
 
   try {

@@ -84,22 +84,27 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      {product.bannerImage ? (
+        <div className="mb-6">
+          <CoverImage src={product.bannerImage} alt={`${product.name} banner`} aspect="wide" priority />
+        </div>
+      ) : null}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="space-y-4">
           <CoverImage
-            src={product.images[0]}
+            src={product.coverImage ?? product.images[0]}
             alt={product.name}
             priority
             emptyLabel="No product image"
           />
-          {product.images.length > 1 ? (
+          {product.images.length > 0 ? (
             <div className="grid grid-cols-3 gap-3">
-              {product.images.slice(1).map((url, index) => (
+              {product.images.map((url, index) => (
                 <CoverImage
                   key={`${url}-${index}`}
                   src={url}
-                  alt={`${product.name} image ${index + 2}`}
+                  alt={`${product.name} image ${index + 1}`}
                   aspect="square"
                 />
               ))}

@@ -122,6 +122,8 @@ export const createServiceSchema = z.strictObject({
     .string({ error: "JSON description must be a string" })
     .max(50000, "JSON description is too long")
     .optional(),
+  coverImage: optionalUrlSchema.optional(),
+  bannerImage: optionalUrlSchema.optional(),
   images: z
     .array(optionalUrlSchema, { error: "Images must be an array of URLs" })
     .max(10, "At most 10 images are allowed")
@@ -140,6 +142,8 @@ export const updateServiceSchema = createServiceSchema
   .partial()
   .extend({
     categoryId: createServiceSchema.shape.categoryId.nullable(),
+    coverImage: createServiceSchema.shape.coverImage.nullable(),
+    bannerImage: createServiceSchema.shape.bannerImage.nullable(),
     isActive: createServiceSchema.shape.isActive.removeDefault().optional(),
     images: createServiceSchema.shape.images.removeDefault().optional(),
     shortDescription: createServiceSchema.shape.shortDescription.nullable(),

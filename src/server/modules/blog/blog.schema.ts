@@ -83,6 +83,7 @@ export const createBlogPostSchema = z.strictObject({
   contentHtml: z.string({ error: "HTML content must be a string" }).optional(),
   contentJson: z.string({ error: "JSON content must be a string" }).optional(),
   coverImage: optionalUrlSchema.optional(),
+  bannerImage: optionalUrlSchema.optional(),
   categoryId: resourceIdSchema.optional(),
   /**
    * Tag names. Server slugifies, upserts each into BlogTag, and connects.
@@ -122,6 +123,7 @@ export const updateBlogPostSchema = createBlogPostSchema
     contentHtml: createBlogPostSchema.shape.contentHtml.nullable(),
     contentJson: createBlogPostSchema.shape.contentJson.nullable(),
     coverImage: createBlogPostSchema.shape.coverImage.nullable(),
+    bannerImage: createBlogPostSchema.shape.bannerImage.nullable(),
     categoryId: createBlogPostSchema.shape.categoryId.nullable(),
     metaKeywords: createBlogPostSchema.shape.metaKeywords.nullable(),
     canonicalUrl: createBlogPostSchema.shape.canonicalUrl.nullable(),

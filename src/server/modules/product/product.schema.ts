@@ -126,6 +126,8 @@ export const createProductSchema = z.strictObject({
     .string({ error: "JSON description must be a string" })
     .max(50000, "JSON description is too long")
     .optional(),
+  coverImage: optionalUrlSchema.optional(),
+  bannerImage: optionalUrlSchema.optional(),
   images: z
     .array(optionalUrlSchema, { error: "Images must be an array of URLs" })
     .max(10, "At most 10 images are allowed")
@@ -144,6 +146,8 @@ export const updateProductSchema = createProductSchema
   .partial()
   .extend({
     categoryId: createProductSchema.shape.categoryId.nullable(),
+    coverImage: createProductSchema.shape.coverImage.nullable(),
+    bannerImage: createProductSchema.shape.bannerImage.nullable(),
     stock: createProductSchema.shape.stock.removeDefault().optional(),
     isActive: createProductSchema.shape.isActive.removeDefault().optional(),
     images: createProductSchema.shape.images.removeDefault().optional(),

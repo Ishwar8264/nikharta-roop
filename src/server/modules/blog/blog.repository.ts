@@ -13,6 +13,7 @@ const PUBLIC_POST_SELECT = {
   contentHtml: true,
   contentJson: true,
   coverImage: true,
+  bannerImage: true,
   readingTime: true,
   views: true,
   published: true,

@@ -16,6 +16,8 @@ export interface SalonService extends CreatedService {
   description: string | null;
   descriptionHtml: string | null;
   descriptionJson: string | null;
+  coverImage: string | null;
+  bannerImage: string | null;
   images: string[];
 }
 

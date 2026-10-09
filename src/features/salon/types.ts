@@ -54,6 +54,7 @@ export interface SalonServicePreview {
   slug: string;
   price: number;
   duration: number;
+  coverImage: string | null;
   images: string[];
   category: { name: string; slug: string } | null;
 }

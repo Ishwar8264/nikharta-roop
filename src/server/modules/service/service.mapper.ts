@@ -22,6 +22,8 @@ interface ServiceRowForMapper {
   description: string | null;
   descriptionHtml: string | null;
   descriptionJson: string | null;
+  coverImage: string | null;
+  bannerImage: string | null;
   images: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -50,6 +52,8 @@ export function toPublicService(row: ServiceRowForMapper): PublicService {
     description: row.description,
     descriptionHtml: row.descriptionHtml,
     descriptionJson: row.descriptionJson,
+    coverImage: row.coverImage,
+    bannerImage: row.bannerImage,
     images: row.images,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

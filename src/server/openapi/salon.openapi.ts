@@ -877,6 +877,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "slug",
             "price",
             "duration",
+            "coverImage",
             "images",
             "category",
           ],
@@ -886,6 +887,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             slug: { type: "string" },
             price: { type: "number", minimum: 0 },
             duration: { type: "integer", minimum: 5 },
+            coverImage: { type: ["string", "null"], format: "uri" },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },

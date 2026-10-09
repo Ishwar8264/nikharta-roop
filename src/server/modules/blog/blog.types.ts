@@ -66,6 +66,7 @@ export interface PublicBlogPost {
   contentHtml: string | null;
   contentJson: string | null;
   coverImage: string | null;
+  bannerImage: string | null;
   readingTime: number;
   views: number;
   published: boolean;

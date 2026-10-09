@@ -25,6 +25,7 @@ import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import type { UploadedImage } from "@/features/media";
+import { ImagePickerField } from "@/features/media/components/image-picker-field";
 import { MediaPickerDialog } from "@/features/media/components/media-picker-dialog";
 import { ApiError } from "@/lib/api/backend.client";
 
@@ -55,6 +56,8 @@ const DEFAULT_VALUES: CreateServiceFormValues = {
   description: undefined,
   descriptionHtml: undefined,
   descriptionJson: undefined,
+  coverImage: undefined,
+  bannerImage: undefined,
   images: [],
 };
 
@@ -96,6 +99,8 @@ export function CreateServiceForm({
           description: initialService.description ?? undefined,
           descriptionHtml: initialService.descriptionHtml ?? undefined,
           descriptionJson: initialService.descriptionJson ?? undefined,
+          coverImage: initialService.coverImage ?? undefined,
+          bannerImage: initialService.bannerImage ?? undefined,
           images: initialService.images,
         }
       : DEFAULT_VALUES,
@@ -320,9 +325,32 @@ export function CreateServiceForm({
             />
           </FormSection>
 
+          <section className="space-y-4" aria-labelledby="service-images">
+            <h2 id="service-images" className="text-lg font-semibold">Cover and banner</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(["coverImage", "bannerImage"] as const).map((name) => (
+                <Controller
+                  key={name}
+                  name={name}
+                  control={control}
+                  render={({ field }) => (
+                    <ImagePickerField
+                      id={`service-${name}`}
+                      label={name === "coverImage" ? "Cover image" : "Banner image"}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      disabled={isLoading}
+                      error={errors[name]?.message}
+                    />
+                  )}
+                />
+              ))}
+            </div>
+          </section>
           <FormSection
             title="Gallery"
-            description="Add up to 10 images. The first image becomes the cover."
+            description="Add up to 10 gallery images."
           >
             {images.length < 10 ? (
               <MediaPickerDialog

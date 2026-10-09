@@ -46,7 +46,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       openGraph: {
         title: service.name,
         description,
-        images: service.images[0] ? [service.images[0]] : undefined,
+        images: (service.bannerImage ?? service.coverImage ?? service.images[0])
+          ? [service.bannerImage ?? service.coverImage ?? service.images[0]]
+          : undefined,
         type: "website",
       },
     };
@@ -108,16 +110,29 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      {service.bannerImage ? (
+        <div className="mb-6">
+          <CoverImage src={service.bannerImage} alt={`${service.name} banner`} aspect="wide" priority />
+        </div>
+      ) : null}
 
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.65fr)] lg:items-start">
         <section aria-labelledby="service-title" className="min-w-0">
           <CoverImage
-            src={service.images[0]}
+            src={service.coverImage ?? service.images[0]}
             alt={service.name}
             priority
             emptyLabel="No service image"
           />
+
+          {service.images.length > 0 ? (
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {service.images.map((url, index) => (
+                <CoverImage key={`${url}-${index}`} src={url} alt={`${service.name} image ${index + 1}`} aspect="square" />
+              ))}
+            </div>
+          ) : null}
 
           {description ? (
             <div className="mt-8">
