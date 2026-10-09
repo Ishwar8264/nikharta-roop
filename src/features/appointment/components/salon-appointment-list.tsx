@@ -122,7 +122,10 @@ function SalonAppointmentCard({
 }) {
   const customerName = appointment.customer.name ?? "Customer";
   const serviceSummary = summarizeServices(appointment);
-  const href = routes.appointmentDetail(appointment.id);
+  const href = routes.salonAppointmentManageDetail(
+    appointment.salon.slug,
+    appointment.id,
+  );
 
   return (
     <li className="rounded-xl border bg-card p-4">
@@ -165,7 +168,10 @@ function SalonAppointmentRow({
 }: {
   appointment: PublicAppointment;
 }) {
-  const href = routes.appointmentDetail(appointment.id);
+  const href = routes.salonAppointmentManageDetail(
+    appointment.salon.slug,
+    appointment.id,
+  );
 
   return (
     <tr className="hover:bg-muted/40">
