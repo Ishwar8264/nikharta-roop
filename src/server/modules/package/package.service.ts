@@ -38,12 +38,24 @@ function toPublicPackage(row: {
   isActive: boolean;
   services: Array<{
     serviceId: string;
-    service: { id: string; name: string; slug: string };
+    service: {
+      id: string;
+      name: string;
+      slug: string;
+      price: { toNumber(): number } | number;
+    };
   }>;
   createdAt: Date;
   updatedAt: Date;
 }): PublicPackage {
-  return { ...row, price: Number(row.price) };
+  return {
+    ...row,
+    price: Number(row.price),
+    services: row.services.map((line) => ({
+      ...line,
+      service: { ...line.service, price: Number(line.service.price) },
+    })),
+  };
 }
 
 /** Lists a salon's active packages. Public endpoint. */

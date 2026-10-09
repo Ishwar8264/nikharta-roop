@@ -15,7 +15,7 @@ const PUBLIC_PACKAGE_SELECT = {
   services: {
     select: {
       serviceId: true,
-      service: { select: { id: true, name: true, slug: true } },
+      service: { select: { id: true, name: true, slug: true, price: true } },
     },
   },
 } as const;
