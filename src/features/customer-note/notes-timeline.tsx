@@ -6,7 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/shared";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -54,6 +54,7 @@ export function NotesTimeline({
   currentUserId,
   currentUserRole,
   customerName,
+  customerAvatar,
 }: NotesTimelineProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -132,7 +133,9 @@ export function NotesTimeline({
 
   return (
     <div className="space-y-8">
-      {customerName ? <CustomerHeader name={customerName} /> : null}
+      {customerName ? (
+        <CustomerHeader name={customerName} avatar={customerAvatar} />
+      ) : null}
 
       <Composer
         value={draft}
@@ -201,16 +204,16 @@ export function NotesTimeline({
 
 interface CustomerHeaderProps {
   name: string;
+  avatar?: string;
 }
 
 /**
  * Identifying header shown above the composer when the page has resolved a
- * customer name. We render the `Avatar` with the customer's initial as the
- * fallback (we intentionally do not pull the avatar URL through this client
- * component — it would either need a separate fetch or a `next/image` domain
- * entry, and a one-letter tile is enough orientation for staff).
+ * customer name. The avatar image is rendered when a URL is provided; the
+ * initial is always rendered as the fallback so a broken or slow Cloudinary
+ * URL never leaves an empty tile.
  */
-function CustomerHeader({ name }: CustomerHeaderProps) {
+function CustomerHeader({ name, avatar }: CustomerHeaderProps) {
   const trimmedName = name.trim();
   const displayName = trimmedName || "Customer";
   const initial = (trimmedName[0] ?? "?").toUpperCase();
@@ -218,6 +221,7 @@ function CustomerHeader({ name }: CustomerHeaderProps) {
   return (
     <header className="flex items-center gap-3 rounded-xl border bg-card p-4 ring-1 ring-foreground/5">
       <Avatar size="lg">
+        {avatar ? <AvatarImage src={avatar} alt={displayName} /> : null}
         <AvatarFallback>{initial}</AvatarFallback>
       </Avatar>
       <div className="min-w-0">

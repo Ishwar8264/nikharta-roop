@@ -88,6 +88,7 @@ export default async function CustomerNotesPage({ params }: PageProps) {
         currentUserId={user.id}
         currentUserRole={salon.viewerRole}
         customerName={customer?.name ?? undefined}
+        customerAvatar={customer?.avatar ?? undefined}
       />
     </main>
   );

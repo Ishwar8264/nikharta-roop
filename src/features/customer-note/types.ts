@@ -16,6 +16,11 @@ export type { CustomerNote } from "./api";
  * have orientation. When omitted (e.g. the customer row was soft-deleted or
  * not yet seeded), the header is suppressed and the page subtitle's truncated
  * id carries orientation alone.
+ *
+ * `customerAvatar` is the optional avatar URL for the same customer. When
+ * both `customerName` and `customerAvatar` are provided, the header renders
+ * the avatar image with the initial as the fallback (for broken/empty URLs
+ * or slow Cloudinary loads).
  */
 export interface NotesTimelineProps {
   salonSlug: string;
@@ -24,4 +29,5 @@ export interface NotesTimelineProps {
   currentUserId: string;
   currentUserRole: "OWNER" | "MANAGER" | "STAFF" | (string & {});
   customerName?: string;
+  customerAvatar?: string;
 }
