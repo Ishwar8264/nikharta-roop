@@ -118,6 +118,33 @@ export async function getSalonForServiceManagement(
 }
 
 /**
+ * Loads a salon only when the caller is at least STAFF.
+ *
+ * Why:
+ * Used by views where the entire salon team needs read access — e.g. customer
+ * notes — as opposed to catalogue management which is MANAGER+. The threshold
+ * is `STAFF` rather than `MANAGER` so any signed-in staff member can reach the
+ * page; finer-grained rules (such as who may delete a note) live in the
+ * feature service, not in this loader.
+ */
+export async function getSalonForStaffAccess(
+  slug: string,
+  userId: string,
+): Promise<SalonWithViewerRole> {
+  const publicSalon = await findSalonBySlug(slug);
+  if (!publicSalon) throw new SalonNotFoundError();
+
+  const salon = await findSalonForViewer({
+    salonId: publicSalon.id,
+    userId,
+  });
+  if (!salon) throw new SalonNotFoundError();
+
+  assertRoleAtLeast(salon.viewerRole, "STAFF");
+  return salon;
+}
+
+/**
  * Creates a salon and records the caller as its initial OWNER.
  *
  * Why:

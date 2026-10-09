@@ -10,7 +10,7 @@ import {
   SalonNotFoundError,
   SalonRoleInsufficientError,
 } from "@/server/modules/salon/salon.errors";
-import { getSalonForServiceManagement } from "@/server/modules/salon/salon.service";
+import { getSalonForStaffAccess } from "@/server/modules/salon/salon.service";
 import type { PublicCustomerNote } from "@/server/modules/customer-note/customer-note.types";
 import type { PublicCustomerSummary } from "@/server/modules/users/users.types";
 import { getCustomerSummary } from "@/server/modules/users/users.service";
@@ -25,11 +25,12 @@ export const metadata: Metadata = {
 };
 
 /**
- * Staff-facing notes timeline for one customer of one salon. The page already
- * gates on salon membership via `getSalonForServiceManagement`, so we can
- * safely load the customer summary (name) alongside the notes in a single
- * `Promise.all`. When the customer row is missing or soft-deleted we fall
- * back to a truncated-id label so the page still renders.
+ * Staff-facing notes timeline for one customer of one salon. The page gates on
+ * salon membership via `getSalonForStaffAccess`, so any STAFF+ member of the
+ * salon can read the notes; finer-grained rules (who may delete a note) live
+ * in `deleteCustomerNote`. We safely load the customer summary (name) alongside
+ * the notes in a single `Promise.all`. When the customer row is missing or
+ * soft-deleted we fall back to a truncated-id label so the page still renders.
  */
 export default async function CustomerNotesPage({ params }: PageProps) {
   const { slug, customerId } = await params;
@@ -47,7 +48,7 @@ export default async function CustomerNotesPage({ params }: PageProps) {
   let customer: PublicCustomerSummary | null;
   try {
     [salon, notes, customer] = await Promise.all([
-      getSalonForServiceManagement(slug, user.id),
+      getSalonForStaffAccess(slug, user.id),
       listCustomerNotes(user.id, slug, customerId),
       getCustomerSummary(customerId),
     ]);
