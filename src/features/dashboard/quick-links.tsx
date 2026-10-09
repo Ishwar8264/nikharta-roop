@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
   Ticket,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -72,10 +73,22 @@ export const CUSTOMER_QUICK_LINKS: readonly QuickLink[] = [
 export function buildSalonManageLinks(salonSlug: string): QuickLink[] {
   return [
     {
+      href: routes.salonAppointmentsManage(salonSlug),
+      icon: CalendarDays,
+      title: "Appointments",
+      description: "Today's bookings, status, and customers in the chair.",
+    },
+    {
       href: routes.salonServicesManage(salonSlug),
       icon: Scissors,
       title: "Services",
       description: "Add, edit, and price your salon's services.",
+    },
+    {
+      href: routes.salonStaffManage(salonSlug),
+      icon: Users,
+      title: "Staff",
+      description: "Schedules, leaves, and skills for your team.",
     },
     {
       href: routes.salonProductsManage(salonSlug),
