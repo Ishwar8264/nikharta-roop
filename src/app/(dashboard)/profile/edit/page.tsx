@@ -36,7 +36,7 @@ export default async function EditProfilePage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto w-full max-w-3xl">
       <Link href={routes.profile} className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden="true" /> Back to profile
       </Link>

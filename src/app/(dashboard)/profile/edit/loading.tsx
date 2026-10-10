@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Loading state for the dedicated profile editor. */
 export default function EditProfileLoading() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12" aria-label="Loading profile editor" aria-busy="true">
+    <main className="mx-auto w-full max-w-3xl" aria-label="Loading profile editor" aria-busy="true">
       <Skeleton className="h-11 w-36" />
       <Skeleton className="mt-4 h-10 w-48" />
       <Skeleton className="mt-3 h-5 w-full max-w-sm" />

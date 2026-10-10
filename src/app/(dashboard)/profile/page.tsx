@@ -30,7 +30,7 @@ export default async function ProfilePage() {
     .map((part) => part.charAt(0)).join("").toUpperCase() || "?";
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <main className="w-full">
       <header className="max-w-xl">
         <p className="text-xs font-medium uppercase tracking-widest text-primary">My account</p>
         <h1 className="mt-2 font-heading text-3xl font-semibold sm:text-4xl">
@@ -41,7 +41,7 @@ export default async function ProfilePage() {
         </p>
       </header>
 
-      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="mt-8 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <Card className="rounded-2xl py-0">
           <div className="flex items-center gap-5 border-b bg-primary/5 px-5 py-8 sm:px-7">
             <Avatar size="lg" className="size-20 ring-4 ring-background sm:size-24">
@@ -64,7 +64,7 @@ export default async function ProfilePage() {
             </p>
           </CardContent>
           <div className="border-t px-5 py-4 sm:px-7">
-            <Button render={<Link href={routes.profileEdit} />} className="h-11 px-5">
+            <Button nativeButton={false} render={<Link href={routes.profileEdit} />} className="h-11 px-5">
               <Pencil aria-hidden="true" /> Edit profile
             </Button>
           </div>

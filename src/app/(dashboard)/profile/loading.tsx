@@ -3,13 +3,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Mirrors the saved profile and contact sidebar while the session loads. */
 export default function ProfileLoading() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12" aria-label="Loading profile" aria-busy="true">
+    <main className="w-full" aria-label="Loading profile" aria-busy="true">
       <div className="space-y-3">
         <Skeleton className="h-4 w-20" />
         <Skeleton className="h-10 w-44" />
         <Skeleton className="h-5 w-full max-w-sm" />
       </div>
-      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="mt-8 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="overflow-hidden rounded-2xl border bg-card">
           <div className="flex items-center gap-4 border-b bg-primary/5 p-6">
             <Skeleton className="size-20 shrink-0 rounded-full sm:size-24" />
