@@ -74,6 +74,7 @@ export function MediaPickerDialog({
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
+          showCloseButton={false}
           className={cn(
             "flex max-h-[90vh] w-[calc(100vw-2rem)] flex-col gap-0 p-0",
             "sm:w-full sm:max-w-5xl",

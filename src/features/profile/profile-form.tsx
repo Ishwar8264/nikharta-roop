@@ -8,7 +8,8 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserBadge } from "@/components/shared/user-badge";
+import { CoverImage } from "@/components/shared/cover-image";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -104,10 +105,6 @@ export function ProfileForm({ initial }: ProfileFormProps) {
   const coverImage = useWatch({ control, name: "coverImage" });
   const avatarUrl = useWatch({ control, name: "avatar" });
   const bioValue = useWatch({ control, name: "bio" }) ?? "";
-  const displayName = nameValue.trim() || "Your name";
-  const initials = nameValue.trim().split(/\s+/).slice(0, 2)
-    .map((part) => part.charAt(0)).join("").toUpperCase() || "?";
-
   function handlePickerChange(next: UploadedImage[], field: "avatar" | "coverImage" = "avatar") {
     setValue(field, next[0]?.url ?? null, {
       shouldDirty: true,
@@ -160,12 +157,9 @@ export function ProfileForm({ initial }: ProfileFormProps) {
     <Card className="rounded-2xl py-0" data-form-rounded="true">
       <form onSubmit={handleSubmit(onSubmit)} noValidate aria-busy={busy}>
         <fieldset disabled={busy} className="min-w-0 space-y-6">
-          <div className="relative h-44 overflow-hidden bg-linear-to-br from-secondary/40 via-primary/20 to-accent/30 sm:h-56">
-            {coverImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverImage} alt="Cover preview" className="h-full w-full object-cover" />
-            ) : null}
-            <div className="absolute inset-0 bg-linear-to-t from-black/30 to-transparent" />
+          <CoverImage src={coverImage} alt="Cover preview" aspect="auto" rounded="none" unoptimized fallback={null}
+            className="h-44 bg-linear-to-br from-secondary/40 via-primary/20 to-accent/30 sm:h-56"
+            overlayClassName="bg-linear-to-t from-black/30 to-transparent">
             <div className="absolute bottom-4 right-4 flex flex-wrap gap-2">
               <MediaPickerDialog
                 title="Choose cover image"
@@ -177,28 +171,16 @@ export function ProfileForm({ initial }: ProfileFormProps) {
               />
               {coverImage ? <Button type="button" variant="outline" className="h-10 bg-background" onClick={() => handlePickerChange([], "coverImage")}><Trash2 aria-hidden="true" />Remove cover</Button> : null}
             </div>
-          </div>
+          </CoverImage>
           {errors.coverImage ? <p role="alert" className="px-5 text-xs text-destructive">{errors.coverImage.message}</p> : null}
           <div className="border-b bg-primary/5 px-5 py-6 sm:px-7 sm:py-8">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <Avatar size="lg" className="size-20 ring-4 ring-background sm:size-24">
-                {avatarUrl ? <AvatarImage src={avatarUrl} alt="Profile photo" /> : null}
-                <AvatarFallback className="bg-primary/10 text-2xl font-semibold text-primary">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium uppercase tracking-widest text-primary">
-                  Your profile
-                </p>
-                <h2 className="mt-1 break-words text-2xl font-semibold sm:text-3xl">
-                  {displayName}
-                </h2>
-                <p className="mt-2 line-clamp-2 break-words text-sm text-muted-foreground">
-                  {bioValue.trim() || "Make it yours with a photo and a little about yourself."}
-                </p>
-              </div>
-            </div>
+            <UserBadge name={nameValue} avatar={avatarUrl} fallbackName="Your name" size="lg" nameAs="h2"
+              className="flex w-full gap-4 sm:gap-5"
+              avatarClassName="size-20 ring-4 ring-background sm:size-24"
+              fallbackClassName="text-2xl"
+              nameClassName="text-2xl font-semibold sm:text-3xl"
+              description={bioValue.trim() || "Make it yours with a photo and a little about yourself."}
+              descriptionClassName="mt-2 line-clamp-2 break-words text-sm" />
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <MediaPickerDialog
                 title="Choose profile photo"

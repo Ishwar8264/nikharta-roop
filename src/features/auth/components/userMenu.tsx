@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { navIconMap, userMenuNav } from "@/components/navigation";
+import { UserBadge } from "@/components/shared/user-badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,7 +39,6 @@ export function UserMenu({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
   const { logout, isLoading } = useLogout();
 
-  const initials = getInitials(user.name, user.email);
 
   return (
     <DropdownMenu>
@@ -52,18 +52,8 @@ export function UserMenu({ user }: { user: CurrentUser }) {
           />
         }
       >
-        {user.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatar}
-            alt=""
-            className="h-7 w-7 rounded-full object-cover"
-          />
-        ) : (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-            {initials}
-          </span>
-        )}
+        <UserBadge name={user.name} email={user.email} avatar={user.avatar} showName={false}
+          avatarAlt="" avatarClassName="size-7" fallbackClassName="text-xs" />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56">
@@ -117,21 +107,4 @@ export function UserMenu({ user }: { user: CurrentUser }) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
-
-/**
- * Builds one- or two-letter initials for the avatar fallback.
- *
- * Why not just first letter:
- * Two initials disambiguate "Amit Sharma" from "Anita Singh" at a glance.
- */
-function getInitials(name: string | null, email: string | null): string {
-  const source = name?.trim() || email?.split("@")[0] || "?";
-  const parts = source.split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase();
-  return (
-    parts[0]!.charAt(0) + parts[parts.length - 1]!.charAt(0)
-  ).toUpperCase();
 }

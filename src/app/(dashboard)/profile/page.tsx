@@ -2,7 +2,8 @@ import { Mail, Pencil, Phone, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserBadge } from "@/components/shared/user-badge";
+import { CoverImage } from "@/components/shared/cover-image";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -26,32 +27,32 @@ export default async function ProfilePage() {
   const user = await getSession();
   if (!user) return null; // layout already redirects to /login
 
-  const initials = (user.name ?? "").trim().split(/\s+/).slice(0, 2)
-    .map((part) => part.charAt(0)).join("").toUpperCase() || "?";
-
   return (
     <main className="w-full">
-      <Card className="rounded-2xl py-0">
-        <div className="relative h-48 overflow-hidden bg-linear-to-br from-secondary/40 via-primary/20 to-accent/30 sm:h-64">
-          {user.coverImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.coverImage} alt="Profile cover" className="h-full w-full object-cover" />
-          ) : null}
-          <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent" />
-        </div>
-        <div className="px-5 pb-6 sm:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <Avatar size="lg" className="relative -mt-12 size-24 bg-card ring-4 ring-card sm:-mt-16 sm:size-32">
-              {user.avatar ? <AvatarImage src={user.avatar} alt="Profile photo" /> : null}
-              <AvatarFallback className="bg-primary/10 text-3xl font-semibold text-primary">{initials}</AvatarFallback>
-            </Avatar>
+      <Card className="gap-0 rounded-2xl py-0">
+        <CoverImage
+          src={user.coverImage} alt="Profile cover" aspect="auto" rounded="none"
+          priority unoptimized fallback={null}
+          className="h-48 bg-linear-to-br from-secondary/40 via-primary/20 to-accent/30 sm:h-64"
+          overlayClassName="bg-linear-to-t from-black/20 to-transparent"
+        />
+        <div className="px-5 py-5 sm:px-8 sm:py-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Link href={routes.profile} className="min-w-0 flex-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <UserBadge
+              name={user.name} email={user.email} avatar={user.avatar} size="lg"
+              fallbackName="Your profile" nameAs="h1"
+              className="flex w-full items-center gap-3 sm:gap-4"
+              avatarClassName="size-24 bg-card ring-4 ring-card sm:size-28"
+              fallbackClassName="text-2xl leading-none sm:text-3xl"
+              contentClassName="w-full"
+              nameClassName="font-heading text-xl leading-tight font-semibold sm:text-2xl"
+            />
+            </Link>
             <Button nativeButton={false} render={<Link href={routes.profileEdit} />} className="h-11 px-5">
               <Pencil aria-hidden="true" /> Edit profile
             </Button>
           </div>
-          <p className="mt-5 text-xs font-medium uppercase tracking-widest text-primary">My profile</p>
-          <h1 className="mt-2 break-words font-heading text-3xl font-semibold sm:text-4xl">{user.name || "Your profile"}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Your personal space at Nikharta Roop.</p>
         </div>
       </Card>
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">

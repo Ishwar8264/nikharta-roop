@@ -1,13 +1,16 @@
+import type { ReactNode } from "react";
+
 import { ImageOff } from "lucide-react";
 import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
-type CoverAspect = "video" | "wide" | "square" | "banner";
+type CoverAspect = "video" | "wide" | "square" | "banner" | "auto";
 type CoverRounded = "none" | "md" | "lg" | "xl" | "2xl";
 
 const ASPECT_STYLES: Record<CoverAspect, string> = {
   /** 16:9 — detail pages, cards */
+  auto: "",
   video: "aspect-video",
   /** 21:9 — hero banners, slim headers */
   wide: "aspect-[21/9]",
@@ -25,10 +28,17 @@ const ROUNDED_STYLES: Record<CoverRounded, string> = {
   "2xl": "rounded-2xl",
 };
 
-interface CoverImageProps {
+export interface CoverImageProps {
   src?: string | null;
+  /** Overlay content, such as cover editing controls. */
+  children?: ReactNode;
+  /** Custom empty state; null hides the default label and icon. */
+  fallback?: ReactNode;
+  overlayClassName?: string;
+  /** Useful for user URLs that are not in the image optimizer allowlist. */
+  unoptimized?: boolean;
   alt: string;
-  /** Aspect ratio preset. Defaults to "video" (16:9). */
+  /** Aspect ratio preset. Use "auto" with a height class; defaults to "video". */
   aspect?: CoverAspect;
   /** Corner radius preset. Defaults to "2xl". */
   rounded?: CoverRounded;
@@ -36,7 +46,7 @@ interface CoverImageProps {
   priority?: boolean;
   /** Responsive `sizes` attribute. Defaults assume full-width hero. */
   sizes?: string;
-  /** Message shown when `src` is missing or fails. */
+  /** Message shown when `src` is missing. */
   emptyLabel?: string;
   /** Tailwind classes merged onto the wrapper. */
   className?: string;
@@ -67,6 +77,10 @@ export function CoverImage({
   emptyLabel = "No image",
   className,
   imageClassName,
+  children,
+  fallback,
+  overlayClassName,
+  unoptimized,
 }: CoverImageProps) {
   return (
     <div
@@ -84,14 +98,17 @@ export function CoverImage({
           fill
           priority={priority}
           sizes={sizes}
+          unoptimized={unoptimized}
           className={cn("object-cover", imageClassName)}
         />
-      ) : (
+      ) : fallback !== undefined ? fallback : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
           <ImageOff className="h-5 w-5" aria-hidden="true" />
           <span className="text-xs">{emptyLabel}</span>
         </div>
       )}
+      {overlayClassName ? <div aria-hidden="true" className={cn("pointer-events-none absolute inset-0", overlayClassName)} /> : null}
+      {children}
     </div>
   );
 }
