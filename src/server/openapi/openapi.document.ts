@@ -34,6 +34,7 @@ import { servicePaths, serviceSchemas } from "./service.openapi";
 import { settingsPaths, settingsSchemas } from "./settings.openapi";
 import { staffPaths, staffSchemas } from "./staff.openapi";
 import { systemPaths, systemSchemas } from "./system.openapi";
+import { slugPaths, slugSchemas } from "./slug.openapi";
 import {
   verificationPaths,
   verificationSchemas,
@@ -77,6 +78,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       },
     ],
     tags: [
+      { name: "Slugs", description: "Resource slug availability checks" },
       { name: "Authentication", description: "User identity operations" },
       { name: "System", description: "Service availability operations" },
       { name: "Salons", description: "Salon directory and management" },
@@ -165,6 +167,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       ...productPaths,
       ...staffPaths,
       ...systemPaths,
+      ...slugPaths,
       ...oauthPaths,
       ...couponPaths,
       ...catalogPaths,
@@ -202,6 +205,7 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
         ...productSchemas,
         ...staffSchemas,
         ...systemSchemas,
+        ...slugSchemas,
         ...oauthSchemas,
         ...couponSchemas,
         ...catalogSchemas,
