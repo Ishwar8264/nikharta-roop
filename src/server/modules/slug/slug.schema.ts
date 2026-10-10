@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { slugResources, type SlugResource } from "@/lib/slug-availability";
 
 import { createBlogPostSchema, createCategorySchema as blogCategorySchema } from "@/server/modules/blog/blog.schema";
 import { createPackageSchema } from "@/server/modules/package/package.schema";
@@ -6,12 +7,8 @@ import { createProductSchema, createCategorySchema as productCategorySchema } fr
 import { createSalonSchema, resourceIdSchema } from "@/server/modules/salon/salon.schema";
 import { createCategorySchema as serviceCategorySchema } from "@/server/modules/service/service.schema";
 
-export const slugResources = [
-  "salon", "service", "product", "package", "service-category",
-  "product-category", "blog-post", "blog-category", "blog-tag",
-] as const;
-
-export type SlugResource = typeof slugResources[number];
+export { slugResources };
+export type { SlugResource };
 
 /** Reuse creation rules; service's reserved `create` slug is reported as unavailable. */
 const slugSchemas = {

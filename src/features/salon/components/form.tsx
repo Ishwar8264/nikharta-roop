@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
-import { FormHeader } from "@/components/shared";
+import { FormHeader, SlugField } from "@/components/shared";
+import { checkSlugAvailability } from "@/lib/api/slug-availability";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -74,7 +75,7 @@ const DEFAULT_VALUES = {
 
 export function SalonForm() {
   const router = useRouter();
-  const { create, isLoading, error, fieldErrors } = useCreateSalon();
+  const { create, isLoading: isCreating, error, fieldErrors } = useCreateSalon();
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [coverImages, setCoverImages] = useState<UploadedImage[]>([]);
   const [bannerImages, setBannerImages] = useState<UploadedImage[]>([]);
@@ -82,11 +83,13 @@ export function SalonForm() {
 
   const {
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     handleSubmit,
     register,
     setError,
     setValue,
+    clearErrors,
+    setFocus,
   } = useForm<CreateSalonFormInput, unknown, CreateSalonFormValues>({
     resolver: zodResolver(createSalonSchema),
     defaultValues: DEFAULT_VALUES,
@@ -94,6 +97,7 @@ export function SalonForm() {
     reValidateMode: "onChange",
     shouldFocusError: true,
   });
+  const isLoading = isCreating || isSubmitting;
 
   const name = useWatch({ control, name: "name" });
   const latitude = useWatch({ control, name: "lat" });
@@ -105,9 +109,10 @@ export function SalonForm() {
 
   useEffect(() => {
     if (!slugWasEdited) {
+      clearErrors("slug");
       setValue("slug", slugify(name), { shouldValidate: false });
     }
-  }, [name, setValue, slugWasEdited]);
+  }, [name, setValue, slugWasEdited, clearErrors]);
 
   useEffect(() => {
     for (const [field, message] of Object.entries(fieldErrors)) {
@@ -128,6 +133,20 @@ export function SalonForm() {
   }
 
   async function submit(values: CreateSalonFormValues) {
+    if (values.slug) {
+      try {
+        const result = await checkSlugAvailability({ resource: "salon", slug: values.slug });
+        if (!result.available) {
+          setError("slug", { type: "availability", message: "This slug is already taken. Choose another." });
+          setFocus("slug");
+          return;
+        }
+      } catch {
+        setError("slug", { type: "availability", message: "Could not check availability. Please try again." });
+        setFocus("slug");
+        return;
+      }
+    }
     const created = await create(values);
     if (created) router.push(routes.salonDetail(created.slug));
   }
@@ -158,19 +177,25 @@ export function SalonForm() {
                 error={errors.name?.message}
                 {...register("name")}
               />
-              <Field
-                id="slug"
-                label="URL slug"
-                placeholder="elan-studio-mumbai"
-                autoCapitalize="none"
-                spellCheck={false}
-                disabled={isLoading}
-                error={errors.slug?.message}
-                {...register("slug", {
-                  setValueAs: (value: string) => value || undefined,
-                  onChange: () => setSlugWasEdited(true),
-                })}
-              />
+              <Controller name="slug" control={control} render={({ field }) => (
+                <SlugField
+                  id="slug"
+                  resource="salon"
+                  label="URL slug"
+                  placeholder="elan-studio-mumbai"
+                  value={field.value ?? ""}
+                  name={field.name}
+                  ref={field.ref}
+                  onBlur={field.onBlur}
+                  onValueChange={(value) => {
+                    setSlugWasEdited(true);
+                    clearErrors("slug");
+                    field.onChange(value || undefined);
+                  }}
+                  disabled={isLoading}
+                  error={errors.slug?.message}
+                />
+              )} />
             </div>
 
             <div className="space-y-1.5">

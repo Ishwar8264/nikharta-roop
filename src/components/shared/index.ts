@@ -4,6 +4,10 @@ export type { FilterChipOption } from "./filter-chips";
 export { FormHeader } from "./form-header";
 export { Pagination } from "./pagination";
 export { SearchInput } from "./search-input";
+export { SharedDialogContent } from "./shared-dialog-content";
+export type { SharedDialogContentProps } from "./shared-dialog-content";
+export { SlugField } from "./slug-field";
+export type { SlugFieldProps, SlugFieldState } from "./slug-field";
 export { SideNav } from "./side-nav";
 export type { SideNavGroup, SideNavItem, SideNavProps } from "./side-nav";
 
