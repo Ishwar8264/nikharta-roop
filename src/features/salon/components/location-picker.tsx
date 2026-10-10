@@ -273,7 +273,7 @@ export function LocationPicker({
               if (e.key === "Escape") setShowResults(false);
             }}
             onFocus={() => results.length > 0 && setShowResults(true)}
-            placeholder="Search address, landmark, or area…"
+            placeholder="Search by address or landmark"
             disabled={disabled}
             aria-label="Search salon location"
             className="pl-9 pr-9"
@@ -364,11 +364,12 @@ export function LocationPicker({
       {/* Coordinates */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor="latitude" className="text-xs text-muted-foreground">
+          <Label required htmlFor="latitude" className="text-xs text-muted-foreground">
             Latitude
           </Label>
           <Input
             id="latitude"
+            required
             type="number"
             step="any"
             value={latitude ?? ""}
@@ -394,11 +395,12 @@ export function LocationPicker({
           ) : null}
         </div>
         <div className="space-y-1">
-          <Label htmlFor="longitude" className="text-xs text-muted-foreground">
+          <Label required htmlFor="longitude" className="text-xs text-muted-foreground">
             Longitude
           </Label>
           <Input
             id="longitude"
+            required
             type="number"
             step="any"
             value={longitude ?? ""}
