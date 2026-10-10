@@ -7,7 +7,7 @@ import {
   Clock,
   FileText,
   Mail,
-  Plus,
+  Upload,
   Trash2,
   Pencil,
   ShieldCheck,
@@ -41,6 +41,15 @@ const DOCUMENT_KINDS = [
   "Salon photo 1",
   "Salon photo 2",
 ] as const;
+
+const DOCUMENT_GUIDANCE: Record<string, string> = {
+  "Shop license": "A clear photo of your shop or business license.",
+  PAN: "A clear photo of the salon owner's PAN card.",
+  "GST certificate":
+    "A clear photo of your salon's GST registration certificate.",
+  "Salon photo 1": "Show the entrance and your salon's signboard.",
+  "Salon photo 2": "Show the salon interior and workstations.",
+};
 
 interface VerificationPanelProps {
   salonSlug: string;
@@ -90,7 +99,7 @@ export function VerificationPanel({
     setShowForm((open) => !open);
   }
 
-  function addDocument(image: UploadedImage) {
+  function addDocument(image: UploadedImage, kind: string) {
     setFieldErrors({});
     setDocuments((prev) => [
       ...prev,
@@ -99,7 +108,7 @@ export function VerificationPanel({
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
             : `doc-${prev.length}-${Date.now()}`,
-        kind: "",
+        kind,
         url: image.url,
       },
     ]);
@@ -211,8 +220,8 @@ export function VerificationPanel({
                   : "Update verification documents"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Add clear photos of your shop license, ID or salon, then review
-                your submission.
+                Choose a document type, upload a clear photo, then review and
+                submit.
               </p>
             </div>
 
@@ -334,24 +343,59 @@ function StatusBanner({
   }
 
   if (status === "PENDING") {
+    if (hasSubmitted) {
+      return (
+        <section
+          role="status"
+          aria-labelledby="verification-thank-you"
+          className="overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm"
+        >
+          <div className="space-y-5 p-5 sm:p-7">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20">
+                <CheckCircle2 className="size-6" aria-hidden="true" />
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Clock className="size-3.5" aria-hidden="true" />
+                Under review
+              </span>
+            </div>
+            <div className="space-y-2">
+              <h2
+                id="verification-thank-you"
+                className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
+              >
+                Thank you for choosing Nikharta Roop!
+              </h2>
+              <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+                We&apos;ve received your documents and we&apos;re reviewing your salon.
+                You&apos;re one step closer to welcoming new customers.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 border-t border-primary/10 bg-background/30 px-5 py-4 sm:grid-cols-2 sm:px-7">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">What happens next?</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Your salon will be visible to customers after approval.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">Review time</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Usually 1–2 business days. Check this page for updates.
+              </p>
+            </div>
+          </div>
+        </section>
+      );
+    }
     return (
       <Banner
-        tone={hasSubmitted ? "warning" : "neutral"}
-        icon={
-          hasSubmitted ? (
-            <Clock className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-          )
-        }
-        title={
-          hasSubmitted ? "We're reviewing your documents" : "Salon created"
-        }
-        body={
-          hasSubmitted
-            ? "Usually takes 1–2 days. You'll get a notification once a decision is made."
-            : "Submit your documents for approval. Your salon will be visible to customers after approval."
-        }
+        tone="neutral"
+        icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />}
+        title="Salon created"
+        body="Submit your documents for approval. Your salon will be visible to customers after approval."
       />
     );
   }
@@ -526,7 +570,7 @@ interface StepDocumentsProps {
   documents: DraftDocument[];
   fieldErrors: Record<string, string>;
   disabled: boolean;
-  onAdd: (image: UploadedImage) => void;
+  onAdd: (image: UploadedImage, kind: string) => void;
   onReplace: (tempId: string, image: UploadedImage) => void;
   onRemove: (tempId: string) => void;
   onKindChange: (tempId: string, kind: string) => void;
@@ -541,59 +585,69 @@ function StepDocuments({
   onRemove,
   onKindChange,
 }: StepDocumentsProps) {
+  const [selectedKind, setSelectedKind] = useState<string | null>(null);
+  const uploadDisabled = disabled || !selectedKind || documents.length >= 20;
   const picker = (
     <MediaPickerDialog
-      title="Add verification documents"
-      description="Upload clear photos of your shop license, ID or salon."
+      title={
+        selectedKind
+          ? `Upload ${selectedKind.toLowerCase()}`
+          : "Upload document"
+      }
+      description={selectedKind ? DOCUMENT_GUIDANCE[selectedKind] : undefined}
       value={[]}
       onChange={(next) => {
-        for (const image of next) onAdd(image);
+        const image = next[0];
+        if (image && selectedKind) onAdd(image, selectedKind);
       }}
-      mode="multiple"
-      max={20 - documents.length}
+      mode="single"
+      max={1}
       maxSizeMB={5}
-      disabled={disabled || documents.length >= 20}
-      triggerClassName={documents.length > 0 ? "w-auto" : undefined}
+      disabled={uploadDisabled}
+      triggerClassName="w-full sm:w-auto"
       trigger={
-        documents.length === 0 ? (
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={disabled}
-            className="h-auto min-h-44 w-full flex-col gap-3 whitespace-normal rounded-lg border border-dashed border-border bg-muted/20 px-4 py-6 text-center hover:border-primary/40 hover:bg-muted/40"
-          >
-            <FileText
-              className="size-7 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="text-sm font-medium">Add documents</span>
-            <span className="text-xs font-normal text-muted-foreground">
-              JPG, PNG, WebP or AVIF · Up to 5 MB per image
-            </span>
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={disabled || documents.length >= 20}
-            className="h-9 gap-1.5"
-          >
-            <Plus className="size-4" aria-hidden="true" /> Add documents
-          </Button>
-        )
+        <Button
+          type="button"
+          disabled={uploadDisabled}
+          className="h-11 w-full gap-2 sm:w-auto"
+        >
+          <Upload className="size-4" aria-hidden="true" /> Upload document
+        </Button>
       }
     />
   );
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-medium">Uploaded documents</h3>
-        {documents.length > 0 && picker}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <SelectField
+          id="upload-document-type"
+          label="Document type"
+          isRequired
+          options={DOCUMENT_KINDS.map((kind) => ({ value: kind, label: kind }))}
+          value={selectedKind}
+          onValueChange={setSelectedKind}
+          placeholder="Choose a document type"
+          disabled={disabled || documents.length >= 20}
+          className="min-w-0 flex-1"
+        />
+        {picker}
       </div>
-      {documents.length === 0 ? (
-        picker
-      ) : (
+      <div className="space-y-1 text-xs text-muted-foreground">
+        <p>
+          {selectedKind
+            ? DOCUMENT_GUIDANCE[selectedKind]
+            : "Select a document type to enable upload."}
+        </p>
+        <p>JPG, PNG, WebP or AVIF · Up to 5 MB per image</p>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t pt-4">
+        <h3 className="text-sm font-medium">Uploaded documents</h3>
+        <span className="text-xs text-muted-foreground">
+          {documents.length}/20
+        </span>
+      </div>
+      {documents.length > 0 ? (
         <ul className="space-y-3">
           {documents.map((doc, index) => (
             <li
@@ -661,11 +715,11 @@ function StepDocuments({
             </li>
           ))}
         </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No documents added yet. Add at least one to continue.
+        </p>
       )}
-      <p className="text-xs text-muted-foreground">
-        {documents.length}/20 documents · Add at least one document and choose
-        its type.
-      </p>
     </div>
   );
 }

@@ -23,7 +23,9 @@ describe("verification onboarding messages", () => {
 
   it("shows the review status only after documents have been submitted", () => {
     const html = renderToStaticMarkup(createElement(VerificationPanel, { salonSlug: "new-salon", initial: { ...initial, submittedAt: "2026-10-10T09:00:00.000Z" }, canSubmit: true }));
-    expect(html).toContain("reviewing your documents");
+    expect(html).toContain("Thank you for choosing Nikharta Roop!");
+    expect(html).toContain("Under review");
+    expect(html).toContain("1–2 business days");
     expect(html).not.toContain("Salon created");
     expect(html).not.toContain("Verification documents");
   });

@@ -55,8 +55,9 @@ export function MediaPickerDialog({
         role="button"
         tabIndex={0}
         aria-disabled={disabled}
-        onClick={() => !disabled && setOpen(true)}
-        onKeyDown={(e) => {
+        // Shared React Aria buttons stop bubbling; capture their activation here.
+        onClickCapture={() => !disabled && setOpen(true)}
+        onKeyDownCapture={(e) => {
           if (disabled) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
