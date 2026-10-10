@@ -229,7 +229,8 @@ function DropdownItem({
 }) {
   return (
     <DropdownMenuItem
-      onClick={onSelect}
+      textValue={label}
+      onAction={onSelect}
       className={cn(
         "flex cursor-pointer items-center gap-2",
         active && "bg-accent",

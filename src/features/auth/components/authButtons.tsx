@@ -9,7 +9,7 @@ import { routes } from "@/config/routes";
  * Why server component:
  * Pure render of two Links. No state, no events.
  *
- * Why `render` + `nativeButton={false}`:
+ * Why render a link through the button wrapper:
  * Base UI's Button defaults to rendering a native <button>. When the render
  * prop returns a <Link> (which renders <a>), Base UI must be told explicitly
  * that the final element is not a button — otherwise it keeps button
@@ -20,7 +20,6 @@ export function AuthButtons() {
     <div className="flex items-center gap-2">
       <Button
         render={<Link href={routes.login} />}
-        nativeButton={false}
         variant="ghost"
         size="sm"
       >
@@ -28,7 +27,6 @@ export function AuthButtons() {
       </Button>
       <Button
         render={<Link href={routes.register} />}
-        nativeButton={false}
         size="sm"
       >
         Sign up

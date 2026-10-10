@@ -40,8 +40,7 @@ export function AiPromo() {
           <div className="mt-8">
             <Button
               render={<Link href={routes.ai} />}
-              nativeButton={false}
-              size="lg"
+                size="lg"
             >
               {aiPromo.cta.label}
               <ArrowRight className="ml-1 h-4 w-4" />

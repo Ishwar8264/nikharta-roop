@@ -140,7 +140,6 @@ function MissingEmail() {
 
       <Button
         render={<Link href={routes.forgotPassword} />}
-        nativeButton={false}
         className="w-full"
       >
         Start password reset

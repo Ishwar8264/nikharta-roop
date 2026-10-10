@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
-import { FormHeader, SlugField } from "@/components/shared";
+import { FormHeader, SelectField, SlugField } from "@/components/shared";
 import { checkSlugAvailability } from "@/lib/api/slug-availability";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,13 +19,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
@@ -198,40 +191,24 @@ export function SalonForm() {
               )} />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="category">Category</Label>
-              <Controller
-                name="category"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger
-                      id="category"
-                      className="h-11 w-full rounded-md sm:w-56"
-                      disabled={isLoading}
-                      onBlur={field.onBlur}
-                      aria-invalid={errors.category ? true : undefined}
-                      aria-describedby={
-                        errors.category ? "category-error" : undefined
-                      }
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError
-                id="category-error"
-                message={errors.category?.message}
-              />
-            </div>
+            <Controller
+              name="category"
+              control={control}
+              render={({ field }) => (
+                <SelectField
+                  id="category"
+                  label="Category"
+                  options={CATEGORIES}
+                  name={field.name}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isLoading}
+                  error={errors.category?.message}
+                  className="w-full sm:max-w-56"
+                  triggerProps={{ onBlur: field.onBlur, ref: field.ref, className: "h-11 rounded-md" }}
+                />
+              )}
+            />
 
             <Field
               id="shortDescription"

@@ -15,7 +15,7 @@ Premium salon discovery & booking platform for India. Customers browse salons, s
 | Media | Cloudinary (signed deletion, per-user folders) |
 | Email | Resend |
 | SMS/WhatsApp | Twilio / WhatsApp Cloud API |
-| UI | Tailwind CSS 4, Radix/base-ui, shadcn-style components, Tiptap rich text, Leaflet maps |
+| UI | Tailwind CSS 4, shadcn-style components (currently React Aria; [UI guidelines](docs/ui-guidelines.md) prefer Radix for future work), Tiptap rich text, Leaflet maps |
 | AI | AI SDK (OpenAI-compatible) with per-user quota tracking |
 | Package manager | pnpm 10 |
 

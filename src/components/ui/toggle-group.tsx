@@ -1,24 +1,28 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Toggle as TogglePrimitive } from "@base-ui/react/toggle"
-import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group"
-import { type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import * as React from "react";
+import { type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
+import {
+  ToggleButtonGroup as ToggleGroupPrimitive,
+  ToggleButton as TogglePrimitive,
+  type ToggleButtonGroupProps,
+  type ToggleButtonProps,
+} from "react-aria-components";
 
-import { toggleVariants } from "@/components/ui/toggle"
+import { toggleVariants } from "@/components/ui/toggle";
 
 const ToggleGroupContext = React.createContext<
   VariantProps<typeof toggleVariants> & {
-    spacing?: number
-    orientation?: "horizontal" | "vertical"
+    spacing?: number;
+    orientation?: "horizontal" | "vertical";
   }
 >({
   size: "default",
   variant: "default",
   spacing: 2,
   orientation: "horizontal",
-})
+});
 
 function ToggleGroup({
   className,
@@ -27,23 +31,45 @@ function ToggleGroup({
   spacing = 2,
   orientation = "horizontal",
   children,
+  value,
+  defaultValue,
+  onValueChange,
+  multiple = false,
+  disabled,
   ...props
-}: ToggleGroupPrimitive.Props &
+}: Omit<ToggleButtonGroupProps, "children"> &
   VariantProps<typeof toggleVariants> & {
-    spacing?: number
-    orientation?: "horizontal" | "vertical"
+    spacing?: number;
+    orientation?: "horizontal" | "vertical";
+    children?: React.ReactNode;
+    value?: string[];
+    defaultValue?: string[];
+    onValueChange?: (values: string[]) => void;
+    multiple?: boolean;
+    disabled?: boolean;
   }) {
   return (
     <ToggleGroupPrimitive
+      selectedKeys={value}
+      defaultSelectedKeys={defaultValue}
+      selectionMode={multiple ? "multiple" : "single"}
+      onSelectionChange={
+        onValueChange
+          ? (keys) => onValueChange(Array.from(keys, String))
+          : undefined
+      }
+      isDisabled={disabled || props.isDisabled}
       data-slot="toggle-group"
       data-variant={variant}
       data-size={size}
       data-spacing={spacing}
-      data-orientation={orientation}
-      style={{ "--gap": spacing } as React.CSSProperties}
+      orientation={orientation}
+      style={
+        { "--gap": `calc(var(--spacing) * ${spacing})` } as React.CSSProperties
+      }
       className={cn(
-        "group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-vertical:flex-col data-vertical:items-stretch",
-        className
+        "group/toggle-group flex w-fit flex-row items-center gap-(--gap) rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-vertical:flex-col data-vertical:items-stretch",
+        className,
       )}
       {...props}
     >
@@ -53,7 +79,7 @@ function ToggleGroup({
         {children}
       </ToggleGroupContext.Provider>
     </ToggleGroupPrimitive>
-  )
+  );
 }
 
 function ToggleGroupItem({
@@ -61,12 +87,20 @@ function ToggleGroupItem({
   children,
   variant = "default",
   size = "default",
+  value,
+  disabled,
   ...props
-}: TogglePrimitive.Props & VariantProps<typeof toggleVariants>) {
-  const context = React.useContext(ToggleGroupContext)
+}: ToggleButtonProps & {
+  value?: string;
+  disabled?: boolean;
+  tabIndex?: number;
+} & VariantProps<typeof toggleVariants>) {
+  const context = React.useContext(ToggleGroupContext);
 
   return (
     <TogglePrimitive
+      id={value}
+      isDisabled={disabled || props.isDisabled}
       data-slot="toggle-group-item"
       data-variant={context.variant || variant}
       data-size={context.size || size}
@@ -77,13 +111,13 @@ function ToggleGroupItem({
           variant: context.variant || variant,
           size: context.size || size,
         }),
-        className
+        className,
       )}
       {...props}
     >
       {children}
     </TogglePrimitive>
-  )
+  );
 }
 
-export { ToggleGroup, ToggleGroupItem }
+export { ToggleGroup, ToggleGroupItem };

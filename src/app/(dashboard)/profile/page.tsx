@@ -49,7 +49,7 @@ export default async function ProfilePage() {
               nameClassName="font-heading text-xl leading-tight font-semibold sm:text-2xl"
             />
             </Link>
-            <Button nativeButton={false} render={<Link href={routes.profileEdit} />} className="h-11 px-5">
+            <Button render={<Link href={routes.profileEdit} />} className="h-11 px-5">
               <Pencil aria-hidden="true" /> Edit profile
             </Button>
           </div>

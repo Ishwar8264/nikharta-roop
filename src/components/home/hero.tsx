@@ -48,8 +48,7 @@ export function Hero() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Button
               render={<Link href={routes.salons} />}
-              nativeButton={false}
-              size="lg"
+                size="lg"
             >
               {hero.primaryCta.label}
               <ArrowRight className="ml-1 h-4 w-4" />
@@ -57,8 +56,7 @@ export function Hero() {
 
             <Button
               render={<Link href={hero.secondaryCta.href} />}
-              nativeButton={false}
-              variant="outline"
+                variant="outline"
               size="lg"
             >
               {hero.secondaryCta.label}

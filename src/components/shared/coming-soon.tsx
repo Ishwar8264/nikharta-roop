@@ -91,8 +91,7 @@ export function ComingSoon({
             <Button
               variant="outline"
               render={<Link href={backHref} />}
-              nativeButton={false}
-            >
+              >
               <ArrowLeft aria-hidden="true" data-icon="inline-start" />
               {backLabel}
             </Button>

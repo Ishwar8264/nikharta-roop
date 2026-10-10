@@ -165,16 +165,14 @@ function MissingEmail() {
       <div className="flex gap-2">
         <Button
           render={<Link href={routes.login} />}
-          nativeButton={false}
-          variant="outline"
+            variant="outline"
           className="flex-1"
         >
           Sign in
         </Button>
         <Button
           render={<Link href={routes.register} />}
-          nativeButton={false}
-          className="flex-1"
+            className="flex-1"
         >
           Create account
         </Button>

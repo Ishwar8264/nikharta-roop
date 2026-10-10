@@ -94,8 +94,7 @@ export function VerificationBanner({
           variant="outline"
           size="sm"
           render={<Link href={href} />}
-          nativeButton={false}
-        >
+          >
           {config.actionLabel}
           <ArrowRight aria-hidden="true" data-icon="inline-end" />
         </Button>

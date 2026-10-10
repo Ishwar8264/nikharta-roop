@@ -72,7 +72,8 @@ export const ToolbarSection: React.FC<ToolbarSectionProps> = ({
     (action: FormatAction) => (
       <DropdownMenuItem
         key={action.label}
-        onClick={() => action.action(editor)}
+        textValue={action.label}
+        onAction={() => action.action(editor)}
         disabled={!action.canExecute(editor)}
         className={cn("flex flex-row items-center justify-between gap-4", {
           "bg-accent": action.isActive(editor),

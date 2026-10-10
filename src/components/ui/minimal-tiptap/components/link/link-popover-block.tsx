@@ -10,7 +10,7 @@ import {
 interface LinkPopoverBlockProps {
   url: string
   onClear: () => void
-  onEdit: (e: React.MouseEvent<HTMLButtonElement>) => void
+  onEdit: (e: React.MouseEvent) => void
 }
 
 export const LinkPopoverBlock: React.FC<LinkPopoverBlockProps> = ({
@@ -21,7 +21,7 @@ export const LinkPopoverBlock: React.FC<LinkPopoverBlockProps> = ({
   const [copyTitle, setCopyTitle] = React.useState<string>("Copy")
 
   const handleCopy = React.useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (e: React.MouseEvent) => {
       e.preventDefault()
       navigator.clipboard
         .writeText(url)

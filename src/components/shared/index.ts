@@ -4,6 +4,8 @@ export type { FilterChipOption } from "./filter-chips";
 export { FormHeader } from "./form-header";
 export { Pagination } from "./pagination";
 export { SearchInput } from "./search-input";
+export { SelectField } from "./select-field";
+export type { SelectFieldProps, SelectFieldOption } from "./select-field";
 export { SharedDialogContent } from "./shared-dialog-content";
 export type { SharedDialogContentProps } from "./shared-dialog-content";
 export { SlugField } from "./slug-field";
