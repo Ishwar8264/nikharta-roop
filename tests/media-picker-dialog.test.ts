@@ -9,6 +9,9 @@ import { MediaPickerDialog } from "../src/features/media/components/media-picker
 vi.mock("../src/features/media/components/media-picker", () => ({
   MediaPicker: () => h("p", null, "Upload files here"),
 }));
+vi.mock("../src/features/media/components/upload-pane", () => ({
+  UploadPane: () => null,
+}));
 afterEach(cleanup);
 
 describe("media picker trigger", () => {

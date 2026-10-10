@@ -7,6 +7,8 @@ import {
 } from "@/server/modules/salon/salon.errors";
 import { salonRefParamSchema } from "@/server/modules/salon/salon.schema";
 import {
+  VerificationValidationError,
+  VerificationConflictError,
   SalonAlreadyVerifiedError,
   SalonVerificationSuspendedError,
 } from "@/server/modules/verification/verification.errors";
@@ -84,6 +86,10 @@ export async function POST(
       { status: 200 },
     );
   } catch (error) {
+    if (error instanceof VerificationValidationError)
+      return NextResponse.json({ message: error.message }, { status: 422 });
+    if (error instanceof VerificationConflictError)
+      return NextResponse.json({ message: error.message }, { status: 409 });
     if (error instanceof SalonNotFoundError) {
       return NextResponse.json({ message: error.message }, { status: 404 });
     }

@@ -30,6 +30,11 @@ export async function saveMediaAsset(
   input: CreateMediaAssetInput,
 ): Promise<PublicMediaAsset> {
   const folder = `nikharta-roop/${userId}`;
+  if (
+    input.purpose === "VERIFICATION" ||
+    input.attachedToType === "SALON_VERIFICATION"
+  )
+    throw new MediaAccessDeniedError();
   if (!input.publicId.startsWith(`${folder}/`)) {
     throw new MediaAccessDeniedError();
   }
@@ -71,6 +76,7 @@ export async function deleteMediaAsset(
   const asset = await findMediaAssetById(assetId);
   if (!asset) throw new MediaNotFoundError();
   if (asset.userId !== userId) throw new MediaAccessDeniedError();
+  if (asset.purpose === "VERIFICATION") throw new MediaAccessDeniedError();
 
   await softDeleteMediaAsset(assetId);
 

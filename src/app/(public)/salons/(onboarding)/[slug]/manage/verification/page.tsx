@@ -107,6 +107,7 @@ async function loadVerification(
     const row = await getSalonVerification(callerId, slug);
     return {
       status: row.status,
+      updatedAt: row.updatedAt.toISOString(),
       documents: row.documents,
       // Date → string: client components receive JSON-serialized props.
       submittedAt: row.submittedAt ? row.submittedAt.toISOString() : null,

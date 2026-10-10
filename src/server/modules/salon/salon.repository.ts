@@ -1,10 +1,7 @@
 import "server-only";
 
-import type {
-  Prisma,
-  SalonCategory,
-  SalonMemberRole,
-} from "@/generated/prisma/client";
+import type { SalonCategory, SalonMemberRole } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 import type { PublicSalonMember, SalonWithViewerRole } from "./salon.types";
@@ -295,10 +292,45 @@ export async function updateSalonById(
   id: string,
   data: Prisma.SalonUpdateInput,
 ) {
-  return prisma.salon.update({
-    where: { id },
-    data,
-    select: PUBLIC_SALON_SELECT,
+  return prisma.$transaction(async (transaction) => {
+    await transaction.$queryRaw`SELECT id FROM "Salon" WHERE id = ${id} FOR UPDATE`;
+    const current = await transaction.salon.findUnique({ where: { id } });
+    const identityFields = [
+      "name",
+      "address",
+      "city",
+      "state",
+      "zip",
+      "country",
+      "lat",
+      "lng",
+      "placeId",
+    ] as const;
+    const identityChanged =
+      current &&
+      identityFields.some(
+        (field) => data[field] !== undefined && data[field] !== current[field],
+      );
+    if (identityChanged) {
+      // Proofs describe a specific business and premises. Updating either invalidates that review.
+      await transaction.salonVerification.updateMany({
+        where: { salonId: id, status: { not: "SUSPENDED" } },
+        data: {
+          status: "PENDING",
+          submittedAt: null,
+          reviewedAt: null,
+          reviewedBy: null,
+          documents: Prisma.JsonNull,
+          reason:
+            "Salon identity or location changed. Submit updated verification documents before publication.",
+        },
+      });
+    }
+    return transaction.salon.update({
+      where: { id },
+      data: { ...data, ...(identityChanged ? { isActive: false } : {}) },
+      select: PUBLIC_SALON_SELECT,
+    });
   });
 }
 

@@ -32,7 +32,9 @@ vi.mock("../src/features/media/components/media-picker", () => ({
     onChange,
     onUploadComplete,
   }: {
-    onChange: (images: { url: string; publicId: string }[]) => void;
+    onChange: (
+      images: { url: string; publicId: string; mediaId: string }[],
+    ) => void;
     onUploadComplete: () => void;
   }) =>
     h(
@@ -40,13 +42,22 @@ vi.mock("../src/features/media/components/media-picker", () => ({
       {
         onClick: () => {
           onChange([
-            { url: "https://example.com/license.jpg", publicId: "license" },
+            {
+              url: "https://example.com/license.jpg",
+              publicId: "license",
+              mediaId: "2".repeat(48),
+            },
           ]);
           onUploadComplete();
         },
       },
       "Finish upload",
     ),
+}));
+
+vi.mock("../src/features/media/components/upload-pane", async () => ({
+  UploadPane: (await import("../src/features/media/components/media-picker"))
+    .MediaPicker,
 }));
 
 import { VerificationPanel } from "../src/features/verification/verification-panel";
@@ -57,6 +68,17 @@ const initial = {
   reviewedAt: null,
   reason: null,
 };
+
+const allDocuments = [
+  "PAN",
+  "Shop license",
+  "Salon photo 1",
+  "Salon photo 2",
+].map((kind, index) => ({
+  kind,
+  mediaId: String(index + 1).repeat(48),
+  url: `https://example.com/${index}.jpg`,
+}));
 
 beforeAll(() => {
   vi.stubGlobal(
@@ -80,23 +102,26 @@ describe("verification submission flow", () => {
     const user = userEvent.setup();
     render(
       h(VerificationPanel, {
-        salonSlug: "new-salon", salonName: "Glow Salon 5",
-        initial,
+        salonSlug: "new-salon",
+        salonName: "Glow Salon 5",
+        initial: {
+          ...initial,
+          documents: allDocuments.filter(
+            (document) => document.kind !== "Shop license",
+          ),
+        },
         canSubmit: true,
       }),
     );
-    expect(
-      (
-        screen.getByRole("button", {
-          name: "Review documents",
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true);
     const uploadButton = screen
       .getAllByRole("button", { name: "Upload document" })
       .find((element) => element.tagName === "BUTTON")!;
     expect((uploadButton as HTMLButtonElement).disabled).toBe(true);
-    await user.click(screen.getByRole("button", { name: /Document type/ }));
+    await user.click(
+      screen
+        .getAllByRole("button", { name: /Document type/ })
+        .find((element) => element.id === "upload-document-type")!,
+    );
     await user.click(screen.getByRole("option", { name: "Shop license" }));
     expect((uploadButton as HTMLButtonElement).disabled).toBe(false);
     await user.click(uploadButton);
@@ -112,7 +137,10 @@ describe("verification submission flow", () => {
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
     expect(mocks.submit).toHaveBeenCalledWith("new-salon", {
       documents: [
-        { kind: "Shop license", url: "https://example.com/license.jpg" },
+        ...allDocuments
+          .filter((document) => document.kind !== "Shop license")
+          .map(({ kind, mediaId }) => ({ kind, mediaId })),
+        { kind: "Shop license", mediaId: "2".repeat(48) },
       ],
     });
   });
@@ -121,7 +149,8 @@ describe("verification submission flow", () => {
     const user = userEvent.setup();
     const view = render(
       h(VerificationPanel, {
-        salonSlug: "new-salon", salonName: "Glow Salon 5",
+        salonSlug: "new-salon",
+        salonName: "Glow Salon 5",
         initial,
         canSubmit: true,
       }),
@@ -130,7 +159,8 @@ describe("verification submission flow", () => {
     expect(mocks.push).toHaveBeenCalledWith("/salons/new-salon/manage");
     view.rerender(
       h(VerificationPanel, {
-        salonSlug: "new-salon", salonName: "Glow Salon 5",
+        salonSlug: "new-salon",
+        salonName: "Glow Salon 5",
         initial,
         canSubmit: false,
       }),
@@ -144,10 +174,11 @@ describe("verification submission flow", () => {
     const user = userEvent.setup();
     render(
       h(VerificationPanel, {
-        salonSlug: "new-salon", salonName: "Glow Salon 5",
+        salonSlug: "new-salon",
+        salonName: "Glow Salon 5",
         initial: {
           ...initial,
-          documents: [{ kind: "PAN", url: "https://example.com/pan.jpg" }],
+          documents: [allDocuments[0]],
         },
         canSubmit: true,
       }),
@@ -178,10 +209,11 @@ describe("verification submission flow", () => {
     mocks.submit.mockRejectedValueOnce(new Error("Network error"));
     render(
       h(VerificationPanel, {
-        salonSlug: "new-salon", salonName: "Glow Salon 5",
+        salonSlug: "new-salon",
+        salonName: "Glow Salon 5",
         initial: {
           ...initial,
-          documents: [{ kind: "PAN", url: "https://example.com/pan.jpg" }],
+          documents: allDocuments,
         },
         canSubmit: true,
       }),

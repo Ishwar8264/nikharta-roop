@@ -32,15 +32,10 @@ import { Label } from "@/components/ui/label";
 
 import { submitVerificationApi } from "./api";
 import type { SalonVerification, VerificationStatus } from "./api";
+import { REQUIRED_DOCUMENT_KINDS, VERIFICATION_DOCUMENT_KINDS } from "./policy";
 
 /** Common Indian salon KYC document kinds the picker offers. */
-const DOCUMENT_KINDS = [
-  "Shop license",
-  "PAN",
-  "GST certificate",
-  "Salon photo 1",
-  "Salon photo 2",
-] as const;
+const DOCUMENT_KINDS = VERIFICATION_DOCUMENT_KINDS;
 
 const DOCUMENT_GUIDANCE: Record<string, string> = {
   "Shop license": "A clear photo of your shop or business license.",
@@ -60,6 +55,7 @@ interface VerificationPanelProps {
 }
 
 interface DraftDocument {
+  mediaId?: string;
   /** Local id so React keys stay stable during edit/delete. */
   tempId: string;
   kind: string;
@@ -121,6 +117,7 @@ export function VerificationPanel({
             ? crypto.randomUUID()
             : `doc-${prev.length}-${Date.now()}`,
         kind,
+        mediaId: image.mediaId,
         url: image.url,
       },
     ]);
@@ -129,7 +126,9 @@ export function VerificationPanel({
   function replaceDocument(tempId: string, image: UploadedImage) {
     setDocuments((prev) =>
       prev.map((doc) =>
-        doc.tempId === tempId ? { ...doc, url: image.url } : doc,
+        doc.tempId === tempId
+          ? { ...doc, url: image.url, mediaId: image.mediaId }
+          : doc,
       ),
     );
   }
@@ -148,20 +147,23 @@ export function VerificationPanel({
   function validate(): string | null {
     if (documents.length === 0) return "Add at least one document to submit.";
     for (const doc of documents) {
+      if (!doc.mediaId)
+        return "Replace older documents with private verification uploads before submitting.";
       const trimmedKind = doc.kind.trim();
       if (!trimmedKind)
         return "Choose a type for each document before continuing.";
       if (trimmedKind.length > 50)
         return "Document kinds must be 50 characters or fewer.";
       if (!doc.url) return "Every document needs an uploaded file.";
-      try {
-        // Mirrors the zod url() rule on the server schema.
-        new URL(doc.url);
-      } catch {
-        return "One of the document URLs is invalid.";
-      }
     }
     if (documents.length > 20) return "At most 20 documents are allowed.";
+    const missing = REQUIRED_DOCUMENT_KINDS.filter(
+      (kind) => !documents.some((doc) => doc.kind === kind),
+    );
+    if (missing.length)
+      return `Add the required documents: ${missing.join(", ")}.`;
+    if (new Set(documents.map((doc) => doc.mediaId)).size !== documents.length)
+      return "Each document must use a different uploaded file.";
     return null;
   }
 
@@ -179,7 +181,7 @@ export function VerificationPanel({
       await submitVerificationApi(salonSlug, {
         documents: documents.map((doc) => ({
           kind: doc.kind.trim(),
-          url: doc.url,
+          mediaId: doc.mediaId!,
         })),
       });
       toast.success("Documents submitted. We'll review within 1–2 days.");
@@ -247,6 +249,7 @@ export function VerificationPanel({
 
             {step === 1 ? (
               <StepDocuments
+                salonSlug={salonSlug}
                 documents={documents}
                 fieldErrors={fieldErrors}
                 onAdd={addDocument}
@@ -381,18 +384,23 @@ function StatusBanner({
                 id="verification-thank-you"
                 className="flex items-start gap-2 font-heading text-lg font-semibold tracking-tight text-foreground sm:text-xl"
               >
-                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+                <CheckCircle2
+                  className="mt-0.5 size-5 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
                 Thank you for choosing Nikharta Roop!
               </h2>
               <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
-                We&apos;ve received your documents and we&apos;re reviewing your salon.
-                You&apos;re one step closer to welcoming new customers.
+                We&apos;ve received your documents and we&apos;re reviewing your
+                salon. You&apos;re one step closer to welcoming new customers.
               </p>
             </div>
           </div>
           <div className="grid gap-4 border-t border-primary/10 bg-background/30 px-5 py-4 sm:grid-cols-2 sm:px-7">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">What happens next?</p>
+              <p className="text-sm font-medium text-foreground">
+                What happens next?
+              </p>
               <p className="text-xs leading-relaxed text-muted-foreground">
                 Your salon will be visible to customers after approval.
               </p>
@@ -411,8 +419,11 @@ function StatusBanner({
       <Banner
         tone="neutral"
         icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />}
-        title="Salon created"
-        body="Submit your documents for approval. Your salon will be visible to customers after approval."
+        title={reason ? "Verification required" : "Salon created"}
+        body={
+          reason ||
+          "Submit your documents for approval. Your salon will be visible to customers after approval."
+        }
       />
     );
   }
@@ -584,6 +595,7 @@ function StepDot({
 /* -------------------------------------------------------------------------- */
 
 interface StepDocumentsProps {
+  salonSlug: string;
   documents: DraftDocument[];
   fieldErrors: Record<string, string>;
   disabled: boolean;
@@ -594,6 +606,7 @@ interface StepDocumentsProps {
 }
 
 function StepDocuments({
+  salonSlug,
   documents,
   fieldErrors,
   disabled,
@@ -606,6 +619,7 @@ function StepDocuments({
   const uploadDisabled = disabled || !selectedKind || documents.length >= 20;
   const picker = (
     <MediaPickerDialog
+      verificationSalonSlug={salonSlug}
       title={
         selectedKind
           ? `Upload ${selectedKind.toLowerCase()}`
@@ -636,6 +650,11 @@ function StepDocuments({
 
   return (
     <div className="space-y-4">
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Required: PAN, applicable shop registration or licence, entrance photo
+        and interior photo. GST is optional. Documents are private and reviewed
+        before publication.
+      </p>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <SelectField
           id="upload-document-type"
@@ -697,10 +716,11 @@ function StepDocuments({
               </div>
               <div className="flex items-center gap-2">
                 <MediaPickerDialog
+                  verificationSalonSlug={salonSlug}
                   title="Replace document"
                   disabled={disabled}
                   description="Pick a new file to replace this document."
-                  value={[{ url: doc.url, publicId: doc.url }]}
+                  value={[]}
                   onChange={(next) => {
                     const first = next[0];
                     if (first) onReplace(doc.tempId, first);
@@ -743,11 +763,14 @@ function StepDocuments({
 
 /** Compact preview for the document list and submission review. */
 function DocumentThumb({ url, alt }: { url: string; alt: string }) {
-  const isImage = /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url);
+  const isImage =
+    url.startsWith("/api/v1/salons/") ||
+    /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url);
   return (
     <div className="relative size-16 shrink-0 overflow-hidden rounded-lg border bg-muted">
       {isImage ? (
         <Image
+          unoptimized
           src={url}
           alt={alt}
           fill
@@ -829,7 +852,13 @@ function StepReview({ documents, onEdit, disabled }: StepReviewProps) {
 function seedDrafts(initial: SalonVerification): DraftDocument[] {
   if (!initial.documents) return [];
   if (!Array.isArray(initial.documents)) return [];
-  return (initial.documents as Array<{ kind?: unknown; url?: unknown }>)
+  return (
+    initial.documents as Array<{
+      kind?: unknown;
+      url?: unknown;
+      mediaId?: unknown;
+    }>
+  )
     .filter(
       (entry): entry is { kind: string; url: string } =>
         Boolean(entry) &&
@@ -838,6 +867,10 @@ function seedDrafts(initial: SalonVerification): DraftDocument[] {
         typeof entry.url === "string",
     )
     .map((entry, index) => ({
+      mediaId:
+        "mediaId" in entry && typeof entry.mediaId === "string"
+          ? entry.mediaId
+          : undefined,
       tempId: `seed-${index}-${entry.url}`,
       kind: entry.kind,
       url: entry.url,

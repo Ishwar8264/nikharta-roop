@@ -82,6 +82,7 @@ function QueueRow({ row }: QueueRowProps) {
   // expects JSON-serialized (string) dates. Convert at the boundary.
   const verification: SalonVerification = {
     status: row.status,
+    updatedAt: row.updatedAt.toISOString(),
     documents: row.documents,
     submittedAt: row.submittedAt ? row.submittedAt.toISOString() : null,
     reviewedAt: row.reviewedAt ? row.reviewedAt.toISOString() : null,
@@ -100,11 +101,7 @@ function QueueRow({ row }: QueueRowProps) {
         </p>
       </div>
       <AdminVerificationRow
-        salon={{
-          slug: row.salon.slug,
-          name: row.salon.name,
-          city: row.salon.city,
-        }}
+        salon={row.salon}
         verification={verification}
       />
     </li>

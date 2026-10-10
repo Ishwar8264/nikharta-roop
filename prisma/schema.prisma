@@ -15,6 +15,7 @@ enum PlatformRole {
 
 // ---------- ENUMS ----------
 enum MediaPurpose {
+  VERIFICATION
   GENERAL
   SALON
   PRODUCT
@@ -344,8 +345,24 @@ model SalonVerification {
   reason      String? // rejection reason
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
+  reviews     SalonVerificationReview[]
 
   @@index([status])
+}
+
+// Immutable decision history, including the exact submission and official-source evidence reviewed.
+model SalonVerificationReview {
+  id             String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  verificationId String
+  verification   SalonVerification @relation(fields: [verificationId], references: [id])
+  reviewerId     String
+  status         SalonVerificationStatus
+  reason         String?
+  submission     Json
+  evidence       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([verificationId, createdAt])
 }
 
 // Per-salon booking rules — naya rule add karna ho to column hi add hoga,

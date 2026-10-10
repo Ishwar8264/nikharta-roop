@@ -16,6 +16,7 @@ export interface MediaAsset {
 }
 
 export interface UploadedImage {
+  mediaId?: string;
   url: string;
   publicId: string;
   width?: number;
@@ -35,6 +36,9 @@ export interface UploadTask {
 }
 
 export interface UploadSignature {
+  type?: "authenticated";
+  overwrite?: false;
+  allowedFormats?: string;
   cloudName: string;
   apiKey: string;
   timestamp: number;
