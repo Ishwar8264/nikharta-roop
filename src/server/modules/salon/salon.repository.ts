@@ -166,12 +166,14 @@ export async function findSalonById(id: string) {
  * single join avoids the N+1 pattern of "fetch salon, then fetch membership"
  * and keeps the authorization check atomic with the data fetch.
  */
-export async function findSalonForViewer(input: {
-  salonId: string;
-  userId: string;
-}) {
+export async function findSalonForViewer(
+  input: ({ salonId: string } | { slug: string }) & { userId: string },
+) {
   const salon = await prisma.salon.findFirst({
-    where: { id: input.salonId, deletedAt: null },
+    where: {
+      ...("salonId" in input ? { id: input.salonId } : { slug: input.slug }),
+      deletedAt: null,
+    },
     select: {
       ...PUBLIC_SALON_SELECT,
       members: {

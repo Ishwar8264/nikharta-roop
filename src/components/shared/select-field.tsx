@@ -61,7 +61,7 @@ export function SelectField<Value extends string>({
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      <Label id={`${id}-label`} htmlFor={id}>
+      <Label id={`${id}-label`} htmlFor={id} required={selectProps.isRequired}>
         {label}
       </Label>
       <Select<Value>

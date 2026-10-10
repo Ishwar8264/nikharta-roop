@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import { routes } from "@/config/routes";
@@ -60,21 +61,24 @@ export default async function ManageVerificationPage({ params }: Props) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <header>
+    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
+      <header className="space-y-4">
         <Link
-          href={routes.salonDetail(slug)}
-          className="text-sm text-primary underline"
+          href={routes.salonManage(slug)}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          Public salon page
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Back to salon management
         </Link>
-        <h1 className="mt-3 font-heading text-3xl font-semibold">
-          Verification
-        </h1>
-        <p className="mt-2 text-muted-foreground">{salon.name}</p>
+        <div className="space-y-1">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+            Verify your salon
+          </h1>
+          <p className="text-sm text-muted-foreground">{salon.name}</p>
+        </div>
       </header>
 
-      <div className="mt-8">
+      <div>
         <VerificationPanel
           salonSlug={slug}
           initial={verification}

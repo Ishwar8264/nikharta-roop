@@ -99,18 +99,12 @@ export async function findOwnedSalonSummary(
   return findOwnedSalonSummaryRepo(userId);
 }
 
-/** Loads a salon only when the caller can manage its catalogue. */
+/** Allows owners and managers to set up inactive salons before approval. */
 export async function getSalonForServiceManagement(
   slug: string,
   userId: string,
 ): Promise<SalonWithViewerRole> {
-  const publicSalon = await findSalonBySlug(slug);
-  if (!publicSalon) throw new SalonNotFoundError();
-
-  const salon = await findSalonForViewer({
-    salonId: publicSalon.id,
-    userId,
-  });
+  const salon = await findSalonForViewer({ slug, userId });
   if (!salon) throw new SalonNotFoundError();
 
   assertRoleAtLeast(salon.viewerRole, "MANAGER");

@@ -16,27 +16,26 @@ interface SalonLayoutProps {
 export default async function SalonLayout({ children, params }: SalonLayoutProps) {
   const { slug } = await params;
 
-  let salon;
-  let user;
-  try {
-    [salon, user] = await Promise.all([
-      getSalonSummaryBySlug(slug),
-      getSession(),
-    ]);
-  } catch (error) {
-    if (error instanceof SalonNotFoundError) notFound();
-    throw error;
-  }
+  const [publicSalon, user] = await Promise.all([
+    getSalonSummaryBySlug(slug).catch((error) => {
+      if (error instanceof SalonNotFoundError) return null;
+      throw error;
+    }),
+    getSession(),
+  ]);
 
   const membership = user
-    ? await findSalonForViewer({ salonId: salon.id, userId: user.id })
+    ? await findSalonForViewer({ slug, userId: user.id })
     : null;
   const canManage = membership?.viewerRole === "OWNER" || membership?.viewerRole === "MANAGER";
+  // The layout also wraps onboarding pages for salons that are not public yet.
+  const salon = publicSalon ?? (canManage ? membership : null);
+  if (!salon) notFound();
 
   return (
     <SalonDirectoryLayout
       isSignedIn={Boolean(user)}
-      salon={{ name: salon.name, slug: salon.slug, canManage }}
+      salon={{ name: salon.name, slug: salon.slug, canManage, isPublic: Boolean(publicSalon) }}
     >
       {children}
     </SalonDirectoryLayout>

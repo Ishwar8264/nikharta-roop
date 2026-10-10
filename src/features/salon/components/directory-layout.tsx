@@ -1,4 +1,4 @@
-import { Calendar, Gift, Info, Package, Plus, Scissors, Settings, Store } from "lucide-react";
+import { Calendar, Gift, Info, Package, Plus, Scissors, Settings, ShieldCheck, Store } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/shared/side-nav";
@@ -7,7 +7,7 @@ import { routes } from "@/config/routes";
 interface SalonDirectoryLayoutProps {
   children: ReactNode;
   isSignedIn: boolean;
-  salon?: { name: string; slug: string; canManage: boolean };
+  salon?: { name: string; slug: string; canManage: boolean; isPublic?: boolean };
 }
 
 /** Shared salon navigation shell. Each page resolves data and permissions on the server. */
@@ -23,11 +23,17 @@ export function SalonDirectoryLayout({ children, isSignedIn, salon }: SalonDirec
             <div className="space-y-1 px-3 py-1">
               <h2 className="font-heading text-lg font-semibold">{salon?.name ?? "Salons"}</h2>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                {salon ? "Explore services and book your visit." : "Find a salon or add your own."}
+                {salon ? salon.isPublic === false ? "Complete verification to publish your salon." : "Explore services and book your visit." : "Find a salon or add your own."}
               </p>
             </div>
           }
           items={salon ? [
+              ...(salon.isPublic === false ? [{
+                label: "Verification",
+                description: "Submit documents and track approval.",
+                href: routes.salonVerification(salon.slug),
+                icon: <ShieldCheck className="mt-0.5 size-4" />,
+              }] : [
               {
                 label: "Overview",
                 description: "About this salon.",
@@ -59,6 +65,7 @@ export function SalonDirectoryLayout({ children, isSignedIn, salon }: SalonDirec
                 href: routes.salonBooking(salon.slug),
                 icon: <Calendar className="mt-0.5 size-4" />,
               },
+              ]),
               ...(salon.canManage ? [{
                 label: "Manage salon",
                 description: "Update your salon details.",

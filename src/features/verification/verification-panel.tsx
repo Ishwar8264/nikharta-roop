@@ -9,13 +9,16 @@ import {
   Mail,
   Plus,
   Trash2,
-  X,
+  Pencil,
+  ShieldCheck,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { routes } from "@/config/routes";
+import { SelectField } from "@/components/shared/select-field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import { ApiError } from "@/lib/api/backend.client";
 import { siteConfig } from "@/config/site";
@@ -26,13 +29,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { submitVerificationApi } from "./api";
 import type { SalonVerification, VerificationStatus } from "./api";
@@ -132,7 +128,8 @@ export function VerificationPanel({
     if (documents.length === 0) return "Add at least one document to submit.";
     for (const doc of documents) {
       const trimmedKind = doc.kind.trim();
-      if (!trimmedKind) return "Every document needs a kind label.";
+      if (!trimmedKind)
+        return "Choose a type for each document before continuing.";
       if (trimmedKind.length > 50)
         return "Document kinds must be 50 characters or fewer.";
       if (!doc.url) return "Every document needs an uploaded file.";
@@ -196,22 +193,26 @@ export function VerificationPanel({
     <div className="space-y-6">
       <StatusBanner
         status={status}
+        hasSubmitted={!isOnboarding}
         reason={initial.reason}
         onResubmit={canSubmit && status === "REJECTED" ? toggleForm : undefined}
       />
 
       {showForm && canSubmit ? (
-        <Card>
-          <CardContent className="space-y-5">
+        <Card
+          className="gap-0 overflow-visible rounded-xl py-0"
+          data-form-rounded="true"
+        >
+          <CardContent className="space-y-6 px-5 py-5 sm:px-6 sm:py-6">
             <div className="space-y-1">
-              <h2 className="font-heading text-xl font-semibold">
+              <h2 className="font-heading text-lg font-semibold">
                 {isOnboarding
-                  ? "Submit your verification documents"
-                  : "Resubmit your verification documents"}
+                  ? "Verification documents"
+                  : "Update verification documents"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Upload your shop license, ID, and salon photos. We review most
-                submissions within 1–2 business days.
+                Add clear photos of your shop license, ID or salon, then review
+                your submission.
               </p>
             </div>
 
@@ -237,13 +238,14 @@ export function VerificationPanel({
               />
             )}
           </CardContent>
-          <CardFooter className="flex flex-wrap justify-end gap-3 px-5 py-4 sm:px-8">
+          <CardFooter className="flex flex-col-reverse items-stretch gap-3 rounded-b-xl border-t bg-muted/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
             {step === 1 ? (
               <>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={toggleForm}
+                  onClick={() => router.push(routes.salonManage(salonSlug))}
+                  className="h-10"
                   disabled={busy}
                 >
                   Cancel
@@ -259,6 +261,7 @@ export function VerificationPanel({
                     setFormError(null);
                     setStep(2);
                   }}
+                  className="h-10"
                   disabled={busy || documents.length === 0}
                 >
                   Review documents
@@ -270,6 +273,7 @@ export function VerificationPanel({
                   type="button"
                   variant="outline"
                   onClick={() => setStep(1)}
+                  className="h-10"
                   disabled={busy}
                 >
                   Back
@@ -277,6 +281,7 @@ export function VerificationPanel({
                 <Button
                   type="button"
                   onClick={submit}
+                  className="h-10"
                   disabled={busy}
                 >
                   {busy ? "Submitting…" : "Submit for review"}
@@ -302,6 +307,7 @@ export function VerificationPanel({
 
 interface StatusBannerProps {
   status: VerificationStatus;
+  hasSubmitted: boolean;
   reason: string | null;
   onResubmit?: () => void;
 }
@@ -310,7 +316,12 @@ interface StatusBannerProps {
  * Coloured banner keyed off the verification status. Each variant carries one
  * next-action so the owner always knows what to do next.
  */
-function StatusBanner({ status, reason, onResubmit }: StatusBannerProps) {
+function StatusBanner({
+  status,
+  hasSubmitted,
+  reason,
+  onResubmit,
+}: StatusBannerProps) {
   if (status === "VERIFIED") {
     return (
       <Banner
@@ -325,10 +336,22 @@ function StatusBanner({ status, reason, onResubmit }: StatusBannerProps) {
   if (status === "PENDING") {
     return (
       <Banner
-        tone="warning"
-        icon={<Clock className="h-5 w-5" aria-hidden="true" />}
-        title="We're reviewing your documents"
-        body="Usually takes 1–2 days. You'll get a notification once a decision is made."
+        tone={hasSubmitted ? "warning" : "neutral"}
+        icon={
+          hasSubmitted ? (
+            <Clock className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+          )
+        }
+        title={
+          hasSubmitted ? "We're reviewing your documents" : "Salon created"
+        }
+        body={
+          hasSubmitted
+            ? "Usually takes 1–2 days. You'll get a notification once a decision is made."
+            : "Submit your documents for approval. Your salon will be visible to customers after approval."
+        }
       />
     );
   }
@@ -393,7 +416,7 @@ function StatusBanner({ status, reason, onResubmit }: StatusBannerProps) {
 }
 
 interface BannerProps {
-  tone: "success" | "warning" | "destructive";
+  tone: "success" | "warning" | "destructive" | "neutral";
   icon: React.ReactNode;
   title: string;
   body: React.ReactNode;
@@ -403,14 +426,16 @@ interface BannerProps {
 function Banner({ tone, icon, title, body, action }: BannerProps) {
   return (
     <div
+      role="status"
       className={cn(
-        "flex flex-col gap-3 rounded-xl border border-l-4 p-4 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between",
+        tone === "neutral" && "border-border bg-muted/20",
         tone === "success" &&
-          "border-success/30 border-l-success bg-success/10 text-success-foreground",
+          "border-success/30 bg-success/10 text-success-foreground",
         tone === "warning" &&
-          "border-warning/30 border-l-warning bg-warning/10 text-warning-foreground",
+          "border-warning/30 bg-warning/10 text-warning-foreground",
         tone === "destructive" &&
-          "border-destructive/30 border-l-destructive bg-destructive/10 text-destructive",
+          "border-destructive/30 bg-destructive/10 text-destructive",
       )}
     >
       <div className="flex items-start gap-3">
@@ -440,22 +465,54 @@ function Banner({ tone, icon, title, body, action }: BannerProps) {
 
 function StepIndicator({ step }: { step: 1 | 2 }) {
   return (
-    <ol className="flex items-center gap-2 text-xs text-muted-foreground">
-      <StepDot label="1. Documents" active={step === 1} />
-      <span aria-hidden="true" className="h-px w-6 bg-border" />
-      <StepDot label="2. Review & submit" active={step === 2} />
+    <ol
+      aria-label="Verification progress"
+      className="grid grid-cols-2 gap-3 border-b pb-5"
+    >
+      <StepDot
+        number={1}
+        label="Documents"
+        active={step === 1}
+        completed={step === 2}
+      />
+      <StepDot number={2} label="Review and submit" active={step === 2} />
     </ol>
   );
 }
 
-function StepDot({ label, active }: { label: string; active: boolean }) {
+function StepDot({
+  number,
+  label,
+  active,
+  completed,
+}: {
+  number: number;
+  label: string;
+  active: boolean;
+  completed?: boolean;
+}) {
   return (
     <li
+      aria-current={active ? "step" : undefined}
       className={cn(
-        "rounded-full px-2.5 py-1 font-medium",
-        active ? "bg-primary text-primary-foreground" : "bg-muted",
+        "flex items-center gap-2 text-xs sm:text-sm",
+        active ? "font-medium text-foreground" : "text-muted-foreground",
       )}
     >
+      <span
+        className={cn(
+          "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-medium",
+          active || completed
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground",
+        )}
+      >
+        {completed ? (
+          <CheckCircle2 className="size-4" aria-label="Completed" />
+        ) : (
+          number
+        )}
+      </span>
       {label}
     </li>
   );
@@ -484,49 +541,58 @@ function StepDocuments({
   onRemove,
   onKindChange,
 }: StepDocumentsProps) {
+  const picker = (
+    <MediaPickerDialog
+      title="Add verification documents"
+      description="Upload clear photos of your shop license, ID or salon."
+      value={[]}
+      onChange={(next) => {
+        for (const image of next) onAdd(image);
+      }}
+      mode="multiple"
+      max={20 - documents.length}
+      maxSizeMB={5}
+      disabled={disabled || documents.length >= 20}
+      triggerClassName={documents.length > 0 ? "w-auto" : undefined}
+      trigger={
+        documents.length === 0 ? (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={disabled}
+            className="h-auto min-h-44 w-full flex-col gap-3 whitespace-normal rounded-lg border border-dashed border-border bg-muted/20 px-4 py-6 text-center hover:border-primary/40 hover:bg-muted/40"
+          >
+            <FileText
+              className="size-7 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span className="text-sm font-medium">Add documents</span>
+            <span className="text-xs font-normal text-muted-foreground">
+              JPG, PNG, WebP or AVIF · Up to 5 MB per image
+            </span>
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled || documents.length >= 20}
+            className="h-9 gap-1.5"
+          >
+            <Plus className="size-4" aria-hidden="true" /> Add documents
+          </Button>
+        )
+      }
+    />
+  );
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <Label>Documents</Label>
-          <p className="text-xs text-muted-foreground">
-            {documents.length} of 20 added. At least one required.
-          </p>
-        </div>
-        <MediaPickerDialog
-          title="Add verification documents"
-          description="Upload your shop license, ID, and salon photos."
-          value={[]}
-          onChange={(next) => {
-            for (const image of next) onAdd(image);
-          }}
-          mode="multiple"
-          max={20}
-          trigger={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={disabled || documents.length >= 20}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Add document
-            </Button>
-          }
-        />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-sm font-medium">Uploaded documents</h3>
+        {documents.length > 0 && picker}
       </div>
-
       {documents.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 text-center">
-          <FileText
-            className="mx-auto h-8 w-8 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <p className="mt-2 text-sm text-muted-foreground">
-            Add at least one document to continue.
-          </p>
-        </div>
+        picker
       ) : (
         <ul className="space-y-3">
           {documents.map((doc, index) => (
@@ -534,40 +600,24 @@ function StepDocuments({
               key={doc.tempId}
               className="flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center"
             >
-              <DocumentThumb
-                url={doc.url}
-                alt={`Document ${index + 1}`}
-                onRemove={disabled ? undefined : () => onRemove(doc.tempId)}
-                removeLabel={`Remove document ${index + 1}`}
-              />
+              <DocumentThumb url={doc.url} alt={`Document ${index + 1}`} />
               <div className="flex-1 space-y-1.5">
-                <Label htmlFor={`kind-${doc.tempId}`}>Document kind</Label>
-                <Select
-                  value={doc.kind}
+                <SelectField
+                  id={`kind-${doc.tempId}`}
+                  label="Document type"
+                  isRequired
+                  options={DOCUMENT_KINDS.map((kind) => ({
+                    value: kind,
+                    label: kind,
+                  }))}
+                  value={doc.kind || null}
                   onValueChange={(value) =>
                     onKindChange(doc.tempId, value ?? "")
                   }
-                >
-                  <SelectTrigger
-                    id={`kind-${doc.tempId}`}
-                    className="w-full"
-                    disabled={disabled}
-                  >
-                    <SelectValue placeholder="Select a kind" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DOCUMENT_KINDS.map((kind) => (
-                      <SelectItem key={kind} value={kind}>
-                        {kind}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {fieldErrors[`documents.${index}.kind`] ? (
-                  <p className="text-xs text-destructive">
-                    {fieldErrors[`documents.${index}.kind`]}
-                  </p>
-                ) : null}
+                  placeholder="Choose a document type"
+                  disabled={disabled}
+                  error={fieldErrors[`documents.${index}.kind`]}
+                />
                 {fieldErrors[`documents.${index}.url`] ? (
                   <p className="text-xs text-destructive">
                     {fieldErrors[`documents.${index}.url`]}
@@ -577,6 +627,7 @@ function StepDocuments({
               <div className="flex items-center gap-2">
                 <MediaPickerDialog
                   title="Replace document"
+                  disabled={disabled}
                   description="Pick a new file to replace this document."
                   value={[{ url: doc.url, publicId: doc.url }]}
                   onChange={(next) => {
@@ -611,54 +662,33 @@ function StepDocuments({
           ))}
         </ul>
       )}
+      <p className="text-xs text-muted-foreground">
+        {documents.length}/20 documents · Add at least one document and choose
+        its type.
+      </p>
     </div>
   );
 }
 
-/** Square thumbnail for an uploaded document URL. Optional overlay remove
- *  button sits at the top-right corner so the thumbnail itself is the
- *  affordance — the dedicated "Replace"/trash row below remains for explicit
- *  flows. */
-function DocumentThumb({
-  url,
-  alt,
-  onRemove,
-  removeLabel = "Remove document",
-}: {
-  url: string;
-  alt: string;
-  onRemove?: () => void;
-  removeLabel?: string;
-}) {
+/** Compact preview for the document list and submission review. */
+function DocumentThumb({ url, alt }: { url: string; alt: string }) {
   const isImage = /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url);
   return (
-    <div className="relative h-16 w-16 shrink-0">
-      <div className="relative h-full w-full overflow-hidden rounded-lg border bg-muted">
-        {isImage ? (
-          <Image
-            src={url}
-            alt={alt}
-            fill
-            sizes="64px"
-            className="object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <FileText className="h-6 w-6" aria-hidden="true" />
-          </div>
-        )}
-      </div>
-      {onRemove ? (
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label={removeLabel}
-          className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-destructive shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <X className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-      ) : null}
+    <div className="relative size-16 shrink-0 overflow-hidden rounded-lg border bg-muted">
+      {isImage ? (
+        <Image
+          src={url}
+          alt={alt}
+          fill
+          sizes="64px"
+          className="object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <FileText className="size-6" aria-hidden="true" />
+        </div>
+      )}
     </div>
   );
 }
@@ -710,7 +740,7 @@ function StepReview({ documents, onEdit, disabled }: StepReviewProps) {
         disabled={disabled}
         className="gap-1"
       >
-        <X className="h-4 w-4" aria-hidden="true" />
+        <Pencil className="h-4 w-4" aria-hidden="true" />
         Edit documents
       </Button>
     </div>
