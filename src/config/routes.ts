@@ -86,6 +86,7 @@ export const routes = {
   favorites: "/favorites",
   loyalty: "/loyalty",
   profile: "/profile",
+  profileEdit: "/profile/edit",
   settings: "/settings",
   notifications: "/notifications",
   ai: "/ai",

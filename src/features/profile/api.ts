@@ -10,9 +10,9 @@
 
 import { api } from "@/lib/api/backend.client";
 
-import type { CurrentUserWire, UpdateProfileBody } from "./types";
+import type { UserProfile, UpdateProfileBody } from "./types";
 
-type MeResponse = { message: string; data: { user: CurrentUserWire } };
+type MeResponse = { message: string; data: { user: UserProfile } };
 
 /** Updates the authenticated user's editable profile fields. */
 export function updateProfileApi(body: UpdateProfileBody) {
