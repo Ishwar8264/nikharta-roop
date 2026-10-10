@@ -14,7 +14,7 @@ const initial: SalonVerification = {
 
 describe("verification onboarding messages", () => {
   it("asks a new owner to submit documents rather than claiming review has started", () => {
-    const html = renderToStaticMarkup(createElement(VerificationPanel, { salonSlug: "new-salon", initial, canSubmit: true }));
+    const html = renderToStaticMarkup(createElement(VerificationPanel, { salonSlug: "new-salon", salonName: "Glow Salon 5", initial, canSubmit: true }));
     expect(html).toContain("Salon created");
     expect(html).toContain("Submit your documents for approval.");
     expect(html).toContain("Verification documents");
@@ -22,7 +22,7 @@ describe("verification onboarding messages", () => {
   });
 
   it("shows the review status only after documents have been submitted", () => {
-    const html = renderToStaticMarkup(createElement(VerificationPanel, { salonSlug: "new-salon", initial: { ...initial, submittedAt: "2026-10-10T09:00:00.000Z" }, canSubmit: true }));
+    const html = renderToStaticMarkup(createElement(VerificationPanel, { salonSlug: "new-salon", salonName: "Glow Salon 5", initial: { ...initial, submittedAt: "2026-10-10T09:00:00.000Z" }, canSubmit: true }));
     expect(html).toContain("Thank you for choosing Nikharta Roop!");
     expect(html).toContain("Under review");
     expect(html).toContain("1–2 business days");

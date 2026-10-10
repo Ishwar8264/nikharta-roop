@@ -70,17 +70,12 @@ export default async function ManageVerificationPage({ params }: Props) {
           <ArrowLeft className="size-4" aria-hidden="true" />
           Back to salon management
         </Link>
-        <div className="space-y-1">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-            Verify your salon
-          </h1>
-          <p className="text-sm text-muted-foreground">{salon.name}</p>
-        </div>
       </header>
 
       <div>
         <VerificationPanel
           salonSlug={slug}
+          salonName={salon.name}
           initial={verification}
           canSubmit={salon.viewerRole === "OWNER"}
         />

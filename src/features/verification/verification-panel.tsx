@@ -53,6 +53,7 @@ const DOCUMENT_GUIDANCE: Record<string, string> = {
 
 interface VerificationPanelProps {
   salonSlug: string;
+  salonName: string;
   initial: SalonVerification;
   /** True only when the viewer is the salon's OWNER — only owners may submit. */
   canSubmit: boolean;
@@ -77,6 +78,7 @@ interface DraftDocument {
  */
 export function VerificationPanel({
   salonSlug,
+  salonName,
   initial,
   canSubmit,
 }: VerificationPanelProps) {
@@ -92,6 +94,16 @@ export function VerificationPanel({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const status = initial.status;
+  const heading = (
+    <div className="min-w-0 space-y-2">
+      <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+        Verify your salon
+      </h1>
+      <p className="break-words text-lg font-medium text-foreground sm:text-xl">
+        {salonName}
+      </p>
+    </div>
+  );
 
   function toggleForm() {
     setFormError(null);
@@ -200,7 +212,11 @@ export function VerificationPanel({
 
   return (
     <div className="space-y-6">
+      {status !== "PENDING" || isOnboarding ? (
+        <div className="rounded-xl border bg-card p-5 sm:p-6">{heading}</div>
+      ) : null}
       <StatusBanner
+        heading={heading}
         status={status}
         hasSubmitted={!isOnboarding}
         reason={initial.reason}
@@ -315,6 +331,7 @@ export function VerificationPanel({
 /* -------------------------------------------------------------------------- */
 
 interface StatusBannerProps {
+  heading: React.ReactNode;
   status: VerificationStatus;
   hasSubmitted: boolean;
   reason: string | null;
@@ -326,6 +343,7 @@ interface StatusBannerProps {
  * next-action so the owner always knows what to do next.
  */
 function StatusBanner({
+  heading,
   status,
   hasSubmitted,
   reason,
@@ -351,11 +369,9 @@ function StatusBanner({
           className="overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm"
         >
           <div className="space-y-5 p-5 sm:p-7">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20">
-                <CheckCircle2 className="size-6" aria-hidden="true" />
-              </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <div className="flex flex-col gap-4 border-b border-primary/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
+              {heading}
+              <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-warning/40 bg-warning px-3 py-1 text-xs font-medium text-warning-foreground">
                 <Clock className="size-3.5" aria-hidden="true" />
                 Under review
               </span>
@@ -363,8 +379,9 @@ function StatusBanner({
             <div className="space-y-2">
               <h2
                 id="verification-thank-you"
-                className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
+                className="flex items-start gap-2 font-heading text-lg font-semibold tracking-tight text-foreground sm:text-xl"
               >
+                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
                 Thank you for choosing Nikharta Roop!
               </h2>
               <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">

@@ -80,7 +80,7 @@ describe("verification submission flow", () => {
     const user = userEvent.setup();
     render(
       h(VerificationPanel, {
-        salonSlug: "new-salon",
+        salonSlug: "new-salon", salonName: "Glow Salon 5",
         initial,
         canSubmit: true,
       }),
@@ -121,7 +121,7 @@ describe("verification submission flow", () => {
     const user = userEvent.setup();
     const view = render(
       h(VerificationPanel, {
-        salonSlug: "new-salon",
+        salonSlug: "new-salon", salonName: "Glow Salon 5",
         initial,
         canSubmit: true,
       }),
@@ -130,7 +130,7 @@ describe("verification submission flow", () => {
     expect(mocks.push).toHaveBeenCalledWith("/salons/new-salon/manage");
     view.rerender(
       h(VerificationPanel, {
-        salonSlug: "new-salon",
+        salonSlug: "new-salon", salonName: "Glow Salon 5",
         initial,
         canSubmit: false,
       }),
@@ -144,7 +144,7 @@ describe("verification submission flow", () => {
     const user = userEvent.setup();
     render(
       h(VerificationPanel, {
-        salonSlug: "new-salon",
+        salonSlug: "new-salon", salonName: "Glow Salon 5",
         initial: {
           ...initial,
           documents: [{ kind: "PAN", url: "https://example.com/pan.jpg" }],
@@ -178,7 +178,7 @@ describe("verification submission flow", () => {
     mocks.submit.mockRejectedValueOnce(new Error("Network error"));
     render(
       h(VerificationPanel, {
-        salonSlug: "new-salon",
+        salonSlug: "new-salon", salonName: "Glow Salon 5",
         initial: {
           ...initial,
           documents: [{ kind: "PAN", url: "https://example.com/pan.jpg" }],
