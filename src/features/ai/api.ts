@@ -193,10 +193,16 @@ export async function sendMessageApi(
 
   const reader = chunkStream.getReader();
   let text = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (value && value.type === "text-delta") text += value.delta;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value.type === "error") throw new Error(value.errorText);
+      if (value.type === "abort") throw new Error("AI generation was interrupted. Please try again.");
+      if (value.type === "text-delta") text += value.delta;
+    }
+  } finally {
+    reader.releaseLock();
   }
   return text;
 }

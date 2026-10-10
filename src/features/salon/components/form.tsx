@@ -235,6 +235,8 @@ export function SalonForm() {
                 <div className="space-y-1.5">
                   <Label htmlFor="description">Description</Label>
                   <RichTextEditor
+                    variant="compact"
+                    aiContext={`Salon name: ${name || "Not provided"}. Summary: ${shortDescription || "Not provided"}.`}
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onOutputsChange={({ text, html, json }) => {
