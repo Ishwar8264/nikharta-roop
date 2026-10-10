@@ -106,6 +106,13 @@ export const updateProfileSchema = z
       .max(2048, "Avatar URL is too long")
       .nullable()
       .optional(),
+    coverImage: z
+      .string({ error: "Cover image must be a string" })
+      .trim()
+      .url("Cover image must be a valid URL")
+      .max(2048, "Cover image URL is too long")
+      .nullable()
+      .optional(),
     bio: z
       .string({ error: "Bio must be a string" })
       .trim()

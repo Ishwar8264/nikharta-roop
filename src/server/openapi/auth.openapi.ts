@@ -1225,6 +1225,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "email",
             "phone",
             "avatar",
+            "coverImage",
             "bio",
             "lat",
             "lng",
@@ -1242,6 +1243,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             email: { type: ["string", "null"], format: "email" },
             phone: { type: ["string", "null"] },
             avatar: { type: ["string", "null"], format: "uri" },
+            coverImage: { type: ["string", "null"], format: "uri" },
             bio: { type: ["string", "null"] },
             lat: { type: ["number", "null"], format: "float" },
             lng: { type: ["number", "null"], format: "float" },
@@ -1290,6 +1292,12 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               format: "uri",
               maxLength: 2048,
               example: "https://cdn.example.com/avatars/ishwar.png",
+            },
+            coverImage: {
+              type: ["string", "null"],
+              format: "uri",
+              maxLength: 2048,
+              description: "Profile cover image URL. Set to null to remove it.",
             },
             bio: {
               type: ["string", "null"],

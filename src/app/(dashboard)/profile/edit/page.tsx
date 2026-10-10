@@ -23,6 +23,7 @@ export default async function EditProfilePage() {
     email: user.email,
     phone: user.phone,
     avatar: user.avatar,
+    coverImage: user.coverImage,
     bio: user.bio,
     lat: user.lat,
     lng: user.lng,

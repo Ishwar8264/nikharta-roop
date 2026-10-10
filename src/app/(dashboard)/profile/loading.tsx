@@ -1,31 +1,19 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** Mirrors the saved profile and contact sidebar while the session loads. */
+/** Mirrors the cover, profile identity, and account details while loading. */
 export default function ProfileLoading() {
   return (
     <main className="w-full" aria-label="Loading profile" aria-busy="true">
-      <div className="space-y-3">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-10 w-44" />
-        <Skeleton className="h-5 w-full max-w-sm" />
-      </div>
-      <div className="mt-8 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="overflow-hidden rounded-2xl border bg-card">
-          <div className="flex items-center gap-4 border-b bg-primary/5 p-6">
-            <Skeleton className="size-20 shrink-0 rounded-full sm:size-24" />
-            <div className="flex-1 space-y-3">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-8 w-full max-w-48" />
-              <Skeleton className="h-4 w-full max-w-64" />
-            </div>
-          </div>
-          <div className="space-y-6 p-6">
-            <Skeleton className="h-6 w-36" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-11 w-36" />
-          </div>
+      <div className="overflow-hidden rounded-2xl border bg-card">
+        <Skeleton className="h-48 w-full rounded-none sm:h-64" />
+        <div className="px-5 pb-6 sm:px-8">
+          <Skeleton className="relative -mt-12 size-24 rounded-full ring-4 ring-card sm:-mt-16 sm:size-32" />
+          <Skeleton className="mt-5 h-8 w-48" />
+          <Skeleton className="mt-3 h-4 w-full max-w-xs" />
         </div>
+      </div>
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <Skeleton className="h-40 rounded-2xl" />
         <Skeleton className="h-80 rounded-2xl" />
       </div>
     </main>

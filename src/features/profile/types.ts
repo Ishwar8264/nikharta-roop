@@ -15,6 +15,7 @@ export interface UserProfile {
   email: string | null;
   phone: string | null;
   avatar: string | null;
+  coverImage: string | null;
   bio: string | null;
   lat: number | null;
   lng: number | null;
@@ -33,11 +34,12 @@ export interface UserProfile {
  * Why this shape matches the server's `updateProfileSchema`:
  * The server marks `phone`, `email`, `role`, and verification flags as
  * immutable — clients cannot mutate them through this endpoint. Only
- * `name`, `avatar`, `bio`, and the optional lat/lng are accepted.
+ * `name`, `avatar`, `coverImage`, `bio`, and the optional lat/lng are accepted.
  */
 export interface UpdateProfileBody {
   name?: string | null;
   avatar?: string | null;
+  coverImage?: string | null;
   bio?: string | null;
   lat?: number | null;
   lng?: number | null;

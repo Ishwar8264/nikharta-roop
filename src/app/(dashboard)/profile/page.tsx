@@ -31,43 +31,37 @@ export default async function ProfilePage() {
 
   return (
     <main className="w-full">
-      <header className="max-w-xl">
-        <p className="text-xs font-medium uppercase tracking-widest text-primary">My account</p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold sm:text-4xl">
-          My profile
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          A little about you, for a more personal salon experience.
-        </p>
-      </header>
-
-      <div className="mt-8 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
-        <Card className="rounded-2xl py-0">
-          <div className="flex items-center gap-5 border-b bg-primary/5 px-5 py-8 sm:px-7">
-            <Avatar size="lg" className="size-20 ring-4 ring-background sm:size-24">
+      <Card className="rounded-2xl py-0">
+        <div className="relative h-48 overflow-hidden bg-linear-to-br from-secondary/40 via-primary/20 to-accent/30 sm:h-64">
+          {user.coverImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.coverImage} alt="Profile cover" className="h-full w-full object-cover" />
+          ) : null}
+          <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent" />
+        </div>
+        <div className="px-5 pb-6 sm:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <Avatar size="lg" className="relative -mt-12 size-24 bg-card ring-4 ring-card sm:-mt-16 sm:size-32">
               {user.avatar ? <AvatarImage src={user.avatar} alt="Profile photo" /> : null}
-              <AvatarFallback className="bg-primary/10 text-2xl font-semibold text-primary">
-                {initials}
-              </AvatarFallback>
+              <AvatarFallback className="bg-primary/10 text-3xl font-semibold text-primary">{initials}</AvatarFallback>
             </Avatar>
-            <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-widest text-primary">Your profile</p>
-              <h2 className="mt-2 break-words text-2xl font-semibold sm:text-3xl">
-                {user.name || "Your profile"}
-              </h2>
-            </div>
-          </div>
-          <CardContent className="px-5 py-6 sm:px-7">
-            <h3 className="text-base font-medium">About you</h3>
-            <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
-              {user.bio?.trim() || "Add a short bio to share a little about yourself and your style preferences."}
-            </p>
-          </CardContent>
-          <div className="border-t px-5 py-4 sm:px-7">
             <Button nativeButton={false} render={<Link href={routes.profileEdit} />} className="h-11 px-5">
               <Pencil aria-hidden="true" /> Edit profile
             </Button>
           </div>
+          <p className="mt-5 text-xs font-medium uppercase tracking-widest text-primary">My profile</p>
+          <h1 className="mt-2 break-words font-heading text-3xl font-semibold sm:text-4xl">{user.name || "Your profile"}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Your personal space at Nikharta Roop.</p>
+        </div>
+      </Card>
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <Card className="rounded-2xl">
+          <CardHeader className="px-5 sm:px-7"><CardTitle>About you</CardTitle></CardHeader>
+          <CardContent className="px-5 pb-3 sm:px-7">
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+              {user.bio?.trim() || "Add a short bio to share a little about yourself and your style preferences."}
+            </p>
+          </CardContent>
         </Card>
         <Card className="rounded-2xl">
           <CardHeader className="px-5 pt-2">

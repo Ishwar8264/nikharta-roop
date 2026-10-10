@@ -57,6 +57,8 @@ const profileFormSchema = z
       .url("Avatar must be a valid URL")
       .max(2048, "Avatar URL is too long")
       .nullable(),
+    coverImage: z.string().trim().url("Cover image must be a valid URL")
+      .max(2048, "Cover image URL is too long").nullable(),
     bio: z
       .string()
       .trim()
@@ -93,19 +95,21 @@ export function ProfileForm({ initial }: ProfileFormProps) {
     defaultValues: {
       name: initial.name ?? "",
       avatar: initial.avatar,
+      coverImage: initial.coverImage,
       bio: initial.bio,
     },
   });
 
   const nameValue = useWatch({ control, name: "name" });
+  const coverImage = useWatch({ control, name: "coverImage" });
   const avatarUrl = useWatch({ control, name: "avatar" });
   const bioValue = useWatch({ control, name: "bio" }) ?? "";
   const displayName = nameValue.trim() || "Your name";
   const initials = nameValue.trim().split(/\s+/).slice(0, 2)
     .map((part) => part.charAt(0)).join("").toUpperCase() || "?";
 
-  function handlePickerChange(next: UploadedImage[]) {
-    setValue("avatar", next[0]?.url ?? null, {
+  function handlePickerChange(next: UploadedImage[], field: "avatar" | "coverImage" = "avatar") {
+    setValue(field, next[0]?.url ?? null, {
       shouldDirty: true,
       shouldValidate: true,
     });
@@ -124,6 +128,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
     const body: UpdateProfileBody = {
       name: values.name,
       avatar: values.avatar,
+      coverImage: values.coverImage,
       bio: values.bio,
     };
 
@@ -133,6 +138,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
       reset({
         name: updated.name ?? "",
         avatar: updated.avatar,
+        coverImage: updated.coverImage,
         bio: updated.bio,
       });
       // Refresh server-rendered account surfaces, including the header avatar.
@@ -151,9 +157,28 @@ export function ProfileForm({ initial }: ProfileFormProps) {
   }
 
   return (
-    <Card className="rounded-2xl" data-form-rounded="true">
+    <Card className="rounded-2xl py-0" data-form-rounded="true">
       <form onSubmit={handleSubmit(onSubmit)} noValidate aria-busy={busy}>
         <fieldset disabled={busy} className="min-w-0 space-y-6">
+          <div className="relative h-44 overflow-hidden bg-linear-to-br from-secondary/40 via-primary/20 to-accent/30 sm:h-56">
+            {coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverImage} alt="Cover preview" className="h-full w-full object-cover" />
+            ) : null}
+            <div className="absolute inset-0 bg-linear-to-t from-black/30 to-transparent" />
+            <div className="absolute bottom-4 right-4 flex flex-wrap gap-2">
+              <MediaPickerDialog
+                title="Choose cover image"
+                description="Choose a wide image. It will be cropped to fit your profile banner."
+                mode="single" max={1} disabled={busy}
+                value={coverImage ? [{ url: coverImage, publicId: coverImage }] : []}
+                onChange={(images) => handlePickerChange(images, "coverImage")}
+                trigger={<Button type="button" variant="outline" disabled={busy} className="h-10 bg-background"><Camera aria-hidden="true" />{coverImage ? "Change cover" : "Add cover"}</Button>}
+              />
+              {coverImage ? <Button type="button" variant="outline" className="h-10 bg-background" onClick={() => handlePickerChange([], "coverImage")}><Trash2 aria-hidden="true" />Remove cover</Button> : null}
+            </div>
+          </div>
+          {errors.coverImage ? <p role="alert" className="px-5 text-xs text-destructive">{errors.coverImage.message}</p> : null}
           <div className="border-b bg-primary/5 px-5 py-6 sm:px-7 sm:py-8">
             <div className="flex items-center gap-4 sm:gap-5">
               <Avatar size="lg" className="size-20 ring-4 ring-background sm:size-24">
@@ -179,7 +204,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
                 title="Choose profile photo"
                 description="Upload a photo or choose one from your library."
                 value={avatarUrl ? [{ url: avatarUrl, publicId: avatarUrl }] : []}
-                onChange={handlePickerChange}
+                onChange={(images) => handlePickerChange(images)}
                 mode="single"
                 max={1}
                 disabled={busy}

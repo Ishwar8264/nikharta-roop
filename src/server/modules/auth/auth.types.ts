@@ -63,6 +63,7 @@ export interface CurrentUser {
   email: string | null;
   phone: string | null;
   avatar: string | null;
+  coverImage: string | null;
   bio: string | null;
   lat: number | null;
   lng: number | null;
