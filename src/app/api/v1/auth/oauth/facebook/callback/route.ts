@@ -22,7 +22,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request): Promise<Response> {
   const failureRedirect =
     process.env.OAUTH_FAILURE_REDIRECT ?? "/login?error=oauth_failed";
-  const successRedirect = process.env.OAUTH_SUCCESS_REDIRECT ?? "/dashboard";
+  const successRedirect = process.env.OAUTH_SUCCESS_REDIRECT ?? "/onboarding?welcome=1";
 
   try {
     const url = new URL(request.url);

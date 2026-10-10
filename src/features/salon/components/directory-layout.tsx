@@ -1,3 +1,5 @@
+import { getSession } from "@/lib/auth/get-session";
+import { canCreateSalon } from "@/features/onboarding/policy";
 import { Calendar, Gift, Info, Package, Plus, Scissors, Settings, ShieldCheck, Store } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -11,7 +13,9 @@ interface SalonDirectoryLayoutProps {
 }
 
 /** Shared salon navigation shell. Each page resolves data and permissions on the server. */
-export function SalonDirectoryLayout({ children, isSignedIn, salon }: SalonDirectoryLayoutProps) {
+export async function SalonDirectoryLayout({ children, isSignedIn, salon }: SalonDirectoryLayoutProps) {
+  const user = isSignedIn ? await getSession() : null;
+  const eligible = user ? canCreateSalon(user) : false;
   return (
     <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 sm:py-12 md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)]">
       <aside className="min-w-0 md:sticky md:top-20 md:self-start">
@@ -81,10 +85,12 @@ export function SalonDirectoryLayout({ children, isSignedIn, salon }: SalonDirec
               icon: <Store className="mt-0.5 size-4" />,
             },
             {
-              label: "Add salon",
+              label: isSignedIn && !eligible ? "Become a salon partner" : "Add salon",
               description: "List your salon and get bookings.",
               href: isSignedIn
-                ? routes.salonCreate
+                ? eligible
+                  ? routes.salonCreate
+                  : routes.partnerOnboarding
                 : `${routes.login}?redirect=${encodeURIComponent(routes.salonCreate)}`,
               markActive: isSignedIn,
               matchNested: false,

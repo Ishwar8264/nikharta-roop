@@ -1,7 +1,9 @@
+import { onboardingPaths } from "./onboarding.openapi";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 /** Authentication paths: register, login, refresh, OTP, passwords, sessions. */
 export const authPaths = {
+      ...onboardingPaths,
       "/api/v1/auth/register": {
         post: {
           tags: ["Authentication"],
@@ -1231,6 +1233,13 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "lng",
             "role",
             "isOnboarded",
+            "accountType",
+            "onboardingCompletedAt",
+            "partnerCompletedAt",
+            "partnerTermsVersion",
+            "partnerTermsAcceptedAt",
+            "partnerEligibilityBackfilledAt",
+
             "emailVerified",
             "phoneVerified",
             "loyaltyPoints",
@@ -1252,6 +1261,13 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               enum: ["SUPER_ADMIN", "USER"],
             },
             isOnboarded: { type: "boolean" },
+            accountType: { type: ["string", "null"], enum: ["CUSTOMER", "SALON_PARTNER", null] },
+            partnerTermsVersion: { type: ["string", "null"] },
+            onboardingCompletedAt: { type: ["string", "null"], format: "date-time" },
+            partnerCompletedAt: { type: ["string", "null"], format: "date-time" },
+            partnerTermsAcceptedAt: { type: ["string", "null"], format: "date-time" },
+            partnerEligibilityBackfilledAt: { type: ["string", "null"], format: "date-time" },
+
             emailVerified: { type: "boolean" },
             phoneVerified: { type: "boolean" },
             loyaltyPoints: { type: "integer" },

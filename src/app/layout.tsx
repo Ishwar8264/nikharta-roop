@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth/get-session";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/features/auth/components/authProvider";
+import { OnboardingReminder } from "@/features/onboarding/onboarding-reminder";
 import "./globals.css";
 
 const inter = Inter({
@@ -98,7 +99,10 @@ export default async function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider user={user}>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <OnboardingReminder />
+              {children}
+            </TooltipProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -222,6 +222,7 @@ export const config = {
     "/dashboard/:path*",
     "/appointments/:path*",
     "/profile/:path*",
+    "/onboarding/:path*",
     "/settings/:path*",
     "/favorites/:path*",
     "/loyalty/:path*",

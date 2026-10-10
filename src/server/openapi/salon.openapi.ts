@@ -71,7 +71,7 @@ export const salonPaths = {
           tags: ["Salons"],
           summary: "Create a salon",
           description:
-            "Any authenticated user can open a salon and becomes its first OWNER. " +
+            "An eligible salon partner can open a salon and becomes its first OWNER. " +
             "If `slug` is omitted it is derived from `name` with numeric suffixes " +
             "on collision.",
           operationId: "createSalon",
@@ -113,6 +113,17 @@ export const salonPaths = {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
                 },
               },
+            },
+            "403": {
+              description: "Partner onboarding required",
+              content: { "application/json": { schema: {
+                type: "object", required: ["message", "code", "onboardingUrl"],
+                properties: {
+                  message: { type: "string" },
+                  code: { type: "string", const: "PARTNER_ONBOARDING_REQUIRED" },
+                  onboardingUrl: { type: "string", const: "/onboarding?type=partner" },
+                },
+              } } },
             },
             "409": {
               description: "Slug already in use",

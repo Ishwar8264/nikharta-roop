@@ -1,3 +1,4 @@
+import { canCreateSalon } from "@/features/onboarding/policy";
 import { SalonDirectoryLayout } from "@/features/salon/components/directory-layout";
 import { SalonForm } from "@/features/salon/components/form";
 import { getSession } from "@/lib/auth/get-session";
@@ -20,6 +21,8 @@ export const metadata: Metadata = {
 export default async function NewSalonPage() {
   const user = await getSession();
   if (!user) redirect("/login?redirect=%2Fsalons%2Fcreate");
+
+  if (!canCreateSalon(user)) redirect("/onboarding?type=partner");
 
   return (
     <SalonDirectoryLayout isSignedIn>

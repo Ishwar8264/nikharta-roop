@@ -1,5 +1,6 @@
 "use client";
 
+import { canCreateSalon, isOnboardingComplete } from "@/features/onboarding/policy";
 import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { RouterProvider } from "react-aria-components";
@@ -107,6 +108,15 @@ export function UserMenu({ user }: { user: CurrentUser }) {
               );
             })}
 
+            <DropdownMenuItem render={<Link href="/onboarding" />} textValue="Account setup">
+              {isOnboardingComplete(user) ? "Account preferences" : "Complete account setup"}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              render={<Link href={canCreateSalon(user) ? "/salons/create" : "/onboarding?type=partner"} />}
+              textValue="Salon partner"
+            >
+              {canCreateSalon(user) ? "Add salon" : "Become a salon partner"}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
 
             <DropdownMenuItem

@@ -1,3 +1,4 @@
+import { PARTNER_TERMS_VERSION } from "@/features/onboarding/policy";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -132,6 +133,7 @@ export default function TermsPage() {
       </LegalSection>
 
       <LegalSection id="partners" title="6. Salon Partners">
+        <p className="text-sm text-muted-foreground">Partner onboarding terms version: {PARTNER_TERMS_VERSION}.</p>
         <p>
           Salon partners control their staff, premises, schedules, service
           descriptions, and performance. Information supplied by a salon should

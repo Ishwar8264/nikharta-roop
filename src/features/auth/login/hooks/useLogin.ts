@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { routes } from "@/config/routes";
+import { onboardingWelcomeUrl } from "@/features/onboarding/policy";
 import { ApiError } from "@/lib/api/backend.client";
 
 import { FIELD } from "../../shared/constants";
@@ -99,13 +99,7 @@ export function useLogin(): UseLoginResult {
 function getPostLoginDestination(): string {
   const requested = new URLSearchParams(window.location.search).get("redirect");
 
-  // Protocol-relative paths (`//host`) are external even though they start
-  // with a slash, so only a single leading slash is accepted.
-  if (requested?.startsWith("/") && !requested.startsWith("//")) {
-    return requested;
-  }
-
-  return routes.dashboard;
+  return onboardingWelcomeUrl(requested);
 }
 
 /**

@@ -61,7 +61,11 @@ export function useCreateSalon(): UseCreateSalonResult {
       return res.data.salon;
     } catch (e) {
       if (e instanceof ApiError) {
-        const data = e.data as { errors?: FieldError[] } | null;
+        const data = e.data as { errors?: FieldError[]; code?: string } | null;
+        if (data?.code === "PARTNER_ONBOARDING_REQUIRED") {
+          router.push("/onboarding?type=partner");
+          return null;
+        }
 
         if (e.status === 400 && data?.errors?.length) {
           const map: Record<string, string> = {};

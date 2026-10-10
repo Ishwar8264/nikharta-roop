@@ -53,6 +53,12 @@ export interface CurrentUser {
   lng: number | null;
   role: string;
   isOnboarded: boolean;
+  accountType: "CUSTOMER" | "SALON_PARTNER" | null;
+  onboardingCompletedAt: Date | null;
+  partnerCompletedAt: Date | null;
+  partnerTermsVersion: string | null;
+  partnerTermsAcceptedAt: Date | null;
+  partnerEligibilityBackfilledAt: Date | null;
   emailVerified: boolean;
   phoneVerified: boolean;
   loyaltyPoints: number;

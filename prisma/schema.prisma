@@ -143,6 +143,11 @@ enum PayoutStatus {
 }
 
 // ---------- USER & AUTH ----------
+enum AccountType {
+  CUSTOMER
+  SALON_PARTNER
+}
+
 model User {
   id       String       @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   email    String?      @unique
@@ -158,6 +163,14 @@ model User {
   lng Float?
 
   isOnboarded Boolean @default(false)
+
+  accountType AccountType?
+  onboardingCompletedAt DateTime?
+  partnerCompletedAt DateTime?
+  partnerTermsVersion String?
+  partnerTermsAcceptedAt DateTime?
+  // Legacy owners retain eligibility without fabricated historical consent.
+  partnerEligibilityBackfilledAt DateTime?
 
   emailVerified Boolean @default(false)
   phoneVerified Boolean @default(false)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { routes } from "@/config/routes";
+import { onboardingWelcomeUrl } from "@/features/onboarding/policy";
 import { ApiError } from "@/lib/api/backend.client";
 import { sendOtpApi } from "../api/sendOtp";
 import { verifyOtpApi } from "../api/verifyOtp";
@@ -103,7 +103,7 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
 
       // Force a fresh document request so Server Components read the session
       // cookies before rendering the authenticated destination.
-      window.location.replace(routes.dashboard);
+      window.location.replace(onboardingWelcomeUrl(new URLSearchParams(window.location.search).get("redirect")));
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);

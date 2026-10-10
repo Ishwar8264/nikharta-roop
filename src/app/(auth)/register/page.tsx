@@ -18,12 +18,17 @@ export const metadata: Metadata = {
  * client island. Keeping the page server means: metadata works, SSR HTML is
  * fast, and only the form's chunk ships to the browser.
  */
-export default async function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>;
+}) {
+  const params = await searchParams;
   const user = await getSession();
   if (user) redirect(routes.dashboard);
 
   const providers = listOAuthProviders().filter(
     (provider) => provider.configured,
   );
-  return <RegisterForm providers={providers} />;
+  return <RegisterForm providers={providers} returnTo={params.redirect} />;
 }

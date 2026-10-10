@@ -1,5 +1,7 @@
 import "server-only";
 
+import { requirePartnerOnboarding } from "@/server/modules/auth/onboarding.service";
+
 import { Prisma } from "@/generated/prisma/client";
 import { generateUniqueSlug } from "@/lib/slug";
 import { writeAuditLog } from "@/server/modules/audit/audit.writer";
@@ -155,6 +157,7 @@ export async function createSalon(
   ownerId: string,
   input: CreateSalonInput,
 ): Promise<PublicSalon> {
+  await requirePartnerOnboarding(ownerId);
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const slug = input.slug ?? (await generateSlugOrFail(input.name));
 

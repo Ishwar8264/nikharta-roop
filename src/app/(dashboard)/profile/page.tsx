@@ -1,3 +1,4 @@
+import { canCreateSalon, isOnboardingComplete } from "@/features/onboarding/policy";
 import { Mail, Pencil, Phone, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -54,6 +55,23 @@ export default async function ProfilePage() {
             </Button>
           </div>
         </div>
+      </Card>
+      <Card className="mt-6 rounded-2xl">
+        <CardHeader>
+          <CardTitle>Account setup</CardTitle>
+          <CardDescription>
+            {user.accountType === "SALON_PARTNER" ? "Salon partner" : user.accountType === "CUSTOMER" ? "Customer" : "Account type not selected"}
+            {isOnboardingComplete(user) ? " · 100% complete" : " · Setup incomplete"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          <Button variant="outline" render={<Link href={routes.onboarding} />}>
+            {isOnboardingComplete(user) ? "Account preferences" : "Complete setup"}
+          </Button>
+          <Button render={<Link href={canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding} />}>
+            {canCreateSalon(user) ? "Add salon" : "Become a salon partner"}
+          </Button>
+        </CardContent>
       </Card>
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card className="rounded-2xl">

@@ -1,3 +1,4 @@
+import { canCreateSalon } from "@/features/onboarding/policy";
 import { SearchX, Sparkles, Store } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -117,13 +118,13 @@ export default async function SalonsPage({ searchParams }: SalonsPageProps) {
               <ClearLink href="/salons" label="Clear filters" />
             ) : user ? (
               <NavLink
-                href={routes.salonCreate}
+                href={canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding}
                 variant="default"
                 size="lg"
                 markActive={false}
                 iconRight={<Store className="h-4 w-4" aria-hidden="true" />}
               >
-                List your salon
+                {canCreateSalon(user) ? "List your salon" : "Become a salon partner"}
               </NavLink>
             ) : (
               <NavLink

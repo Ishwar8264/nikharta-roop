@@ -18,7 +18,7 @@ import { CoverImage } from "@/components/shared/cover-image";
 import { RichTextContent } from "@/components/shared/rich-text-content";
 import { NavLink } from "@/components/shared/nav-link";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/features/favorite";
 import { routes } from "@/config/routes";
 import type { PublicSalonDetail } from "@/server/modules/salon/salon.types";
@@ -116,13 +116,10 @@ export function SalonDetail({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Link
-            href={routes.salonBooking(salon.slug)}
-            className={buttonVariants({ size: "lg" })}
-          >
+          <Button size="lg" render={<Link href={routes.salonBooking(salon.slug)} />}>
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
             Book appointment
-          </Link>
+          </Button>
           {currentUserId ? (
             <FavoriteButton
               targetType="salon"
@@ -133,13 +130,10 @@ export function SalonDetail({
             />
           ) : null}
           {canEdit ? (
-            <Link
-              href={routes.salonManage(salon.slug)}
-              className={buttonVariants({ variant: "outline", size: "lg" })}
-            >
+            <Button variant="outline" size="lg" render={<Link href={routes.salonManage(salon.slug)} />}>
               <Pencil className="h-4 w-4" aria-hidden="true" />
               Manage
-            </Link>
+            </Button>
           ) : null}
         </div>
       </header>
@@ -359,13 +353,10 @@ export function SalonDetail({
           without scrolling back to the top. Hidden on >= sm where the
           in-header Book button is always in view. */}
       <div className="sticky bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:hidden">
-        <Link
-          href={routes.salonBooking(salon.slug)}
-          className={buttonVariants({ size: "lg", className: "w-full" })}
-        >
+        <Button size="lg" className="w-full" render={<Link href={routes.salonBooking(salon.slug)} />}>
           <CalendarDays className="h-4 w-4" aria-hidden="true" />
           Book appointment at {salon.name}
-        </Link>
+        </Button>
       </div>
     </article>
   );

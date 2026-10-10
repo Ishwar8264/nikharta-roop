@@ -1,3 +1,4 @@
+import { PartnerOnboardingRequiredError } from "@/server/modules/auth/onboarding.service";
 import { NextResponse } from "next/server";
 
 import { getAuthContext } from "@/server/auth/session";
@@ -64,7 +65,7 @@ export async function GET(request: Request): Promise<Response> {
  * Creates a new salon and records the caller as its initial OWNER.
  *
  * Why:
- * Any authenticated user can open a salon. Ownership is tracked through
+ * Only eligible salon partners can open a salon. Ownership is tracked through
  * `SalonMember` so a single user can manage multiple salons.
  */
 export async function POST(request: Request): Promise<Response> {
@@ -111,6 +112,9 @@ export async function POST(request: Request): Promise<Response> {
       { status: 201 },
     );
   } catch (error) {
+    if (error instanceof PartnerOnboardingRequiredError) {
+      return NextResponse.json({ message: error.message, code: "PARTNER_ONBOARDING_REQUIRED", onboardingUrl: "/onboarding?type=partner" }, { status: 403 });
+    }
     if (error instanceof SlugConflictError) {
       console.warn("Salon creation conflict", {
         ownerId: auth.sub,
