@@ -205,7 +205,7 @@ export function SalonForm() {
                   disabled={isLoading}
                   error={errors.category?.message}
                   className="w-full sm:max-w-56"
-                  triggerProps={{ onBlur: field.onBlur, ref: field.ref, className: "h-11 rounded-md" }}
+                  triggerProps={{ onBlur: field.onBlur, ref: field.ref }}
                 />
               )}
             />
@@ -277,6 +277,54 @@ export function SalonForm() {
                 </div>
               )}
             />
+          </Section>
+
+          <Section
+            title="Contact"
+            description="Optional, but helps customers reach you."
+          >
+            <div className="grid items-start gap-4 sm:grid-cols-2">
+              <FormControl id="phone" label="Phone" error={errors.phone?.message}>
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <PhoneInput
+                      initialCountry="in"
+                      onlyCountries={["in"]}
+                      countrySelectorMode="OFF"
+                      value={field.value ?? ""}
+                      onValueChange={(value) =>
+                        field.onChange(value || undefined)
+                      }
+                      disabled={isLoading}
+                      inputProps={{
+                        id: "phone",
+                        onBlur: field.onBlur,
+                        autoComplete: "tel",
+                        "aria-invalid": errors.phone ? true : undefined,
+                        "aria-describedby": errors.phone
+                          ? "phone-error"
+                          : undefined,
+                      }}
+                    />
+                  )}
+                />
+              </FormControl>
+
+              <Field
+                id="email"
+                label="Email"
+                type="email"
+                placeholder="hello@salon.com"
+                autoComplete="email"
+                disabled={isLoading}
+                error={errors.email?.message}
+                {...register("email", {
+                  setValueAs: (value: string) => value || undefined,
+                })}
+              />
+            </div>
           </Section>
 
           <Section
@@ -385,49 +433,6 @@ export function SalonForm() {
                   shouldValidate: true,
                 });
               }}
-            />
-          </Section>
-
-          <Section
-            title="Contact"
-            description="Optional, but helps customers reach you."
-          >
-            <FormControl id="phone" label="Phone" error={errors.phone?.message}>
-              <Controller
-                name="phone"
-                control={control}
-                render={({ field }) => (
-                  <PhoneInput
-                    value={field.value ?? ""}
-                    onValueChange={(value) =>
-                      field.onChange(value || undefined)
-                    }
-                    disabled={isLoading}
-                    inputProps={{
-                      id: "phone",
-                      onBlur: field.onBlur,
-                      autoComplete: "tel",
-                      "aria-invalid": errors.phone ? true : undefined,
-                      "aria-describedby": errors.phone
-                        ? "phone-error"
-                        : undefined,
-                    }}
-                  />
-                )}
-              />
-            </FormControl>
-
-            <Field
-              id="email"
-              label="Email"
-              type="email"
-              placeholder="hello@salon.com"
-              autoComplete="email"
-              disabled={isLoading}
-              error={errors.email?.message}
-              {...register("email", {
-                setValueAs: (value: string) => value || undefined,
-              })}
             />
           </Section>
 
