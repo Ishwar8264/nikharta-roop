@@ -119,10 +119,10 @@ describe("GET slug availability", () => {
     }
   });
 
-  it("reports reserved service slugs without querying the service table", async () => {
-    const response = await check(`resource=service&slug=create&salonId=${salonId}`);
+  it.each(["service", "product"] as const)("reports reserved %s slugs without querying its table", async (resource) => {
+    const response = await check(`resource=${resource}&slug=create&salonId=${salonId}`);
     expect(await response.json()).toMatchObject({ data: { available: false, reason: "reserved" } });
-    expect(mocks.prisma.service.findFirst).not.toHaveBeenCalled();
+    expect(mocks.prisma[resource].findFirst).not.toHaveBeenCalled();
   });
 
   it("uses salon scope and does not filter inactive/deleted services", async () => {

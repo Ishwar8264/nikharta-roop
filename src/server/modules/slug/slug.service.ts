@@ -18,7 +18,7 @@ export async function checkSlugAvailability(actor: { sub: string; role: string }
     throw new SalonAccessDeniedError();
   }
 
-  const reason = input.resource === "service" && input.slug === "create"
+  const reason = (input.resource === "service" || input.resource === "product") && input.slug === "create"
     ? "reserved" as const
     : await slugExists(input) ? "taken" as const : null;
 

@@ -13,6 +13,11 @@ const slugSchema = z
     "Slug must contain only lowercase letters, numbers, and hyphens",
   );
 
+// The static create page takes precedence over product slug routes.
+const productSlugSchema = slugSchema.refine((slug) => slug !== "create", {
+  message: 'Slug "create" is reserved',
+});
+
 const optionalUrlSchema = z
   .string({ error: "URL must be a string" })
   .trim()
@@ -95,7 +100,7 @@ export const createProductSchema = z.strictObject({
     .trim()
     .min(2, "Name must contain at least 2 characters")
     .max(120, "Name must contain at most 120 characters"),
-  slug: slugSchema.optional(),
+  slug: productSlugSchema.optional(),
   categoryId: resourceIdSchema.optional(),
   price: z
     .number({ error: "Price must be a number" })

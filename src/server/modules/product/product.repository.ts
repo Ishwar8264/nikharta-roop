@@ -131,9 +131,9 @@ export async function listManagedProductsBySalon(
 }
 
 /** Loads a single active product by slug within a salon. */
-export async function findProductBySlug(salonId: string, slug: string) {
+export async function findProductBySlug(salonId: string, slug: string, includeInactive = false) {
   return prisma.product.findFirst({
-    where: { salonId, slug, status: "PUBLISHED", isActive: true, deletedAt: null },
+    where: { salonId, slug, deletedAt: null, ...(includeInactive ? {} : { status: "PUBLISHED" as const, isActive: true }) },
     select: PUBLIC_PRODUCT_SELECT,
   });
 }

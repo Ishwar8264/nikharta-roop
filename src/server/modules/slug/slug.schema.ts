@@ -3,18 +3,18 @@ import { slugResources, type SlugResource } from "@/lib/slug-availability";
 
 import { createBlogPostSchema, createCategorySchema as blogCategorySchema } from "@/server/modules/blog/blog.schema";
 import { createPackageSchema } from "@/server/modules/package/package.schema";
-import { createProductSchema, createCategorySchema as productCategorySchema } from "@/server/modules/product/product.schema";
+import { createCategorySchema as productCategorySchema } from "@/server/modules/product/product.schema";
 import { createSalonSchema, resourceIdSchema } from "@/server/modules/salon/salon.schema";
 import { createCategorySchema as serviceCategorySchema } from "@/server/modules/service/service.schema";
 
 export { slugResources };
 export type { SlugResource };
 
-/** Reuse creation rules; service's reserved `create` slug is reported as unavailable. */
+/** Reuse creation rules; reserved catalogue `create` slug is reported as unavailable. */
 const slugSchemas = {
   salon: createSalonSchema.shape.slug.unwrap(),
   service: createSalonSchema.shape.slug.unwrap(),
-  product: createProductSchema.shape.slug.unwrap(),
+  product: createSalonSchema.shape.slug.unwrap(),
   package: createPackageSchema.shape.slug,
   "service-category": serviceCategorySchema.shape.slug.unwrap(),
   "product-category": productCategorySchema.shape.slug.unwrap(),

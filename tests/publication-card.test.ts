@@ -3,10 +3,12 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ update: vi.fn(), refresh: vi.fn(), success: vi.fn() }));
+const mocks = vi.hoisted(() => ({ update: vi.fn(), updateProduct: vi.fn(), refresh: vi.fn(), success: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
 vi.mock("sonner", () => ({ toast: { success: mocks.success } }));
 vi.mock("../src/features/service/api", () => ({ updateServiceStatusApi: mocks.update }));
+vi.mock("../src/features/product/api", () => ({ updateProductStatusApi: mocks.updateProduct }));
+import { ProductPublicationCard } from "../src/features/product/product-publication-card";
 import { PublicationCard } from "../src/components/shared/publication-card";
 import { ServicePublicationCard } from "../src/features/service/service-publication-card";
 
@@ -18,6 +20,12 @@ describe("publication card", () => {
     await userEvent.click(screen.getByRole("button", { name: "Publish service" }));
     await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
     expect(mocks.update).toHaveBeenCalledWith("salon", "service", "PUBLISHED");
+  });
+  it("publishes a draft product through its dedicated endpoint", async () => {
+    render(createElement(ProductPublicationCard, { salonId: "salon", productId: "product", status: "DRAFT", salonIsLive: true }));
+    await userEvent.click(screen.getByRole("button", { name: "Publish product" }));
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
+    expect(mocks.updateProduct).toHaveBeenCalledWith("salon", "product", "PUBLISHED");
   });
   it("keeps errors visible and allows retry without claiming success", async () => {
     mocks.update.mockRejectedValue(new Error("Permission denied"));

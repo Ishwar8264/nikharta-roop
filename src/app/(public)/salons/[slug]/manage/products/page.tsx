@@ -88,7 +88,7 @@ export default async function ManageProductsPage({
               <Button
                 variant="outline"
                 render={
-                  <Link href={routes.salonProductEdit(slug, product.id)} />
+                  <Link href={routes.salonProductEdit(slug, product.slug)} />
                 }
               >
                 Edit

@@ -102,14 +102,15 @@ export async function listManagedSalonProducts(
 export async function getManagedSalonProduct(
   actorId: string,
   salonRef: string,
-  productId: string,
+  productRef: string,
+  lookup: "id" | "slug" = "id",
 ): Promise<PublicProduct> {
   const salonId = await resolveSalonId(salonRef);
   if (!salonId) throw new SalonNotFoundError();
   const salon = await findSalonForViewer({ salonId, userId: actorId });
   if (!salon) throw new SalonNotFoundError();
   assertRoleAtLeast(salon.viewerRole, "MANAGER");
-  const product = await findProductById(productId);
+  const product = lookup === "slug" ? await findProductBySlug(salonId, productRef, true) : await findProductById(productRef);
   if (!product || product.salonId !== salonId) throw new ProductNotFoundError();
   return toPublicProduct(product);
 }
@@ -374,7 +375,7 @@ async function generateSlugOrFail(
   try {
     return await generateUniqueSlug(
       name,
-      (candidate) => productSlugExistsInSalon(salonId, candidate),
+      (candidate) => candidate === "create" ? Promise.resolve(true) : productSlugExistsInSalon(salonId, candidate),
       "product",
     );
   } catch {

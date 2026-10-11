@@ -25,10 +25,10 @@ export const routes = {
   salonProductDetail: (slug: string, productSlug: string) =>
     `/salons/${slug}/products/${productSlug}`,
   salonProductCreate: (slug: string) =>
-    `/salons/${slug}/manage/products/create`,
+    `/salons/${slug}/products/create`,
   salonProductsManage: (slug: string) => `/salons/${slug}/manage/products`,
-  salonProductEdit: (slug: string, productId: string) =>
-    `/salons/${slug}/manage/products/${productId}`,
+  salonProductEdit: (slug: string, productSlug: string) =>
+    `/salons/${slug}/products/${productSlug}/edit`,
   productCategoriesManage: "/product-categories/manage",
   salonServiceDetail: (salonSlug: string, serviceSlug: string) =>
     `/salons/${salonSlug}/services/${serviceSlug}`,

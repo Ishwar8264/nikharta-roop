@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { ProductPublicationCard } from "@/features/product/product-publication-card";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Star } from "lucide-react";
@@ -12,12 +14,12 @@ import { getSession } from "@/lib/auth/get-session";
 import { ReviewForm, ReviewList, ReviewSummary } from "@/features/review";
 import type { PublicReview as WireReview } from "@/features/review";
 import { ProductNotFoundError } from "@/server/modules/product/product.errors";
-import { getSalonProduct } from "@/server/modules/product/product.service";
+import { getManagedSalonProduct, getSalonProduct } from "@/server/modules/product/product.service";
 import {
   SalonNotFoundError,
   SalonRoleInsufficientError,
 } from "@/server/modules/salon/salon.errors";
-import { getSalonForServiceManagement } from "@/server/modules/salon/salon.service";
+import { getSalonForServiceManagement, getSalonSummaryBySlug } from "@/server/modules/salon/salon.service";
 import { listReviewsForProduct } from "@/server/modules/review/review.service";
 import type { PublicReview as ServerReview } from "@/server/modules/review/review.types";
 
@@ -30,22 +32,50 @@ const priceFormatter = new Intl.NumberFormat(siteConfig.locale, {
   maximumFractionDigits: 2,
 });
 
-export const metadata: Metadata = { title: "Salon product · Nikharta Roop" };
+/** Private previews retain the public URL without exposing drafts to other visitors. */
+const getDetail = cache(async (salonSlug: string, productSlug: string) => {
+  try {
+    const [product, salon] = await Promise.all([
+      getSalonProduct(salonSlug, productSlug),
+      getSalonSummaryBySlug(salonSlug),
+    ]);
+    return { product, salon, preview: false };
+  } catch (error) {
+    if (!(error instanceof SalonNotFoundError) && !(error instanceof ProductNotFoundError)) throw error;
+    const user = await getSession();
+    if (!user) throw error;
+    const salon = await getSalonForServiceManagement(salonSlug, user.id);
+    const product = await getManagedSalonProduct(user.id, salonSlug, productSlug, "slug");
+    return { product, salon, preview: true };
+  }
+});
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug, productSlug } = await params;
+  try {
+    const { product, preview } = await getDetail(slug, productSlug);
+    if (preview) return { title: product.name, robots: { index: false, follow: false } };
+    return { title: product.name, description: product.shortDescription ?? undefined };
+  } catch {
+    return { title: "Product not found" };
+  }
+}
 
 /** Displays an active product and links managers to its edit form. */
 export default async function ProductDetailPage({ params }: Props) {
   const { slug, productSlug } = await params;
-  let product;
+  let detail;
   try {
-    product = await getSalonProduct(slug, productSlug);
+    detail = await getDetail(slug, productSlug);
   } catch (error) {
     if (
       error instanceof SalonNotFoundError ||
-      error instanceof ProductNotFoundError
+      error instanceof ProductNotFoundError ||
+      error instanceof SalonRoleInsufficientError
     )
       notFound();
     throw error;
   }
+  const { product, salon, preview } = detail;
   const user = await getSession();
   let canManage = false;
   if (user) {
@@ -61,29 +91,19 @@ export default async function ProductDetailPage({ params }: Props) {
     }
   }
 
-  /**
-   * Why reviews resolve after the management check:
-   * The list is a public read (no auth required). Fetching it in parallel
-   * with the management lookup keeps the page's server round-trip at one
-   * wave — `getSalonForServiceManagement` is the only auth-gated read here.
-   *
-   * Why we map `createdAt` from `Date` to ISO string:
-   * See the matching comment on the service detail page — the server
-   * `PublicReview` carries `Date`, the client components are typed against
-   * the wire shape (`string`). Normalising here mirrors what the HTTP layer
-   * would do.
-   */
-  const reviews = await listReviewsForProduct(product.id, {
+  // Private previews cannot access public reviews.
+  const reviews = preview ? null : await listReviewsForProduct(product.id, {
     limit: 20,
     sort: "recent",
   });
-  const wireReviews: WireReview[] = reviews.items.map((review) => ({
+  const wireReviews: WireReview[] = (reviews?.items ?? []).map((review) => ({
     ...(review as ServerReview),
     createdAt: new Date(review.createdAt).toISOString(),
   }));
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <main className="min-w-0">
+      {preview && canManage ? <ProductPublicationCard salonId={product.salonId} productId={product.id} status={product.status} salonIsLive={salon.status === "LIVE"} /> : null}
       {product.bannerImage ? (
         <div className="mb-6">
           <CoverImage src={product.bannerImage} alt={`${product.name} banner`} aspect="wide" priority />
@@ -111,7 +131,7 @@ export default async function ProductDetailPage({ params }: Props) {
             </div>
           ) : null}
 
-          {/* Reviews */}
+          {reviews ? (
           <div className="space-y-6 pt-4">
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 text-accent-foreground" aria-hidden="true" />
@@ -153,6 +173,7 @@ export default async function ProductDetailPage({ params }: Props) {
               </section>
             ) : null}
           </div>
+          ) : null}
         </div>
         <article className="space-y-5">
           {product.category ? (
@@ -179,7 +200,7 @@ export default async function ProductDetailPage({ params }: Props) {
           ) : null}
           {canManage ? (
             <NavLink
-              href={routes.salonProductEdit(slug, product.id)}
+              href={routes.salonProductEdit(slug, product.slug)}
               variant="outline"
               markActive={false}
             >
