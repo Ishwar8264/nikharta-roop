@@ -242,7 +242,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
             Book this service
           </NavLink>
           ) : <p className="mt-4 text-sm text-muted-foreground">Bookings are unavailable for this service.</p>}
-          {canManage ? <NavLink href={routes.salonServiceEdit(slug, service.id)} variant="outline" markActive={false} className="mt-3 w-full justify-center">Edit service</NavLink> : null}
+          {canManage ? <NavLink href={routes.salonServiceEdit(slug, service.slug)} variant="outline" markActive={false} className="mt-3 w-full justify-center">Edit service</NavLink> : null}
         </aside>
       </div>
     </main>

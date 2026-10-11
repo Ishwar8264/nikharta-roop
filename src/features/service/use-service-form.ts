@@ -41,6 +41,8 @@ export function useServiceForm(salonRef: string, initialService?: SalonService):
       if (initialService) {
         const changes: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(validation.data)) {
+          // Publication is managed separately from service details.
+          if (key === "status") continue;
           const previous = initialService[key as keyof SalonService];
           const next = value === undefined ? null : value;
           if (JSON.stringify(next) !== JSON.stringify(previous)) changes[key] = next;

@@ -9,7 +9,6 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { FormHeader, SelectField, SlugField } from "@/components/shared";
 import { RichTextEditor } from "@/components/shared/rich-text-editor";
-import { CatalogStatusField } from "@/components/shared/catalog-status/field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -18,9 +17,7 @@ import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import type { UploadedImage } from "@/features/media";
 import { MediaPickerDialog } from "@/features/media/components/media-picker-dialog";
-import { ApiError } from "@/lib/api/backend.client";
 
-import { deleteServiceApi } from "./api";
 import {
   createServiceFormSchema,
   slugifyServiceName,
@@ -68,8 +65,6 @@ export function CreateServiceForm({
     initialService?.images.map((url) => ({ url, publicId: url })) ?? [],
   );
   const [slugWasEdited, setSlugWasEdited] = useState(Boolean(initialService));
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     control,
@@ -137,22 +132,8 @@ export function CreateServiceForm({
     const service = await save(values);
     if (!service) return;
 
-    router.push(initialService ? routes.salonServicesManage(salonSlug) : routes.salonServiceDetail(salonSlug, service.slug));
+    router.push(routes.salonServiceDetail(salonSlug, service.slug));
     router.refresh();
-  }
-
-  async function removeService(): Promise<void> {
-    if (!initialService || !window.confirm(`Delete ${initialService.name}?`)) return;
-    setDeleteError(null);
-    setIsDeleting(true);
-    try {
-      await deleteServiceApi(initialService.salonId, initialService.id);
-      router.push(routes.salonServicesManage(salonSlug));
-      router.refresh();
-    } catch (caught) {
-      setDeleteError(caught instanceof ApiError ? caught.message : "Something went wrong. Please try again.");
-      setIsDeleting(false);
-    }
   }
 
   return (
@@ -424,13 +405,6 @@ export function CreateServiceForm({
             <InlineError id="images-error" message={errors.images?.message} />
           </FormSection>
 
-          {initialService ? (
-          <Controller
-            name="status"
-            control={control}
-            render={({ field }) => <CatalogStatusField value={field.value} onChange={field.onChange} onBlur={field.onBlur} disabled={isLoading} />}
-          />
-          ) : null}
         </CardContent>
 
         <CardFooter className="flex flex-col-reverse items-stretch gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8">
@@ -455,15 +429,6 @@ export function CreateServiceForm({
           </Button>
         </CardFooter>
       </Card>
-      {initialService ? (
-        <section className="mt-8 space-y-3 rounded-xl border border-destructive/40 p-5">
-          <h2 className="text-lg font-semibold">Delete service</h2>
-          {deleteError ? <p role="alert" className="text-sm text-destructive">{deleteError}</p> : null}
-          <Button type="button" variant="destructive" onClick={removeService} disabled={isLoading || isDeleting}>
-            {isDeleting ? "Deleting…" : "Delete service"}
-          </Button>
-        </section>
-      ) : null}
     </form>
   );
 }

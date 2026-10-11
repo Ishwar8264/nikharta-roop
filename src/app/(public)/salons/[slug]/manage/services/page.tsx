@@ -50,7 +50,7 @@ export default async function ManageServicesPage({ params, searchParams }: Props
                 <div className="flex items-center gap-2"><span className="font-medium">{service.name}</span><Badge variant="secondary">{CATALOG_STATUS_LABELS[service.status]}</Badge></div>
                 <p className="mt-1 text-sm text-muted-foreground">{service.duration} min · {service.category?.name ?? "Uncategorized"}</p>
               </div>
-              <Button variant="outline" render={<Link href={routes.salonServiceEdit(slug, service.id)} />}>Edit</Button>
+              <Button variant="outline" render={<Link href={routes.salonServiceEdit(slug, service.slug)} />}>Edit</Button>
             </li>
           ))}
         </ul>
