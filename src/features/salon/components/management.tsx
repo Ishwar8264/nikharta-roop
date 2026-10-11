@@ -58,8 +58,8 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(true);
-  const [userId, setUserId] = useState("");
-  const [role, setRole] = useState<SalonMember["role"]>("STAFF");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [role, setRole] = useState<"STAFF" | "MANAGER">("STAFF");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -108,9 +108,9 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
     setMemberError(null);
     setBusy(true);
     try {
-      const response = await addSalonMemberApi(salon.id, { userId: userId.trim(), role });
+      const response = await addSalonMemberApi(salon.id, { email: memberEmail.trim(), role });
       setMembers((current) => [...current, response.data.member]);
-      setUserId("");
+      setMemberEmail("");
     } catch (reason) {
       setMemberError(errorMessage(reason));
     } finally {
@@ -195,13 +195,13 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
         {isOwner ? (
           <form onSubmit={addMember} className="flex flex-wrap items-end gap-3 border-t pt-5">
             <div className="min-w-52 flex-1 space-y-2">
-              <Label htmlFor="member-user-id">Existing user ID</Label>
-              <Input id="member-user-id" value={userId} onChange={(event) => setUserId(event.target.value)} required disabled={busy} />
+              <Label htmlFor="member-email">Registered email</Label>
+              <Input id="member-email" type="email" maxLength={254} value={memberEmail} onChange={(event) => setMemberEmail(event.target.value)} required disabled={busy} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="member-role">Role</Label>
-              <select id="member-role" className="h-8 rounded-lg border bg-background px-2 text-sm" value={role} onChange={(event) => setRole(event.target.value as SalonMember["role"])} disabled={busy}>
-                <option value="STAFF">Staff</option><option value="MANAGER">Manager</option><option value="OWNER">Owner</option>
+              <select id="member-role" className="h-8 rounded-lg border bg-background px-2 text-sm" value={role} onChange={(event) => setRole(event.target.value as "STAFF" | "MANAGER")} disabled={busy}>
+                <option value="STAFF">Staff</option><option value="MANAGER">Manager</option>
               </select>
             </div>
             <Button type="submit" disabled={busy}>Add member</Button>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { routes } from "@/config/routes";
+import { AddStaffDialog } from "@/features/staff/add-staff-dialog";
 import { StaffList } from "@/features/staff/staff-list";
 import { getSession } from "@/lib/auth/get-session";
 import { listStaff } from "@/server/modules/staff/staff.service";
@@ -74,6 +75,7 @@ export default async function ManageStaffPage({ params }: Props) {
               {staff.items.length === 1 ? "" : "s"}
             </p>
           </div>
+          {salon.viewerRole === "OWNER" ? <AddStaffDialog salonId={salon.id} salonSlug={slug} /> : null}
         </div>
       </header>
 

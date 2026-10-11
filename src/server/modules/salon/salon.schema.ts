@@ -196,13 +196,14 @@ export const updateSalonSchema = createSalonSchema
     { message: "At least one field must be provided" },
   );
 
-/** Body for adding a member to a salon. */
-export const addSalonMemberSchema = z.strictObject({
-  userId: resourceIdSchema,
-  role: z.enum(["OWNER", "MANAGER", "STAFF"], {
-    error: "Role is invalid",
-  }),
-});
+/** Ownership changes are excluded from the staff management flow. */
+const memberRoleSchema = z.enum(["MANAGER", "STAFF"], { error: "Role must be Staff or Manager" });
+
+/** Accept exactly one account identifier; retain ID-based API clients. */
+export const addSalonMemberSchema = z.union([
+  z.strictObject({ email: z.string().trim().toLowerCase().pipe(z.email().max(254)), role: memberRoleSchema }),
+  z.strictObject({ userId: resourceIdSchema, role: memberRoleSchema }),
+]);
 
 /**
  * URL params for routes keyed by either a slug or a resource id.

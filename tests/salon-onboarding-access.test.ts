@@ -17,7 +17,7 @@ describe("pending salon onboarding access", () => {
       expect(salon.viewerRole).toBe(role);
       const query = mocks.findFirst.mock.calls[0][0];
       expect(query.where).toEqual({ slug: "pending-salon", deletedAt: null });
-      expect(query.select.members.where).toEqual({ userId: "viewer-id" });
+      expect(query.select.members.where).toEqual({ userId: "viewer-id", user: { deletedAt: null } });
       expect(mocks.findFirst).toHaveBeenCalledTimes(1);
     });
   }

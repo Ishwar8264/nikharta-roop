@@ -124,3 +124,6 @@ export const authenticatedLimiter = createLimiter({
   window: "1 m",
   prefix: "ratelimit:authenticated",
 });
+
+/** Limits exact-email account probing across all salons for each actor. */
+export const salonMemberLimiter = createLimiter({ tokens: 10, window: "1 m", prefix: "ratelimit:salon-member" });

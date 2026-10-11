@@ -176,7 +176,7 @@ export async function findSalonForViewer(
     select: {
       ...PUBLIC_SALON_SELECT,
       members: {
-        where: { userId: input.userId },
+        where: { userId: input.userId, user: { deletedAt: null } },
         select: { role: true },
         take: 1,
       },
@@ -392,6 +392,17 @@ export async function findSalonMemberByUser(input: {
       },
     },
     select: { id: true, role: true, userId: true, salonId: true },
+  });
+}
+
+/** Exact account lookup; only called after salon owner authorization. */
+export async function findEligibleSalonMemberAccount(input: { email: string } | { userId: string }) {
+  return prisma.user.findFirst({
+    where: {
+      ...("email" in input ? { email: { equals: input.email, mode: "insensitive" as const } } : { id: input.userId }),
+      deletedAt: null,
+    },
+    select: { id: true },
   });
 }
 

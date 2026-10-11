@@ -39,7 +39,7 @@ export function listSalonMembersApi(salonId: string) {
 }
 
 /** Adds an existing user to the salon. */
-export function addSalonMemberApi(salonId: string, input: { userId: string; role: SalonMember["role"] }) {
+export function addSalonMemberApi(salonId: string, input: ({ userId: string } | { email: string }) & { role: "STAFF" | "MANAGER" }) {
   return api.post<{ message: string; data: { member: SalonMember } }>(`${salonPath(salonId)}/members`, input);
 }
 

@@ -71,7 +71,7 @@ export async function StaffList({
       <EmptyState
         icon={UsersRound}
         title="No team members yet."
-        description="Add stylists and managers from the salon members screen — they'll appear here once they're part of your salon."
+        description="Salon owners can add registered staff using the Add staff button."
       />
     );
   }

@@ -448,6 +448,8 @@ export const salonPaths = {
             },
           },
           responses: {
+            "422": { description: "Account missing or ineligible" },
+            "429": { description: "Staff addition rate limit exceeded" },
             "201": {
               description: "Member added",
               content: {
@@ -1026,13 +1028,16 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           },
         },
         AddSalonMemberRequest: {
-          type: "object",
-          additionalProperties: false,
-          required: ["userId", "role"],
-          properties: {
-            userId: { $ref: "#/components/schemas/ResourceId" },
-            role: { type: "string", enum: ["OWNER", "MANAGER", "STAFF"] },
-          },
+          oneOf: [
+            { type: "object", additionalProperties: false, required: ["email", "role"], properties: {
+              email: { type: "string", format: "email", maxLength: 254 },
+              role: { type: "string", enum: ["MANAGER", "STAFF"] },
+            } },
+            { type: "object", additionalProperties: false, required: ["userId", "role"], properties: {
+              userId: { $ref: "#/components/schemas/ResourceId" },
+              role: { type: "string", enum: ["MANAGER", "STAFF"] },
+            } },
+          ],
         },
         SalonMemberResponse: {
           type: "object",

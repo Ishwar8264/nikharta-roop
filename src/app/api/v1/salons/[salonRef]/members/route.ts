@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { salonMemberLimiter, rateLimitHeaders } from "@/lib/rate-limit";
 import { getAuthContext } from "@/server/auth/session";
 import {
   SalonMemberExistsError,
+  SalonMemberAccountUnavailableError,
   SalonNotFoundError,
   SalonRoleInsufficientError,
 } from "@/server/modules/salon/salon.errors";
@@ -101,6 +103,13 @@ export async function POST(
     );
   }
 
+  const limit = await salonMemberLimiter.limit(auth.sub);
+  if (!limit.success) {
+    return NextResponse.json({ message: "Too many staff additions. Please try again shortly." }, {
+      status: 429, headers: rateLimitHeaders(limit),
+    });
+  }
+
   const params = await context.params;
   const paramValidation = salonRefParamSchema.safeParse(params);
 
@@ -168,6 +177,10 @@ export async function POST(
 
     if (error instanceof SalonRoleInsufficientError) {
       return NextResponse.json({ message: error.message }, { status: 403 });
+    }
+
+    if (error instanceof SalonMemberAccountUnavailableError) {
+      return NextResponse.json({ message: error.message }, { status: 422 });
     }
 
     if (error instanceof SalonMemberExistsError) {

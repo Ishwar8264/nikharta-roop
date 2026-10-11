@@ -61,3 +61,11 @@ export class SalonPublicationBlockedError extends Error {
     this.name = "SalonPublicationBlockedError";
   }
 }
+
+/** Missing and deleted accounts share an error to avoid exposing account history. */
+export class SalonMemberAccountUnavailableError extends Error {
+  constructor() {
+    super("No eligible account found. Ask the staff member to register first.");
+    this.name = "SalonMemberAccountUnavailableError";
+  }
+}

@@ -10,6 +10,7 @@ import { assertRoleAtLeast } from "./salon.authorization";
 import {
   LastOwnerRemovalError,
   SalonMemberExistsError,
+  SalonMemberAccountUnavailableError,
   SalonNotFoundError,
   SalonPlaceConflictError,
   SlugConflictError,
@@ -24,6 +25,7 @@ import {
   findSalonForViewer,
   findSalonMemberById,
   findSalonMemberByUser,
+  findEligibleSalonMemberAccount,
   listActiveSalons,
   listSalonMembers,
   removeSalonMember,
@@ -31,6 +33,7 @@ import {
   softDeleteSalonById,
   updateSalonById,
 } from "./salon.repository";
+import { addSalonMemberSchema } from "./salon.schema";
 import { toPublicSalonDetail } from "./salon.mapper";
 import type {
   AddSalonMemberInput,
@@ -307,17 +310,22 @@ export async function addSalonMemberByOwner(
   const salon = await loadSalonForViewer(salonId, actorId);
   assertRoleAtLeast(salon.viewerRole, "OWNER");
 
+  // Validate at the service boundary too, including calls that bypass HTTP.
+  const validated = addSalonMemberSchema.parse(input);
+  const account = await findEligibleSalonMemberAccount(validated);
+  if (!account) throw new SalonMemberAccountUnavailableError();
+
   const existing = await findSalonMemberByUser({
     salonId,
-    userId: input.userId,
+    userId: account.id,
   });
   if (existing) throw new SalonMemberExistsError();
 
   try {
     const member = await addSalonMember({
       salonId,
-      userId: input.userId,
-      role: input.role,
+      userId: account.id,
+      role: validated.role,
     });
 
     writeAuditLog({
@@ -327,8 +335,8 @@ export async function addSalonMemberByOwner(
       entityId: member.id,
       newData: {
         salonId,
-        memberUserId: input.userId,
-        role: input.role,
+        memberUserId: account.id,
+        role: validated.role,
       },
     });
 
@@ -336,6 +344,9 @@ export async function addSalonMemberByOwner(
   } catch (error) {
     if (isUniqueConstraintViolation(error, "userId")) {
       throw new SalonMemberExistsError();
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      throw new SalonMemberAccountUnavailableError();
     }
     throw error;
   }
