@@ -107,6 +107,7 @@ const MemoizedColorPicker = React.memo<{
   onColorChange: (value: string) => void
 }>(({ palette, selectedColor, inverse, onColorChange }) => (
   <ToggleGroup
+    aria-label={`Text colors: ${palette.label}`}
     value={[selectedColor]}
     onValueChange={(values) => {
       const value = values.at(-1)

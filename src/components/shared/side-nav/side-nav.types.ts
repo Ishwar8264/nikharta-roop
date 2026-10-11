@@ -4,6 +4,8 @@ import type { NavLinkProps } from "../nav-link";
 
 /** Render icons and badges as nodes; never pass component functions from a server. */
 export interface SideNavItem extends Omit<NavLinkProps, "children" | "iconRight"> {
+  /** Nested links shown while this section is active. */
+  subItems?: readonly Omit<SideNavItem, "subItems">[];
   id?: string;
   label: string;
   description?: string;

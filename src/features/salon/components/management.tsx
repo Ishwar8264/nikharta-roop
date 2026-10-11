@@ -163,8 +163,8 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
           ))}
         </div>
         <div className="space-y-2 rounded-xl border p-4">
-          <Label htmlFor="salon-status">Salon status</Label>
-          <Select value={status} onValueChange={(next) => { if (SALON_STATUSES.includes(next as SalonStatus)) setStatus(next as SalonStatus); }}>
+          <Label id="salon-status-label" htmlFor="salon-status">Salon status</Label>
+          <Select aria-labelledby="salon-status-label" value={status} onValueChange={(next) => { if (SALON_STATUSES.includes(next as SalonStatus)) setStatus(next as SalonStatus); }}>
             <SelectTrigger id="salon-status" disabled={busy} className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>{SALON_STATUSES.map((option) => <SelectItem key={option} value={option} disabled={verification !== "VERIFIED" && (option === "LIVE" || option === "TEMPORARILY_CLOSED")}>{SALON_STATUS_LABELS[option]}</SelectItem>)}</SelectContent>
           </Select>

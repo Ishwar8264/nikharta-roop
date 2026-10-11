@@ -1,9 +1,13 @@
+"use client";
+
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 import { NavLink } from "../nav-link";
 import type { SideNavProps } from "./side-nav.types";
 
-/** Server-rendered navigation shell. Only NavLink needs client routing hooks. */
+/** Shared navigation with contextual links for the current section. */
 export function SideNav({
   items,
   groups,
@@ -18,6 +22,7 @@ export function SideNav({
   "aria-labelledby": ariaLabelledBy,
   ...props
 }: SideNavProps) {
+  const pathname = usePathname();
   const sections = groups ?? [{ id: "links", items: items ?? [] }];
 
   return (
@@ -42,7 +47,17 @@ export function SideNav({
             orientation === "responsive" && "overflow-x-auto md:flex-col md:overflow-visible",
             listClassName,
           )}>
-            {group.items.map(({ id, label, description, badge, className: itemClassName, ...item }) => (
+            {group.items.map(({ id, label, description, badge, subItems, className: itemClassName, ...item }) => {
+              const target = typeof item.href === "string" ? item.href : item.href.pathname;
+              const hasSubItems = Boolean(subItems?.length);
+              const expanded = hasSubItems && (
+                Boolean(target && (pathname === target || pathname.startsWith(`${target}/`))) ||
+                Boolean(subItems?.some((child) => {
+                  const childTarget = typeof child.href === "string" ? child.href : child.href.pathname;
+                  return childTarget && (pathname === childTarget || (child.matchNested !== false && pathname.startsWith(`${childTarget}/`)));
+                }))
+              );
+              return (
               <li key={id ?? (typeof item.href === "string" ? item.href : JSON.stringify(item.href))} className="min-w-0 shrink-0">
                 <NavLink
                   variant="ghost"
@@ -50,6 +65,8 @@ export function SideNav({
                   reservePendingSpace
                   {...linkDefaults}
                   {...item}
+                  aria-expanded={hasSubItems ? expanded : undefined}
+                  iconRight={hasSubItems ? expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" /> : item.iconRight}
                   className={cn("w-full justify-start", description && "h-auto min-h-10 py-2", linkDefaults?.className, itemClassName)}
                 >
                   <span className="block">
@@ -64,8 +81,22 @@ export function SideNav({
                     </span>
                   ) : null}
                 </NavLink>
+                {expanded ? (
+                  <ul className="ml-5 mt-2 space-y-1 border-l border-border pl-3">
+                    {subItems?.map(({ id: childId, label: childLabel, ...child }) => {
+                      return (
+                        <li key={childId ?? String(child.href)}>
+                          <NavLink variant="ghost" size="sm" activeClassName="bg-primary/10 text-primary" reservePendingSpace {...linkDefaults} {...child} className={cn("w-full justify-start", child.className)}>
+                            {childLabel}
+                          </NavLink>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       ))}

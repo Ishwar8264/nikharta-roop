@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/get-session";
 import { canCreateSalon } from "@/features/onboarding/policy";
-import { Calendar, Gift, Info, Package, Plus, Scissors, Settings, ShieldCheck, Store } from "lucide-react";
+import { Calendar, Gift, Info, List, Package, Plus, Scissors, Settings, ShieldCheck, Store } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/shared/side-nav";
@@ -49,18 +49,30 @@ export async function SalonDirectoryLayout({ children, isSignedIn, salon }: Salo
                 label: "Services",
                 description: "Explore treatments and prices.",
                 href: routes.salonServices(salon.slug),
+                subItems: [
+                  { label: "All services", href: routes.salonServices(salon.slug), matchNested: false, icon: <List className="size-4" /> },
+                  ...(salon.canManage ? [{ label: "Add service", href: routes.salonServiceCreate(salon.slug), matchNested: false, icon: <Plus className="size-4" /> }] : []),
+                ],
                 icon: <Scissors className="mt-0.5 size-4" />,
               },
               {
                 label: "Products",
                 description: "Browse salon products.",
                 href: routes.salonProducts(salon.slug),
+                subItems: [
+                  { label: "All products", href: routes.salonProducts(salon.slug), matchNested: false, icon: <List className="size-4" /> },
+                  ...(salon.canManage ? [{ label: "Add product", href: routes.salonProductCreate(salon.slug), matchNested: false, icon: <Plus className="size-4" /> }] : []),
+                ],
                 icon: <Package className="mt-0.5 size-4" />,
               },
               {
                 label: "Packages",
                 description: "Explore service bundles.",
                 href: routes.salonPackages(salon.slug),
+                subItems: [
+                  { label: "All packages", href: routes.salonPackages(salon.slug), matchNested: false, icon: <List className="size-4" /> },
+                  ...(salon.canManage ? [{ label: "Add package", href: routes.salonPackageCreate(salon.slug), matchNested: false, icon: <Plus className="size-4" /> }] : []),
+                ],
                 icon: <Gift className="mt-0.5 size-4" />,
               },
               ...(salon.canBook === false ? [] : [{

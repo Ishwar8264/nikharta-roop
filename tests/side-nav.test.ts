@@ -30,6 +30,50 @@ describe("SideNav", () => {
     expect(html).not.toContain("data-pending");
   });
 
+  it("shows contextual links only inside their section and matches children exactly", () => {
+    const section = [{ href: "/salons/glow/services", label: "Services", subItems: [
+      { href: "/salons/glow/services", label: "All services", matchNested: false },
+      { href: "/salons/glow/services/create", label: "Add service", matchNested: false },
+    ] }];
+    const previousPath = navigation.pathname;
+    try {
+      navigation.pathname = "/salons/glow/services/create";
+      const html = renderToStaticMarkup(createElement(SideNav, { items: section }));
+      expect(html).toContain("All services");
+      expect(html).toContain('aria-expanded="true"');
+      expect(html).toContain("lucide-chevron-up");
+      expect(html).toMatch(/href="\/salons\/glow\/services\/create" aria-current="page"/);
+      expect(html.match(/aria-current="page"/g)).toHaveLength(2);
+      navigation.pathname = "/salons/glow/products";
+      const other = renderToStaticMarkup(createElement(SideNav, { items: section }));
+      expect(other).not.toContain("All services");
+      expect(other).toContain('aria-expanded="false"');
+      expect(other).toContain("lucide-chevron-down");
+      expect(other).not.toContain("Add service");
+    } finally {
+      navigation.pathname = previousPath;
+    }
+  });
+
+  it("keeps a submenu open on a child route outside the parent URL", () => {
+    const previousPath = navigation.pathname;
+    try {
+      navigation.pathname = "/salons/glow/manage/products/create";
+      const html = renderToStaticMarkup(createElement(SideNav, { items: [{
+        href: "/salons/glow/products", label: "Products", subItems: [
+          { href: "/salons/glow/products", label: "All products", matchNested: false },
+          { href: navigation.pathname, label: "Add product", matchNested: false },
+        ],
+      }] }));
+      expect(html).toContain("All products");
+      expect(html).toContain('aria-expanded="true"');
+      expect(html).toContain("lucide-chevron-up");
+      expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+    } finally {
+      navigation.pathname = previousPath;
+    }
+  });
+
   it("renders caller groups, slots, badges and navigation label", () => {
     const html = renderToStaticMarkup(createElement(SideNav, {
       "aria-label": "Account navigation",

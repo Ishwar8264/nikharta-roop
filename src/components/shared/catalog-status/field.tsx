@@ -12,8 +12,8 @@ export function CatalogStatusField({ value, onChange, onBlur, disabled }: {
   disabled?: boolean;
 }) {
   return <div className="space-y-2 rounded-xl border p-4">
-    <Label htmlFor="catalog-status">Status</Label>
-    <Select value={value ?? "DRAFT"} onValueChange={(next) => { if (CATALOG_STATUSES.includes(next as CatalogStatus)) onChange(next as CatalogStatus); }}>
+    <Label id="catalog-status-label" htmlFor="catalog-status">Status</Label>
+    <Select aria-labelledby="catalog-status-label" value={value ?? "DRAFT"} onValueChange={(next) => { if (CATALOG_STATUSES.includes(next as CatalogStatus)) onChange(next as CatalogStatus); }}>
       <SelectTrigger id="catalog-status" className="w-full" onBlur={onBlur} disabled={disabled}><SelectValue /></SelectTrigger>
       <SelectContent>{CATALOG_STATUSES.map((status) => <SelectItem key={status} value={status}>{CATALOG_STATUS_LABELS[status]}</SelectItem>)}</SelectContent>
     </Select>
