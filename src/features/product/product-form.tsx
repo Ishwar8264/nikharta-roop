@@ -282,7 +282,19 @@ export function ProductForm({
                 step="0.01"
                 disabled={busy}
                 error={errors.price?.message}
-                {...register("price", { valueAsNumber: true })}
+                placeholder="0"
+                {...register("price", {
+                  valueAsNumber: true,
+                  onBlur: (event: React.FocusEvent<HTMLInputElement>) => {
+                    if (event.target.value === "") {
+                      event.target.value = "0";
+                      setValue("price", 0, { shouldValidate: true });
+                    }
+                  },
+                })}
+                onFocus={(event) => {
+                  if (event.target.value === "0") event.target.value = "";
+                }}
               />
               <Field
                 id="stock"
@@ -295,7 +307,19 @@ export function ProductForm({
                 step={1}
                 disabled={busy}
                 error={errors.stock?.message}
-                {...register("stock", { valueAsNumber: true })}
+                placeholder="0"
+                {...register("stock", {
+                  valueAsNumber: true,
+                  onBlur: (event: React.FocusEvent<HTMLInputElement>) => {
+                    if (event.target.value === "") {
+                      event.target.value = "0";
+                      setValue("stock", 0, { shouldValidate: true });
+                    }
+                  },
+                })}
+                onFocus={(event) => {
+                  if (event.target.value === "0") event.target.value = "";
+                }}
               />
             </div>
 

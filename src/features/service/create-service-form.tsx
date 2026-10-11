@@ -240,7 +240,19 @@ export function CreateServiceForm({
                 step="0.01"
                 disabled={isLoading}
                 error={errors.price?.message}
-                {...register("price", { valueAsNumber: true })}
+                placeholder="0"
+                {...register("price", {
+                  valueAsNumber: true,
+                  onBlur: (event: React.FocusEvent<HTMLInputElement>) => {
+                    if (event.target.value === "") {
+                      event.target.value = "0";
+                      setValue("price", 0, { shouldValidate: true });
+                    }
+                  },
+                })}
+                onFocus={(event) => {
+                  if (event.target.value === "0") event.target.value = "";
+                }}
               />
               <Controller
                 name="duration"
