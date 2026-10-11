@@ -1,7 +1,7 @@
 "use client";
 
 import { canCreateSalon, isOnboardingComplete } from "@/features/onboarding/policy";
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { RouterProvider } from "react-aria-components";
 import { usePathname, useRouter } from "next/navigation";
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { routes } from "@/config/routes";
 
 import { useLogout } from "../hooks/useLogout";
 import type { CurrentUser } from "../shared/types";
@@ -80,6 +81,24 @@ export function UserMenu({ user }: { user: CurrentUser }) {
                 </p>
               ) : null}
             </DropdownMenuLabel>
+
+            {user.role === "SUPER_ADMIN" && (
+              <DropdownMenuItem
+                textValue="Admin"
+                render={
+                  <Link
+                    href={routes.adminSalonVerification}
+                    className={cn(
+                      "flex w-full cursor-pointer items-center gap-2",
+                      pathname.startsWith("/admin/") && "bg-accent",
+                    )}
+                  />
+                }
+              >
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                Admin
+              </DropdownMenuItem>
+            )}
 
             {userMenuNav.map((item) => {
               const Icon = item.icon ? navIconMap[item.icon] : null;
