@@ -4,6 +4,7 @@ import { setSessionCookies } from "@/server/auth/cookies";
 import { issueTokenPair } from "@/server/auth/token.service";
 import { getCurrentUser } from "@/server/modules/auth/auth.service";
 import {
+  OtpAccountSetupRequiredError,
   OtpExpiredError,
   OtpInvalidError,
   OtpMaxAttemptsError,
@@ -93,6 +94,10 @@ export async function POST(request: Request): Promise<Response> {
 
     return response;
   } catch (error) {
+    if (error instanceof OtpAccountSetupRequiredError) {
+      return NextResponse.json({ message: error.message, code: "ACCOUNT_SETUP_REQUIRED" }, { status: 422 });
+    }
+
     if (error instanceof OtpInvalidError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }

@@ -96,9 +96,14 @@ export interface PublicSalonMember {
   userId: string;
   salonId: string;
   role: SalonMemberRole;
+  name: string | null;
+  avatar: string | null;
+  title: string | null;
+  description: string | null;
+  verificationEmailSent?: boolean | null;
   user: {
     id: string;
     name: string | null;
-    email: string | null;
+    email: string | null; emailVerified: boolean;
   };
 }

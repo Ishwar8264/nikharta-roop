@@ -27,7 +27,7 @@ let logoContentPromise: Promise<Buffer> | undefined;
  * server console instead of being sent. This keeps onboarding friction low
  * while production fails fast instead of leaking codes into server logs.
  */
-export async function sendOtpEmail(to: string, code: string): Promise<void> {
+export async function sendOtpEmail(to: string, code: string, setup = false): Promise<void> {
   assertEmailConfiguration();
 
   if (!resend) {
@@ -35,7 +35,7 @@ export async function sendOtpEmail(to: string, code: string): Promise<void> {
     return;
   }
 
-  const message = createOtpEmail(code);
+  const message = createOtpEmail(code, to, setup);
   const { error } = await resend.emails.send({
     from: emailFrom,
     to,

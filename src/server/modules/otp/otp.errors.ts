@@ -39,3 +39,8 @@ export class OtpDeliveryError extends Error {
     this.name = "OtpDeliveryError";
   }
 }
+
+/** A passwordless invited account must choose its own password before verification. */
+export class OtpAccountSetupRequiredError extends Error {
+  constructor() { super("Choose a password to finish setting up your account."); this.name = "OtpAccountSetupRequiredError"; }
+}

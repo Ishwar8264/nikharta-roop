@@ -521,6 +521,8 @@ export const staffSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           type: "object",
           required: ["id", "userId", "salonId", "role", "user"],
           properties: {
+            name: { type: ["string", "null"] }, avatar: { type: ["string", "null"] },
+            title: { type: ["string", "null"] }, description: { type: ["string", "null"] },
             id: { $ref: "#/components/schemas/ResourceId" },
             userId: { $ref: "#/components/schemas/ResourceId" },
             salonId: { $ref: "#/components/schemas/ResourceId" },
@@ -532,6 +534,7 @@ export const staffSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
                 id: { $ref: "#/components/schemas/ResourceId" },
                 name: { type: ["string", "null"] },
                 email: { type: ["string", "null"], format: "email" },
+                emailVerified: { type: "boolean" },
                 avatar: { type: ["string", "null"], format: "uri" },
               },
             },

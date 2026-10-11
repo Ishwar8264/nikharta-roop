@@ -8,7 +8,12 @@ export interface SalonMember {
   userId: string;
   salonId: string;
   role: "OWNER" | "MANAGER" | "STAFF";
-  user: { id: string; name: string | null; email: string | null };
+  name: string | null;
+  avatar: string | null;
+  title: string | null;
+  description: string | null;
+  verificationEmailSent?: boolean | null;
+  user: { id: string; name: string | null; email: string | null; emailVerified: boolean };
 }
 
 const salonPath = (salonId: string) => `/salons/${encodeURIComponent(salonId)}`;
@@ -39,7 +44,7 @@ export function listSalonMembersApi(salonId: string) {
 }
 
 /** Adds an existing user to the salon. */
-export function addSalonMemberApi(salonId: string, input: ({ userId: string } | { email: string }) & { role: "STAFF" | "MANAGER" }) {
+export function addSalonMemberApi(salonId: string, input: ({ userId: string; name?: string } | { email: string; name: string }) & { role: "STAFF" | "MANAGER"; avatar?: string | null; title?: string | null; description?: string | null }) {
   return api.post<{ message: string; data: { member: SalonMember } }>(`${salonPath(salonId)}/members`, input);
 }
 

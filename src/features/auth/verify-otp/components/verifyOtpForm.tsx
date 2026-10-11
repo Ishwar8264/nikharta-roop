@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, MailCheck, Send } from "lucide-react";
 
+import { Field } from "@/features/auth/shared/components/field";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
 
@@ -32,7 +33,7 @@ export function VerifyOtpForm() {
     return <MissingEmail />;
   }
 
-  return <VerifyOtpFlow email={email} />;
+  return <VerifyOtpFlow email={email} setup={searchParams.get("setup") === "1"} />;
 }
 
 /**
@@ -40,18 +41,21 @@ export function VerifyOtpForm() {
  * Hooks cannot be called conditionally. The parent decides whether the flow
  * is even possible; this child assumes a valid email and owns the state.
  */
-function VerifyOtpFlow({ email }: { email: string }) {
+function VerifyOtpFlow({ email, setup }: { email: string; setup: boolean }) {
   const {
     step,
     code,
     setCode,
+    newPassword,
+    setNewPassword,
+    needsPassword,
     sendCode,
     verifyCode,
     isSending,
     isVerifying,
     error,
     resendIn,
-  } = useVerifyOtp(email);
+  } = useVerifyOtp(email, setup);
 
   const isCodeSent = step === "verify";
 
@@ -109,6 +113,8 @@ function VerifyOtpFlow({ email }: { email: string }) {
             disabled={isVerifying}
             autoFocus
           />
+
+          {needsPassword ? <Field id="setup-password" label="Create your password" type="password" autoComplete="new-password" minLength={8} maxLength={128} required disabled={isVerifying} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} description="Choose your own password. Existing account passwords stay unchanged." /> : null}
 
           <Button
             type="submit"

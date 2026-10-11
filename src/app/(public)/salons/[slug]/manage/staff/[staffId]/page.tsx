@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
+import { StaffVerificationNotice } from "@/features/staff/staff-verification-notice";
 import { StaffDetailPanel } from "@/features/staff/staff-detail-panel";
 import type { StaffServiceOption } from "@/features/staff/types";
 import { getSession } from "@/lib/auth/get-session";
@@ -100,16 +101,16 @@ export default async function ManageStaffDetailPage({ params }: Props) {
     isActive: service.isActive,
   }));
 
-  const staffName = staff.user.name ?? "Unnamed member";
-  const initial = (staff.user.name?.trim()[0] ?? "?").toUpperCase();
+  const staffName = staff.name ?? staff.user.name ?? "Unnamed member";
+  const initial = ((staff.name ?? staff.user.name)?.trim()[0] ?? "?").toUpperCase();
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <header className="space-y-3">
         <div className="flex items-start gap-4">
           <Avatar size="lg">
-            {staff.user.avatar ? (
-              <AvatarImage src={staff.user.avatar} alt={staffName} />
+            {(staff.avatar ?? staff.user.avatar) ? (
+              <AvatarImage src={staff.avatar ?? staff.user.avatar ?? undefined} alt={staffName} />
             ) : null}
             <AvatarFallback>{initial}</AvatarFallback>
           </Avatar>
@@ -119,7 +120,10 @@ export default async function ManageStaffDetailPage({ params }: Props) {
                 {staffName}
               </h1>
               <RoleBadge role={staff.role} />
+              {!staff.user.emailVerified ? <Badge variant="secondary">Pending verification</Badge> : null}
             </div>
+            {staff.title ? <p className="mt-1 font-medium">{staff.title}</p> : null}
+            {staff.description ? <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{staff.description}</p> : null}
             {staff.user.email ? (
               <p className="mt-1 text-sm text-muted-foreground">
                 {staff.user.email}
@@ -129,6 +133,8 @@ export default async function ManageStaffDetailPage({ params }: Props) {
           </div>
         </div>
       </header>
+
+      {!staff.user.emailVerified && staff.user.email ? <div className="mt-6"><StaffVerificationNotice email={staff.user.email} /></div> : null}
 
       <section className="mt-6">
         <StaffDetailPanel

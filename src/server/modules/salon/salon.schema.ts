@@ -199,10 +199,18 @@ export const updateSalonSchema = createSalonSchema
 /** Ownership changes are excluded from the staff management flow. */
 const memberRoleSchema = z.enum(["MANAGER", "STAFF"], { error: "Role must be Staff or Manager" });
 
+/** Salon-specific identity never overwrites an existing personal profile. */
+const staffProfileShape = {
+  name: z.string().trim().min(2).max(100),
+  avatar: z.url().max(2048).refine((value) => value.startsWith("https://"), "Avatar must use HTTPS").nullable().optional(),
+  title: z.string().trim().max(100).nullable().optional(),
+  description: z.string().trim().max(500).nullable().optional(),
+};
+
 /** Accept exactly one account identifier; retain ID-based API clients. */
 export const addSalonMemberSchema = z.union([
-  z.strictObject({ email: z.string().trim().toLowerCase().pipe(z.email().max(254)), role: memberRoleSchema }),
-  z.strictObject({ userId: resourceIdSchema, role: memberRoleSchema }),
+  z.strictObject({ email: z.string().trim().toLowerCase().pipe(z.email().max(254)), role: memberRoleSchema, ...staffProfileShape }),
+  z.strictObject({ userId: resourceIdSchema, role: memberRoleSchema, ...staffProfileShape, name: staffProfileShape.name.optional() }),
 ]);
 
 /**

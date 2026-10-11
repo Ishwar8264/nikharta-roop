@@ -1,5 +1,6 @@
 "use client";
 
+import { AddStaffDialog } from "@/features/staff/add-staff-dialog";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -11,7 +12,7 @@ import { SALON_STATUSES, SALON_STATUS_LABELS, type SalonStatus } from "../status
 import { routes } from "@/config/routes";
 import { ApiError } from "@/lib/api/backend.client";
 
-import { addSalonMemberApi, deleteSalonApi, listSalonMembersApi, removeSalonMemberApi, updateSalonApi, type SalonMember } from "../api/manage";
+import { deleteSalonApi, listSalonMembersApi, removeSalonMemberApi, updateSalonApi, type SalonMember } from "../api/manage";
 import type { PublicSalon } from "../types";
 
 interface Props {
@@ -58,8 +59,6 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(true);
-  const [memberEmail, setMemberEmail] = useState("");
-  const [role, setRole] = useState<"STAFF" | "MANAGER">("STAFF");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -98,21 +97,6 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
       router.refresh();
     } catch (reason) {
       setError(errorMessage(reason));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function addMember(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMemberError(null);
-    setBusy(true);
-    try {
-      const response = await addSalonMemberApi(salon.id, { email: memberEmail.trim(), role });
-      setMembers((current) => [...current, response.data.member]);
-      setMemberEmail("");
-    } catch (reason) {
-      setMemberError(errorMessage(reason));
     } finally {
       setBusy(false);
     }
@@ -185,28 +169,14 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
           {members.map((member) => (
             <li key={member.id} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
-                <p className="truncate font-medium">{member.user.name || member.user.email || member.userId}</p>
-                <p className="text-sm text-muted-foreground">{member.role} · {member.user.email}</p>
+                <p className="truncate font-medium">{member.name || member.user.name || member.user.email || member.userId}</p>
+                <p className="text-sm text-muted-foreground">{member.role} · {member.user.email}{!member.user.emailVerified ? " · Pending verification" : ""}</p>
               </div>
               {isOwner && member.userId !== currentUserId ? <Button type="button" variant="destructive" disabled={busy} onClick={() => removeMember(member.id)}>Remove</Button> : null}
             </li>
           ))}
         </ul>
-        {isOwner ? (
-          <form onSubmit={addMember} className="flex flex-wrap items-end gap-3 border-t pt-5">
-            <div className="min-w-52 flex-1 space-y-2">
-              <Label htmlFor="member-email">Registered email</Label>
-              <Input id="member-email" type="email" maxLength={254} value={memberEmail} onChange={(event) => setMemberEmail(event.target.value)} required disabled={busy} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="member-role">Role</Label>
-              <select id="member-role" className="h-8 rounded-lg border bg-background px-2 text-sm" value={role} onChange={(event) => setRole(event.target.value as "STAFF" | "MANAGER")} disabled={busy}>
-                <option value="STAFF">Staff</option><option value="MANAGER">Manager</option>
-              </select>
-            </div>
-            <Button type="submit" disabled={busy}>Add member</Button>
-          </form>
-        ) : null}
+        {isOwner ? <AddStaffDialog salonId={salon.id} salonSlug={salon.slug} onAdded={(member) => setMembers((current) => [...current, member])} /> : null}
       </section>
 
       {isOwner ? <section className="space-y-3 rounded-xl border border-destructive/40 p-6"><h2 className="text-xl font-semibold">Delete salon</h2><Button type="button" variant="destructive" disabled={busy} onClick={deleteSalon}>Delete salon</Button></section> : null}

@@ -21,6 +21,7 @@ export const sendOtpSchema = z.strictObject({
 export const verifyOtpSchema = z
   .strictObject({
     email: emailSchema,
+    newPassword: z.string().min(8).max(128).optional(),
     code: z
       .string({ error: "Code must be a string" })
       .trim()

@@ -428,7 +428,7 @@ export const salonPaths = {
         post: {
           tags: ["Salons"],
           summary: "Add a salon member",
-          description: "Requires OWNER on the target salon.",
+          description: "Requires OWNER on the target salon. Creates an unverified account for a new email and preserves existing personal profiles. Pending accounts cannot access salon management or receive bookings.",
           operationId: "addSalonMember",
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -448,7 +448,7 @@ export const salonPaths = {
             },
           },
           responses: {
-            "422": { description: "Account missing or ineligible" },
+            "422": { description: "Account is deleted or an ID-based account is missing" },
             "429": { description: "Staff addition rate limit exceeded" },
             "201": {
               description: "Member added",
@@ -1012,6 +1012,9 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           type: "object",
           required: ["id", "userId", "salonId", "role", "user"],
           properties: {
+            name: { type: ["string", "null"] }, avatar: { type: ["string", "null"] },
+            title: { type: ["string", "null"] }, description: { type: ["string", "null"] },
+            verificationEmailSent: { type: ["boolean", "null"] },
             id: { $ref: "#/components/schemas/ResourceId" },
             userId: { $ref: "#/components/schemas/ResourceId" },
             salonId: { $ref: "#/components/schemas/ResourceId" },
@@ -1021,6 +1024,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               required: ["id", "name", "email"],
               properties: {
                 id: { $ref: "#/components/schemas/ResourceId" },
+                emailVerified: { type: "boolean" },
                 name: { type: ["string", "null"] },
                 email: { type: ["string", "null"], format: "email" },
               },
@@ -1029,12 +1033,20 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
         },
         AddSalonMemberRequest: {
           oneOf: [
-            { type: "object", additionalProperties: false, required: ["email", "role"], properties: {
+            { type: "object", additionalProperties: false, required: ["email", "name", "role"], properties: {
               email: { type: "string", format: "email", maxLength: 254 },
+              name: { type: "string", minLength: 2, maxLength: 100 },
+              avatar: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+              title: { type: ["string", "null"], maxLength: 100 },
+              description: { type: ["string", "null"], maxLength: 500 },
               role: { type: "string", enum: ["MANAGER", "STAFF"] },
             } },
             { type: "object", additionalProperties: false, required: ["userId", "role"], properties: {
               userId: { $ref: "#/components/schemas/ResourceId" },
+              name: { type: "string", minLength: 2, maxLength: 100 },
+              avatar: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+              title: { type: ["string", "null"], maxLength: 100 },
+              description: { type: ["string", "null"], maxLength: 500 },
               role: { type: "string", enum: ["MANAGER", "STAFF"] },
             } },
           ],

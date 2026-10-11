@@ -1,0 +1,75 @@
+import { randomUUID } from "node:crypto";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import type { PrismaClient } from "../src/generated/prisma/client";
+
+describe.skipIf(process.env.RUN_STAFF_DATABASE_TESTS !== "1")("staff invitation database flow", () => {
+  let prisma: PrismaClient;
+  let repository: typeof import("../src/server/modules/salon/salon.repository");
+  let staffRepository: typeof import("../src/server/modules/staff/staff.repository");
+  let otpService: typeof import("../src/server/modules/otp/otp.service");
+  let hashOtp: typeof import("../src/server/auth/otp").hashOtp;
+  let ownerId: string;
+  let salonId: string;
+  let email: string;
+  let suffix: string;
+  beforeAll(async () => {
+    await import("dotenv/config");
+    if (!process.env.DATABASE_URL || !["localhost", "127.0.0.1", "::1"].includes(new URL(process.env.DATABASE_URL).hostname)) throw new Error("Staff integration tests require a local database");
+    prisma = (await import("../src/lib/prisma")).prisma;
+    repository = await import("../src/server/modules/salon/salon.repository");
+    staffRepository = await import("../src/server/modules/staff/staff.repository");
+    otpService = await import("../src/server/modules/otp/otp.service");
+    hashOtp = (await import("../src/server/auth/otp")).hashOtp;
+  });
+  beforeEach(async () => {
+    suffix = randomUUID(); email = `staff-fixture-${suffix}@example.invalid`;
+    ownerId = (await prisma.user.create({ data: { email: `owner-fixture-${suffix}@example.invalid`, emailVerified: true } })).id;
+    salonId = (await prisma.salon.create({ data: { name: "Staff test fixture", slug: `staff-fixture-${suffix}`, address: "Synthetic", city: "Mumbai", state: "Maharashtra", zip: "400001", lat: 19, lng: 72, members: { create: { userId: ownerId, role: "OWNER" } } } })).id;
+  });
+  afterEach(async () => {
+    const users = await prisma.user.findMany({ where: { OR: [{ email }, { id: ownerId }] }, select: { id: true } });
+    const ids = users.map((user) => user.id);
+    await prisma.staffServiceSkill.deleteMany({ where: { staffId: { in: ids } } });
+    await prisma.service.deleteMany({ where: { salonId } });
+    await prisma.otp.deleteMany({ where: { userId: { in: ids } } });
+    await prisma.salonMember.deleteMany({ where: { salonId } });
+    await prisma.salon.delete({ where: { id: salonId } });
+    await prisma.user.deleteMany({ where: { id: { in: ids } } });
+  });
+  afterAll(async () => { if (prisma) await prisma.$disconnect(); });
+  function add() { return repository.addSalonMember({ actorId: ownerId, salonId, email, name: "Salon stylist", avatar: "https://example.invalid/photo.png", title: "Hair stylist", description: "Salon-specific biography", role: "STAFF" }); }
+  it("creates a pending profile, then activates only after recipient OTP and password setup", async () => {
+    const member = await add();
+    expect(member.title).toBe("Hair stylist");
+    expect(member.user.emailVerified).toBe(false);
+    expect(await repository.findSalonForViewer({ salonId, userId: member.userId })).toBeNull();
+    expect(await staffRepository.findCallerMembership(salonId, member.userId)).toBeNull();
+    const service = await prisma.service.create({ data: { salonId, name: "Test haircut", slug: "test-haircut", price: 100, duration: 30 } });
+    await prisma.staffServiceSkill.create({ data: { staffId: member.userId, serviceId: service.id } });
+    expect(await staffRepository.listStaffForService(salonId, service.id)).toEqual([]);
+    await prisma.otp.create({ data: { userId: member.userId, channel: "EMAIL", purpose: "EMAIL_VERIFICATION", codeHash: await hashOtp("123456"), expiresAt: new Date(Date.now() + 60000) } });
+    await expect(otpService.verifyOtpCode({ email, code: "123456" })).rejects.toThrow("Choose a password");
+    await otpService.verifyOtpCode({ email, code: "123456", newPassword: "RecipientPassword123" });
+    expect(await repository.findSalonForViewer({ salonId, userId: member.userId })).toMatchObject({ viewerRole: "STAFF" });
+    expect(await staffRepository.listStaffForService(salonId, service.id)).toHaveLength(1);
+    await expect(otpService.verifyOtpCode({ email, code: "123456", newPassword: "DifferentPassword123" })).rejects.toThrow("Invalid or expired code");
+  });
+  it("links existing accounts without altering their personal profile or credentials", async () => {
+    const user = await prisma.user.create({ data: { email, name: "Personal name", avatar: "https://example.invalid/personal.png", bio: "Personal bio", password: "existing-password-hash", emailVerified: true } });
+    const member = await add();
+    expect(member.userId).toBe(user.id);
+    expect(member.name).toBe("Salon stylist");
+    expect(await prisma.user.findUnique({ where: { id: user.id } })).toMatchObject({ name: "Personal name", bio: "Personal bio", avatar: "https://example.invalid/personal.png", password: "existing-password-hash", emailVerified: true });
+  });
+  it("rejects deleted accounts without reviving them", async () => {
+    await prisma.user.create({ data: { email, deletedAt: new Date() } });
+    await expect(add()).rejects.toThrow("eligible account");
+    expect(await prisma.salonMember.count({ where: { salonId } })).toBe(1);
+  });
+  it("allows only one membership under concurrent additions", async () => {
+    const results = await Promise.allSettled([add(), add()]);
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(await prisma.user.count({ where: { email } })).toBe(1);
+    expect(await prisma.salonMember.count({ where: { salonId } })).toBe(2);
+  });
+});

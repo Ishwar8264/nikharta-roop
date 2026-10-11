@@ -1,8 +1,8 @@
 import { PUBLIC_SALON_FILTER } from "@/features/salon/status";
-import { SalonPublicationBlockedError } from "./salon.errors";
+import { SalonMemberAccountUnavailableError, SalonNotFoundError, SalonRoleInsufficientError, SalonPublicationBlockedError } from "./salon.errors";
 import "server-only";
 
-import type { SalonCategory, SalonMemberRole } from "@/generated/prisma/client";
+import type { SalonCategory } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -176,7 +176,7 @@ export async function findSalonForViewer(
     select: {
       ...PUBLIC_SALON_SELECT,
       members: {
-        where: { userId: input.userId, user: { deletedAt: null } },
+        where: { userId: input.userId, user: { deletedAt: null, emailVerified: true } },
         select: { role: true },
         take: 1,
       },
@@ -358,8 +358,9 @@ export async function listSalonMembers(
       userId: true,
       salonId: true,
       role: true,
+      name: true, avatar: true, title: true, description: true,
       user: {
-        select: { id: true, name: true, email: true },
+        select: { id: true, name: true, email: true, emailVerified: true },
       },
     },
     orderBy: [{ role: "asc" }, { id: "asc" }],
@@ -395,39 +396,50 @@ export async function findSalonMemberByUser(input: {
   });
 }
 
-/** Exact account lookup; only called after salon owner authorization. */
-export async function findEligibleSalonMemberAccount(input: { email: string } | { userId: string }) {
-  return prisma.user.findFirst({
-    where: {
-      ...("email" in input ? { email: { equals: input.email, mode: "insensitive" as const } } : { id: input.userId }),
-      deletedAt: null,
-    },
-    select: { id: true },
-  });
-}
-
-/** Adds a membership row to a salon. */
+/** Creates the account and salon profile atomically, preserving existing personal data. */
 export async function addSalonMember(input: {
+  actorId: string;
   salonId: string;
-  userId: string;
-  role: SalonMemberRole;
+  email?: string;
+  userId?: string;
+  role: "STAFF" | "MANAGER";
+  name?: string;
+  avatar?: string | null;
+  title?: string | null;
+  description?: string | null;
 }) {
-  return prisma.salonMember.create({
-    data: {
-      salonId: input.salonId,
-      userId: input.userId,
-      role: input.role,
-    },
-    select: {
-      id: true,
-      userId: true,
-      salonId: true,
-      role: true,
-      user: {
-        select: { id: true, name: true, email: true },
-      },
-    },
-  });
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await prisma.$transaction(async (transaction) => {
+        const owner = await transaction.salonMember.findFirst({
+          where: { salonId: input.salonId, userId: input.actorId, user: { deletedAt: null, emailVerified: true }, salon: { deletedAt: null } },
+          select: { role: true },
+        });
+        if (!owner) throw new SalonNotFoundError();
+        if (owner.role !== "OWNER") throw new SalonRoleInsufficientError();
+
+        const account = input.email
+          ? await transaction.user.upsert({
+              where: { email: input.email }, update: {},
+              create: { email: input.email, name: input.name, emailVerified: false },
+              select: { id: true, deletedAt: true },
+            })
+          : await transaction.user.findUnique({ where: { id: input.userId! }, select: { id: true, deletedAt: true } });
+        if (!account || account.deletedAt) throw new SalonMemberAccountUnavailableError();
+
+        return transaction.salonMember.create({
+          data: { salonId: input.salonId, userId: account.id, role: input.role,
+            name: input.name, avatar: input.avatar, title: input.title, description: input.description },
+          select: { id: true, userId: true, salonId: true, role: true, name: true, avatar: true, title: true, description: true,
+            user: { select: { id: true, name: true, email: true, emailVerified: true } } },
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      // Retry serialization conflicts and concurrent account creation; uniqueness still wins.
+      if (attempt < 2 && error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2002"].includes(error.code)) continue;
+      throw error;
+    }
+  }
 }
 
 /** Removes a membership row. */

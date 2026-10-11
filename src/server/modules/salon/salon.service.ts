@@ -24,8 +24,6 @@ import {
   findSalonBySlug,
   findSalonForViewer,
   findSalonMemberById,
-  findSalonMemberByUser,
-  findEligibleSalonMemberAccount,
   listActiveSalons,
   listSalonMembers,
   removeSalonMember,
@@ -33,6 +31,8 @@ import {
   softDeleteSalonById,
   updateSalonById,
 } from "./salon.repository";
+import { sendOtp } from "@/server/modules/otp/otp.service";
+import { OtpCooldownError } from "@/server/modules/otp/otp.errors";
 import { addSalonMemberSchema } from "./salon.schema";
 import { toPublicSalonDetail } from "./salon.mapper";
 import type {
@@ -306,50 +306,36 @@ export async function addSalonMemberByOwner(
   actorId: string,
   salonId: string,
   input: AddSalonMemberInput,
-): Promise<PublicSalonMember> {
+): Promise<PublicSalonMember & { verificationEmailSent: boolean | null }> {
   const salon = await loadSalonForViewer(salonId, actorId);
   assertRoleAtLeast(salon.viewerRole, "OWNER");
-
-  // Validate at the service boundary too, including calls that bypass HTTP.
   const validated = addSalonMemberSchema.parse(input);
-  const account = await findEligibleSalonMemberAccount(validated);
-  if (!account) throw new SalonMemberAccountUnavailableError();
 
-  const existing = await findSalonMemberByUser({
-    salonId,
-    userId: account.id,
-  });
-  if (existing) throw new SalonMemberExistsError();
-
+  let member: PublicSalonMember;
   try {
-    const member = await addSalonMember({
-      salonId,
-      userId: account.id,
-      role: validated.role,
-    });
-
-    writeAuditLog({
-      userId: actorId,
-      action: "CREATE",
-      entity: "SalonMember",
-      entityId: member.id,
-      newData: {
-        salonId,
-        memberUserId: account.id,
-        role: validated.role,
-      },
-    });
-
-    return member;
+    member = await addSalonMember({ actorId, salonId, ...validated });
   } catch (error) {
-    if (isUniqueConstraintViolation(error, "userId")) {
-      throw new SalonMemberExistsError();
-    }
+    if (isUniqueConstraintViolation(error, "userId")) throw new SalonMemberExistsError();
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
       throw new SalonMemberAccountUnavailableError();
     }
     throw error;
   }
+
+  writeAuditLog({ userId: actorId, action: "CREATE", entity: "SalonMember", entityId: member.id,
+    newData: { salonId, memberUserId: member.userId, role: member.role } });
+
+  // Membership stays pending if delivery fails. Do not report the saved profile as a failed add.
+  let verificationEmailSent: boolean | null = null;
+  if (!member.user.emailVerified && member.user.email) {
+    try {
+      await sendOtp({ email: member.user.email });
+      verificationEmailSent = true;
+    } catch (error) {
+      verificationEmailSent = error instanceof OtpCooldownError;
+    }
+  }
+  return { ...member, verificationEmailSent };
 }
 
 /**

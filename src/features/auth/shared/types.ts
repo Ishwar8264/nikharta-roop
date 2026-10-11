@@ -138,6 +138,7 @@ export interface SendOtpInput {
 }
 
 export interface VerifyOtpInput {
+  newPassword?: string;
   email: string;
   code: string;
 }

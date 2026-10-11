@@ -20,11 +20,16 @@ export interface PublicStaffMember {
   userId: string;
   salonId: string;
   role: SalonMemberRole;
+  name: string | null;
+  avatar: string | null;
+  title: string | null;
+  description: string | null;
   user: {
     id: string;
     name: string | null;
     email: string | null;
     avatar: string | null;
+    emailVerified: boolean;
   };
 }
 

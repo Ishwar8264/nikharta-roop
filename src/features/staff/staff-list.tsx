@@ -152,8 +152,8 @@ function StaffCard({
   row: StaffRow;
   salonSlug: string;
 }) {
-  const name = row.member.user.name ?? "Unnamed member";
-  const initial = (row.member.user.name?.trim()[0] ?? "?").toUpperCase();
+  const name = row.member.name ?? row.member.user.name ?? "Unnamed member";
+  const initial = ((row.member.name ?? row.member.user.name)?.trim()[0] ?? "?").toUpperCase();
   const href = routes.salonStaffDetail(salonSlug, row.member.id);
 
   return (
@@ -161,9 +161,9 @@ function StaffCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <Avatar>
-            {row.member.user.avatar ? (
+            {(row.member.avatar ?? row.member.user.avatar) ? (
               <AvatarImage
-                src={row.member.user.avatar}
+                src={row.member.avatar ?? row.member.user.avatar ?? undefined}
                 alt={name}
               />
             ) : null}
@@ -171,6 +171,7 @@ function StaffCard({
           </Avatar>
           <div className="min-w-0">
             <p className="truncate font-medium leading-tight">{name}</p>
+            {row.member.title ? <p className="text-xs text-muted-foreground">{row.member.title}</p> : null}
             {row.member.user.email ? (
               <p className="truncate text-xs text-muted-foreground">
                 {row.member.user.email}
@@ -178,7 +179,7 @@ function StaffCard({
             ) : null}
           </div>
         </div>
-        <RoleBadge role={row.member.role} />
+        <div className="flex flex-wrap gap-2"><RoleBadge role={row.member.role} />{!row.member.user.emailVerified ? <Badge variant="secondary">Pending verification</Badge> : null}</div>
       </div>
 
       <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
@@ -222,8 +223,8 @@ function StaffRowComponent({
   row: StaffRow;
   salonSlug: string;
 }) {
-  const name = row.member.user.name ?? "Unnamed member";
-  const initial = (row.member.user.name?.trim()[0] ?? "?").toUpperCase();
+  const name = row.member.name ?? row.member.user.name ?? "Unnamed member";
+  const initial = ((row.member.name ?? row.member.user.name)?.trim()[0] ?? "?").toUpperCase();
   const href = routes.salonStaffDetail(salonSlug, row.member.id);
 
   return (
@@ -231,9 +232,9 @@ function StaffRowComponent({
       <td className="px-4 py-3 align-middle">
         <div className="flex items-center gap-3">
           <Avatar size="sm">
-            {row.member.user.avatar ? (
+            {(row.member.avatar ?? row.member.user.avatar) ? (
               <AvatarImage
-                src={row.member.user.avatar}
+                src={row.member.avatar ?? row.member.user.avatar ?? undefined}
                 alt={name}
               />
             ) : null}
@@ -241,6 +242,7 @@ function StaffRowComponent({
           </Avatar>
           <div className="min-w-0">
             <p className="truncate font-medium leading-tight">{name}</p>
+            {row.member.title ? <p className="text-xs text-muted-foreground">{row.member.title}</p> : null}
             {row.member.user.email ? (
               <p className="truncate text-xs text-muted-foreground">
                 {row.member.user.email}
@@ -250,7 +252,7 @@ function StaffRowComponent({
         </div>
       </td>
       <td className="px-4 py-3 align-middle">
-        <RoleBadge role={row.member.role} />
+        <div className="flex flex-wrap gap-2"><RoleBadge role={row.member.role} />{!row.member.user.emailVerified ? <Badge variant="secondary">Pending verification</Badge> : null}</div>
       </td>
       <td className="px-4 py-3 align-middle text-muted-foreground">
         {summarizeSchedule(row.schedule)}

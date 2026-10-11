@@ -21,7 +21,10 @@ interface AuthEmailContent {
 }
 
 /** Creates every representation required for an email-verification message. */
-export function createOtpEmail(code: string): AuthEmailMessage {
+export function createOtpEmail(code: string, email?: string, setup = false): AuthEmailMessage {
+  const verificationUrl = new URL("/verify-otp", siteConfig.url);
+  if (email) verificationUrl.searchParams.set("email", email);
+  if (setup) verificationUrl.searchParams.set("setup", "1");
   return {
     subject: `${code} is your ${siteConfig.name} verification code`,
     html: renderAuthEmail({
@@ -29,12 +32,14 @@ export function createOtpEmail(code: string): AuthEmailMessage {
       eyebrow: "Account verification",
       title: "Verify your email",
       description:
-        "Welcome to Nikharta Roop. Enter this one-time code to finish creating your account.",
+        email
+          ? `Verify your Nikharta Roop email. <a href="${verificationUrl.toString().replaceAll("&", "&amp;")}">Open email verification</a> and enter this code. New staff accounts can then choose their own password.`
+          : "Welcome to Nikharta Roop. Enter this one-time code to finish creating your account.",
       code,
       securityMessage:
         "If you did not create a Nikharta Roop account, you can safely ignore this email.",
     }),
-    text: `${siteConfig.name}\n\nVerify your email\n\nYour verification code is: ${code}\n\nThis code expires in 10 minutes and can only be used once.\n\nIf you did not create a ${siteConfig.name} account, you can safely ignore this email.\n\nNeed help? ${siteConfig.contact.email}`,
+    text: `${siteConfig.name}\n\nVerify your email\n\n${email ? `Open: ${verificationUrl.toString()}\n\n` : ""}Your verification code is: ${code}\n\nThis code expires in 10 minutes and can only be used once.\n\nIf you did not create a ${siteConfig.name} account, you can safely ignore this email.\n\nNeed help? ${siteConfig.contact.email}`,
   };
 }
 

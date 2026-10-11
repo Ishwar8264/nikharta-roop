@@ -512,6 +512,7 @@ export const authPaths = {
             },
           },
           responses: {
+            "422": { description: "Invited account must choose a password before verification" },
             "200": {
               description: "Code accepted — identifier is now verified",
               content: {
@@ -1104,6 +1105,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           additionalProperties: false,
           required: ["email", "code"],
           properties: {
+            newPassword: { type: "string", minLength: 8, maxLength: 128, description: "Required for passwordless invited accounts. Never overwrites existing passwords." },
             email: {
               type: "string",
               format: "email",
