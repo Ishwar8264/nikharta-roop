@@ -61,6 +61,7 @@ const user: CurrentUser = {
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+  window.history.replaceState(null, "", "/");
 });
 
 function setup(partnerRequested = false) {
@@ -75,6 +76,23 @@ function setup(partnerRequested = false) {
 }
 
 describe("skip-friendly account setup", () => {
+  it("cleans entry parameters while preserving the current booking destination", async () => {
+    window.history.replaceState(null, "", "/onboarding?welcome=1&redirect=%2Fsalons%2Fexample%2Fbook");
+    const actor = setup();
+    expect(window.location.pathname + window.location.search).toBe("/onboarding");
+    await actor.click(screen.getByRole("radio", { name: /Customer/ }));
+    await actor.click(screen.getByRole("button", { name: "Continue" }));
+    await waitFor(() => expect(screen.getByLabelText(/Your name/)).toBeTruthy());
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    await actor.click(screen.getByRole("button", { name: /Start exploring/ }));
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/salons/example/book"));
+  });
+  it("cleans partner entry parameters without changing the selected flow", () => {
+    window.history.replaceState(null, "", "/onboarding?welcome=1&type=partner");
+    setup(true);
+    expect(window.location.pathname + window.location.search).toBe("/onboarding");
+    expect(screen.getByLabelText(/Business contact phone/)).toBeTruthy();
+  });
   it("requires an explicit choice but lets undecided users skip to booking", async () => {
     const actor = setup();
     expect(

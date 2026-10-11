@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -42,6 +42,12 @@ export function OnboardingForm({
   destination: string;
 }) {
   const router = useRouter();
+  // Entry parameters are already resolved by the server; keep the visible URL clean.
+  useEffect(() => {
+    if (window.location.pathname === "/onboarding" && window.location.search) {
+      window.history.replaceState(window.history.state, "", "/onboarding");
+    }
+  }, []);
   const [accountType, setAccountType] = useState<AccountType | null>(
     partnerRequested
       ? "SALON_PARTNER"
@@ -103,10 +109,7 @@ export function OnboardingForm({
           : {}),
       });
       if (skip) leave(destination);
-      else {
-        setStep(2);
-        router.refresh();
-      }
+      else setStep(2);
     } catch (e) {
       setSkipFailed(skip);
       setError(
