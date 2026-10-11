@@ -7,10 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
-import { FormHeader } from "@/components/shared";
+import { DurationField, FormHeader, SlugField } from "@/components/shared";
 import { CatalogStatusField } from "@/components/shared/catalog-status/field";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
@@ -42,6 +41,7 @@ const SERVICE_MISMATCH_MESSAGE =
   "One or more services do not belong to this salon. Refresh the page and try again.";
 
 interface PackageFormProps {
+  salonId: string;
   salonSlug: string;
   salonName: string;
   /** The salon's active services, grouped by category in the picker. */
@@ -68,6 +68,7 @@ function useApiError() {
 
 /** Create or edit a package with a grouped, searchable service picker. */
 export function PackageForm({
+  salonId,
   salonSlug,
   salonName,
   services,
@@ -88,6 +89,7 @@ export function PackageForm({
     handleSubmit,
     register,
     setError,
+    clearErrors,
     setValue,
   } = useForm<PackageFormInput, unknown, PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
@@ -111,11 +113,12 @@ export function PackageForm({
 
   useEffect(() => {
     if (!slugWasEdited) {
+      clearErrors("slug");
       setValue("slug", slugifyPackageName(name) ?? "", {
         shouldValidate: false,
       });
     }
-  }, [name, setValue, slugWasEdited]);
+  }, [name, setValue, slugWasEdited, clearErrors]);
 
   const selected = useMemo(
     () =>
@@ -129,7 +132,7 @@ export function PackageForm({
       : 0;
   const durationTotal = selected.reduce((sum, s) => sum + s.duration, 0);
   const durationPreview =
-    typeof price === "number" && price > 0 && selected.length > 0
+    selected.length > 0
       ? formatDuration(durationTotal)
       : null;
 
@@ -223,62 +226,85 @@ export function PackageForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-6">
+    <form onSubmit={handleSubmit(submit)} noValidate data-form-rounded="true">
+      <Card className="gap-0 overflow-visible py-0">
+        <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
       <FormHeader
-        title={initialPackage ? "Edit package" : "New package"}
+        title={initialPackage ? "Edit package" : "Create a package"}
         description={initialPackage ? `${salonName} · Published packages appear on your public page.` : `Create a draft package for ${salonName}. Publish it from package details when ready.`}
       />
 
-      {apiError.message ? <FormError>{apiError.message}</FormError> : null}
-
-      <Card>
-        <CardContent className="space-y-5">
+        </CardHeader>
+        <CardContent className="space-y-6 px-5 py-6 sm:px-8">
+          <FormError>{apiError.message}</FormError>
+          <section className="space-y-4" aria-labelledby="package-basics">
+            <h2 id="package-basics" className="border-b pb-3 font-heading text-lg font-semibold">Basic information</h2>
+            <div className="grid items-start gap-4 sm:grid-cols-2">
           <Field
             id="name"
+            required
+            disabled={busy}
             label="Package name"
             placeholder="e.g. Bridal Glow Package"
             error={errors.name?.message}
             {...register("name")}
           />
 
-          <div className="space-y-1">
-            <Field
-              id="slug"
-              label="URL slug"
-              placeholder="e.g. bridal-glow-package"
-              {...register("slug", {
-                onChange: () => setSlugWasEdited(true),
-              })}
-              error={errors.slug?.message}
-            />
-            <p className="text-xs text-muted-foreground">
-              {initialPackage
-                ? "The slug cannot change after creation — it appears in shared links."
-                : "Shown in the public URL. Suggested from the name; edit if you like."}
-            </p>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
+          <Controller
+            name="slug"
+            control={control}
+            render={({ field }) => (
+              <SlugField
+                id="slug"
+                resource="package"
+                salonId={salonId}
+                currentSlug={initialPackage?.slug}
+                value={field.value ?? ""}
+                onValueChange={(value) => {
+                  setSlugWasEdited(true);
+                  clearErrors("slug");
+                  field.onChange(value);
+                }}
+                name={field.name}
+                ref={field.ref}
+                onBlur={field.onBlur}
+                disabled={busy || Boolean(initialPackage)}
+                error={errors.slug?.message}
+              />
+            )}
+          />
+            </div>
+          <div className="grid items-start gap-4 sm:grid-cols-2">
             <Field
               id="price"
               label="Package price (₹)"
               type="number"
               min={1}
               step={1}
-              placeholder="e.g. 4999"
+              placeholder="0"
+              required
+              disabled={busy}
               error={errors.price?.message}
               {...register("price", { valueAsNumber: true })}
+              onFocus={(event) => { if (event.target.value === "0") event.target.value = ""; }}
             />
             <div className="space-y-1">
-              <Field
-                id="duration"
-                label="Total duration (minutes)"
-                type="number"
-                min={5}
-                step={5}
-                placeholder="e.g. 150"
-                error={errors.duration?.message}
-                {...register("duration", { valueAsNumber: true })}
+              <Controller
+                name="duration"
+                control={control}
+                render={({ field }) => (
+                  <DurationField
+                    id="duration"
+                    label="Total duration"
+                    maxMinutes={1440}
+                    isRequired
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={busy}
+                    error={errors.duration?.message}
+                    triggerProps={{ onBlur: field.onBlur, ref: field.ref }}
+                  />
+                )}
               />
               {durationPreview ? (
                 <p className="text-xs text-muted-foreground">
@@ -288,6 +314,8 @@ export function PackageForm({
             </div>
           </div>
 
+          </section>
+
           {initialPackage ? (
           <Controller
             name="status"
@@ -296,10 +324,10 @@ export function PackageForm({
           />
           ) : null}
 
-          <section className="space-y-3">
+          <section className="space-y-3" aria-labelledby="included-services">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <Label>Included services</Label>
+                <h2 id="included-services" className="font-heading text-lg font-semibold">Included services</h2>
                 <p className="text-xs text-muted-foreground">
                   {selected.length === 0
                     ? "Pick the services this package bundles."
@@ -346,7 +374,7 @@ export function PackageForm({
             ) : null}
 
             {pickerOpen ? (
-              <div className="space-y-4 rounded-xl border p-4">
+              <div className="space-y-3 rounded-lg border p-3">
                 <div className="relative">
                   <Search
                     className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -355,6 +383,7 @@ export function PackageForm({
                   <Input
                     value={serviceQuery}
                     onChange={(e) => setServiceQuery(e.target.value)}
+                    disabled={busy}
                     placeholder="Search services…"
                     aria-label="Search services"
                     className="pl-9"
@@ -371,7 +400,7 @@ export function PackageForm({
                     No services match “{serviceQuery.trim()}”.
                   </p>
                 ) : (
-                  <div className="max-h-80 space-y-5 overflow-y-auto pr-1">
+                  <div className="max-h-64 space-y-3 overflow-y-auto overscroll-contain pr-1">
                     {grouped.map(([category, items]) => (
                       <fieldset key={category} className="space-y-2">
                         <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -384,7 +413,7 @@ export function PackageForm({
                               <label
                                 key={service.id}
                                 className={cn(
-                                  "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors",
+                                  "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-colors",
                                   checked
                                     ? "border-primary bg-primary/5"
                                     : "border-border hover:border-primary/40",
@@ -421,7 +450,7 @@ export function PackageForm({
             ) : null}
           </section>
         </CardContent>
-        <CardFooter className="flex justify-end gap-3 px-5 py-4 sm:px-8">
+        <CardFooter className="flex flex-col-reverse items-stretch gap-3 border-t px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
           <Button
             type="button"
             variant="outline"
