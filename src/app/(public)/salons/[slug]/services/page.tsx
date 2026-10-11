@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { ArrowRight, Plus, Scissors } from "lucide-react";
+import { ArrowRight, Scissors, Settings2 } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { NavLink } from "@/components/shared/nav-link";
@@ -84,25 +84,30 @@ export default async function SalonServicesPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-
-
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <main className="min-w-0">
+      <header className="flex flex-col gap-3 border-b border-border pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">
             {salon.name}
           </p>
-          <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
             Services
           </h1>
-          <p className="mt-3 text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             Browse available treatments, prices and appointment durations.
           </p>
         </div>
         {canManageServices ? (
-          <div className="flex flex-wrap gap-2">
-            <NavLink href={routes.salonServicesManage(slug)} variant="outline" markActive={false}>Manage services</NavLink>
-            <NavLink href={routes.salonServiceCreate(slug)} variant="default" markActive={false} icon={<Plus className="h-4 w-4" />}>Add service</NavLink>
+          <div className="flex flex-col gap-2 sm:flex-row xl:shrink-0">
+            <NavLink
+              href={routes.salonServicesManage(slug)}
+              variant="outline"
+              markActive={false}
+              icon={<Settings2 className="size-4" />}
+              className="justify-center"
+            >
+              Manage services
+            </NavLink>
           </div>
         ) : null}
       </header>
@@ -111,7 +116,7 @@ export default async function SalonServicesPage({
 
       {result.items.length > 0 ? (
         <>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {result.items.map((service) => (
               <SalonServiceCard
                 key={service.id}
