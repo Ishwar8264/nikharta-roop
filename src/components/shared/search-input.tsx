@@ -27,6 +27,7 @@ interface SearchInputProps {
   rounded?: SearchInputRounded;
   /** Visual weight. Defaults to "default" (bordered). */
   variant?: SearchInputVariant;
+  maxLength?: number;
   className?: string;
 }
 
@@ -120,6 +121,7 @@ export function SearchInput({
   rounded = "md",
   variant = "default",
   className,
+  maxLength,
 }: SearchInputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -128,14 +130,16 @@ export function SearchInput({
   const showClear = clearable && value && !disabled && !hasSubmit;
   const showSubmit = hasSubmit;
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent<HTMLElement>) {
     e.preventDefault();
     onSubmit?.(value.trim());
   }
 
+  const Container = onSubmit ? "form" : "div";
+
   return (
-    <form
-      onSubmit={handleSubmit}
+    <Container
+      onSubmit={onSubmit ? handleSubmit : undefined}
       role="search"
       className={cn("flex gap-2", className)}
     >
@@ -150,6 +154,7 @@ export function SearchInput({
         />
 
         <Input
+          maxLength={maxLength}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setIsFocused(true)}
@@ -208,6 +213,6 @@ export function SearchInput({
           {submitLabel}
         </Button>
       ) : null}
-    </form>
+    </Container>
   );
 }

@@ -404,3 +404,14 @@ function isUniqueConstraintViolation(error: unknown, field: string): boolean {
   if (Array.isArray(target)) return target.includes(field);
   return typeof target === "string" && target.includes(field);
 }
+
+/** Searches published service options after checking salon management access. */
+export async function listPackageServiceOptions(actorId: string, salonRef: string, query: { search?: string; cursor?: string }) {
+  const salonId = await resolveSalonId(salonRef);
+  if (!salonId) throw new SalonNotFoundError();
+  const salon = await findSalonForViewer({ salonId, userId: actorId });
+  if (!salon) throw new SalonNotFoundError();
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  const result = await listServicesBySalon(salonId, { ...query, limit: 30, sortBy: "name", sortOrder: "asc" });
+  return { ...result, items: result.items.map((service) => ({ id: service.id, name: service.name, price: Number(service.price), duration: service.duration, isActive: service.isActive, category: service.category })) };
+}

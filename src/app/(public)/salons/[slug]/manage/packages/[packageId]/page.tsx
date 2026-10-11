@@ -12,7 +12,7 @@ import {
   SalonRoleInsufficientError,
 } from "@/server/modules/salon/salon.errors";
 import { getSalonForServiceManagement } from "@/server/modules/salon/salon.service";
-import { listSalonServices } from "@/server/modules/service/service.service";
+import { listPackageServiceOptions } from "@/server/modules/service/service.service";
 
 export const metadata: Metadata = {
   title: "Edit package | Nikharta Roop",
@@ -49,7 +49,7 @@ export default async function EditPackagePage({ params }: Props) {
     [salon, pkg, servicesResult] = await Promise.all([
       getSalonForServiceManagement(slug, user.id),
       getManagedSalonPackage(user.id, slug, packageId),
-      listSalonServices(slug, { limit: 50, sortBy: "name", sortOrder: "asc" }),
+      listPackageServiceOptions(user.id, slug, {}),
     ]);
   } catch (error) {
     if (

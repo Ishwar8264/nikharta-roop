@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronDown, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -19,14 +18,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import { appointmentPriceFormatter } from "@/features/appointment/format";
 import { ApiError } from "@/lib/api/backend.client";
-import { cn } from "@/lib/utils";
 
+import { PackageServiceSelect } from "./package-service-select";
 import { createPackageApi, deletePackageApi, updatePackageApi } from "./api";
 import {
   formatDuration,
@@ -36,6 +34,8 @@ import {
   type PackageFormValues,
 } from "./schemas";
 import type { PackageServiceOption, PublicPackage } from "./types";
+
+const EMPTY_SERVICE_IDS: string[] = [];
 
 const SERVICE_MISMATCH_MESSAGE =
   "One or more services do not belong to this salon. Refresh the page and try again.";
@@ -76,8 +76,7 @@ export function PackageForm({
 }: PackageFormProps) {
   const router = useRouter();
   const [slugWasEdited, setSlugWasEdited] = useState(Boolean(initialPackage));
-  const [serviceQuery, setServiceQuery] = useState("");
-  const [pickerOpen, setPickerOpen] = useState(true);
+  const [knownServices, setKnownServices] = useState(services);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -108,7 +107,7 @@ export function PackageForm({
   });
 
   const name = useWatch({ control, name: "name" });
-  const selectedIds = useWatch({ control, name: "serviceIds" }) ?? [];
+  const selectedIds = useWatch({ control, name: "serviceIds" }) ?? EMPTY_SERVICE_IDS;
   const price = useWatch({ control, name: "price" });
 
   useEffect(() => {
@@ -122,40 +121,19 @@ export function PackageForm({
 
   const selected = useMemo(
     () =>
-      services.filter((service) => selectedIds.includes(service.id)),
-    [services, selectedIds],
+      knownServices.filter((service) => selectedIds.includes(service.id)),
+    [knownServices, selectedIds],
   );
   const servicesTotal = selected.reduce((sum, s) => sum + s.price, 0);
   const savingsPercent =
-    servicesTotal > price && price > 0
+    selected.length === selectedIds.length && servicesTotal > price && price > 0
       ? Math.round(((servicesTotal - price) / servicesTotal) * 100)
       : 0;
   const durationTotal = selected.reduce((sum, s) => sum + s.duration, 0);
   const durationPreview =
-    selected.length > 0
+    selected.length > 0 && selected.length === selectedIds.length
       ? formatDuration(durationTotal)
       : null;
-
-  const filteredServices = useMemo(() => {
-    const query = serviceQuery.trim().toLowerCase();
-    if (!query) return services;
-    return services.filter((service) =>
-      `${service.name} ${service.category?.name ?? ""}`
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [services, serviceQuery]);
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, PackageServiceOption[]>();
-    for (const service of filteredServices) {
-      const key = service.category?.name ?? "Other";
-      const bucket = map.get(key) ?? [];
-      bucket.push(service);
-      map.set(key, bucket);
-    }
-    return Array.from(map.entries());
-  }, [filteredServices]);
 
   function toggleService(serviceId: string) {
     const next = selectedIds.includes(serviceId)
@@ -257,6 +235,7 @@ export function PackageForm({
               <SlugField
                 id="slug"
                 resource="package"
+                placeholder="e.g. bridal-glow-package"
                 salonId={salonId}
                 currentSlug={initialPackage?.slug}
                 value={field.value ?? ""}
@@ -329,34 +308,22 @@ export function PackageForm({
               <div>
                 <h2 id="included-services" className="font-heading text-lg font-semibold">Included services</h2>
                 <p className="text-xs text-muted-foreground">
-                  {selected.length === 0
+                  {selectedIds.length === 0
                     ? "Pick the services this package bundles."
-                    : `${selected.length} selected · ${appointmentPriceFormatter.format(servicesTotal)} individually`}
+                    : selected.length === selectedIds.length
+                      ? `${selectedIds.length} selected · ${appointmentPriceFormatter.format(servicesTotal)} individually`
+                      : `${selectedIds.length} services selected`}
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setPickerOpen((open) => !open)}
-                aria-expanded={pickerOpen}
-                className="gap-1"
-              >
-                {pickerOpen ? "Hide" : "Show"}
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 transition-transform",
-                    pickerOpen && "rotate-180",
-                  )}
-                  aria-hidden="true"
-                />
-              </Button>
             </div>
-            {errors.serviceIds?.message ? (
-              <p role="alert" className="text-xs text-destructive">
-                {errors.serviceIds.message}
-              </p>
-            ) : null}
+            <PackageServiceSelect
+              salonId={salonId}
+              selected={selectedIds.map((id) => ({ id, name: knownServices.find((service) => service.id === id)?.name ?? initialPackage?.services.find((line) => line.serviceId === id)?.service.name ?? "Selected service" }))}
+              onToggle={toggleService}
+              onOptions={(options) => setKnownServices((previous) => [...previous.filter((item) => !options.some((option) => option.id === item.id)), ...options])}
+              disabled={busy}
+              error={errors.serviceIds?.message}
+            />
 
             {savingsPercent > 0 ? (
               <div
@@ -373,81 +340,6 @@ export function PackageForm({
               </div>
             ) : null}
 
-            {pickerOpen ? (
-              <div className="space-y-3 rounded-lg border p-3">
-                <div className="relative">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <Input
-                    value={serviceQuery}
-                    onChange={(e) => setServiceQuery(e.target.value)}
-                    disabled={busy}
-                    placeholder="Search services…"
-                    aria-label="Search services"
-                    className="pl-9"
-                  />
-                </div>
-
-                {services.length === 0 ? (
-                  <p className="rounded-lg bg-muted/50 px-4 py-6 text-center text-sm text-muted-foreground">
-                    No active services yet. Activate services from your catalog
-                    first, then bundle them here.
-                  </p>
-                ) : grouped.length === 0 ? (
-                  <p className="rounded-lg bg-muted/50 px-4 py-6 text-center text-sm text-muted-foreground">
-                    No services match “{serviceQuery.trim()}”.
-                  </p>
-                ) : (
-                  <div className="max-h-64 space-y-3 overflow-y-auto overscroll-contain pr-1">
-                    {grouped.map(([category, items]) => (
-                      <fieldset key={category} className="space-y-2">
-                        <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          {category}
-                        </legend>
-                        <div className="space-y-1.5">
-                          {items.map((service) => {
-                            const checked = selectedIds.includes(service.id);
-                            return (
-                              <label
-                                key={service.id}
-                                className={cn(
-                                  "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-colors",
-                                  checked
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:border-primary/40",
-                                )}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleService(service.id)}
-                                  disabled={busy}
-                                  className="h-4 w-4 shrink-0 accent-primary"
-                                  aria-label={service.name}
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-sm font-medium">
-                                    {service.name}
-                                  </span>
-                                  <span className="block text-xs text-muted-foreground">
-                                    {appointmentPriceFormatter.format(
-                                      service.price,
-                                    )}{" "}
-                                    · {formatDuration(service.duration)}
-                                  </span>
-                                </span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </fieldset>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : null}
           </section>
         </CardContent>
         <CardFooter className="flex flex-col-reverse items-stretch gap-3 border-t px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
