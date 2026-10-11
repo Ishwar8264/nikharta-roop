@@ -20,3 +20,6 @@ export type { CoverImageProps } from "./cover-image";
 
 export { PublicationCard } from "./publication-card";
 export type { PublicationCardProps } from "./publication-card";
+
+export { DurationField } from "./duration-field";
+export type { DurationFieldProps } from "./duration-field";

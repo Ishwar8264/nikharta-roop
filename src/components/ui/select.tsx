@@ -196,7 +196,7 @@ function SelectPopover({
       offset={offset}
       crossOffset={crossOffset}
       className={cn(
-        "cn-menu-target cn-menu-translucent relative isolate z-50 w-(--trigger-width) min-w-36 origin-(--trigger-anchor-point) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-entering:animate-in data-entering:fade-in-0 data-entering:zoom-in-95 data-exiting:animate-out data-exiting:fade-out-0 data-exiting:zoom-out-95 data-[placement=bottom]:slide-in-from-top-2 data-[placement=left]:slide-in-from-right-2 data-[placement=right]:slide-in-from-left-2 data-[placement=top]:slide-in-from-bottom-2",
+        "cn-menu-target cn-menu-translucent relative flex flex-col isolate z-50 w-(--trigger-width) min-w-36 origin-(--trigger-anchor-point) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-entering:animate-in data-entering:fade-in-0 data-entering:zoom-in-95 data-exiting:animate-out data-exiting:fade-out-0 data-exiting:zoom-out-95 data-[placement=bottom]:slide-in-from-top-2 data-[placement=left]:slide-in-from-right-2 data-[placement=right]:slide-in-from-left-2 data-[placement=top]:slide-in-from-bottom-2",
         className,
       )}
       {...props}
@@ -214,7 +214,7 @@ function SelectList<T extends object>({
     <ListBoxPrimitive
       data-slot="select-list"
       className={cn(
-        "group/select-list max-h-[min(20rem,var(--available-height))] overflow-x-hidden overflow-y-auto p-0 outline-hidden",
+        "group/select-list min-h-0 max-h-80 overflow-x-hidden overflow-y-auto overscroll-contain p-0 outline-hidden",
         className,
       )}
       {...props}

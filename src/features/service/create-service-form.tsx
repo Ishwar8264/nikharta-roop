@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
-import { FormHeader, SelectField, SlugField } from "@/components/shared";
+import { DurationField, FormHeader, SelectField, SlugField } from "@/components/shared";
 import { RichTextEditor } from "@/components/shared/rich-text-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -242,18 +242,20 @@ export function CreateServiceForm({
                 error={errors.price?.message}
                 {...register("price", { valueAsNumber: true })}
               />
-              <Field
-                id="duration"
-                required
-                label="Duration (minutes)"
-                type="number"
-                inputMode="numeric"
-                min={5}
-                max={480}
-                step={5}
-                disabled={isLoading}
-                error={errors.duration?.message}
-                {...register("duration", { valueAsNumber: true })}
+              <Controller
+                name="duration"
+                control={control}
+                render={({ field }) => (
+                  <DurationField
+                    id="duration"
+                    isRequired
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isLoading}
+                    error={errors.duration?.message}
+                    triggerProps={{ onBlur: field.onBlur, ref: field.ref }}
+                  />
+                )}
               />
             </div>
 
