@@ -6,7 +6,7 @@ import {
   Tooltip as AriaTooltip,
   TooltipTrigger as AriaTooltipTrigger,
   type TooltipProps,
-} from "react-aria-components";
+} from "react-aria-components/Tooltip";
 import { cn } from "cn";
 import { Button } from "./button";
 

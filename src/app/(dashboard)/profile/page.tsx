@@ -3,6 +3,8 @@ import { Mail, Pencil, Phone, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { UserTypeBadge } from "@/components/shared/user-type-badge";
+import { listUserSalonMemberships } from "@/server/modules/salon/salon.repository";
 import { UserBadge } from "@/components/shared/user-badge";
 import { CoverImage } from "@/components/shared/cover-image";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ export const metadata: Metadata = {
 export default async function ProfilePage() {
   const user = await getSession();
   if (!user) return null; // layout already redirects to /login
+  const memberships = await listUserSalonMemberships(user.id);
 
   return (
     <main className="w-full">
@@ -39,17 +42,18 @@ export default async function ProfilePage() {
         />
         <div className="px-5 py-5 sm:px-8 sm:py-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <Link href={routes.profile} className="min-w-0 flex-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <div className="min-w-0 flex-1">
             <UserBadge
-              name={user.name} email={user.email} avatar={user.avatar} size="lg"
+              name={user.name} email={user.email} avatar={user.avatar}
               fallbackName="Your profile" nameAs="h1"
               className="flex w-full items-center gap-3 sm:gap-4"
-              avatarClassName="size-24 bg-card ring-4 ring-card sm:size-28"
-              fallbackClassName="text-2xl leading-none sm:text-3xl"
+              avatarClassName="size-28 bg-card ring-4 ring-card sm:size-36"
+              fallbackClassName="text-3xl leading-none sm:text-4xl"
+              description={<UserTypeBadge role={user.role} accountType={user.accountType} salonRoles={memberships.map(({ role }) => role)} />}
               contentClassName="w-full"
               nameClassName="font-heading text-xl leading-tight font-semibold sm:text-2xl"
             />
-            </Link>
+            </div>
             <Button render={<Link href={routes.profileEdit} />} className="h-11 px-5">
               <Pencil aria-hidden="true" /> Edit profile
             </Button>
