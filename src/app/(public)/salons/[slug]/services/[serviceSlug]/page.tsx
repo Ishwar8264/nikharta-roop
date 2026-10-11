@@ -1,3 +1,4 @@
+import { ServicePublicationCard } from "@/features/service/service-publication-card";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -111,7 +112,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      {preview ? <p className="mb-6 rounded-xl border bg-muted/30 p-4 text-sm">Private service preview. Customers cannot view or book this service yet. Use Edit service to update its details and status.</p> : null}
+      {preview && canManage ? <ServicePublicationCard salonId={service.salonId} serviceId={service.id} status={service.status} salonIsLive={salon.status === "LIVE"} /> : null}
       {service.bannerImage ? (
         <div className="mb-6">
           <CoverImage src={service.bannerImage} alt={`${service.name} banner`} aspect="wide" priority />
@@ -185,9 +186,6 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
                       kind: "create",
                       targetType: "service",
                       targetId: service.id,
-                    }}
-                    onSaved={() => {
-                      /* router.refresh handled by the form's parent context */
                     }}
                   />
                 </div>

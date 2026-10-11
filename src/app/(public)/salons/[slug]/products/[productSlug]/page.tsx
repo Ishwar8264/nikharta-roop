@@ -148,9 +148,6 @@ export default async function ProductDetailPage({ params }: Props) {
                       targetType: "product",
                       targetId: product.id,
                     }}
-                    onSaved={() => {
-                      /* router.refresh handled by the form itself */
-                    }}
                   />
                 </div>
               </section>
