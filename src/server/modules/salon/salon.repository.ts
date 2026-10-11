@@ -425,3 +425,22 @@ export async function countSalonOwners(salonId: string): Promise<number> {
     where: { salonId, role: "OWNER" },
   });
 }
+
+/** List the signed-in user's salon links without loading full salon records. */
+export async function listUserSalonMemberships(userId: string) {
+  return prisma.salonMember.findMany({
+    where: { userId, salon: { deletedAt: null } },
+    select: { role: true, salon: { select: { id: true, name: true, slug: true, isActive: true } } },
+    orderBy: [{ salon: { name: "asc" } }, { salonId: "asc" }],
+  });
+}
+
+/** Count active catalogue entries for an already-authorised owner's dashboard, including private salons. */
+export async function countSalonActiveCatalog(salonId: string) {
+  const where = { salonId, isActive: true, deletedAt: null };
+  const [services, packages] = await Promise.all([
+    prisma.service.count({ where }),
+    prisma.package.count({ where }),
+  ]);
+  return { services, packages };
+}

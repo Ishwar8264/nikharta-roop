@@ -1,12 +1,10 @@
 "use client";
 
-import { canCreateSalon, isOnboardingComplete } from "@/features/onboarding/policy";
 import { LogOut, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { RouterProvider } from "react-aria-components";
 import { usePathname, useRouter } from "next/navigation";
 
-import { navIconMap, userMenuNav } from "@/components/navigation";
 import { UserBadge } from "@/components/shared/user-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +12,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuGroup,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -35,10 +32,6 @@ import type { CurrentUser } from "../shared/types";
  * The parent Header is a Server Component and already has the user in hand.
  * Passing it directly avoids a second subscription to AuthContext.
  *
- * Why navIconMap:
- * `userMenuNav` stores icon names as strings (server-safe). React components
- * cannot cross the server→client boundary, so the map resolves the string to
- * a Lucide component inside this client component.
  */
 export function UserMenu({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
@@ -71,7 +64,12 @@ export function UserMenu({ user }: { user: CurrentUser }) {
 
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="px-2 py-1.5">
+            <DropdownMenuItem
+              textValue={user.name ?? "Your account"}
+              aria-label={`${user.name ?? "Your account"} — View profile`}
+              render={<Link href={routes.profile} />}
+              className="block cursor-pointer px-2 py-2"
+            >
               <p className="truncate text-sm font-medium">
                 {user.name ?? "Your account"}
               </p>
@@ -80,7 +78,7 @@ export function UserMenu({ user }: { user: CurrentUser }) {
                   {user.email}
                 </p>
               ) : null}
-            </DropdownMenuLabel>
+            </DropdownMenuItem>
 
             {user.role === "SUPER_ADMIN" && (
               <DropdownMenuItem
@@ -100,44 +98,6 @@ export function UserMenu({ user }: { user: CurrentUser }) {
               </DropdownMenuItem>
             )}
 
-            {userMenuNav.map((item) => {
-              const Icon = item.icon ? navIconMap[item.icon] : null;
-              const isActive =
-                pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-              return (
-                <DropdownMenuItem
-                  key={item.href}
-                  textValue={item.label}
-                  render={
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex w-full cursor-pointer items-center gap-2",
-                        isActive && "bg-accent",
-                      )}
-                    />
-                  }
-                >
-                  {Icon ? (
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                  ) : null}
-                  {item.label}
-                </DropdownMenuItem>
-              );
-            })}
-
-            {user.role !== "SUPER_ADMIN" && (
-              <DropdownMenuItem render={<Link href="/onboarding" />} textValue="Account setup">
-                {isOnboardingComplete(user) ? "Account preferences" : "Complete account setup"}
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem
-              render={<Link href={canCreateSalon(user) ? "/salons/create" : "/onboarding?type=partner"} />}
-              textValue="Salon partner"
-            >
-              {canCreateSalon(user) ? "Add salon" : "Become a salon partner"}
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
