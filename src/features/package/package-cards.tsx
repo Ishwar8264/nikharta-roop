@@ -20,9 +20,11 @@ export function packageServicesTotal(pkg: PublicPackage): number {
 export function PackageCards({
   salonSlug,
   packages,
+  canBook = true,
 }: {
   salonSlug: string;
   packages: PublicPackage[];
+  canBook?: boolean;
 }) {
   // Pick the "popular" package — the one with the highest savings %.
   // Falls back to the first package when none have measurable savings.
@@ -104,12 +106,14 @@ export function PackageCards({
                   </>
                 ) : null}
               </div>
+              {canBook ? (
               <Button
                 render={<Link href={`${routes.salonBooking(salonSlug)}?package=${pkg.id}`} />}
                 className="w-full"
               >
                 Book this package
               </Button>
+              ) : <p className="text-sm text-muted-foreground">Bookings temporarily unavailable</p>}
             </div>
           </article>
         );

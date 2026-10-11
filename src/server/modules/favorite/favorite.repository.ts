@@ -1,3 +1,4 @@
+import { PUBLIC_SALON_FILTER } from "@/features/salon/status";
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
@@ -24,7 +25,7 @@ export async function targetExists(
 ): Promise<boolean> {
   if (type === "salon") {
     const row = await prisma.salon.findFirst({
-      where: { id: targetId, isActive: true, deletedAt: null },
+      where: { id: targetId, ...PUBLIC_SALON_FILTER },
       select: { id: true },
     });
     return row !== null;

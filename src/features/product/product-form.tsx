@@ -9,6 +9,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { FormHeader } from "@/components/shared";
 import { RichTextEditor } from "@/components/shared/rich-text-editor";
+import { CatalogStatusField } from "@/components/shared/catalog-status/field";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
@@ -59,7 +59,7 @@ const DEFAULT_VALUES: ProductFormInput = {
   categoryId: undefined,
   price: 0,
   stock: 0,
-  isActive: true,
+  status: "DRAFT",
   shortDescription: undefined,
   description: undefined,
   descriptionHtml: undefined,
@@ -101,7 +101,7 @@ export function ProductForm({
           categoryId: initialProduct.categoryId ?? undefined,
           price: initialProduct.price,
           stock: initialProduct.stock,
-          isActive: initialProduct.isActive,
+          status: initialProduct.status,
           shortDescription: initialProduct.shortDescription ?? undefined,
           description: initialProduct.description ?? undefined,
           descriptionHtml: initialProduct.descriptionHtml ?? undefined,
@@ -181,11 +181,7 @@ export function ProductForm({
       } else {
         product = (await createProductApi(salonSlug, values)).data.product;
       }
-      router.push(
-        initialProduct || !product.isActive
-          ? routes.salonProductsManage(salonSlug)
-          : routes.salonProductDetail(salonSlug, product.slug),
-      );
+      router.push(initialProduct ? routes.salonProductsManage(salonSlug) : routes.salonProductEdit(salonSlug, product.id));
       router.refresh();
     } catch (caught) {
       showApiError(caught);
@@ -215,7 +211,7 @@ export function ProductForm({
         <CardHeader className="border-b px-5 py-5 sm:px-8">
           <FormHeader
             title={initialProduct ? "Edit product" : "Create a product"}
-            description={`${salonName} product catalogue`}
+            description={initialProduct ? `${salonName} product catalogue` : `Create a draft product for ${salonName}. Publish it from product details when ready.`}
           />
         </CardHeader>
         <CardContent className="space-y-8 px-5 py-6 sm:px-8">
@@ -447,26 +443,13 @@ export function ProductForm({
               </p>
             ) : null}
           </section>
+          {initialProduct ? (
           <Controller
-            name="isActive"
+            name="status"
             control={control}
-            render={({ field }) => (
-              <div className="flex items-center justify-between rounded-xl border p-4">
-                <div>
-                  <Label htmlFor="isActive">Visible to customers</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Inactive products stay hidden from the public catalogue.
-                  </p>
-                </div>
-                <Switch
-                  id="isActive"
-                  checked={field.value ?? true}
-                  onCheckedChange={field.onChange}
-                  disabled={busy}
-                />
-              </div>
-            )}
+            render={({ field }) => <CatalogStatusField value={field.value} onChange={field.onChange} onBlur={field.onBlur} disabled={busy} />}
           />
+          ) : null}
         </CardContent>
         <CardFooter className="flex justify-end gap-3 px-5 py-4 sm:px-8">
           <Button

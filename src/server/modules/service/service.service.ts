@@ -1,3 +1,4 @@
+import { resolveCatalogStatus } from "@/lib/catalog/status";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -142,7 +143,8 @@ export async function createSalonService(
       slug,
       price: input.price,
       duration: input.duration,
-      isActive: input.isActive,
+      status: "DRAFT",
+      isActive: false,
       shortDescription: input.shortDescription ?? null,
       description: input.description ?? null,
       descriptionHtml: input.descriptionHtml ?? null,
@@ -211,7 +213,10 @@ export async function updateSalonService(
   if (input.categoryId !== undefined) data.categoryId = input.categoryId;
   if (input.price !== undefined) data.price = input.price;
   if (input.duration !== undefined) data.duration = input.duration;
-  if (input.isActive !== undefined) data.isActive = input.isActive;
+  if (input.status !== undefined || input.isActive !== undefined) {
+    data.status = resolveCatalogStatus(input);
+    data.isActive = data.status === "PUBLISHED";
+  }
   if (input.shortDescription !== undefined) {
     data.shortDescription = input.shortDescription;
   }

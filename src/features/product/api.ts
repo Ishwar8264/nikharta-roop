@@ -1,3 +1,4 @@
+import type { CatalogStatus } from "@/lib/catalog/status";
 import { api } from "@/lib/api/backend.client";
 
 import type {
@@ -11,22 +12,27 @@ const productPath = (salonRef: string, productId?: string) =>
 
 /** Creates a product in the selected salon. */
 export function createProductApi(salonRef: string, input: ProductFormValues) {
+  const details: Partial<ProductFormValues> = { ...input };
+  delete details.status;
   return api.post<{ message: string; data: { product: PublicProduct } }>(
     productPath(salonRef),
-    input,
+    details,
   );
 }
 
 /** Updates only the supplied product fields by internal id. */
-export function updateProductApi(
-  salonRef: string,
-  productId: string,
-  input: Record<string, unknown>,
-) {
-  return api.patch<{ message: string; data: { product: PublicProduct } }>(
-    productPath(salonRef, productId),
-    input,
-  );
+export async function updateProductApi(salonRef: string, productId: string, input: Record<string, unknown>) {
+  const { status, ...details } = input;
+  let response;
+  if (Object.keys(details).length) response = await api.patch<{ message: string; data: { product: PublicProduct } }>(productPath(salonRef, productId), details);
+  if (status !== undefined) response = await updateProductStatusApi(salonRef, productId, status as CatalogStatus);
+  if (!response) throw new Error("No product changes supplied");
+  return response;
+}
+
+/** Updates publication independently from product details. */
+export function updateProductStatusApi(salonRef: string, productId: string, status: CatalogStatus) {
+  return api.patch<{ message: string; data: { product: PublicProduct } }>(`${productPath(salonRef, productId)}/status`, { status });
 }
 
 /** Soft deletes a product by internal id. */

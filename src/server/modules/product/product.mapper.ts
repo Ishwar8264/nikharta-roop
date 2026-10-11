@@ -1,3 +1,4 @@
+import type { CatalogStatus } from "@/lib/catalog/status";
 import "server-only";
 
 import type { PublicProduct } from "./product.types";
@@ -16,6 +17,7 @@ interface ProductRowForMapper {
   slug: string;
   price: { toNumber(): number };
   stock: number;
+  status: CatalogStatus;
   isActive: boolean;
   shortDescription: string | null;
   description: string | null;
@@ -46,6 +48,7 @@ export function toPublicProduct(row: ProductRowForMapper): PublicProduct {
     slug: row.slug,
     price: row.price.toNumber(),
     stock: row.stock,
+    status: row.status,
     isActive: row.isActive,
     shortDescription: row.shortDescription,
     description: row.description,

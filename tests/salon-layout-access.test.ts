@@ -23,7 +23,7 @@ describe("salon parent layout access", () => {
     it(`renders pending salon onboarding for its ${role}`, async () => {
       mocks.membership.mockResolvedValue({ name: "Pending Salon", slug: "pending-salon", viewerRole: role });
       const result = await SalonLayout(props);
-      expect(result.props.salon).toEqual({ name: "Pending Salon", slug: "pending-salon", canManage: true, isPublic: false });
+      expect(result.props.salon).toEqual({ name: "Pending Salon", slug: "pending-salon", canManage: true, isPublic: false, canBook: false });
       expect(result.props.children).toBe("Verification form");
       expect(mocks.membership).toHaveBeenCalledWith({ slug: "pending-salon", userId: "viewer-id" });
     });

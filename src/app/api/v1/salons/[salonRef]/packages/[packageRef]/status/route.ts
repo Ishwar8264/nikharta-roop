@@ -1,0 +1,105 @@
+import { NextResponse } from "next/server";
+
+import { getAuthContext } from "@/server/auth/session";
+import {
+  PackageNotFoundError,
+  PackageServiceMismatchError,
+} from "@/server/modules/package/package.errors";
+import {
+  packageParamSchema,
+  updatePackageStatusSchema,
+} from "@/server/modules/package/package.schema";
+import {
+  updateSalonPackage,
+} from "@/server/modules/package/package.service";
+import {
+  SalonNotFoundError,
+  SalonRoleInsufficientError,
+} from "@/server/modules/salon/salon.errors";
+
+/** Updates publication after creation. Requires salon MANAGER access. */
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ salonRef: string; packageRef: string }> },
+): Promise<Response> {
+  const auth = await getAuthContext(request);
+  if (!auth) {
+    return NextResponse.json(
+      { message: "Authentication required" },
+      { status: 401 },
+    );
+  }
+
+  const params = await context.params;
+  const paramValidation = packageParamSchema.safeParse(params);
+
+  if (!paramValidation.success) {
+    return NextResponse.json(
+      {
+        message: "Validation failed",
+        errors: paramValidation.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 },
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { message: "Request body must be valid JSON" },
+      { status: 400 },
+    );
+  }
+
+  const bodyValidation = updatePackageStatusSchema.safeParse(body);
+  if (!bodyValidation.success) {
+    return NextResponse.json(
+      {
+        message: "Validation failed",
+        errors: bodyValidation.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const updated = await updateSalonPackage(
+      auth.sub,
+      paramValidation.data.salonRef,
+      paramValidation.data.packageRef,
+      bodyValidation.data,
+    );
+
+    return NextResponse.json(
+      { message: "Package status updated", data: { package: updated } },
+      { status: 200 },
+    );
+  } catch (error) {
+    if (error instanceof SalonNotFoundError) {
+      return NextResponse.json({ message: error.message }, { status: 404 });
+    }
+    if (error instanceof SalonRoleInsufficientError) {
+      return NextResponse.json({ message: error.message }, { status: 403 });
+    }
+    if (error instanceof PackageNotFoundError) {
+      return NextResponse.json({ message: error.message }, { status: 404 });
+    }
+    if (error instanceof PackageServiceMismatchError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
+
+    console.error("Package update failed", error);
+    return NextResponse.json(
+      { message: "Unable to update package" },
+      { status: 500 },
+    );
+  }
+}

@@ -60,6 +60,7 @@ describe("salon creation enforces partner setup in the service", () => {
     });
     await createSalon("user", input);
     expect(mocks.salon.mock.calls[0][0].data.isActive).toBe(false);
+    expect(mocks.salon.mock.calls[0][0].data.status).toBe("DRAFT");
     expect(mocks.member).toHaveBeenCalledWith({
       data: { userId: "user", salonId: "new-salon", role: "OWNER" },
     });

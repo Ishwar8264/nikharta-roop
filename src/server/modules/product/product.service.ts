@@ -1,3 +1,4 @@
+import { resolveCatalogStatus } from "@/lib/catalog/status";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -154,7 +155,8 @@ export async function createSalonProduct(
       slug,
       price: input.price,
       stock: input.stock,
-      isActive: input.isActive,
+      status: "DRAFT",
+      isActive: false,
       shortDescription: input.shortDescription ?? null,
       description: input.description ?? null,
       descriptionHtml: input.descriptionHtml ?? null,
@@ -223,7 +225,10 @@ export async function updateSalonProduct(
   if (input.categoryId !== undefined) data.categoryId = input.categoryId;
   if (input.price !== undefined) data.price = input.price;
   if (input.stock !== undefined) data.stock = input.stock;
-  if (input.isActive !== undefined) data.isActive = input.isActive;
+  if (input.status !== undefined || input.isActive !== undefined) {
+    data.status = resolveCatalogStatus(input);
+    data.isActive = data.status === "PUBLISHED";
+  }
   if (input.shortDescription !== undefined) {
     data.shortDescription = input.shortDescription;
   }

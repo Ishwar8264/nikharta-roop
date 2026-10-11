@@ -358,7 +358,7 @@ function StatusBanner({
         tone="success"
         icon={<CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
         title="Your salon is verified"
-        body="Customers see the verified badge on your public profile."
+        body="Verification is complete. Manage your salon status to go live when ready."
       />
     );
   }
@@ -402,7 +402,7 @@ function StatusBanner({
                 What happens next?
               </p>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Your salon will be visible to customers after approval.
+                After approval, set your salon status to Live in Manage salon.
               </p>
             </div>
             <div className="space-y-1">
@@ -422,7 +422,7 @@ function StatusBanner({
         title={reason ? "Verification required" : "Salon created"}
         body={
           reason ||
-          "Submit your documents for approval. Your salon will be visible to customers after approval."
+          "Submit your documents for approval. After approval, set your salon status to Live in Manage salon."
         }
       />
     );

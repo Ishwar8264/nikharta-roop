@@ -9,7 +9,7 @@ import { routes } from "@/config/routes";
 interface SalonDirectoryLayoutProps {
   children: ReactNode;
   isSignedIn: boolean;
-  salon?: { name: string; slug: string; canManage: boolean; isPublic?: boolean };
+  salon?: { name: string; slug: string; canManage: boolean; isPublic?: boolean; canBook?: boolean };
 }
 
 /** Shared salon navigation shell. Each page resolves data and permissions on the server. */
@@ -27,7 +27,7 @@ export async function SalonDirectoryLayout({ children, isSignedIn, salon }: Salo
             <div className="space-y-1 px-3 py-1">
               <h2 className="font-heading text-lg font-semibold">{salon?.name ?? "Salons"}</h2>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                {salon ? salon.isPublic === false ? "Complete verification to publish your salon." : "Explore services and book your visit." : "Find a salon or add your own."}
+                {salon ? salon.isPublic === false ? "Manage your profile, verification and publication status." : salon.canBook === false ? "Temporarily closed. Browse services; bookings are unavailable." : "Explore services and book your visit." : "Find a salon or add your own."}
               </p>
             </div>
           }
@@ -63,12 +63,12 @@ export async function SalonDirectoryLayout({ children, isSignedIn, salon }: Salo
                 href: routes.salonPackages(salon.slug),
                 icon: <Gift className="mt-0.5 size-4" />,
               },
-              {
+              ...(salon.canBook === false ? [] : [{
                 label: "Book appointment",
                 description: "Choose a service and time.",
                 href: routes.salonBooking(salon.slug),
                 icon: <Calendar className="mt-0.5 size-4" />,
-              },
+              }]),
               ]),
               ...(salon.canManage ? [{
                 label: "Manage salon",

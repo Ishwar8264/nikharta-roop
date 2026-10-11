@@ -1,3 +1,4 @@
+import { CATALOG_STATUS_LABELS } from "@/lib/catalog/status";
 import { Gift } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -108,7 +109,7 @@ export default async function ManagePackagesPage({ params }: Props) {
                   <Badge
                     variant={pkg.isActive ? "secondary" : "outline"}
                   >
-                    {pkg.isActive ? "Active" : "Inactive"}
+                    {CATALOG_STATUS_LABELS[pkg.status]}
                   </Badge>
                 </div>
                 <PackageRowActions salonSlug={slug} pkg={pkg} />
@@ -140,7 +141,7 @@ export default async function ManagePackagesPage({ params }: Props) {
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={pkg.isActive ? "secondary" : "outline"}>
-                        {pkg.isActive ? "Active" : "Inactive"}
+                        {CATALOG_STATUS_LABELS[pkg.status]}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">

@@ -155,14 +155,14 @@ export function SalonForm() {
       }
     }
     const created = await create(values);
-    if (created) router.push(routes.salonVerification(created.slug));
+    if (created) router.push(routes.salonManage(created.slug));
   }
 
   return (
     <form onSubmit={handleSubmit(submit)} data-form-rounded="true" noValidate>
       <Card className="gap-0 overflow-visible py-0">
         <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
-          <FormHeader title="Create a salon" />
+          <FormHeader title="Create a salon" description="Create a draft, then complete verification and go live from salon details." />
         </CardHeader>
         <CardContent className="space-y-8 px-5 py-6 sm:space-y-10 sm:px-8">
           <FormError>{error}</FormError>

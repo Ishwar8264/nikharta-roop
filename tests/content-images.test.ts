@@ -36,7 +36,7 @@ for (const [name, create, update, input] of [
 }
 
 it("validates service image fields in the client form too", () => {
-  const input = { name: "Haircut", price: 300, duration: 30, isActive: true, images: [] };
+  const input = { name: "Haircut", price: 300, duration: 30, status: "PUBLISHED" as const, isActive: true, images: [] };
   expect(createServiceFormSchema.parse({ ...input, ...imageFields })).toMatchObject(imageFields);
   expect(createServiceFormSchema.safeParse({ ...input, bannerImage: "invalid" }).success).toBe(false);
 });
@@ -45,7 +45,7 @@ it("includes independent image fields in product and service responses", () => {
   const row = {
     id: "test", salonId: "salon", categoryId: null, category: null,
     name: "Test", slug: "test", price: { toNumber: () => 300 }, stock: 2,
-    duration: 30, isActive: true, shortDescription: null, description: null,
+    duration: 30, status: "PUBLISHED" as const, isActive: true, shortDescription: null, description: null,
     descriptionHtml: null, descriptionJson: null, ...imageFields,
     images: ["https://example.com/gallery.jpg"], createdAt: new Date(), updatedAt: new Date(),
   };

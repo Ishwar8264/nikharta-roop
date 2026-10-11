@@ -9,6 +9,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { FormHeader } from "@/components/shared";
 import { RichTextEditor } from "@/components/shared/rich-text-editor";
+import { CatalogStatusField } from "@/components/shared/catalog-status/field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
@@ -51,7 +51,7 @@ const DEFAULT_VALUES: CreateServiceFormValues = {
   categoryId: undefined,
   price: 0,
   duration: 30,
-  isActive: true,
+  status: "DRAFT",
   shortDescription: undefined,
   description: undefined,
   descriptionHtml: undefined,
@@ -94,7 +94,7 @@ export function CreateServiceForm({
           categoryId: initialService.categoryId ?? undefined,
           price: initialService.price,
           duration: initialService.duration,
-          isActive: initialService.isActive,
+          status: initialService.status,
           shortDescription: initialService.shortDescription ?? undefined,
           description: initialService.description ?? undefined,
           descriptionHtml: initialService.descriptionHtml ?? undefined,
@@ -142,7 +142,7 @@ export function CreateServiceForm({
     const service = await save(values);
     if (!service) return;
 
-    router.push(initialService || !service.isActive ? routes.salonServicesManage(salonSlug) : routes.salonServiceDetail(salonSlug, service.slug));
+    router.push(initialService ? routes.salonServicesManage(salonSlug) : routes.salonServiceEdit(salonSlug, service.id));
     router.refresh();
   }
 
@@ -166,7 +166,7 @@ export function CreateServiceForm({
         <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
           <FormHeader
             title={initialService ? "Edit service" : "Create a service"}
-            description={initialService ? `Update ${initialService.name} at ${salonName}.` : `Add a bookable service to ${salonName}.`}
+            description={initialService ? `Update ${initialService.name} at ${salonName}.` : `Create a draft service for ${salonName}. Publish it from service details when ready.`}
           />
         </CardHeader>
 
@@ -412,27 +412,13 @@ export function CreateServiceForm({
           </FormSection>
 
 
+          {initialService ? (
           <Controller
-            name="isActive"
+            name="status"
             control={control}
-            render={({ field }) => (
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
-                <div>
-                  <Label htmlFor="isActive">Available for booking</Label>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Inactive services stay hidden from customers.
-                  </p>
-                </div>
-                <Switch
-                  id="isActive"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  disabled={isLoading}
-                  aria-label="Available for booking"
-                />
-              </div>
-            )}
+            render={({ field }) => <CatalogStatusField value={field.value} onChange={field.onChange} onBlur={field.onBlur} disabled={isLoading} />}
           />
+          ) : null}
         </CardContent>
 
         <CardFooter className="flex flex-col-reverse gap-3 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">

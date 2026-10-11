@@ -6,6 +6,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SALON_STATUSES, SALON_STATUS_LABELS, type SalonStatus } from "../status";
 import { routes } from "@/config/routes";
 import { ApiError } from "@/lib/api/backend.client";
 
@@ -15,6 +17,7 @@ import type { PublicSalon } from "../types";
 interface Props {
   salon: PublicSalon & { viewerRole: "OWNER" | "MANAGER" | "STAFF" };
   currentUserId: string;
+  verification: "PENDING" | "VERIFIED" | "REJECTED" | "SUSPENDED" | null;
 }
 
 type EditableField = "coverImage" | "bannerImage" | "name" | "shortDescription" | "address" | "city" | "state" | "zip" | "phone" | "email";
@@ -33,8 +36,9 @@ const fields: { key: EditableField; label: string; required?: boolean }[] = [
 ];
 
 /** Connects salon editing and owner-only roster actions to their API routes. */
-export function SalonManagement({ salon, currentUserId }: Props) {
+export function SalonManagement({ salon, currentUserId, verification }: Props) {
   const router = useRouter();
+  const [status, setStatus] = useState<SalonStatus>(salon.status);
   const isOwner = salon.viewerRole === "OWNER";
   const [values, setValues] = useState<Record<EditableField, string>>({
     name: salon.name,
@@ -77,6 +81,7 @@ export function SalonManagement({ salon, currentUserId }: Props) {
     setError(null);
     setNotice(null);
     const changes: Partial<PublicSalon> = {};
+    if (status !== salon.status) changes.status = status;
     for (const { key } of fields) {
       const next = values[key].trim();
       if (next !== (salon[key] ?? "")) {
@@ -88,6 +93,7 @@ export function SalonManagement({ salon, currentUserId }: Props) {
     setBusy(true);
     try {
       const response = await updateSalonApi(salon.id, changes);
+      setStatus(response.data.salon.status);
       setNotice(response.message);
       router.refresh();
     } catch (reason) {
@@ -155,6 +161,15 @@ export function SalonManagement({ salon, currentUserId }: Props) {
               <Input id={`salon-${key}`} value={values[key]} required={required} disabled={busy} type={key === "coverImage" || key === "bannerImage" ? "url" : key === "email" ? "email" : key === "phone" ? "tel" : "text"} onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))} />
             </div>
           ))}
+        </div>
+        <div className="space-y-2 rounded-xl border p-4">
+          <Label htmlFor="salon-status">Salon status</Label>
+          <Select value={status} onValueChange={(next) => { if (SALON_STATUSES.includes(next as SalonStatus)) setStatus(next as SalonStatus); }}>
+            <SelectTrigger id="salon-status" disabled={busy} className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>{SALON_STATUSES.map((option) => <SelectItem key={option} value={option} disabled={verification !== "VERIFIED" && (option === "LIVE" || option === "TEMPORARILY_CLOSED")}>{SALON_STATUS_LABELS[option]}</SelectItem>)}</SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{verification !== "VERIFIED" ? "Your salon stays hidden until verification is approved." : status === "LIVE" ? "Your salon is public and accepts new bookings." : status === "TEMPORARILY_CLOSED" ? "Your public page stays visible. New bookings are disabled." : status === "ARCHIVED" ? "Hidden from customers. Records and management access remain available; you can restore it later." : "Hidden from customers until you go live."}</p>
+          {verification !== "VERIFIED" ? <p className="text-xs text-muted-foreground">Complete verification before going live.</p> : null}
         </div>
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
         {notice ? <p role="status" className="text-sm text-primary">{notice}</p> : null}

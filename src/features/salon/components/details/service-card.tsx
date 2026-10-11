@@ -22,6 +22,7 @@ interface SalonServiceCardProps {
   salonSlug: string;
   service: ServiceCardData;
   className?: string;
+  canBook?: boolean;
 }
 
 const priceFormatter = new Intl.NumberFormat(siteConfig.locale, {
@@ -35,6 +36,7 @@ export function SalonServiceCard({
   salonSlug,
   service,
   className,
+  canBook = true,
 }: SalonServiceCardProps) {
   return (
     <article
@@ -83,6 +85,7 @@ export function SalonServiceCard({
           >
             Details
           </NavLink>
+          {canBook ? (
           <NavLink
             href={`${routes.salonBooking(salonSlug)}?service=${encodeURIComponent(service.slug)}`}
             variant="outline"
@@ -91,6 +94,7 @@ export function SalonServiceCard({
           >
             Book
           </NavLink>
+          ) : null}
         </div>
       </div>
     </article>

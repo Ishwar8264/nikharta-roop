@@ -1,3 +1,17 @@
+enum SalonStatus {
+  DRAFT
+  LIVE
+  TEMPORARILY_CLOSED
+  ARCHIVED
+}
+
+enum CatalogStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
 datasource db {
   provider = "postgresql"
 }
@@ -318,6 +332,7 @@ model Salon {
   bannerImage String?
   images      String[] // Gallery
 
+  status SalonStatus @default(DRAFT)
   isActive  Boolean   @default(true)
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -504,7 +519,8 @@ model Service {
   slug      String
   price     Decimal   @db.Decimal(12, 2)
   duration  Int // minutes
-  isActive  Boolean   @default(true)
+  status CatalogStatus @default(DRAFT)
+  isActive  Boolean   @default(false)
   deletedAt DateTime?
 
   // Description (same as product - flexible)
@@ -552,7 +568,8 @@ model Product {
   coverImage  String?
   bannerImage String?
   images    String[]
-  isActive  Boolean   @default(true)
+  status CatalogStatus @default(DRAFT)
+  isActive  Boolean   @default(false)
   deletedAt DateTime?
 
   slug             String
@@ -594,7 +611,8 @@ model Package {
   slug      String
   price     Decimal   @db.Decimal(12, 2)
   duration  Int // minutes
-  isActive  Boolean   @default(true)
+  status CatalogStatus @default(DRAFT)
+  isActive  Boolean   @default(false)
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

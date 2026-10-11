@@ -116,10 +116,10 @@ export function SalonDetail({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button size="lg" render={<Link href={routes.salonBooking(salon.slug)} />}>
+          {salon.status === "LIVE" ? <Button size="lg" render={<Link href={routes.salonBooking(salon.slug)} />}>
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
             Book appointment
-          </Button>
+          </Button> : <Badge variant="secondary">Temporarily closed · Bookings unavailable</Badge>}
           {currentUserId ? (
             <FavoriteButton
               targetType="salon"
@@ -249,6 +249,7 @@ export function SalonDetail({
                   <SalonServiceCard
                     key={service.id}
                     salonSlug={salon.slug}
+                    canBook={salon.status === "LIVE"}
                     service={service}
                   />
                 ))}
@@ -352,12 +353,14 @@ export function SalonDetail({
       {/* Sticky mobile book bar — full-width primary CTA, always reachable
           without scrolling back to the top. Hidden on >= sm where the
           in-header Book button is always in view. */}
+      {salon.status === "LIVE" ? (
       <div className="sticky bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:hidden">
         <Button size="lg" className="w-full" render={<Link href={routes.salonBooking(salon.slug)} />}>
           <CalendarDays className="h-4 w-4" aria-hidden="true" />
           Book appointment at {salon.name}
         </Button>
       </div>
+      ) : null}
     </article>
   );
 }

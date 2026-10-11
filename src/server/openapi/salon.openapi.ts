@@ -2,6 +2,26 @@ import type { OpenAPIV3_1 } from "openapi-types";
 
 /** Salon paths: directory, members, and weekly working hours. */
 export const salonPaths = {
+  "/api/v1/salons/{salonRef}/status": {
+    patch: {
+      tags: ["Salons"],
+      summary: "Update salon status",
+      description: "Requires MANAGER access. Changes publication after creation; existing records are retained.",
+      operationId: "updateSalonStatus",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "salonRef", in: "path", required: true, schema: { type: "string" } }],
+      requestBody: { required: true, content: { "application/json": { schema: { type: "object", additionalProperties: false, required: ["status"], properties: { status: { type: "string", enum: ["DRAFT", "LIVE", "TEMPORARILY_CLOSED", "ARCHIVED"] } } } } } },
+      responses: {
+        "200": { description: "Status updated", content: { "application/json": { schema: { $ref: "#/components/schemas/SalonResponse" } } } },
+        "400": { description: "Invalid status or request" },
+        "401": { description: "Authentication required" },
+        "403": { description: "Insufficient salon permissions" },
+        "404": { description: "Salon or item not found" },
+        "409": { description: "Publication requirements not met" },
+      },
+    },
+  },
+
       "/api/v1/salons": {
         get: {
           tags: ["Salons"],
@@ -717,6 +737,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "updatedAt",
           ],
           properties: {
+            status: { type: "string", enum: ["DRAFT", "LIVE", "TEMPORARILY_CLOSED", "ARCHIVED"] },
             id: { $ref: "#/components/schemas/ResourceId" },
             name: { type: "string" },
             slug: { type: "string" },
@@ -801,6 +822,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           additionalProperties: false,
           minProperties: 1,
           properties: {
+            status: { type: "string", enum: ["DRAFT", "LIVE", "TEMPORARILY_CLOSED", "ARCHIVED"], description: "Live and temporarily closed require current verification. Draft and archived are hidden; temporarily closed blocks new bookings." },
             name: { type: "string", minLength: 2, maxLength: 120 },
             slug: {
               type: "string",

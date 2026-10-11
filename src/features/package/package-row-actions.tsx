@@ -42,7 +42,7 @@ export function PackageRowActions({ salonSlug, pkg }: PackageRowActionsProps) {
     const previous = isActive;
     setIsActive(next); // optimistic — visibility only, no money moves
     try {
-      await updatePackageApi(salonSlug, pkg.id, { isActive: next });
+      await updatePackageApi(salonSlug, pkg.id, { status: next ? "PUBLISHED" : "PAUSED" });
       toast.success(
         next
           ? `${pkg.name} is visible to customers again.`
@@ -84,11 +84,11 @@ export function PackageRowActions({ salonSlug, pkg }: PackageRowActionsProps) {
         <Switch
           checked={isActive}
           onCheckedChange={handleToggle}
-          disabled={isPending}
+          disabled={isPending || pkg.status === "DRAFT" || pkg.status === "ARCHIVED"}
           aria-label={`${isActive ? "Deactivate" : "Activate"} ${pkg.name}`}
         />
         <span className="hidden text-xs text-muted-foreground sm:inline">
-          {isActive ? "Active" : "Inactive"}
+          {isActive ? "Published" : pkg.status === "ARCHIVED" ? "Archived" : pkg.status === "DRAFT" ? "Draft" : "Paused"}
         </span>
       </div>
       <Button

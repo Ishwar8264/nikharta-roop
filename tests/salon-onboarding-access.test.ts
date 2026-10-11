@@ -41,7 +41,7 @@ describe("pending salon onboarding access", () => {
   it("keeps inactive salons unavailable on the public detail page", async () => {
     mocks.findFirst.mockResolvedValue(null);
     await expect(getSalonBySlug("pending-salon")).rejects.toBeInstanceOf(SalonNotFoundError);
-    expect(mocks.findFirst.mock.calls[0][0].where).toEqual({ slug: "pending-salon", deletedAt: null, isActive: true });
+    expect(mocks.findFirst.mock.calls[0][0].where).toEqual({ slug: "pending-salon", deletedAt: null, isActive: true, status: { in: ["LIVE", "TEMPORARILY_CLOSED"] } });
   });
 
   it("preserves existing membership lookups by salon ID", async () => {

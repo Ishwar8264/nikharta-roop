@@ -35,7 +35,7 @@ export default async function SalonLayout({ children, params }: SalonLayoutProps
   return (
     <SalonDirectoryLayout
       isSignedIn={Boolean(user)}
-      salon={{ name: salon.name, slug: salon.slug, canManage, isPublic: Boolean(publicSalon) }}
+      salon={{ name: salon.name, slug: salon.slug, canManage, isPublic: Boolean(publicSalon), canBook: publicSalon?.status === "LIVE" }}
     >
       {children}
     </SalonDirectoryLayout>

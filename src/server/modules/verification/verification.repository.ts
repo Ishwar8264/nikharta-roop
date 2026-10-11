@@ -146,11 +146,11 @@ export async function submitVerification(
 }
 
 /**
- * Applies an admin decision and, on VERIFIED, flips the salon live.
+ * Applies an admin decision without changing the manager's publication status.
  *
  * Why the transaction:
- * "Verified" and `isActive` must change together — a verified-but-hidden
- * salon (or vice versa) would be a trust bug visible to customers.
+ * Verification and `isActive` change together; publication is controlled separately.
+ * Rejection and suspension must revoke public access atomically.
  */
 export async function applyVerificationDecision(input: {
   salonId: string;

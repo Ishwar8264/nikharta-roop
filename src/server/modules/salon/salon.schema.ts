@@ -1,3 +1,4 @@
+import { salonStatusSchema } from "@/features/salon/status";
 import { z } from "zod";
 
 const slugSchema = z
@@ -174,6 +175,7 @@ export const createSalonSchema = z.strictObject({
 export const updateSalonSchema = createSalonSchema
   .partial()
   .extend({
+    status: salonStatusSchema.optional(),
     // Defaults belong to creation only. PATCH must preserve omitted fields.
     category: createSalonSchema.shape.category.removeDefault().optional(),
     country: createSalonSchema.shape.country.removeDefault().optional(),
@@ -227,3 +229,6 @@ export const salonMemberParamSchema = z.strictObject({
     .max(80, "Salon reference must contain at most 80 characters"),
   memberId: resourceIdSchema,
 });
+
+/** Changes publication independently of profile details. */
+export const updateSalonStatusSchema = z.strictObject({ status: salonStatusSchema });

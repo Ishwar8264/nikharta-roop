@@ -2,6 +2,26 @@ import type { OpenAPIV3_1 } from "openapi-types";
 
 /** Service paths: categories and salon services. */
 export const servicePaths = {
+  "/api/v1/salons/{salonRef}/services/{serviceRef}/status": {
+    patch: {
+      tags: ["Services"],
+      summary: "Update service status",
+      description: "Requires MANAGER access. Changes publication after creation; existing records are retained.",
+      operationId: "updateServiceStatus",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "salonRef", in: "path", required: true, schema: { type: "string" } }, { name: "serviceRef", in: "path", required: true, schema: { type: "string" } }],
+      requestBody: { required: true, content: { "application/json": { schema: { type: "object", additionalProperties: false, required: ["status"], properties: { status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] } } } } } },
+      responses: {
+        "200": { description: "Status updated", content: { "application/json": { schema: { $ref: "#/components/schemas/ServiceResponse" } } } },
+        "400": { description: "Invalid status or request" },
+        "401": { description: "Authentication required" },
+        "403": { description: "Insufficient salon permissions" },
+        "404": { description: "Salon or item not found" },
+        "409": { description: "Publication requirements not met" },
+      },
+    },
+  },
+
       "/api/v1/services/categories": {
         get: {
           tags: ["Services"],
@@ -407,6 +427,7 @@ export const serviceSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             slug: { type: "string" },
             price: { type: "number", format: "double" },
             duration: { type: "integer" },
+            status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] },
             isActive: { type: "boolean" },
             shortDescription: { type: ["string", "null"] },
             description: { type: ["string", "null"] },
@@ -421,6 +442,7 @@ export const serviceSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
         },
         CreateServiceRequest: {
           type: "object",
+          description: "Creates a Draft. Update publication through the dedicated status endpoint after creation.",
           additionalProperties: false,
           required: ["name", "price", "duration"],
           properties: {
@@ -439,7 +461,6 @@ export const serviceSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               multipleOf: 0.01,
             },
             duration: { type: "integer", minimum: 5, maximum: 480 },
-            isActive: { type: "boolean", default: true },
             shortDescription: { type: "string", maxLength: 280 },
             description: { type: "string", maxLength: 5000 },
             descriptionHtml: { type: "string" },
@@ -479,6 +500,7 @@ export const serviceSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               multipleOf: 0.01,
             },
             duration: { type: "integer", minimum: 5, maximum: 480 },
+            status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] },
             isActive: { type: "boolean" },
             shortDescription: { type: ["string", "null"], maxLength: 280 },
             description: { type: ["string", "null"], maxLength: 5000 },

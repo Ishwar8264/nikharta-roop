@@ -453,6 +453,7 @@ function buildSalonUpdateInput(
 ): Prisma.SalonUpdateInput {
   const data: Prisma.SalonUpdateInput = {};
 
+  if (input.status !== undefined) data.status = input.status;
   if (input.name !== undefined) data.name = input.name;
   if (input.slug !== undefined) data.slug = input.slug;
   if (input.shortDescription !== undefined) {

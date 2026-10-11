@@ -1,3 +1,4 @@
+import type { CatalogStatus } from "@/lib/catalog/status";
 import type { z } from "zod";
 
 import type {
@@ -31,6 +32,7 @@ export interface PublicProduct {
   slug: string;
   price: number;
   stock: number;
+  status: CatalogStatus;
   isActive: boolean;
   shortDescription: string | null;
   description: string | null;

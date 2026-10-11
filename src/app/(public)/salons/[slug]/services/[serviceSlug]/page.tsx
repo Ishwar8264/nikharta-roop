@@ -12,7 +12,7 @@ import { getSession } from "@/lib/auth/get-session";
 import { ReviewForm, ReviewList, ReviewSummary } from "@/features/review";
 import type { PublicReview as WireReview } from "@/features/review";
 import { SalonNotFoundError, SalonRoleInsufficientError } from "@/server/modules/salon/salon.errors";
-import { getSalonForServiceManagement } from "@/server/modules/salon/salon.service";
+import { getSalonForServiceManagement, getSalonSummaryBySlug } from "@/server/modules/salon/salon.service";
 import { ServiceNotFoundError } from "@/server/modules/service/service.errors";
 import { getSalonService } from "@/server/modules/service/service.service";
 import { listReviewsForService } from "@/server/modules/review/review.service";
@@ -62,8 +62,9 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
   const { slug, serviceSlug } = await params;
 
   let service;
+  let salon;
   try {
-    service = await getService(slug, serviceSlug);
+    [service, salon] = await Promise.all([getService(slug, serviceSlug), getSalonSummaryBySlug(slug)]);
   } catch (error) {
     if (
       error instanceof SalonNotFoundError ||
@@ -229,6 +230,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
             </div>
           </dl>
 
+          {salon.status === "LIVE" ? (
           <NavLink
             href={`${routes.salonBooking(slug)}?service=${encodeURIComponent(service.slug)}`}
             variant="default"
@@ -239,6 +241,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
           >
             Book this service
           </NavLink>
+          ) : <p className="mt-4 text-sm text-muted-foreground">Salon temporarily closed. Bookings unavailable.</p>}
           {canManage ? <NavLink href={routes.salonServiceEdit(slug, service.id)} variant="outline" markActive={false} className="mt-3 w-full justify-center">Edit service</NavLink> : null}
         </aside>
       </div>

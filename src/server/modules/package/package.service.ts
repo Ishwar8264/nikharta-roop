@@ -1,3 +1,4 @@
+import { resolveCatalogStatus, type CatalogStatus } from "@/lib/catalog/status";
 import "server-only";
 
 import { assertRoleAtLeast } from "@/server/modules/salon/salon.authorization";
@@ -35,6 +36,7 @@ function toPublicPackage(row: {
   slug: string;
   price: { toNumber(): number } | number;
   duration: number;
+  status: CatalogStatus;
   isActive: boolean;
   services: Array<{
     serviceId: string;
@@ -177,7 +179,8 @@ export async function createSalonPackage(
       slug: input.slug,
       price: input.price,
       duration: input.duration,
-      isActive: input.isActive,
+      status: "DRAFT",
+      isActive: false,
       serviceIds,
     }),
   );
@@ -206,7 +209,7 @@ export async function updateSalonPackage(
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.price !== undefined ? { price: input.price } : {}),
       ...(input.duration !== undefined ? { duration: input.duration } : {}),
-      ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+      ...(input.status !== undefined || input.isActive !== undefined ? { status: resolveCatalogStatus(input), isActive: resolveCatalogStatus(input) === "PUBLISHED" } : {}),
       ...(input.serviceIds !== undefined
         ? { serviceIds: input.serviceIds }
         : {}),

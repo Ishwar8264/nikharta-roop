@@ -1,3 +1,4 @@
+import type { SalonStatus } from "@/features/salon/status";
 import type { DayOfWeek, SalonCategory } from "@/generated/prisma/client";
 
 /**
@@ -12,6 +13,7 @@ import type { DayOfWeek, SalonCategory } from "@/generated/prisma/client";
  * Shapes MUST stay in sync with server/modules/salon/salon.types.PublicSalon.
  */
 export interface PublicSalon {
+  status: SalonStatus;
   id: string;
   name: string;
   slug: string;

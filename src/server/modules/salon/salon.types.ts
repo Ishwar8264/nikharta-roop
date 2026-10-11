@@ -1,3 +1,4 @@
+import type { SalonStatus } from "@/features/salon/status";
 import type { z } from "zod";
 
 import type {
@@ -21,6 +22,7 @@ export type AddSalonMemberInput = z.infer<typeof addSalonMemberSchema>;
 
 /** Salon row shape returned to public clients. */
 export interface PublicSalon {
+  status: SalonStatus;
   id: string;
   name: string;
   slug: string;

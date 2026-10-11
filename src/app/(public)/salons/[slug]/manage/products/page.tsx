@@ -1,3 +1,4 @@
+import { CATALOG_STATUS_LABELS } from "@/lib/catalog/status";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -76,7 +77,7 @@ export default async function ManageProductsPage({
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{product.name}</span>
                   <Badge variant="secondary">
-                    {product.isActive ? "Active" : "Inactive"}
+                    {CATALOG_STATUS_LABELS[product.status]}
                   </Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">

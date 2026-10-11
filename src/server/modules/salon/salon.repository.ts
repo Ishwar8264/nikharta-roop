@@ -1,3 +1,5 @@
+import { PUBLIC_SALON_FILTER } from "@/features/salon/status";
+import { SalonPublicationBlockedError } from "./salon.errors";
 import "server-only";
 
 import type { SalonCategory, SalonMemberRole } from "@/generated/prisma/client";
@@ -8,6 +10,7 @@ import type { PublicSalonMember, SalonWithViewerRole } from "./salon.types";
 
 /** Columns safe to return on every public salon response. */
 const PUBLIC_SALON_SELECT = {
+  status: true,
   id: true,
   name: true,
   slug: true,
@@ -51,8 +54,7 @@ export async function listActiveSalons(input: {
   search?: string;
 }) {
   const where: Prisma.SalonWhereInput = {
-    isActive: true,
-    deletedAt: null,
+    ...PUBLIC_SALON_FILTER,
     ...(input.city
       ? { city: { equals: input.city, mode: "insensitive" } }
       : {}),
@@ -94,7 +96,7 @@ export async function listActiveSalons(input: {
 /** Loads a single salon by slug, excluding soft-deleted rows. */
 export async function findSalonBySlug(slug: string) {
   return prisma.salon.findFirst({
-    where: { slug, deletedAt: null, isActive: true },
+    where: { slug, ...PUBLIC_SALON_FILTER },
     select: PUBLIC_SALON_SELECT,
   });
 }
@@ -109,7 +111,7 @@ export async function findSalonBySlug(slug: string) {
  */
 export async function findSalonDetailBySlug(slug: string) {
   return prisma.salon.findFirst({
-    where: { slug, deletedAt: null, isActive: true },
+    where: { slug, ...PUBLIC_SALON_FILTER },
     select: {
       ...PUBLIC_SALON_SELECT,
       verification: { select: { status: true } },
@@ -265,7 +267,7 @@ export async function createSalonWithOwner(input: {
     // New salons start hidden: they go live only after a SUPER_ADMIN
     // approves their verification (the review flow flips isActive to true).
     const salon = await transaction.salon.create({
-      data: { ...input.data, isActive: false },
+      data: { ...input.data, status: "DRAFT", isActive: false },
       select: PUBLIC_SALON_SELECT,
     });
 
@@ -311,6 +313,9 @@ export async function updateSalonById(
       identityFields.some(
         (field) => data[field] !== undefined && data[field] !== current[field],
       );
+    if ((data.status === "LIVE" || data.status === "TEMPORARILY_CLOSED") && (!current?.isActive || identityChanged)) {
+      throw new SalonPublicationBlockedError();
+    }
     if (identityChanged) {
       // Proofs describe a specific business and premises. Updating either invalidates that review.
       await transaction.salonVerification.updateMany({

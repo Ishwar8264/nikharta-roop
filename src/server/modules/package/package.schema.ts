@@ -1,3 +1,4 @@
+import { catalogStatusSchema } from "@/lib/catalog/status";
 import { z } from "zod";
 
 import { resourceIdSchema } from "@/server/modules/salon/salon.schema";
@@ -29,7 +30,6 @@ export const createPackageSchema = z.strictObject({
     .int("Duration must be an integer")
     .min(5, "Duration must be at least 5 minutes")
     .max(1440, "Duration must be at most 1440 minutes"),
-  isActive: z.boolean({ error: "Active flag must be a boolean" }).default(true),
   serviceIds: z
     .array(resourceIdSchema, { error: "serviceIds must be an array" })
     .max(30, "A package can contain at most 30 services")
@@ -63,6 +63,7 @@ export const updatePackageSchema = z
       .min(5, "Duration must be at least 5 minutes")
       .max(1440, "Duration must be at most 1440 minutes")
       .optional(),
+    status: catalogStatusSchema.optional(),
     isActive: z
       .boolean({ error: "Active flag must be a boolean" })
       .optional(),
@@ -108,3 +109,6 @@ export const packageParamSchema = z.strictObject({
     .min(2, "Package reference must contain at least 2 characters")
     .max(80, "Package reference must contain at most 80 characters"),
 });
+
+/** Publication is changed after creation through the dedicated status endpoint. */
+export const updatePackageStatusSchema = z.strictObject({ status: catalogStatusSchema });

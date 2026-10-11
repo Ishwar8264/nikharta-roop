@@ -15,6 +15,7 @@ const PUBLIC_PRODUCT_SELECT = {
   slug: true,
   price: true,
   stock: true,
+  status: true,
   isActive: true,
   shortDescription: true,
   description: true,
@@ -58,6 +59,7 @@ export async function listProductsBySalon(
 ) {
   const where: Prisma.ProductWhereInput = {
     salonId,
+    status: "PUBLISHED",
     isActive: true,
     deletedAt: null,
     ...(input.category ? { category: { slug: input.category } } : {}),
@@ -131,7 +133,7 @@ export async function listManagedProductsBySalon(
 /** Loads a single active product by slug within a salon. */
 export async function findProductBySlug(salonId: string, slug: string) {
   return prisma.product.findFirst({
-    where: { salonId, slug, isActive: true, deletedAt: null },
+    where: { salonId, slug, status: "PUBLISHED", isActive: true, deletedAt: null },
     select: PUBLIC_PRODUCT_SELECT,
   });
 }

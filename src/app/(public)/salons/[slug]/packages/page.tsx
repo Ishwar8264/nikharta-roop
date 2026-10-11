@@ -153,7 +153,7 @@ export default async function SalonPackagesPage({ params }: Props) {
           }
         />
       ) : (
-        <PackageCards salonSlug={slug} packages={packagesResult.items} />
+        <PackageCards canBook={salon.status === "LIVE"} salonSlug={slug} packages={packagesResult.items} />
       )}
     </main>
   );

@@ -116,6 +116,7 @@ export default async function SalonServicesPage({
               <SalonServiceCard
                 key={service.id}
                 salonSlug={slug}
+                canBook={salon.status === "LIVE"}
                 service={service}
               />
             ))}

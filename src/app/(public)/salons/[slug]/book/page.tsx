@@ -27,6 +27,10 @@ export default async function SalonBookingPage({ params, searchParams }: PagePro
     throw error;
   }
 
+  if (salon.status !== "LIVE") {
+    return <main className="px-4 py-8"><h1 className="text-2xl font-semibold">Temporarily closed</h1><p className="mt-2 text-muted-foreground">This salon is not accepting new bookings right now.</p></main>;
+  }
+
   return (
     <BookingFlow
       salon={{ id: salon.id, name: salon.name, slug: salon.slug, timezone: salon.timezone }}

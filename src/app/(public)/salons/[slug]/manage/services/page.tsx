@@ -1,3 +1,4 @@
+import { CATALOG_STATUS_LABELS } from "@/lib/catalog/status";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -46,7 +47,7 @@ export default async function ManageServicesPage({ params, searchParams }: Props
           {services.items.map((service) => (
             <li key={service.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
               <div>
-                <div className="flex items-center gap-2"><span className="font-medium">{service.name}</span><Badge variant="secondary">{service.isActive ? "Active" : "Inactive"}</Badge></div>
+                <div className="flex items-center gap-2"><span className="font-medium">{service.name}</span><Badge variant="secondary">{CATALOG_STATUS_LABELS[service.status]}</Badge></div>
                 <p className="mt-1 text-sm text-muted-foreground">{service.duration} min · {service.category?.name ?? "Uncategorized"}</p>
               </div>
               <Button variant="outline" render={<Link href={routes.salonServiceEdit(slug, service.id)} />}>Edit</Button>

@@ -1,3 +1,4 @@
+import type { SalonStatus } from "../status";
 import { api } from "@/lib/api/backend.client";
 
 import type { PublicSalon } from "../types";
@@ -13,8 +14,18 @@ export interface SalonMember {
 const salonPath = (salonId: string) => `/salons/${encodeURIComponent(salonId)}`;
 
 /** Updates only fields supplied by the management form. */
-export function updateSalonApi(salonId: string, input: Partial<PublicSalon>) {
-  return api.patch<{ message: string; data: { salon: PublicSalon } }>(salonPath(salonId), input);
+export async function updateSalonApi(salonId: string, input: Partial<PublicSalon>) {
+  const { status, ...details } = input;
+  let response;
+  if (Object.keys(details).length) response = await api.patch<{ message: string; data: { salon: PublicSalon } }>(salonPath(salonId), details);
+  if (status !== undefined) response = await updateSalonStatusApi(salonId, status);
+  if (!response) throw new Error("No salon changes supplied");
+  return response;
+}
+
+/** Updates publication independently from salon profile details. */
+export function updateSalonStatusApi(salonId: string, status: SalonStatus) {
+  return api.patch<{ message: string; data: { salon: PublicSalon } }>(`${salonPath(salonId)}/status`, { status });
 }
 
 /** Soft deletes an owner-managed salon. */

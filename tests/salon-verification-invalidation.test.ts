@@ -31,6 +31,26 @@ beforeEach(() => {
   });
 });
 describe("verification invalidation", () => {
+  for (const status of ["LIVE", "TEMPORARILY_CLOSED"] as const) {
+    it(`blocks ${status} without verification`, async () => {
+      await expect(updateSalonById("salon", { status })).rejects.toThrow("Complete salon verification");
+      expect(mock.update).not.toHaveBeenCalled();
+    });
+    it(`blocks ${status} combined with an identity change`, async () => {
+      mock.current.mockResolvedValue({ name: "Salon", isActive: true });
+      await expect(updateSalonById("salon", { status, name: "New name" })).rejects.toThrow("Complete salon verification");
+      expect(mock.update).not.toHaveBeenCalled();
+    });
+  }
+  for (const status of ["DRAFT", "LIVE", "TEMPORARILY_CLOSED", "ARCHIVED"] as const) {
+    it(`changes publication to ${status} without changing verification or appointments`, async () => {
+      mock.current.mockResolvedValue({ name: "Salon", isActive: true });
+      await updateSalonById("salon", { status });
+      expect(mock.invalidate).not.toHaveBeenCalled();
+      expect(mock.update).toHaveBeenCalledWith(expect.objectContaining({ data: { status } }));
+    });
+  }
+
   it("hides the salon and clears reviewed proofs when business identity or location changes", async () => {
     await updateSalonById("salon", { address: "New address" });
     expect(mock.lock).toHaveBeenCalledOnce();

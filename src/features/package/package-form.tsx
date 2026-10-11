@@ -8,6 +8,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { FormHeader } from "@/components/shared";
+import { CatalogStatusField } from "@/components/shared/catalog-status/field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
@@ -20,7 +21,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
@@ -97,10 +97,10 @@ export function PackageForm({
           slug: initialPackage.slug,
           price: initialPackage.price,
           duration: initialPackage.duration,
-          isActive: initialPackage.isActive,
+          status: initialPackage.status,
           serviceIds: initialPackage.services.map((line) => line.serviceId),
         }
-      : { name: "", price: 0, duration: 30, isActive: true, serviceIds: [] },
+      : { name: "", price: 0, duration: 30, status: "DRAFT", serviceIds: [] },
     mode: "onTouched",
     reValidateMode: "onChange",
   });
@@ -174,14 +174,17 @@ export function PackageForm({
           name: values.name,
           price: values.price,
           duration: values.duration,
-          isActive: values.isActive,
+          status: values.status,
           serviceIds: values.serviceIds,
         };
         await updatePackageApi(salonSlug, initialPackage.id, body);
         toast.success("Package updated.");
       } else {
-        await createPackageApi(salonSlug, values);
-        toast.success("Package created — customers can see it now.");
+        const response = await createPackageApi(salonSlug, values);
+        toast.success("Package created as draft.");
+        router.push(routes.salonPackageEdit(salonSlug, response.data.package.id));
+        router.refresh();
+        return;
       }
       router.push(routes.salonPackagesManage(salonSlug));
       router.refresh();
@@ -223,7 +226,7 @@ export function PackageForm({
     <form onSubmit={handleSubmit(submit)} className="space-y-6">
       <FormHeader
         title={initialPackage ? "Edit package" : "New package"}
-        description={`${salonName} · Customers see active packages on your public page.`}
+        description={initialPackage ? `${salonName} · Published packages appear on your public page.` : `Create a draft package for ${salonName}. Publish it from package details when ready.`}
       />
 
       {apiError.message ? <FormError>{apiError.message}</FormError> : null}
@@ -285,26 +288,13 @@ export function PackageForm({
             </div>
           </div>
 
+          {initialPackage ? (
           <Controller
-            name="isActive"
+            name="status"
             control={control}
-            render={({ field }) => (
-              <div className="flex items-center justify-between rounded-xl border p-4">
-                <div>
-                  <Label htmlFor="isActive">Visible to customers</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Inactive packages stay hidden — useful off-season.
-                  </p>
-                </div>
-                <Switch
-                  id="isActive"
-                  checked={field.value ?? true}
-                  onCheckedChange={field.onChange}
-                  disabled={busy}
-                />
-              </div>
-            )}
+            render={({ field }) => <CatalogStatusField value={field.value} onChange={field.onChange} onBlur={field.onBlur} disabled={busy} />}
           />
+          ) : null}
 
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">

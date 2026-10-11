@@ -51,7 +51,7 @@ interface AdminReviewSheetProps {
  * Admin review dialog for one pending verification.
  *
  * Why a single dialog with three actions:
- * Each review is a binary decision ("make this salon live" vs. "don't") with
+ * Each review is a binary decision ("verify this salon" vs. "reject") with
  * a severity split on the negative path. Keeping the actions side-by-side
  * surfaces all options at once and prevents the admin from guessing whether
  * "Reject" and "Suspend" are different surfaces.
@@ -141,7 +141,7 @@ export function AdminReviewSheet({
       });
       toast.success(
         decision === "VERIFIED"
-          ? `${salon.name} is now verified and live.`
+          ? `${salon.name} is now verified.`
           : decision === "SUSPENDED"
             ? `${salon.name} has been suspended.`
             : `Submission from ${salon.name} rejected.`,
@@ -168,7 +168,7 @@ export function AdminReviewSheet({
         <DialogHeader>
           <DialogTitle>Review {salon.name}</DialogTitle>
           <DialogDescription>
-            {salon.city ? `${salon.city} · ` : ""}Approve to publish the salon,
+            {salon.city ? `${salon.city} · ` : ""}Approve the salon verification,
             or reject with a reason the owner can act on.
           </DialogDescription>
         </DialogHeader>
@@ -319,7 +319,7 @@ export function AdminReviewSheet({
               </div>
               <p className="text-xs text-muted-foreground">
                 All checks and evidence are saved with your decision. Approval
-                publishes the salon.
+                allows the salon manager to go live.
               </p>
             </section>
           ) : null}

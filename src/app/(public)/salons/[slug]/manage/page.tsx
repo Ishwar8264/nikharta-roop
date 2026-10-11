@@ -52,7 +52,7 @@ export default async function SalonManagementPage({ params }: PageProps) {
         salonName={salon.name}
         verification={verification}
       />
-      <SalonManagement salon={salon} currentUserId={user.id} />
+      <SalonManagement salon={salon} currentUserId={user.id} verification={verification} />
     </main>
   );
 }

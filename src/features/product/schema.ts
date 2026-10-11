@@ -1,9 +1,10 @@
+import { catalogStatusSchema } from "@/lib/catalog/status";
 import { z } from "zod";
 
 import { createProductSchema } from "@/server/modules/product/product.schema";
 
 /** Reuses the API's product schema so client and server rules stay aligned. */
-export const productFormSchema = createProductSchema;
+export const productFormSchema = createProductSchema.extend({ status: catalogStatusSchema.optional() });
 export type ProductFormInput = z.input<typeof productFormSchema>;
 export type ProductFormValues = z.output<typeof productFormSchema>;
 

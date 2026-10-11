@@ -62,6 +62,7 @@ export function SalonCard({ salon, className }: SalonCardProps) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-2 p-4">
+        {salon.status === "TEMPORARILY_CLOSED" ? <p className="text-xs font-medium text-muted-foreground">Temporarily closed</p> : null}
         <h3 className="line-clamp-1 font-heading text-base font-semibold tracking-tight text-foreground">
           {salon.name}
         </h3>

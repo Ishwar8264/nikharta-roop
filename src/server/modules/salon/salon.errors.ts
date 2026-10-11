@@ -53,3 +53,11 @@ export class LastOwnerRemovalError extends Error {
     this.name = "LastOwnerRemovalError";
   }
 }
+
+/** Publication requires current verification, including unchanged business identity. */
+export class SalonPublicationBlockedError extends Error {
+  constructor() {
+    super("Complete salon verification before going live. Identity or location changes require a new review.");
+    this.name = "SalonPublicationBlockedError";
+  }
+}

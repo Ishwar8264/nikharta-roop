@@ -205,7 +205,7 @@ export async function createAppointment(
   callerId: string,
   input: CreateAppointmentInput,
 ): Promise<PublicAppointment> {
-  const salonId = await resolveSalonId(input.salonRef, true);
+  const salonId = await resolveSalonId(input.salonRef, true, true);
   if (!salonId) throw new SalonNotFoundError();
 
   const callerMembership = await findSalonForViewer({
@@ -753,7 +753,7 @@ export async function getAvailability(
   salonRef: string,
   query: AvailabilityQuery,
 ): Promise<AvailabilityResult> {
-  const salonId = await resolveSalonId(salonRef, true);
+  const salonId = await resolveSalonId(salonRef, true, true);
   if (!salonId) throw new SalonNotFoundError();
 
   const timezone = await getActiveSalonTimezone(salonId);
