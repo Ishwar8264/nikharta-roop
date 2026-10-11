@@ -137,7 +137,7 @@ export function CreateServiceForm({
     const service = await save(values);
     if (!service) return;
 
-    router.push(initialService ? routes.salonServicesManage(salonSlug) : routes.salonServiceEdit(salonSlug, service.id));
+    router.push(initialService ? routes.salonServicesManage(salonSlug) : routes.salonServiceDetail(salonSlug, service.slug));
     router.refresh();
   }
 

@@ -14,7 +14,7 @@ import type { PublicReview as WireReview } from "@/features/review";
 import { SalonNotFoundError, SalonRoleInsufficientError } from "@/server/modules/salon/salon.errors";
 import { getSalonForServiceManagement, getSalonSummaryBySlug } from "@/server/modules/salon/salon.service";
 import { ServiceNotFoundError } from "@/server/modules/service/service.errors";
-import { getSalonService } from "@/server/modules/service/service.service";
+import { getManagedSalonService, getSalonService } from "@/server/modules/service/service.service";
 import { listReviewsForService } from "@/server/modules/review/review.service";
 import type { PublicReview as ServerReview } from "@/server/modules/review/review.types";
 
@@ -22,7 +22,23 @@ interface PageProps {
   params: Promise<{ slug: string; serviceSlug: string }>;
 }
 
-const getService = cache(getSalonService);
+/** Private previews retain the public URL without exposing drafts to other visitors. */
+const getDetail = cache(async (salonSlug: string, serviceSlug: string) => {
+  try {
+    const [service, salon] = await Promise.all([
+      getSalonService(salonSlug, serviceSlug),
+      getSalonSummaryBySlug(salonSlug),
+    ]);
+    return { service, salon, preview: false };
+  } catch (error) {
+    if (!(error instanceof SalonNotFoundError) && !(error instanceof ServiceNotFoundError)) throw error;
+    const user = await getSession();
+    if (!user) throw error;
+    const salon = await getSalonForServiceManagement(salonSlug, user.id);
+    const service = await getManagedSalonService(user.id, salonSlug, serviceSlug, "slug");
+    return { service, salon, preview: true };
+  }
+});
 const priceFormatter = new Intl.NumberFormat(siteConfig.locale, {
   style: "currency",
   currency: siteConfig.currency,
@@ -34,7 +50,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug, serviceSlug } = await params;
 
   try {
-    const service = await getService(slug, serviceSlug);
+    const { service, preview } = await getDetail(slug, serviceSlug);
+    if (preview) return { title: service.name, robots: { index: false, follow: false } };
     const description =
       service.shortDescription ??
       service.description?.slice(0, 160) ??
@@ -61,19 +78,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function SalonServiceDetailPage({ params }: PageProps) {
   const { slug, serviceSlug } = await params;
 
-  let service;
-  let salon;
+  let detail;
   try {
-    [service, salon] = await Promise.all([getService(slug, serviceSlug), getSalonSummaryBySlug(slug)]);
+    detail = await getDetail(slug, serviceSlug);
   } catch (error) {
-    if (
-      error instanceof SalonNotFoundError ||
-      error instanceof ServiceNotFoundError
-    ) {
-      notFound();
-    }
+    if (error instanceof SalonNotFoundError || error instanceof ServiceNotFoundError || error instanceof SalonRoleInsufficientError) notFound();
     throw error;
   }
+  const { service, salon, preview } = detail;
 
   const description = service.description ?? service.shortDescription;
   const user = await getSession();
@@ -87,30 +99,19 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
     }
   }
 
-  /**
-   * Why reviews resolve in parallel with the management check:
-   * The list is a public read (no auth required). Fetching it alongside the
-   * `canManage` lookup keeps the page's server round-trip at one wave instead
-   * of two — the management check is the only auth-gated read on this page.
-   *
-   * Why we map `createdAt` from `Date` to ISO string:
-   * The server `PublicReview` carries `Date` instances; the client
-   * `ReviewList`/`ReviewForm` components are typed against the wire shape
-   * (`string`), which is what the API would return over JSON. Normalising
-   * here mirrors what the HTTP layer would do, so the same client code path
-   * works whether the data arrived via SSR or a follow-up fetch.
-   */
-  const reviews = await listReviewsForService(service.id, {
+  // Private previews cannot use public reviews; published review dates are serialized for client props.
+  const reviews = preview ? null : await listReviewsForService(service.id, {
     limit: 20,
     sort: "recent",
   });
-  const wireReviews: WireReview[] = reviews.items.map((review) => ({
+  const wireReviews: WireReview[] = (reviews?.items ?? []).map((review) => ({
     ...(review as ServerReview),
     createdAt: new Date(review.createdAt).toISOString(),
   }));
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      {preview ? <p className="mb-6 rounded-xl border bg-muted/30 p-4 text-sm">Private service preview. Customers cannot view or book this service yet. Use Edit service to update its details and status.</p> : null}
       {service.bannerImage ? (
         <div className="mb-6">
           <CoverImage src={service.bannerImage} alt={`${service.name} banner`} aspect="wide" priority />
@@ -146,7 +147,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
             </div>
           ) : null}
 
-          {/* Reviews */}
+          {reviews ? (
           <div className="mt-10 space-y-6">
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 text-accent-foreground" aria-hidden="true" />
@@ -164,7 +165,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
               targetId={service.id}
             />
 
-            {user ? (
+            {user && !preview ? (
               <section
                 aria-labelledby="review-form-title"
                 className="rounded-xl border border-border bg-card p-4"
@@ -193,6 +194,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
               </section>
             ) : null}
           </div>
+          ) : null}
         </section>
 
         <aside className="rounded-2xl border border-border bg-card p-6 shadow-sm lg:sticky lg:top-24">
@@ -230,7 +232,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
             </div>
           </dl>
 
-          {salon.status === "LIVE" ? (
+          {!preview && salon.status === "LIVE" ? (
           <NavLink
             href={`${routes.salonBooking(slug)}?service=${encodeURIComponent(service.slug)}`}
             variant="default"
@@ -241,7 +243,7 @@ export default async function SalonServiceDetailPage({ params }: PageProps) {
           >
             Book this service
           </NavLink>
-          ) : <p className="mt-4 text-sm text-muted-foreground">Salon temporarily closed. Bookings unavailable.</p>}
+          ) : <p className="mt-4 text-sm text-muted-foreground">Bookings are unavailable for this service.</p>}
           {canManage ? <NavLink href={routes.salonServiceEdit(slug, service.id)} variant="outline" markActive={false} className="mt-3 w-full justify-center">Edit service</NavLink> : null}
         </aside>
       </div>

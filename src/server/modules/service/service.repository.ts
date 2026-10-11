@@ -144,9 +144,9 @@ export async function listManagedServicesBySalon(salonId: string, cursor?: strin
 }
 
 /** Loads a single active service by slug within a salon. */
-export async function findServiceBySlug(salonId: string, slug: string) {
+export async function findServiceBySlug(salonId: string, slug: string, includeInactive = false) {
   return prisma.service.findFirst({
-    where: { salonId, slug, status: "PUBLISHED", isActive: true, deletedAt: null },
+    where: { salonId, slug, ...(includeInactive ? {} : { status: "PUBLISHED" as const, isActive: true }), deletedAt: null },
     select: PUBLIC_SERVICE_SELECT,
   });
 }

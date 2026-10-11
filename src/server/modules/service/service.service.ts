@@ -91,13 +91,13 @@ export async function listManagedSalonServices(actorId: string, salonRef: string
 }
 
 /** Loads one service, including inactive entries, for its management form. */
-export async function getManagedSalonService(actorId: string, salonRef: string, serviceId: string): Promise<PublicService> {
+export async function getManagedSalonService(actorId: string, salonRef: string, serviceRef: string, lookup: "id" | "slug" = "id"): Promise<PublicService> {
   const salonId = await resolveSalonId(salonRef);
   if (!salonId) throw new SalonNotFoundError();
   const salon = await findSalonForViewer({ salonId, userId: actorId });
   if (!salon) throw new SalonNotFoundError();
   assertRoleAtLeast(salon.viewerRole, "MANAGER");
-  const service = await findServiceById(serviceId);
+  const service = lookup === "slug" ? await findServiceBySlug(salonId, serviceRef, true) : await findServiceById(serviceRef);
   if (!service || service.salonId !== salonId) throw new ServiceNotFoundError();
   return toPublicService(service);
 }
