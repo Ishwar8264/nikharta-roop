@@ -108,9 +108,11 @@ export function UserMenu({ user }: { user: CurrentUser }) {
               );
             })}
 
-            <DropdownMenuItem render={<Link href="/onboarding" />} textValue="Account setup">
-              {isOnboardingComplete(user) ? "Account preferences" : "Complete account setup"}
-            </DropdownMenuItem>
+            {user.role !== "SUPER_ADMIN" && (
+              <DropdownMenuItem render={<Link href="/onboarding" />} textValue="Account setup">
+                {isOnboardingComplete(user) ? "Account preferences" : "Complete account setup"}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               render={<Link href={canCreateSalon(user) ? "/salons/create" : "/onboarding?type=partner"} />}
               textValue="Salon partner"

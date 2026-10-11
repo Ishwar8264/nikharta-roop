@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { routes } from "@/config/routes";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/get-session";
 import { OnboardingForm } from "@/features/onboarding/onboarding-form";
@@ -28,6 +29,9 @@ export default async function OnboardingPage({
           "/onboarding" + (params.type === "partner" ? "?type=partner" : ""),
         ),
     );
+  // Admin work does not require customer setup; personal salon creation still does.
+  if (user.role === "SUPER_ADMIN" && params.type !== "partner")
+    redirect(routes.adminSalonVerification);
   const destination = onboardingDestination(params.redirect);
   if (params.type === "partner" && canCreateSalon(user))
     redirect("/salons/create");

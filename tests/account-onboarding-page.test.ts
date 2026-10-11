@@ -45,6 +45,19 @@ describe("optional onboarding page and protected creation page", () => {
       }),
     ).rejects.toThrow("/salons/example/book");
   });
+  it("sends super admins to the admin area without customer onboarding", async () => {
+    mocks.session.mockResolvedValue({ role: "SUPER_ADMIN", accountType: null });
+    for (const params of [{}, { welcome: "1" }, { welcome: "1", redirect: "/salons/example/book" }]) {
+      await expect(OnboardingPage({ searchParams: Promise.resolve(params) }))
+        .rejects.toThrow("/admin/salons/verification");
+    }
+  });
+  it("still requires partner setup for a super admin's personal salon", async () => {
+    mocks.session.mockResolvedValue({ role: "SUPER_ADMIN", accountType: null });
+    await expect(CreateSalonPage()).rejects.toThrow("/onboarding?type=partner");
+    const result = await OnboardingPage({ searchParams: Promise.resolve({ type: "partner" }) });
+    expect(result.props.partnerRequested).toBe(true);
+  });
   it("allows an existing owner to create without repeating consent", async () => {
     mocks.session.mockResolvedValue({
       accountType: "SALON_PARTNER",

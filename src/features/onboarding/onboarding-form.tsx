@@ -8,10 +8,14 @@ import {
   ArrowRight,
   Check,
   Loader2,
+  Mail,
+  ShieldCheck,
   Scissors,
   Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import {
   Card,
   CardContent,
@@ -54,31 +58,26 @@ export function OnboardingForm({
   const [skipFailed, setSkipFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState({ name: false, phone: false });
   const partner = accountType === "SALON_PARTNER";
+  // Keep readable phone formatting in the input; send the existing API format.
+  const normalizedPhone = phone.replace(/[\s()-]/g, "");
   const input = {
     accountType,
     name,
-    ...(partner && phone.trim() ? { phone: phone.trim() } : {}),
+    ...(partner && normalizedPhone ? { phone: normalizedPhone } : {}),
     authorised,
     acceptTerms,
     termsVersion: PARTNER_TERMS_VERSION,
   };
   const parsed = onboardingSchema.safeParse(input);
-  const requirements = partner
-    ? [
-        Boolean(accountType),
-        name.trim().length >= 2 && name.trim().length <= 100,
-        /^\+[1-9]\d{7,14}$/.test(phone.trim()),
-        authorised,
-        acceptTerms,
-      ]
-    : [
-        Boolean(accountType),
-        name.trim().length >= 2 && name.trim().length <= 100,
-      ];
-  const progress = Math.round(
-    (requirements.filter(Boolean).length / (requirements.length + 1)) * 100,
-  );
+  const validationErrors = parsed.success
+    ? {}
+    : Object.fromEntries(
+        parsed.error.issues.map((issue) => [issue.path.join("."), issue.message]),
+      );
+
+  const phoneError = errors.phone || (touched.phone ? validationErrors.phone : undefined);
 
   function leave(path: string) {
     router.replace(path);
@@ -99,8 +98,8 @@ export function OnboardingForm({
         ...(name.trim().length >= 2 && name.trim().length <= 100
           ? { name: name.trim() }
           : {}),
-        ...(partner && /^\+[1-9]\d{7,14}$/.test(phone.trim())
-          ? { phone: phone.trim() }
+        ...(partner && /^\+[1-9]\d{7,14}$/.test(normalizedPhone)
+          ? { phone: normalizedPhone }
           : {}),
       });
       if (skip) leave(destination);
@@ -160,19 +159,11 @@ export function OnboardingForm({
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:py-16">
-      <div className="mb-6 flex items-center justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">
-          Step {step} of 2 · Account setup
-        </span>
-        <Button
-          variant="ghost"
-          disabled={busy}
-          onPress={() => void saveIntent(true)}
-        >
-          Skip for now
-        </Button>
-      </div>
+    <div
+      data-form-rounded="true"
+      className="mx-auto w-full max-w-xl px-4 py-6 sm:py-10"
+      style={{ fontFamily: "var(--font-sans, Arial, sans-serif)" }}
+    >
       {skipFailed && (
         <div className="mb-4 rounded-xl border p-4 text-sm">
           <p>
@@ -187,41 +178,37 @@ export function OnboardingForm({
           </Button>
         </div>
       )}
-      <Card className="rounded-2xl">
-        <CardHeader className="space-y-3 p-6 sm:p-8">
-          <div className="flex justify-between gap-4 text-xs text-muted-foreground">
-            <span>Save your setup to reach 100%. You can finish anytime.</span>
-            <span>{progress}%</span>
+      <Card className="gap-6 rounded-2xl py-5 sm:py-7">
+        <CardHeader className="gap-2 px-5 sm:px-7">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-muted-foreground">
+              Step {step} of 2 · Account setup
+            </span>
+            <Button
+              variant="ghost"
+              disabled={busy}
+              onPress={() => void saveIntent(true)}
+            >
+              Skip for now
+            </Button>
           </div>
-          <div
-            role="progressbar"
-            aria-label="Account setup progress"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress}
-            className="h-1.5 overflow-hidden rounded-full bg-muted"
-          >
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <CardTitle className="pt-3 font-heading text-2xl sm:text-3xl">
+
+          <CardTitle className="font-heading text-2xl leading-tight text-balance sm:text-3xl">
             {step === 1
-              ? "How would you like to use Nikharta Roop?"
+              ? "What brings you here?"
               : partner
-                ? "Let's set up your partner account"
+                ? "Your partner account"
                 : "A little about you"}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="max-w-lg leading-relaxed">
             {step === 1
-              ? "Choose what brings you here. Salon partners can also book services."
+              ? "Book your next visit or manage your salon. Salon partners can do both."
               : partner
-                ? "Complete your details to add a salon. Salon verification comes next."
+                ? "Confirm your details to start adding your salon."
                 : "Check your name, then you're ready to explore and book."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-6 pb-6 sm:px-8 sm:pb-8">
+        <CardContent className="px-5 sm:px-7">
           {step === 1 ? (
             <div className="space-y-5">
               <fieldset className="grid gap-3 sm:grid-cols-2">
@@ -244,7 +231,7 @@ export function OnboardingForm({
                 ).map(([value, title, description, Icon]) => (
                   <label
                     key={value}
-                    className={`relative cursor-pointer rounded-xl border-2 p-5 transition-colors focus-within:ring-2 focus-within:ring-ring ${accountType === value ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+                    className={`relative flex h-full cursor-pointer flex-col rounded-xl border-2 p-4 transition-colors sm:p-5 focus-within:ring-2 focus-within:ring-ring ${accountType === value ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
                   >
                     <input
                       type="radio"
@@ -259,11 +246,11 @@ export function OnboardingForm({
                       className="sr-only"
                     />
                     <Icon
-                      className="mb-4 size-6 text-primary"
+                      className="mb-3 size-6 shrink-0 text-primary"
                       aria-hidden="true"
                     />
                     <span className="block font-semibold">{title}</span>
-                    <span className="mt-1 block text-sm text-muted-foreground">
+                    <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
                       {description}
                     </span>
                     {accountType === value && (
@@ -282,7 +269,7 @@ export function OnboardingForm({
               )}
               {!accountType && (
                 <p className="text-xs text-muted-foreground">
-                  Select an option to continue, or skip for now.
+                  Choose an option to continue. You can also set this up later.
                 </p>
               )}
               <Button
@@ -302,101 +289,126 @@ export function OnboardingForm({
             </div>
           ) : (
             <form onSubmit={complete} noValidate className="space-y-5">
+              {partner && user.email && (
+                <div className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+                  <Mail className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 break-all">Signed in as {user.email}</span>
+                </div>
+              )}
               <Field
                 id="onboarding-name"
                 label="Your name"
                 autoComplete="name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                error={errors.name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setErrors((current) => ({ ...current, name: "" }));
+                }}
+                onBlur={() => setTouched((current) => ({ ...current, name: true }))}
+                error={errors.name || (touched.name ? validationErrors.name : undefined)}
                 required
                 disabled={busy}
               />
               {partner && (
                 <>
-                  {user.email && (
-                    <p className="text-sm text-muted-foreground">
-                      Account email:{" "}
-                      <span className="break-all text-foreground">
-                        {user.email}
-                      </span>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="onboarding-phone" required>Business contact phone</Label>
+                    <PhoneInput
+                      value={phone}
+                      initialCountry="in"
+                      onValueChange={(value) => {
+                        setPhone(value);
+                        setErrors((current) => ({ ...current, phone: "" }));
+                      }}
+                      disabled={busy}
+                      inputProps={{
+                        id: "onboarding-phone",
+                        required: true,
+                        autoComplete: "tel",
+                        placeholder: "98765 43210",
+                        onBlur: () => setTouched((current) => ({ ...current, phone: true })),
+                        "aria-invalid": phoneError ? true : undefined,
+                        "aria-describedby": `onboarding-phone-description${phoneError ? " onboarding-phone-error" : ""}`,
+                      }}
+                    />
+                    <p id="onboarding-phone-description" className="text-xs leading-relaxed text-muted-foreground">
+                      Country code is included. Saving your number does not verify it.
                     </p>
-                  )}
-                  <Field
-                    id="onboarding-phone"
-                    label="Business contact phone"
-                    type="tel"
-                    autoComplete="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    description="Use your country code, e.g. +919876543210. This saves your contact number; it does not verify it."
-                    error={errors.phone}
-                    required
-                    disabled={busy}
-                  />
-                  <div className="space-y-2">
-                    <label className="flex items-start gap-3 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={authorised}
-                        onChange={(e) => setAuthorised(e.target.checked)}
-                        disabled={busy}
-                        aria-describedby={
-                          errors.authorised ? "authority-error" : undefined
-                        }
-                        className="mt-1 size-4 accent-primary"
-                      />
-                      <span>
-                        I own the salon or am authorised to represent it.
-                      </span>
-                    </label>
-                    {errors.authorised && (
-                      <p
-                        id="authority-error"
-                        className="text-xs text-destructive"
-                      >
-                        {errors.authorised}
-                      </p>
+                    {phoneError && (
+                      <p id="onboarding-phone-error" className="text-xs text-destructive">{phoneError}</p>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <label className="flex items-start gap-3 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={acceptTerms}
-                        onChange={(e) => setAcceptTerms(e.target.checked)}
-                        disabled={busy}
-                        aria-describedby={
-                          errors.acceptTerms ? "consent-error" : undefined
-                        }
-                        className="mt-1 size-4 accent-primary"
-                      />
-                      <span>
-                        I accept the{" "}
-                        <Link
-                          href={PARTNER_TERMS_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary underline"
+                  <fieldset className="space-y-3 border-t border-border pt-4">
+                    <legend className="sr-only">Partner confirmations</legend>
+                    <div className="space-y-1.5">
+                      <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
+                        <input
+                          type="checkbox"
+                          checked={authorised}
+                          onChange={(e) => setAuthorised(e.target.checked)}
+                          disabled={busy}
+                          aria-describedby={
+                            errors.authorised ? "authority-error" : undefined
+                          }
+                          className="mt-0.5 size-4 shrink-0 accent-primary"
+                        />
+                        <span>
+                          I own the salon or am authorised to represent it.
+                        </span>
+                      </label>
+                      {errors.authorised && (
+                        <p
+                          id="authority-error"
+                          className="text-xs text-destructive"
                         >
-                          Terms of Service, including Salon Partners
-                        </Link>{" "}
-                        (version {PARTNER_TERMS_VERSION}).
-                      </span>
-                    </label>
-                    {errors.acceptTerms && (
-                      <p
-                        id="consent-error"
-                        className="text-xs text-destructive"
-                      >
-                        {errors.acceptTerms}
+                          {errors.authorised}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed">
+                        <input
+                          type="checkbox"
+                          checked={acceptTerms}
+                          onChange={(e) => setAcceptTerms(e.target.checked)}
+                          disabled={busy}
+                          aria-describedby={
+                            errors.acceptTerms ? "consent-error" : undefined
+                          }
+                          className="mt-0.5 size-4 shrink-0 accent-primary"
+                        />
+                        <span>
+                          I accept the{" "}
+                          <Link
+                            href={PARTNER_TERMS_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline"
+                          >
+                            Terms of Service, including Salon Partners
+                          </Link>{" "}
+                          <span className="mt-0.5 block text-xs text-muted-foreground">Version {PARTNER_TERMS_VERSION}</span>
+                        </span>
+                      </label>
+                      {errors.acceptTerms && (
+                        <p
+                          id="consent-error"
+                          className="text-xs text-destructive"
+                        >
+                          {errors.acceptTerms}
+                        </p>
+                      )}
+                    </div>
+                  </fieldset>
+                  <div className="flex items-start gap-2.5 rounded-lg bg-muted/40 p-3">
+                    <ShieldCheck className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium">Next: salon details & document review</p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        Your salon goes live after document approval. You can still book services.
                       </p>
-                    )}
+                    </div>
                   </div>
-                  <p className="rounded-lg bg-muted p-3 text-xs leading-relaxed text-muted-foreground">
-                    Your salon stays private until its documents are reviewed
-                    and approved. You can still browse and book services.
-                  </p>
                 </>
               )}
               {error && (
@@ -407,13 +419,13 @@ export function OnboardingForm({
               {!parsed.success && (
                 <p className="text-xs text-muted-foreground">
                   {partner
-                    ? "Add your name and a valid phone number, then confirm your authority and accept the terms."
+                    ? "To continue, add your name and phone number, then tick both confirmations."
                     : "Enter a name with 2–100 characters to continue."}
                 </p>
               )}
-              <div className="flex gap-3">
+              <div className="flex items-center gap-3 border-t border-border pt-4">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   disabled={busy}
                   onPress={() => {
                     setStep(1);

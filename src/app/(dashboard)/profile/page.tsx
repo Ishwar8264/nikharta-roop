@@ -60,14 +60,18 @@ export default async function ProfilePage() {
         <CardHeader>
           <CardTitle>Account setup</CardTitle>
           <CardDescription>
+            {user.role === "SUPER_ADMIN" ? "Super admin · Account setup not required" : <>
             {user.accountType === "SALON_PARTNER" ? "Salon partner" : user.accountType === "CUSTOMER" ? "Customer" : "Account type not selected"}
             {isOnboardingComplete(user) ? " · 100% complete" : " · Setup incomplete"}
+            </>}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Button variant="outline" render={<Link href={routes.onboarding} />}>
-            {isOnboardingComplete(user) ? "Account preferences" : "Complete setup"}
-          </Button>
+          {user.role !== "SUPER_ADMIN" && (
+            <Button variant="outline" render={<Link href={routes.onboarding} />}>
+              {isOnboardingComplete(user) ? "Account preferences" : "Complete setup"}
+            </Button>
+          )}
           <Button render={<Link href={canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding} />}>
             {canCreateSalon(user) ? "Add salon" : "Become a salon partner"}
           </Button>

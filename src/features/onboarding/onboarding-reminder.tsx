@@ -15,6 +15,7 @@ export function OnboardingReminder() {
   const [dismissedFor, setDismissedFor] = useState<string | null>(null);
   if (
     !user ||
+    user.role === "SUPER_ADMIN" ||
     dismissedFor === user.id ||
     isOnboardingComplete(user) ||
     path === "/onboarding" ||
