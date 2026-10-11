@@ -34,6 +34,7 @@ export const routes = {
     `/salons/${salonSlug}/services/${serviceSlug}`,
   salonBooking: (slug: string) => `/salons/${slug}/book`,
   salonPackages: (slug: string) => `/salons/${slug}/packages`,
+  salonPackageDetail: (slug: string, packageId: string) => `/salons/${slug}/packages/${packageId}`,
 
   // ─── Salon manage — Phase A ───
   salonAppointmentsManage: (slug: string) =>
@@ -45,7 +46,7 @@ export const routes = {
     `/salons/${slug}/manage/staff/${staffId}`,
   salonPackagesManage: (slug: string) => `/salons/${slug}/manage/packages`,
   salonPackageEdit: (slug: string, packageId: string) =>
-    `/salons/${slug}/manage/packages/${packageId}`,
+    `/salons/${slug}/packages/${packageId}/edit`,
   salonPackageCreate: (slug: string) => `/salons/${slug}/manage/packages/create`,
   salonTemplatesManage: (slug: string) => `/salons/${slug}/manage/templates`,
   salonVerification: (slug: string) => `/salons/${slug}/manage/verification`,

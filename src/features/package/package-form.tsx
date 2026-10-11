@@ -7,17 +7,8 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { DurationField, FormHeader, SlugField } from "@/components/shared";
-import { CatalogStatusField } from "@/components/shared/catalog-status/field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
@@ -25,7 +16,7 @@ import { appointmentPriceFormatter } from "@/features/appointment/format";
 import { ApiError } from "@/lib/api/backend.client";
 
 import { PackageServiceSelect } from "./package-service-select";
-import { createPackageApi, deletePackageApi, updatePackageApi } from "./api";
+import { createPackageApi, updatePackageApi } from "./api";
 import {
   formatDuration,
   packageFormSchema,
@@ -78,8 +69,6 @@ export function PackageForm({
   const [slugWasEdited, setSlugWasEdited] = useState(Boolean(initialPackage));
   const [knownServices, setKnownServices] = useState(services);
   const [busy, setBusy] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const apiError = useApiError();
 
   const {
@@ -155,7 +144,6 @@ export function PackageForm({
           name: values.name,
           price: values.price,
           duration: values.duration,
-          status: values.status,
           serviceIds: values.serviceIds,
         };
         await updatePackageApi(salonSlug, initialPackage.id, body);
@@ -163,11 +151,11 @@ export function PackageForm({
       } else {
         const response = await createPackageApi(salonSlug, values);
         toast.success("Package created as draft.");
-        router.push(routes.salonPackageEdit(salonSlug, response.data.package.id));
+        router.push(routes.salonPackageDetail(salonSlug, response.data.package.id));
         router.refresh();
         return;
       }
-      router.push(routes.salonPackagesManage(salonSlug));
+      router.push(routes.salonPackageDetail(salonSlug, initialPackage!.id));
       router.refresh();
     } catch (caught) {
       const fieldErrors = apiError.show(caught);
@@ -184,22 +172,6 @@ export function PackageForm({
       }
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function removePackage() {
-    if (!initialPackage) return;
-    setDeleting(true);
-    try {
-      await deletePackageApi(salonSlug, initialPackage.id);
-      toast.success(`${initialPackage.name} removed.`);
-      router.push(routes.salonPackagesManage(salonSlug));
-      router.refresh();
-    } catch (caught) {
-      apiError.show(caught);
-    } finally {
-      setDeleting(false);
-      setConfirmOpen(false);
     }
   }
 
@@ -295,14 +267,6 @@ export function PackageForm({
 
           </section>
 
-          {initialPackage ? (
-          <Controller
-            name="status"
-            control={control}
-            render={({ field }) => <CatalogStatusField value={field.value} onChange={field.onChange} onBlur={field.onBlur} disabled={busy} />}
-          />
-          ) : null}
-
           <section className="space-y-3" aria-labelledby="included-services">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -320,6 +284,7 @@ export function PackageForm({
               salonId={salonId}
               selected={selectedIds.map((id) => ({ id, name: knownServices.find((service) => service.id === id)?.name ?? initialPackage?.services.find((line) => line.serviceId === id)?.service.name ?? "Selected service" }))}
               onToggle={toggleService}
+              onCancel={(ids) => setValue("serviceIds", ids, { shouldDirty: true, shouldValidate: true })}
               onOptions={(options) => setKnownServices((previous) => [...previous.filter((item) => !options.some((option) => option.id === item.id)), ...options])}
               disabled={busy}
               error={errors.serviceIds?.message}
@@ -361,53 +326,6 @@ export function PackageForm({
         </CardFooter>
       </Card>
 
-      {initialPackage ? (
-        <section className="space-y-3 rounded-xl border border-destructive/40 p-5">
-          <h2 className="text-lg font-semibold">Delete package</h2>
-          <p className="text-sm text-muted-foreground">
-            Removing hides it from customers. Existing bookings are not
-            affected.
-          </p>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setConfirmOpen(true)}
-            disabled={busy || deleting}
-          >
-            Delete package
-          </Button>
-
-          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Remove {initialPackage.name}?</DialogTitle>
-                <DialogDescription>
-                  Customers will no longer see this package. Existing bookings
-                  are not affected.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setConfirmOpen(false)}
-                  disabled={deleting}
-                >
-                  Keep it
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={removePackage}
-                  disabled={deleting}
-                >
-                  {deleting ? "Removing…" : "Remove package"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </section>
-      ) : null}
     </form>
   );
 }

@@ -15,10 +15,11 @@ import type { PackageServiceOption } from "./types";
 type OptionsResponse = { data: PackageServiceOption[]; meta: { hasMore: boolean; nextCursor: string | null } };
 
 /** Searches on the server while keeping selected services independent of the result page. */
-export function PackageServiceSelect({ salonId, selected, onToggle, onOptions, disabled, error }: {
+export function PackageServiceSelect({ salonId, selected, onToggle, onCancel, onOptions, disabled, error }: {
   salonId: string;
   selected: Array<{ id: string; name: string }>;
   onToggle: (id: string) => void;
+  onCancel: (ids: string[]) => void;
   onOptions: (items: PackageServiceOption[]) => void;
   disabled?: boolean;
   error?: string;
@@ -30,6 +31,7 @@ export function PackageServiceSelect({ salonId, selected, onToggle, onOptions, d
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+  const previousSelection = useRef<string[]>([]);
   const generation = useRef(0);
   const optionsCallback = useRef(onOptions);
   useEffect(() => { optionsCallback.current = onOptions; }, [onOptions]);
@@ -80,7 +82,10 @@ export function PackageServiceSelect({ salonId, selected, onToggle, onOptions, d
 
   return (
     <div className="space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(next) => {
+        if (next) previousSelection.current = selected.map((service) => service.id);
+        setOpen(next);
+      }}>
         <PopoverTrigger variant="outline" disabled={disabled} aria-label="Select included services" className="h-11 w-full justify-between rounded-md border-input bg-transparent px-2.5 text-sm font-normal dark:bg-input/30" aria-invalid={Boolean(error)}>
           <span>{selected.length ? `${selected.length} services selected` : "Select services"}</span>
           <ChevronDown className="size-4" aria-hidden="true" />
@@ -101,7 +106,18 @@ export function PackageServiceSelect({ salonId, selected, onToggle, onOptions, d
             {cursor && !busy ? <Button type="button" variant="ghost" className="w-full" onClick={loadMore}>Load more</Button> : null}
           </div>
           <Separator />
-          <p className="px-2 text-xs text-muted-foreground">{selected.length} selected · Up to 30 services</p>
+          <div className="flex items-center justify-between gap-3 px-2">
+            <p className="text-xs text-muted-foreground">{selected.length} selected · Up to 30 services</p>
+            {selected.length > 0 ? (
+              <div className="flex shrink-0 gap-2">
+                <Button type="button" variant="ghost" size="sm" onClick={() => {
+                  onCancel(previousSelection.current);
+                  setOpen(false);
+                }}>Cancel</Button>
+                <Button type="button" size="sm" onClick={() => setOpen(false)}>Done</Button>
+              </div>
+            ) : null}
+          </div>
         </PopoverContent>
       </Popover>
       {selected.length ? <div className="flex flex-wrap gap-2">{selected.map((service) => <Button key={service.id} type="button" variant="secondary" size="sm" disabled={disabled} aria-label={`Remove ${service.name}`} onClick={() => onToggle(service.id)}>{service.name}<X className="size-3" aria-hidden="true" /></Button>)}</div> : null}

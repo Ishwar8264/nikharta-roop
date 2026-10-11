@@ -232,3 +232,12 @@ export async function deleteSalonPackage(
 
   await softDeletePackage(existing.id);
 }
+
+/** Public ID detail lookup remains scoped to a published salon and package. */
+export async function getPublicPackageById(salonRef: string, packageId: string): Promise<PublicPackage> {
+  const salonId = await resolveSalonId(salonRef, true);
+  if (!salonId) throw new SalonNotFoundError();
+  const found = await findPackageById(packageId);
+  if (!found || found.salonId !== salonId || found.status !== "PUBLISHED" || !found.isActive) throw new PackageNotFoundError();
+  return toPublicPackage(found);
+}

@@ -106,6 +106,7 @@ export function PackageCards({
                   </>
                 ) : null}
               </div>
+              <Button variant="outline" render={<Link href={routes.salonPackageDetail(salonSlug, pkg.id)} />} className="w-full">View details</Button>
               {canBook ? (
               <Button
                 render={<Link href={`${routes.salonBooking(salonSlug)}?package=${pkg.id}`} />}
