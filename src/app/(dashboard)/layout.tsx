@@ -43,11 +43,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     icon: <Store className="mt-0.5 size-4" />,
                     className: "items-start gap-2.5",
                   })),
-                  { label: canCreateSalon(user) ? "Add salon" : "Become a salon partner", href: canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding, icon: <Plus className="size-4" /> },
+                  ...(user.accountType === "SALON_PARTNER" ? [{ label: canCreateSalon(user) ? "Add salon" : "Complete partner setup", href: canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding, icon: <Plus className="size-4" /> }] : []),
                 ] },
                 { id: "setup", items: user.role === "SUPER_ADMIN"
                   ? [{ label: "Admin", href: routes.adminSalonVerification, icon: <ShieldCheck className="size-4" /> }]
-                  : [{ label: isOnboardingComplete(user) ? "Account preferences" : "Complete account setup", href: routes.onboarding, icon: <UserRound className="size-4" /> }],
+                  : isOnboardingComplete(user) ? [] : [{ label: "Complete account setup", href: routes.onboarding, icon: <UserRound className="size-4" /> }],
                 },
               ]}
             />

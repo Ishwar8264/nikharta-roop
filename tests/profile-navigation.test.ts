@@ -12,12 +12,14 @@ vi.mock("next/link", async (original) => ({ ...(await original<object>()), useLi
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
 it("shows account shortcuts and keeps the profile active", async () => {
-  mocks.session.mockResolvedValue({ id: "u", role: "USER" });
+  mocks.session.mockResolvedValue({ id: "u", role: "USER", accountType: "CUSTOMER" });
   mocks.memberships.mockResolvedValue([]);
   render(await ProfileLayout({ children: "Profile content" }));
   expect(screen.getByRole("link", { name: "Profile" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "Appointments" }).getAttribute("href")).toBe("/appointments");
   expect(screen.queryByRole("link", { name: "Admin" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Add salon" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Become a salon partner" })).toBeNull();
 });
 
 it("uses permitted salon destinations and includes admin access for super admins", async () => {
@@ -34,4 +36,19 @@ it("uses permitted salon destinations and includes admin access for super admins
   expect(screen.getByRole("link", { name: /Staff Salon/ }).getAttribute("href")).toBe("/salons/staff");
   expect(screen.queryByRole("link", { name: /Private/ })).toBeNull();
   expect(screen.getByRole("link", { name: "Admin" }).getAttribute("href")).toBe("/admin/salons/verification");
+});
+
+it("shows Add salon to an eligible partner even when the platform role is USER", async () => {
+  mocks.session.mockResolvedValue({ id: "u", role: "USER", accountType: "SALON_PARTNER", partnerEligibilityBackfilledAt: new Date() });
+  mocks.memberships.mockResolvedValue([]);
+  render(await ProfileLayout({ children: "Profile content" }));
+  expect(screen.getByRole("link", { name: "Add salon" }).getAttribute("href")).toBe("/salons/create");
+});
+
+it("hides setup links after onboarding is complete", async () => {
+  mocks.session.mockResolvedValue({ id: "u", role: "USER", accountType: "CUSTOMER", onboardingCompletedAt: new Date() });
+  mocks.memberships.mockResolvedValue([]);
+  render(await ProfileLayout({ children: "Profile content" }));
+  expect(screen.queryByRole("link", { name: "Complete account setup" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Account preferences" })).toBeNull();
 });

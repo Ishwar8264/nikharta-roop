@@ -67,14 +67,16 @@ export default async function ProfilePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          {user.role !== "SUPER_ADMIN" && (
+          {user.role !== "SUPER_ADMIN" && !isOnboardingComplete(user) && (
             <Button variant="outline" render={<Link href={routes.onboarding} />}>
-              {isOnboardingComplete(user) ? "Account preferences" : "Complete setup"}
+              Complete setup
             </Button>
           )}
-          <Button render={<Link href={canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding} />}>
-            {canCreateSalon(user) ? "Add salon" : "Become a salon partner"}
-          </Button>
+          {user.accountType === "SALON_PARTNER" && (
+            <Button render={<Link href={canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding} />}>
+              {canCreateSalon(user) ? "Add salon" : "Complete partner setup"}
+            </Button>
+          )}
         </CardContent>
       </Card>
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
