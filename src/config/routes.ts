@@ -42,6 +42,7 @@ export const routes = {
   salonAppointmentManageDetail: (slug: string, appointmentId: string) =>
     `/salons/${slug}/manage/appointments/${appointmentId}`,
   salonStaffManage: (slug: string) => `/salons/${slug}/manage/staff`,
+  salonStaffCreate: (slug: string) => `/salons/${slug}/manage/staff/create`,
   salonStaffDetail: (slug: string, staffId: string) =>
     `/salons/${slug}/manage/staff/${staffId}`,
   salonPackagesManage: (slug: string) => `/salons/${slug}/manage/packages`,
