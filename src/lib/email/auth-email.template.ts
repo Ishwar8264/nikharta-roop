@@ -61,6 +61,22 @@ export function createPasswordResetEmail(code: string): AuthEmailMessage {
   };
 }
 
+/** Uses the existing brand shell for the once-per-lock security notification. */
+export function createLoginLockoutEmail(): AuthEmailMessage {
+  return {
+    subject: `${siteConfig.name} sign-in temporarily paused`,
+    html: renderAuthEmail({
+      preheader: "Repeated unsuccessful sign-in attempts triggered a temporary lock.",
+      eyebrow: "Account security",
+      title: "Sign-in temporarily paused",
+      description: "We detected repeated unsuccessful password attempts. Password sign-in is paused for 15 minutes. You can use password recovery if needed.",
+      code: "",
+      securityMessage: "If this was not you, reset your password from the Nikharta Roop website. Never share your password or verification codes.",
+    }),
+    text: `${siteConfig.name}\n\nRepeated unsuccessful sign-in attempts triggered a 15-minute pause. If this was not you, reset your password from the Nikharta Roop website. Never share your password or verification codes.`,
+  };
+}
+
 /** Builds the shared email-client-safe shell for authentication messages. */
 function renderAuthEmail(content: AuthEmailContent): string {
   const websiteUrl = new URL("/", siteConfig.url).toString();
@@ -109,6 +125,7 @@ function renderAuthEmail(content: AuthEmailContent): string {
                     <h1 style="margin:0 0 14px; color:#321827; font-family:Georgia,'Times New Roman',serif; font-size:34px; line-height:42px; font-weight:700;">${content.title}</h1>
                     <p style="margin:0; max-width:500px; color:#69545f; font-size:16px; line-height:26px;">${content.description}</p>
 
+                    ${content.code ? `
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%; margin-top:28px;">
                       <tr>
                         <td align="center" style="background-color:#fdf7f4; border:1px solid #efd7d8; border-radius:14px; padding:26px 16px 24px;">
@@ -126,6 +143,7 @@ function renderAuthEmail(content: AuthEmailContent): string {
                         </td>
                       </tr>
                     </table>
+                    ` : ""}
                   </td>
                 </tr>
                 <tr>

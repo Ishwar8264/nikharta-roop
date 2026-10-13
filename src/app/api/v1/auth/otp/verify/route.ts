@@ -9,6 +9,7 @@ import {
   OtpInvalidError,
   OtpMaxAttemptsError,
 } from "@/server/modules/otp/otp.errors";
+import { WeakPasswordError } from "@/server/modules/auth/auth.errors";
 import { verifyOtpSchema } from "@/server/modules/otp/otp.schema";
 import { verifyOtpCode } from "@/server/modules/otp/otp.service";
 
@@ -108,6 +109,10 @@ export async function POST(request: Request): Promise<Response> {
 
     if (error instanceof OtpMaxAttemptsError) {
       return NextResponse.json({ message: error.message }, { status: 429 });
+    }
+
+    if (error instanceof WeakPasswordError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
     return NextResponse.json(

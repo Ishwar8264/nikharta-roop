@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import { SignJWT, jwtVerify } from "jose";
 
 const ISSUER = "salon-app";
@@ -25,11 +27,15 @@ const secret = new TextEncoder().encode(configuredSecret);
  *
  * Why:
  * Keeping this minimal means even if a token leaks, it exposes no PII — just
- * a user id and role. Anything else must be fetched from the database.
+ * a user id and role. `jti` is a unique per-token id used for audit traces
+ * without storing the token itself. It is optional on verify to keep old
+ * tokens (issued before jti) valid during the rollout.
  */
 export interface AccessTokenPayload {
   sub: string;
   role: string;
+  /** Unique token id — present on tokens issued after the jti rollout. */
+  jti?: string;
 }
 
 /**
@@ -37,11 +43,14 @@ export interface AccessTokenPayload {
  *
  * Why:
  * `jose` is used instead of `jsonwebtoken` because it runs in both Node.js
- * and the Edge runtime, which keeps middleware verification compatible.
+ * and the Edge runtime, which keeps middleware verification compatible. Each
+ * token carries a `jti` so logs can correlate a request to a single issuance
+ * without ever persisting the raw token.
  */
 export async function signAccessToken(
   payload: AccessTokenPayload,
 ): Promise<string> {
+  const jti = payload.jti ?? randomUUID();
   return new SignJWT({ role: payload.role })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
@@ -49,6 +58,7 @@ export async function signAccessToken(
     .setAudience(AUDIENCE)
     .setIssuedAt()
     .setExpirationTime(ACCESS_TOKEN_TTL)
+    .setJti(jti)
     .sign(secret);
 }
 
@@ -82,5 +92,7 @@ export async function verifyAccessToken(
   return {
     sub: payload.sub,
     role: payload.role,
+    // jti is optional: tokens issued before the rollout lack it — still valid.
+    jti: typeof payload.jti === "string" ? payload.jti : undefined,
   };
 }

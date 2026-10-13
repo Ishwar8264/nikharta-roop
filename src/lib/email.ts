@@ -8,6 +8,7 @@ import { Resend } from "resend";
 import {
   AUTH_EMAIL_LOGO_CONTENT_ID,
   createOtpEmail,
+  createLoginLockoutEmail,
   createPasswordResetEmail,
 } from "@/lib/email/auth-email.template";
 
@@ -71,6 +72,19 @@ export async function sendPasswordResetEmail(
   if (error) {
     throw new Error(`Resend rejected the message: ${error.message}`);
   }
+}
+
+/** Sends at most once per lock transition; callers handle delivery failures. */
+export async function sendLoginLockoutEmail(to: string): Promise<void> {
+  assertEmailConfiguration();
+  if (!resend) return;
+  const { error } = await resend.emails.send({
+    from: emailFrom,
+    to,
+    ...createLoginLockoutEmail(),
+    attachments: [await getLogoAttachment()],
+  });
+  if (error) throw new Error(`Resend rejected the message: ${error.message}`);
 }
 
 /** Prevents production from logging OTPs or using Resend's development sender. */

@@ -148,7 +148,21 @@ export const authPaths = {
             },
             "403": {
               description:
-                "Account exists but email is not verified, or account is deactivated",
+                "Account is deactivated",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "429": {
+              description: "Temporary identifier lockout or IP rate limit",
+              headers: {
+                "Retry-After": {
+                  description: "Seconds before another sign-in attempt",
+                  schema: { type: "integer" },
+                },
+              },
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -173,8 +187,8 @@ export const authPaths = {
           description:
             "Exchanges the `refreshToken` httpOnly cookie for a new access + " +
             "refresh token pair. The previous refresh token is revoked on every " +
-            "successful call. Reuse of a revoked token revokes every session for " +
-            "that user, forcing a full re-login. Send the readable `csrfToken` " +
+            "initial rotation. Within 10 seconds, retries recover its exact live successor. " +
+            "Later reuse revokes all refresh sessions. Send the readable `csrfToken` " +
             "cookie value in the `x-csrf-token` header.",
           operationId: "refreshTokens",
           security: [{ csrfToken: [] }],

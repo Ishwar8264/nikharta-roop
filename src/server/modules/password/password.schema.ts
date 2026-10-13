@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  COMMON_PASSWORD_MESSAGE,
+  isCommonPassword,
+} from "@/server/auth/breached-password";
+
 const emailSchema = z
   .string({ error: "Email must be a string" })
   .trim()
@@ -11,7 +16,10 @@ const emailSchema = z
 const passwordSchema = z
   .string({ error: "Password must be a string" })
   .min(8, "Password must contain at least 8 characters")
-  .max(128, "Password must contain at most 128 characters");
+  .max(128, "Password must contain at most 128 characters")
+  .refine((value) => !isCommonPassword(value), {
+    message: COMMON_PASSWORD_MESSAGE,
+  });
 
 export const forgotPasswordSchema = z.strictObject({
   email: emailSchema,

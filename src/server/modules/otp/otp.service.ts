@@ -1,7 +1,9 @@
 import "server-only";
 
 import type { OtpChannel, OtpPurpose } from "@/generated/prisma/client";
+import { isCommonPassword } from "@/server/auth/breached-password";
 import { hashPassword } from "@/server/auth/password";
+import { WeakPasswordError } from "@/server/modules/auth/auth.errors";
 import { sendOtpEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import {
@@ -101,6 +103,9 @@ export async function verifyOtpCode(
   // Only an email OTP may initialize a password; existing credentials are never overwritten.
   const needsPassword = channel === "EMAIL" && user.password === null;
   if (needsPassword && !input.newPassword) throw new OtpAccountSetupRequiredError();
+  if (needsPassword && isCommonPassword(input.newPassword!)) {
+    throw new WeakPasswordError();
+  }
   const passwordHash = needsPassword ? await hashPassword(input.newPassword!) : undefined;
 
   await prisma.$transaction(async (transaction) => {

@@ -14,7 +14,7 @@ import { rotateRefreshToken } from "@/server/auth/token.service";
  * Why:
  * The refresh token is sent as an httpOnly cookie so JavaScript cannot steal
  * it. On every successful call, the old refresh token is revoked and a new
- * one issued — reuse of the old one is treated as theft.
+ * one issued. Brief retries recover that same successor; later reuse revokes sessions.
  */
 export async function POST(request: Request): Promise<Response> {
   const rawRefreshToken = readCookie(request, REFRESH_COOKIE_NAME);
