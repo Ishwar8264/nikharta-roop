@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
 import { StaffVerificationNotice } from "@/features/staff/staff-verification-notice";
+import { DeleteStaffButton } from "@/features/staff/delete-staff-button";
 import { StaffDetailPanel } from "@/features/staff/staff-detail-panel";
 import type { StaffServiceOption } from "@/features/staff/types";
 import { getSession } from "@/lib/auth/get-session";
@@ -147,6 +148,9 @@ export default async function ManageStaffDetailPage({ params }: Props) {
                 <Button variant="outline" size="sm" render={<Link href={routes.salonStaffEdit(slug, staff.slug ?? staff.id)} />}>
                   <Pencil className="size-3.5" aria-hidden="true" /> Edit profile
                 </Button>
+              ) : null}
+              {salon.viewerRole === "OWNER" && staff.role !== "OWNER" ? (
+                <DeleteStaffButton salonId={salon.id} salonSlug={slug} memberId={staff.id} memberName={staffName} />
               ) : null}
               <RoleBadge role={staff.role} />
               <Badge variant="outline" className={staff.user.emailVerified ? "border-success/30 bg-success/10 text-success" : "text-muted-foreground"}>
