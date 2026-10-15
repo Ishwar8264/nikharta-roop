@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -86,19 +86,51 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
               <h2 id="staff-profile-heading" className="text-base font-semibold">Staff profile</h2>
               <p className="text-sm text-muted-foreground">Add their photo and the details shown on their salon profile.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/20 p-4">
-              <Avatar size="lg">
-                {avatar ? <AvatarImage src={avatar} alt="Staff photo" /> : null}
-                <AvatarFallback>?</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-wrap items-center gap-2">
-                <MediaPickerDialog title="Choose staff photo" mode="single" max={1} maxSizeMB={5} disabled={busy}
-                  value={avatar ? [{ url: avatar, publicId: avatar }] : []}
-                  onChange={(images) => setAvatar(images[0]?.url ?? null)}
-                  trigger={<Button type="button" variant="outline" disabled={busy}>Choose photo</Button>} />
-                {avatar ? <Button type="button" variant="ghost" disabled={busy} onClick={() => setAvatar(null)}>Remove</Button> : null}
-              </div>
-              <p className="w-full text-xs text-muted-foreground">Optional · JPG, PNG, WebP or AVIF · Up to 5 MB.</p>
+            <div className="flex flex-col items-start gap-2">
+              <MediaPickerDialog
+                title="Choose staff photo"
+                mode="single"
+                max={1}
+                maxSizeMB={5}
+                disabled={busy}
+                value={avatar ? [{ url: avatar, publicId: avatar }] : []}
+                onChange={(images) => setAvatar(images[0]?.url ?? null)}
+                triggerClassName="w-auto"
+                trigger={
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={avatar ? "Change staff photo" : "Add staff photo"}
+                    className="group relative size-20 shrink-0 cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    <Avatar className="size-full">
+                      {avatar ? <AvatarImage src={avatar} alt="Staff photo" /> : null}
+                      <AvatarFallback className="bg-muted text-muted-foreground">
+                        {avatar ? null : <Camera className="size-6 opacity-40" aria-hidden="true" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-0.5 right-0.5 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm ring-2 ring-background transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                      style={{ opacity: avatar ? 0 : 1 }}
+                    >
+                      <Camera className="size-3.5" />
+                    </span>
+                  </button>
+                }
+              />
+              {avatar ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setAvatar(null)}
+                  className="text-xs text-muted-foreground underline-offset-2 hover:text-destructive hover:underline disabled:pointer-events-none disabled:opacity-50"
+                >
+                  Remove photo
+                </button>
+              ) : (
+                <p className="text-xs text-muted-foreground">Optional · JPG, PNG, WebP · Up to 5 MB</p>
+              )}
             </div>
             <div className="grid items-start gap-4 sm:grid-cols-2">
               <Field id="staff-name" label="Name" placeholder="e.g. Priya Sharma" autoComplete="name" maxLength={100} required disabled={busy} error={errors.name?.message} {...register("name")} />
