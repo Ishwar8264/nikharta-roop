@@ -23,13 +23,13 @@ export function StaffVerificationNotice({ email }: { email: string }) {
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-4">
+    <div className="space-y-2 rounded-xl border border-warning/40 bg-warning/15 p-4">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <p className="text-sm font-medium">Email verification pending</p>
-          <p className="text-xs text-muted-foreground">Verify email to enable salon access and bookings.</p>
+          <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Email verification pending</p>
+          <p className="text-xs text-amber-900 dark:text-amber-200">Verify email to enable salon access and bookings.</p>
         </div>
-        <Button type="button" variant="outline" size="sm" className="shrink-0" disabled={busy} onClick={() => void resend()}>{busy ? "Sending…" : "Resend email"}</Button>
+        <Button type="button" variant="outline" size="sm" className="shrink-0 border-warning bg-warning text-warning-foreground hover:bg-warning/80 hover:text-warning-foreground" disabled={busy} onClick={() => void resend()}>{busy ? "Sending…" : "Resend email"}</Button>
       </div>
       {message ? <p role="status" className="text-sm">{message}</p> : null}
       {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}

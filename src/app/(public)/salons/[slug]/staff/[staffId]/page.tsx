@@ -153,7 +153,7 @@ export default async function ManageStaffDetailPage({ params }: Props) {
                 <DeleteStaffButton salonId={salon.id} salonSlug={slug} memberId={staff.id} memberName={staffName} />
               ) : null}
               <RoleBadge role={staff.role} />
-              <Badge variant="outline" className={staff.user.emailVerified ? "border-success/30 bg-success/10 text-success" : "text-muted-foreground"}>
+              <Badge variant="outline" className={staff.user.emailVerified ? "border-success bg-success text-success-foreground" : "border-warning bg-warning text-warning-foreground"}>
                 {staff.user.emailVerified ? "Email verified" : "Email pending"}
               </Badge>
             </div>

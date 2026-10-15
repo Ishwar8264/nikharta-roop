@@ -287,7 +287,7 @@ function EmailVerificationBadge({ verified }: { verified: boolean }) {
   return (
     <Badge
       variant="outline"
-      className={verified ? "gap-1.5 border-success/30 bg-success/10 text-success" : "gap-1.5 text-muted-foreground"}
+      className={verified ? "gap-1.5 border-success bg-success text-success-foreground" : "gap-1.5 border-warning bg-warning text-warning-foreground"}
       aria-label={`Email verification: ${verified ? "Verified" : "Pending"}`}
     >
       <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
