@@ -514,7 +514,7 @@ function isUniqueConstraintViolation(error: unknown, field: string): boolean {
   return error.message.includes(field);
 }
 
-/** Members may edit only their own salon identity; account and role fields are rejected. */
+/** Members and salon owners may edit salon identity; account and role fields are rejected. */
 export async function updateOwnSalonMemberProfile(actorId: string, salonId: string, memberId: string, input: unknown) {
   const data = updateSalonMemberSchema.parse(input);
   return updateOwnSalonMember(actorId, salonId, memberId, data);

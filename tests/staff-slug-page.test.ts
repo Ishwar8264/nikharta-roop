@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ session: vi.fn(), salon: vi.fn(), lookup: vi.fn(), staff: vi.fn(), schedule: vi.fn(), leaves: vi.fn(), skills: vi.fn(), services: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: (path: string) => { throw new Error(`redirect:${path}`); }, notFound: () => { throw new Error("notFound"); } }));
 vi.mock("../src/lib/auth/get-session", () => ({ getSession: mocks.session }));
-vi.mock("../src/server/modules/salon/salon.repository", () => ({ findSalonMemberBySlug: mocks.lookup }));
+vi.mock("../src/server/modules/salon/salon.repository", () => ({ findSalonMemberBySlug: mocks.lookup, findSalonForViewer: mocks.salon }));
 vi.mock("../src/server/modules/salon/salon.service", () => ({ getSalonForServiceManagement: mocks.salon }));
 vi.mock("../src/server/modules/staff/staff.service", () => ({ getStaffDetail: mocks.staff, getSchedule: mocks.schedule, listLeaves: mocks.leaves, getSkills: mocks.skills }));
 vi.mock("../src/server/modules/service/service.service", () => ({ listManagedSalonServices: mocks.services }));
@@ -38,4 +38,16 @@ it("keeps the requested slug through the login redirect", async () => {
   mocks.session.mockResolvedValue(null);
   await expect(Page(props("salon-stylist"))).rejects.toThrow("redirect:/login?redirect=%2Fsalons%2Fglow-salon%2Fstaff%2Fsalon-stylist");
   expect(mocks.lookup).not.toHaveBeenCalled();
+});
+it("allows staff to view their own detail without requesting manager-only services", async () => {
+  mocks.salon.mockResolvedValue({ id: "salon", name: "Glow Salon", viewerRole: "STAFF", timezone: "Asia/Kolkata" });
+  mocks.staff.mockResolvedValue({ id: memberId, userId: "owner", name: "Stylist", role: "STAFF", user: { emailVerified: true } });
+  expect(await Page(props("salon-stylist"))).toBeTruthy();
+  expect(mocks.services).not.toHaveBeenCalled();
+});
+it("rejects staff viewing another member's private detail", async () => {
+  mocks.salon.mockResolvedValue({ id: "salon", viewerRole: "STAFF" });
+  mocks.staff.mockResolvedValue({ id: memberId, userId: "someone-else" });
+  await expect(Page(props("salon-stylist"))).rejects.toThrow("notFound");
+  expect(mocks.schedule).not.toHaveBeenCalled();
 });

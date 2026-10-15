@@ -514,7 +514,7 @@ export const salonPaths = {
       "/api/v1/salons/{id}/members/{memberId}": {
         patch: {
           tags: ["Salons"], summary: "Update your salon member profile",
-          description: "Self-service only. Cannot change role, account, email, or verification. Slugs are unique within a salon; name changes preserve the slug. IDs and the slug create are reserved.",
+          description: "The member themselves or a verified owner of the same salon. Managers cannot edit other members. Cannot change role, account, email, or verification. Slugs are unique within a salon; name changes preserve the slug. IDs and the slug create are reserved.",
           operationId: "updateOwnSalonMember", security: [{ bearerAuth: [] }],
           parameters: [
             { name: "id", in: "path", required: true, schema: { type: "string" }, description: "Salon internal ID" },

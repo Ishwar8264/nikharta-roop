@@ -16,7 +16,10 @@ it("updates only the caller's membership and leaves omitted fields unchanged", a
   const response = await PATCH(request({ slug: "ishwar-sahani", title: null }), context());
   expect(response.status).toBe(200);
   expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
-    where: { id: memberId, salonId, userId: "self", user: { deletedAt: null, emailVerified: true }, salon: { deletedAt: null } },
+    where: { id: memberId, salonId, user: { deletedAt: null }, salon: { deletedAt: null }, OR: [
+      { userId: "self", user: { emailVerified: true } },
+      { salon: { members: { some: { userId: "self", role: "OWNER", user: { deletedAt: null, emailVerified: true } } } } },
+    ] },
     data: { slug: "ishwar-sahani", title: null },
   }));
   expect((await response.json()).data.member.slug).toBe("ishwar-sahani");

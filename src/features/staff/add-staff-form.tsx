@@ -20,12 +20,14 @@ import { MediaPickerDialog } from "@/features/media";
 import { routes } from "@/config/routes";
 import { ApiError } from "@/lib/api/backend.client";
 import { slugify } from "@/features/salon/schemas";
-import { addSalonMemberApi } from "@/features/salon/api/manage";
+import type { PublicStaffMember } from "./types";
+import { addSalonMemberApi, updateSalonMemberApi } from "@/features/salon/api/manage";
 
 interface Props {
   salonId: string;
   salonSlug: string;
   salonName: string;
+  member?: PublicStaffMember;
 }
 
 const staffFormSchema = z.object({
@@ -41,15 +43,15 @@ const staffFormSchema = z.object({
 
 type StaffFormValues = z.infer<typeof staffFormSchema>;
 
-/** Creates a salon profile using the existing membership and verification flow. */
-export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
+/** Creates or edits a salon profile while preserving account identity and membership role. */
+export function AddStaffForm({ salonId, salonSlug, salonName, member }: Props) {
   const router = useRouter();
-  const [avatar, setAvatar] = useState<string | null>(null);
-  const [bannerImage, setBannerImage] = useState<string | null>(null);
-  const [slugWasEdited, setSlugWasEdited] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(member?.avatar ?? null);
+  const [bannerImage, setBannerImage] = useState<string | null>(member?.bannerImage ?? null);
+  const [slugWasEdited, setSlugWasEdited] = useState(Boolean(member));
   const { register, control, handleSubmit, setValue, clearErrors, formState: { errors } } = useForm<StaffFormValues>({
-    resolver: zodResolver(staffFormSchema),
-    defaultValues: { name: "", slug: "", email: "", title: "", description: "", role: "STAFF" },
+    resolver: zodResolver(member ? staffFormSchema.extend({ email: z.string() }) : staffFormSchema),
+    defaultValues: { name: member?.name ?? member?.user.name ?? "", slug: member?.slug ?? "", email: member?.user.email ?? "", title: member?.title ?? "", description: member?.description ?? "", role: member?.role === "MANAGER" ? "MANAGER" : "STAFF" },
     mode: "onTouched",
   });
   const name = useWatch({ control, name: "name" });
@@ -68,20 +70,30 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
     setBusy(true);
     setError(null);
     try {
+      if (member) {
+        const response = await updateSalonMemberApi(salonId, member.id, {
+          name: values.name, slug: values.slug, title: values.title || null,
+          description: values.description || null, avatar, bannerImage,
+        });
+        toast.success("Staff profile updated.");
+        router.push(routes.salonStaffDetail(salonSlug, response.data.member.slug ?? member.id));
+        router.refresh();
+        return;
+      }
       const response = await addSalonMemberApi(salonId, {
         ...values, avatar, bannerImage,
         title: values.title || null, description: values.description || null,
       });
-      const member = response.data.member;
-      if (member.verificationEmailSent === false) {
+      const createdMember = response.data.member;
+      if (createdMember.verificationEmailSent === false) {
         toast.warning("Staff added. Verification email could not be sent; resend it from their profile.");
       } else {
-        toast.success(member.user.emailVerified ? "Staff added." : "Staff added. Email verification is pending.");
+        toast.success(createdMember.user.emailVerified ? "Staff added." : "Staff added. Email verification is pending.");
       }
-      router.push(routes.salonStaffDetail(salonSlug, member.slug ?? member.id));
+      router.push(routes.salonStaffDetail(salonSlug, createdMember.slug ?? createdMember.id));
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : "Unable to add staff. Please try again.");
+      setError(reason instanceof ApiError ? reason.message : "Unable to save staff. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -91,7 +103,7 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
     <form onSubmit={handleSubmit(submit)} data-form-rounded="true" noValidate>
       <Card className="gap-0 overflow-visible py-0">
         <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
-          <FormHeader title="Add staff" description={salonName} />
+          <FormHeader title={member ? "Edit staff" : "Add staff"} description={salonName} />
         </CardHeader>
         <CardContent className="space-y-6 px-5 py-5 sm:px-8">
           <FormError>{error}</FormError>
@@ -100,13 +112,13 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
             <div className="grid items-start gap-4 sm:grid-cols-2">
               <Field id="staff-name" label="Name" placeholder="Priya Sharma" autoComplete="name" maxLength={100} required disabled={busy} error={errors.name?.message} {...register("name")} />
               <Field id="staff-slug" label="Slug" placeholder="priya-sharma" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={80} required disabled={busy} error={errors.slug?.message} {...register("slug", { onChange: () => setSlugWasEdited(true) })} />
-              <Field id="staff-email" label="Email" type="email" placeholder="priya@example.com" autoComplete="email" maxLength={254} required disabled={busy} error={errors.email?.message} {...register("email")} />
-              <Controller name="role" control={control} render={({ field }) => (
+              <Field id="staff-email" label="Email" type="email" placeholder="priya@example.com" autoComplete="email" maxLength={254} required={!member} readOnly={Boolean(member)} disabled={busy} error={errors.email?.message} {...register("email")} />
+              {member ? <Field id="staff-role" label="Salon role" value={member.role === "OWNER" ? "Owner" : member.role === "MANAGER" ? "Manager" : "Staff"} readOnly disabled={busy} /> : <Controller name="role" control={control} render={({ field }) => (
                 <SelectField id="staff-role" label="Salon role" value={field.value} onValueChange={(value) => { if (value) field.onChange(value); }}
                   options={[{ value: "STAFF", label: "Staff" }, { value: "MANAGER", label: "Manager" }]}
                   disabled={busy} error={errors.role?.message} triggerProps={{ onBlur: field.onBlur, ref: field.ref }}
                 />
-              )} />
+              )} />}
             </div>
             <Field id="staff-title" label="Professional title (optional)" placeholder="Hair stylist" maxLength={100} disabled={busy} error={errors.title?.message} {...register("title")} />
             <div className="space-y-1.5">
@@ -114,7 +126,7 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
               <Textarea id="staff-description" placeholder="Share their expertise and experience" maxLength={500} rows={3} disabled={busy} aria-invalid={errors.description ? true : undefined} aria-describedby={errors.description ? "staff-description-error" : undefined} {...register("description")} />
               {errors.description ? <p id="staff-description-error" className="text-xs text-destructive">{errors.description.message}</p> : null}
             </div>
-            <p className="text-xs text-muted-foreground">New members receive a verification email.</p>
+            {!member ? <p className="text-xs text-muted-foreground">New members receive a verification email.</p> : null}
             <div className="grid gap-5 sm:grid-cols-[1fr_2fr]">
               {[
                 { label: "Profile photo", title: "Choose staff photo", value: avatar, setValue: setAvatar },
@@ -154,8 +166,8 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
 
         </CardContent>
         <CardFooter className="flex flex-col-reverse items-stretch gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8">
-          <Button type="button" variant="outline" disabled={busy} render={<Link href={routes.salonStaff(salonSlug)} />}>Cancel</Button>
-          <Button type="submit" disabled={busy}>{busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}{busy ? "Adding…" : "Add staff"}</Button>
+          <Button type="button" variant="outline" disabled={busy} render={<Link href={(member ? routes.salonStaffDetail(salonSlug, member.slug ?? member.id) : routes.salonStaff(salonSlug))} />}>Cancel</Button>
+          <Button type="submit" disabled={busy}>{busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}{busy ? "Saving…" : member ? "Save changes" : "Add staff"}</Button>
         </CardFooter>
       </Card>
     </form>

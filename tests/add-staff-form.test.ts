@@ -3,10 +3,10 @@ import { createElement } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-const mocks = vi.hoisted(() => ({ add: vi.fn(), push: vi.fn(), refresh: vi.fn(), success: vi.fn(), warning: vi.fn() }));
+const mocks = vi.hoisted(() => ({ add: vi.fn(), update: vi.fn(), push: vi.fn(), refresh: vi.fn(), success: vi.fn(), warning: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }) }));
 vi.mock("sonner", () => ({ toast: { success: mocks.success, warning: mocks.warning } }));
-vi.mock("../src/features/salon/api/manage", () => ({ addSalonMemberApi: mocks.add }));
+vi.mock("../src/features/salon/api/manage", () => ({ addSalonMemberApi: mocks.add, updateSalonMemberApi: mocks.update }));
 vi.mock("../src/features/media", () => ({ MediaPickerDialog: ({ onChange, title }: { title?: string; onChange: (images: Array<{ url: string; publicId: string }>) => void }) => createElement("button", { type: "button", onClick: () => onChange([{ url: title === "Choose staff banner" ? "https://example.com/banner.png" : "https://example.com/photo.png", publicId: "photo" }]) }, title === "Choose staff banner" ? "Choose banner" : "Choose photo") }));
 import { AddStaffForm } from "../src/features/staff/add-staff-form";
 import { ApiError } from "../src/lib/api/backend.client";
@@ -97,4 +97,26 @@ it("auto-fills the slug from the name and preserves a manually edited slug", asy
   await user.type(screen.getByLabelText(/^Email/), "priya@example.com");
   await user.click(screen.getByRole("button", { name: "Add staff" }));
   await waitFor(() => expect(mocks.add).toHaveBeenCalledWith("salon", expect.objectContaining({ slug: "priya-stylist" })));
+});
+
+it("prefills edit mode, preserves its slug on rename, and saves only profile fields", async () => {
+  const user = userEvent.setup();
+  mocks.update.mockResolvedValue({ data: { member: { id: "member", slug: "updated-stylist" } } });
+  render(createElement(AddStaffForm, { salonId: "salon", salonSlug: "my-salon", salonName: "My salon", member: {
+    id: "member", userId: "staff-user", salonId: "salon", role: "STAFF", name: "Stylist", slug: "original-stylist",
+    title: "Hair stylist", description: "Experienced", avatar: null, bannerImage: null,
+    user: { id: "staff-user", name: "Personal name", email: "staff@example.com", avatar: null, emailVerified: true },
+  } }));
+  expect((screen.getByLabelText(/^Email/) as HTMLInputElement).readOnly).toBe(true);
+  expect((screen.getByLabelText("Salon role") as HTMLInputElement).readOnly).toBe(true);
+  await user.type(screen.getByLabelText(/^Name/), " Renamed");
+  expect((screen.getByLabelText(/^Slug/) as HTMLInputElement).value).toBe("original-stylist");
+  await user.clear(screen.getByLabelText(/^Slug/));
+  await user.type(screen.getByLabelText(/^Slug/), "updated-stylist");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("salon", "member", {
+    name: "Stylist Renamed", slug: "updated-stylist", title: "Hair stylist", description: "Experienced", avatar: null, bannerImage: null,
+  }));
+  expect(mocks.add).not.toHaveBeenCalled();
+  expect(mocks.push).toHaveBeenCalledWith("/salons/my-salon/staff/updated-stylist");
 });

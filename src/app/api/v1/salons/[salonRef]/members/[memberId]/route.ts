@@ -95,7 +95,7 @@ export async function DELETE(
   }
 }
 
-/** PATCH /salons/:salonId/members/:memberId — authenticated member self-service. */
+/** PATCH /salons/:salonId/members/:memberId — member self-service or salon owner. */
 export async function PATCH(request: Request,
   context: { params: Promise<{ salonRef: string; memberId: string }> }): Promise<Response> {
   const auth = await getAuthContext(request);

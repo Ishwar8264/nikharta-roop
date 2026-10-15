@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { ArrowLeft, Mail, Store } from "lucide-react";
+import { ArrowLeft, Mail, Store, Pencil } from "lucide-react";
 import { CoverImage } from "@/components/shared/cover-image";
-import { findSalonMemberBySlug } from "@/server/modules/salon/salon.repository";
+import { findSalonForViewer, findSalonMemberBySlug } from "@/server/modules/salon/salon.repository";
 import { isResourceId } from "@/server/modules/salon/salon.helpers";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
 import { StaffVerificationNotice } from "@/features/staff/staff-verification-notice";
@@ -17,7 +18,6 @@ import {
   SalonNotFoundError,
   SalonRoleInsufficientError,
 } from "@/server/modules/salon/salon.errors";
-import { getSalonForServiceManagement } from "@/server/modules/salon/salon.service";
 import { listManagedSalonServices } from "@/server/modules/service/service.service";
 import {
   StaffNotFoundError,
@@ -39,9 +39,8 @@ interface Props {
 }
 
 /**
- * Loads one staff member + their schedule, leaves, skills, and the salon's
- * services (for the Skills picker) in parallel, then renders the detail
- * panel.
+ * Authorizes the requested profile, then loads schedule, leave, and skill summaries.
+ * Only managers load the service catalog used by the Skills editor.
  *
  * Why `getStaffDetail` does NOT include schedule / leaves / skills:
  * The service deliberately returns only `PublicStaffMember` — the schedule /
@@ -73,24 +72,25 @@ export default async function ManageStaffDetailPage({ params }: Props) {
   let skills;
   let servicesResult;
   try {
-    salon = await getSalonForServiceManagement(slug, user.id);
+    salon = await findSalonForViewer({ slug, userId: user.id });
+    if (!salon) notFound();
     if (!isResourceId(staffRef)) {
       const member = await findSalonMemberBySlug(salon.id, staffRef);
       if (!member) notFound();
       staffId = member.id;
     }
+    staff = await getStaffDetail(user.id, slug, staffId);
+    if (salon.viewerRole === "STAFF" && staff.userId !== user.id) notFound();
     [
-      staff,
       schedule,
       leaves,
       skills,
       servicesResult,
     ] = await Promise.all([
-      getStaffDetail(user.id, slug, staffId),
       getSchedule(user.id, slug, staffId),
       listLeaves(user.id, slug, staffId),
       getSkills(user.id, slug, staffId),
-      listManagedSalonServices(user.id, slug),
+      salon.viewerRole === "STAFF" ? Promise.resolve({ items: [] }) : listManagedSalonServices(user.id, slug),
     ]);
   } catch (error) {
     if (
@@ -143,6 +143,11 @@ export default async function ManageStaffDetailPage({ params }: Props) {
               {staff.title ? <p className="mt-1 break-words text-sm text-muted-foreground">{staff.title}</p> : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {salon.viewerRole === "OWNER" || staff.userId === user.id ? (
+                <Button variant="outline" size="sm" render={<Link href={routes.salonStaffEdit(slug, staff.slug ?? staff.id)} />}>
+                  <Pencil className="size-3.5" aria-hidden="true" /> Edit profile
+                </Button>
+              ) : null}
               <RoleBadge role={staff.role} />
               <Badge variant="outline" className={staff.user.emailVerified ? "border-success/30 bg-success/10 text-success" : "text-muted-foreground"}>
                 {staff.user.emailVerified ? "Email verified" : "Email pending"}

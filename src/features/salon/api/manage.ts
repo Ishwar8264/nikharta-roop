@@ -55,7 +55,7 @@ export function removeSalonMemberApi(salonId: string, memberId: string) {
   return api.delete<{ message: string; data: null }>(`${salonPath(salonId)}/members/${encodeURIComponent(memberId)}`);
 }
 
-/** Updates only the signed-in member's salon profile, including their chosen URL slug. */
+/** Updates a salon profile for the member themselves or the salon owner. */
 export function updateSalonMemberApi(salonId: string, memberId: string,
   input: { name?: string; slug?: string; avatar?: string | null; bannerImage?: string | null; title?: string | null; description?: string | null }) {
   return api.patch<{ message: string; data: { member: SalonMember } }>(`${salonPath(salonId)}/members/${encodeURIComponent(memberId)}`, input);

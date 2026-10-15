@@ -82,6 +82,8 @@ describe.skipIf(process.env.RUN_STAFF_DATABASE_TESTS !== "1")("staff invitation 
     expect(await repository.findSalonMemberBySlug(salonId, "salon-stylist")).toEqual({ id: member.id });
     expect((await repository.updateOwnSalonMember(member.userId, salonId, member.id, { bannerImage: null })).bannerImage).toBeNull();
     expect(await prisma.user.findUnique({ where: { id: member.userId } })).toMatchObject({ name: "Salon stylist" });
+    expect((await repository.updateOwnSalonMember(ownerId, salonId, member.id, { title: "Owner updated" })).title).toBe("Owner updated");
+    await prisma.salonMember.update({ where: { userId_salonId: { userId: ownerId, salonId } }, data: { role: "MANAGER" } });
     await expect(repository.updateOwnSalonMember(ownerId, salonId, member.id, { name: "Unauthorized" })).rejects.toMatchObject({ code: "P2025" });
     await expect(repository.updateOwnSalonMember(member.userId, "missing-salon", member.id, { name: "Unauthorized" })).rejects.toMatchObject({ code: "P2025" });
   });

@@ -479,11 +479,16 @@ export async function countSalonActiveCatalog(salonId: string) {
   return { services, packages };
 }
 
-/** Ownership is part of the write predicate so members can only update their own profile. */
+/** Permission is checked in the write: the member themselves or a verified owner of this salon. */
 export async function updateOwnSalonMember(actorId: string, salonId: string, memberId: string,
   data: { name?: string; slug?: string; avatar?: string | null; bannerImage?: string | null; title?: string | null; description?: string | null }) {
   return prisma.salonMember.update({
-    where: { id: memberId, salonId, userId: actorId, user: { deletedAt: null, emailVerified: true }, salon: { deletedAt: null } },
+    where: { id: memberId, salonId, user: { deletedAt: null }, salon: { deletedAt: null },
+      OR: [
+        { userId: actorId, user: { emailVerified: true } },
+        { salon: { members: { some: { userId: actorId, role: "OWNER", user: { deletedAt: null, emailVerified: true } } } } },
+      ],
+    },
     data,
     select: { id: true, slug: true, userId: true, salonId: true, role: true, name: true, avatar: true, bannerImage: true, title: true, description: true,
       user: { select: { id: true, name: true, email: true, emailVerified: true } } },
