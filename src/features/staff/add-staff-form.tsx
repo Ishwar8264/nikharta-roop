@@ -156,7 +156,7 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
           </section>
         </CardContent>
         <CardFooter className="flex flex-col-reverse items-stretch gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8">
-          <Button type="button" variant="outline" disabled={busy} render={<Link href={routes.salonStaffManage(salonSlug)} />}>Cancel</Button>
+          <Button type="button" variant="outline" disabled={busy} render={<Link href={routes.salonStaff(salonSlug)} />}>Cancel</Button>
           <Button type="submit" disabled={busy}>{busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}{busy ? "Adding…" : "Add staff"}</Button>
         </CardFooter>
       </Card>

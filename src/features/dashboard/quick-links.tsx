@@ -86,7 +86,7 @@ export function buildSalonManageLinks(salonSlug: string): QuickLink[] {
       description: "Add, edit, and price your salon's services.",
     },
     {
-      href: routes.salonStaffManage(salonSlug),
+      href: routes.salonStaff(salonSlug),
       icon: Users,
       title: "Staff",
       description: "Schedules, leaves, and skills for your team.",

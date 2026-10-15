@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -176,7 +175,6 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
             </li>
           ))}
         </ul>
-        {isOwner ? <Button render={<Link href={routes.salonStaffCreate(salon.slug)} />}>Add staff</Button> : null}
       </section>
 
       {isOwner ? <section className="space-y-3 rounded-xl border border-destructive/40 p-6"><h2 className="text-xl font-semibold">Delete salon</h2><Button type="button" variant="destructive" disabled={busy} onClick={deleteSalon}>Delete salon</Button></section> : null}

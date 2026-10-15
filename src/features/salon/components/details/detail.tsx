@@ -10,6 +10,7 @@ import {
   Phone,
   Scissors,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -44,6 +45,7 @@ const SECTION_LINKS = [
 interface SalonDetailProps {
   salon: PublicSalonDetail;
   canEdit?: boolean;
+  canAddStaff?: boolean;
   /** True when the signed-in viewer already has this salon in their favourites. */
   isFavorited?: boolean;
   /** The favorite row id, when known — needed to call DELETE on unfavorite. */
@@ -55,6 +57,7 @@ interface SalonDetailProps {
 export function SalonDetail({
   salon,
   canEdit,
+  canAddStaff = false,
   isFavorited = false,
   favoriteId = null,
   currentUserId = null,
@@ -128,6 +131,12 @@ export function SalonDetail({
               initial={isFavorited}
               initialFavoriteId={favoriteId}
             />
+          ) : null}
+          {canAddStaff ? (
+            <Button variant="outline" size="lg" render={<Link href={routes.salonStaffCreate(salon.slug)} />}>
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Add staff
+            </Button>
           ) : null}
           {canEdit ? (
             <Button variant="outline" size="lg" render={<Link href={routes.salonManage(salon.slug)} />}>

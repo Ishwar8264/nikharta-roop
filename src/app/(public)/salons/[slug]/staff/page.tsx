@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { routes } from "@/config/routes";
-import { Button } from "@/components/ui/button";
 import { StaffList } from "@/features/staff/staff-list";
 import { getSession } from "@/lib/auth/get-session";
 import { listStaff } from "@/server/modules/staff/staff.service";
@@ -43,7 +42,7 @@ export default async function ManageStaffPage({ params }: Props) {
   const user = await getSession();
   if (!user) {
     redirect(
-      `/login?redirect=${encodeURIComponent(routes.salonStaffManage(slug))}`,
+      `/login?redirect=${encodeURIComponent(routes.salonStaff(slug))}`,
     );
   }
 
@@ -75,7 +74,6 @@ export default async function ManageStaffPage({ params }: Props) {
               {staff.items.length === 1 ? "" : "s"}
             </p>
           </div>
-          {salon.viewerRole === "OWNER" ? <Button render={<Link href={routes.salonStaffCreate(slug)} />}>Add staff</Button> : null}
         </div>
       </header>
 
@@ -91,7 +89,7 @@ export default async function ManageStaffPage({ params }: Props) {
         <div className="mt-8 flex justify-center">
           <Link
             className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border bg-background px-3.5 text-sm hover:bg-muted"
-            href={`${routes.salonStaffManage(slug)}?cursor=${encodeURIComponent(staff.nextCursor)}`}
+            href={`${routes.salonStaff(slug)}?cursor=${encodeURIComponent(staff.nextCursor)}`}
           >
             View more
           </Link>

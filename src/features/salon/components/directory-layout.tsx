@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/get-session";
 import { canCreateSalon } from "@/features/onboarding/policy";
-import { Calendar, Gift, Info, List, Package, Plus, Scissors, Settings, ShieldCheck, Store } from "lucide-react";
+import { Calendar, Gift, Info, List, Package, Plus, Scissors, Settings, ShieldCheck, Store, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/shared/side-nav";
@@ -83,6 +83,11 @@ export async function SalonDirectoryLayout({ children, isSignedIn, salon }: Salo
               }]),
               ]),
               ...(salon.canManage ? [{
+                label: "Staff",
+                description: "Schedules, leaves, and team skills.",
+                href: routes.salonStaff(salon.slug),
+                icon: <Users className="mt-0.5 size-4" />,
+              }, {
                 label: "Manage salon",
                 description: "Update your salon details.",
                 href: routes.salonManage(salon.slug),

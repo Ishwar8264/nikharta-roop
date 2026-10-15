@@ -30,7 +30,7 @@ it("submits a complete salon profile and opens its staff editor", async () => {
   await user.click(screen.getByRole("button", { name: "Choose photo" }));
   await user.click(screen.getAllByRole("button", { name: "Add staff" }).at(-1)!);
   await waitFor(() => expect(mocks.add).toHaveBeenCalledWith("salon", { name: "Salon stylist", email: "new@example.com", avatar: "https://example.com/photo.png", title: "Hair stylist", description: "Hair specialist", role: "STAFF" }));
-  expect(mocks.push).toHaveBeenCalledWith("/salons/my-salon/manage/staff/member");
+  expect(mocks.push).toHaveBeenCalledWith("/salons/my-salon/staff/member");
   expect(mocks.success).toHaveBeenCalledWith("Staff added. Email verification is pending.");
 });
 it("keeps backend errors visible without redirecting", async () => {

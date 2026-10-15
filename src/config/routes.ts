@@ -41,10 +41,10 @@ export const routes = {
     `/salons/${slug}/manage/appointments`,
   salonAppointmentManageDetail: (slug: string, appointmentId: string) =>
     `/salons/${slug}/manage/appointments/${appointmentId}`,
-  salonStaffManage: (slug: string) => `/salons/${slug}/manage/staff`,
-  salonStaffCreate: (slug: string) => `/salons/${slug}/manage/staff/create`,
+  salonStaff: (slug: string) => `/salons/${slug}/staff`,
+  salonStaffCreate: (slug: string) => `/salons/${slug}/staff/create`,
   salonStaffDetail: (slug: string, staffId: string) =>
-    `/salons/${slug}/manage/staff/${staffId}`,
+    `/salons/${slug}/staff/${staffId}`,
   salonPackagesManage: (slug: string) => `/salons/${slug}/manage/packages`,
   salonPackageEdit: (slug: string, packageId: string) =>
     `/salons/${slug}/packages/${packageId}/edit`,
