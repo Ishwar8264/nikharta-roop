@@ -1,3 +1,6 @@
+import { Prisma } from "@/generated/prisma/client";
+import { updateSalonMemberSchema } from "@/server/modules/salon/salon.schema";
+import { updateOwnSalonMemberProfile } from "@/server/modules/salon/salon.service";
 import { NextResponse } from "next/server";
 
 import { getAuthContext } from "@/server/auth/session";
@@ -89,5 +92,32 @@ export async function DELETE(
       { message: "Unable to remove member" },
       { status: 500 },
     );
+  }
+}
+
+/** PATCH /salons/:salonId/members/:memberId — authenticated member self-service. */
+export async function PATCH(request: Request,
+  context: { params: Promise<{ salonRef: string; memberId: string }> }): Promise<Response> {
+  const auth = await getAuthContext(request);
+  if (!auth) return NextResponse.json({ message: "Authentication required" }, { status: 401 });
+  const params = salonMemberParamSchema.safeParse(await context.params);
+  if (!params.success || !isResourceId(params.data.salonRef)) {
+    return NextResponse.json({ message: "Valid salon and member IDs are required" }, { status: 400 });
+  }
+  let body: unknown;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 }); }
+  const input = updateSalonMemberSchema.safeParse(body);
+  if (!input.success) return NextResponse.json({ message: "Validation failed", errors: input.error.issues.map((issue) => ({ field: issue.path.join("."), message: issue.message })) }, { status: 400 });
+  try {
+    const member = await updateOwnSalonMemberProfile(auth.sub, params.data.salonRef, params.data.memberId, input.data);
+    return NextResponse.json({ message: "Member updated", data: { member } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") return NextResponse.json({ message: "Member not found or not editable by this account" }, { status: 404 });
+      if (error.code === "P2002") return NextResponse.json({ message: "This member slug is already in use in this salon" }, { status: 409 });
+    }
+    console.error("Member update failed", error);
+    return NextResponse.json({ message: "Unable to update member" }, { status: 500 });
   }
 }

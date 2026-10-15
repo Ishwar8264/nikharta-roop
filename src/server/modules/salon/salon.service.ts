@@ -1,3 +1,5 @@
+import { updateSalonMemberSchema } from "./salon.schema";
+import { updateOwnSalonMember } from "./salon.repository";
 import "server-only";
 
 import { requirePartnerOnboarding } from "@/server/modules/auth/onboarding.service";
@@ -508,4 +510,10 @@ function isUniqueConstraintViolation(error: unknown, field: string): boolean {
   // Keep compatibility with adapters that expose only the rendered
   // constraint name, for example `Salon_placeId_key`.
   return error.message.includes(field);
+}
+
+/** Members may edit only their own salon identity; account and role fields are rejected. */
+export async function updateOwnSalonMemberProfile(actorId: string, salonId: string, memberId: string, input: unknown) {
+  const data = updateSalonMemberSchema.parse(input);
+  return updateOwnSalonMember(actorId, salonId, memberId, data);
 }

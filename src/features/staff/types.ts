@@ -16,6 +16,8 @@ import type { DayOfWeek, SalonMemberRole } from "@/generated/prisma/client";
  * gain a field, the matching mirror here must gain it too.
  */
 export interface PublicStaffMember {
+  bannerImage?: string | null;
+  slug?: string | null;
   id: string;
   userId: string;
   salonId: string;

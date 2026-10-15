@@ -512,6 +512,32 @@ export const salonPaths = {
         },
       },
       "/api/v1/salons/{id}/members/{memberId}": {
+        patch: {
+          tags: ["Salons"], summary: "Update your salon member profile",
+          description: "Self-service only. Cannot change role, account, email, or verification. Slugs are unique within a salon; name changes preserve the slug. IDs and the slug create are reserved.",
+          operationId: "updateOwnSalonMember", security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: "id", in: "path", required: true, schema: { type: "string" }, description: "Salon internal ID" },
+            { name: "memberId", in: "path", required: true, schema: { type: "string" }, description: "Membership internal ID" },
+          ],
+          requestBody: { required: true, content: { "application/json": { schema: {
+            type: "object", additionalProperties: false, minProperties: 1,
+            properties: {
+              name: { type: "string", minLength: 2, maxLength: 100 },
+              slug: { type: "string", minLength: 2, maxLength: 80, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$", example: "ishwar-sahani" },
+              bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048, description: "HTTPS URL; null clears the banner" },
+              avatar: { type: ["string", "null"], format: "uri", maxLength: 2048, description: "HTTPS URL" },
+              title: { type: ["string", "null"], maxLength: 100 },
+              description: { type: ["string", "null"], maxLength: 500 },
+            },
+          } } } },
+          responses: {
+            "200": { description: "Member updated", content: { "application/json": { schema: { $ref: "#/components/schemas/SalonMemberResponse" } } } },
+            "400": { description: "Invalid body or IDs" }, "401": { description: "Authentication required" },
+            "404": { description: "Member not found or not editable by this account" },
+            "409": { description: "Slug already in use in this salon" }, "500": { description: "Unable to update member" },
+          },
+        },
         delete: {
           tags: ["Salons"],
           summary: "Remove a salon member",
@@ -1012,7 +1038,9 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           type: "object",
           required: ["id", "userId", "salonId", "role", "user"],
           properties: {
+            slug: { type: ["string", "null"], description: "Stable salon-scoped profile URL slug" },
             name: { type: ["string", "null"] }, avatar: { type: ["string", "null"] },
+            bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
             title: { type: ["string", "null"] }, description: { type: ["string", "null"] },
             verificationEmailSent: { type: ["boolean", "null"] },
             id: { $ref: "#/components/schemas/ResourceId" },
@@ -1036,6 +1064,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             { type: "object", additionalProperties: false, required: ["email", "name", "role"], properties: {
               email: { type: "string", format: "email", maxLength: 254 },
               name: { type: "string", minLength: 2, maxLength: 100 },
+              bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048, description: "HTTPS URL; null clears the banner" },
               avatar: { type: ["string", "null"], format: "uri", maxLength: 2048 },
               title: { type: ["string", "null"], maxLength: 100 },
               description: { type: ["string", "null"], maxLength: 500 },
@@ -1044,6 +1073,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             { type: "object", additionalProperties: false, required: ["userId", "role"], properties: {
               userId: { $ref: "#/components/schemas/ResourceId" },
               name: { type: "string", minLength: 2, maxLength: 100 },
+              bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048, description: "HTTPS URL; null clears the banner" },
               avatar: { type: ["string", "null"], format: "uri", maxLength: 2048 },
               title: { type: ["string", "null"], maxLength: 100 },
               description: { type: ["string", "null"], maxLength: 500 },

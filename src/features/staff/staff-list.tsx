@@ -157,7 +157,7 @@ function StaffCard({
 }) {
   const name = row.member.name ?? row.member.user.name ?? "Unnamed member";
   const initial = ((row.member.name ?? row.member.user.name)?.trim()[0] ?? "?").toUpperCase();
-  const href = routes.salonStaffDetail(salonSlug, row.member.id);
+  const href = routes.salonStaffDetail(salonSlug, row.member.slug ?? row.member.id);
 
   return (
     <li className="rounded-2xl border border-border bg-card p-4">
@@ -229,7 +229,7 @@ function StaffRowComponent({
 }) {
   const name = row.member.name ?? row.member.user.name ?? "Unnamed member";
   const initial = ((row.member.name ?? row.member.user.name)?.trim()[0] ?? "?").toUpperCase();
-  const href = routes.salonStaffDetail(salonSlug, row.member.id);
+  const href = routes.salonStaffDetail(salonSlug, row.member.slug ?? row.member.id);
 
   return (
     <tr className="transition-colors hover:bg-muted/25 focus-within:bg-muted/25">

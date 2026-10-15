@@ -1,3 +1,6 @@
+import { CoverImage } from "@/components/shared/cover-image";
+import { findSalonMemberBySlug } from "@/server/modules/salon/salon.repository";
+import { isResourceId } from "@/server/modules/salon/salon.helpers";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
@@ -51,12 +54,13 @@ interface Props {
  * excludes inactive rows, so the picker would miss them.
  */
 export default async function ManageStaffDetailPage({ params }: Props) {
-  const { slug, staffId } = await params;
+  const { slug, staffId: staffRef } = await params;
+  let staffId = staffRef;
 
   const user = await getSession();
   if (!user) {
     redirect(
-      `/login?redirect=${encodeURIComponent(routes.salonStaffDetail(slug, staffId))}`,
+      `/login?redirect=${encodeURIComponent(routes.salonStaffDetail(slug, staffRef))}`,
     );
   }
 
@@ -67,15 +71,19 @@ export default async function ManageStaffDetailPage({ params }: Props) {
   let skills;
   let servicesResult;
   try {
+    salon = await getSalonForServiceManagement(slug, user.id);
+    if (!isResourceId(staffRef)) {
+      const member = await findSalonMemberBySlug(salon.id, staffRef);
+      if (!member) notFound();
+      staffId = member.id;
+    }
     [
-      salon,
       staff,
       schedule,
       leaves,
       skills,
       servicesResult,
     ] = await Promise.all([
-      getSalonForServiceManagement(slug, user.id),
       getStaffDetail(user.id, slug, staffId),
       getSchedule(user.id, slug, staffId),
       listLeaves(user.id, slug, staffId),
@@ -106,6 +114,11 @@ export default async function ManageStaffDetailPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      {staff.bannerImage ? (
+        <div className="mb-6">
+          <CoverImage src={staff.bannerImage} alt={`${staffName} banner`} aspect="wide" rounded="md" priority />
+        </div>
+      ) : null}
       <header className="space-y-3">
         <div className="flex items-start gap-4">
           <Avatar size="lg">

@@ -64,7 +64,7 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
       } else {
         toast.success(member.user.emailVerified ? "Staff added." : "Staff added. Email verification is pending.");
       }
-      router.push(routes.salonStaffDetail(salonSlug, member.id));
+      router.push(routes.salonStaffDetail(salonSlug, member.slug ?? member.id));
       router.refresh();
     } catch (reason) {
       setError(reason instanceof ApiError ? reason.message : "Unable to add staff. Please try again.");

@@ -15,11 +15,12 @@ import type {
 
 /** Columns safe to return on every public staff response. */
 const PUBLIC_STAFF_SELECT = {
+  slug: true,
   id: true,
   userId: true,
   salonId: true,
   role: true,
-  name: true, avatar: true, title: true, description: true,
+  name: true, avatar: true, bannerImage: true, title: true, description: true,
   user: {
     select: { id: true, name: true, email: true, avatar: true, emailVerified: true },
   },
@@ -315,7 +316,7 @@ export async function listStaffForService(
           emailVerified: true,
           salonMemberships: {
             where: { salonId },
-            select: { id: true, userId: true, salonId: true, role: true, name: true, avatar: true, title: true, description: true },
+            select: { id: true, userId: true, salonId: true, role: true, name: true, avatar: true, bannerImage: true, title: true, description: true },
             take: 1,
           },
         },
@@ -333,7 +334,7 @@ export async function listStaffForService(
         userId: membership!.userId,
         salonId: membership!.salonId,
         role: membership!.role,
-        name: membership!.name, avatar: membership!.avatar, title: membership!.title, description: membership!.description,
+        name: membership!.name, avatar: membership!.avatar, bannerImage: membership!.bannerImage, title: membership!.title, description: membership!.description,
         user: {
           id: staff.id,
           name: membership!.name ?? staff.name,
