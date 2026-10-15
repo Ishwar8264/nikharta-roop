@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CalendarOff, Scissors } from "lucide-react";
+import { CalendarDays, CalendarOff, Scissors, Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -208,6 +208,8 @@ function ScheduleTab({
   schedule,
   canEdit,
 }: ScheduleTabProps) {
+  const [savedSchedule, setSavedSchedule] = useState(schedule);
+  const [editing, setEditing] = useState(false);
   const [days, setDays] = useState<ScheduleEditorDay[]>(() =>
     buildEditorDays(schedule),
   );
@@ -227,7 +229,7 @@ function ScheduleTab({
     setError(null);
     setBusy(true);
     try {
-      await replaceScheduleApi(salonSlug, staffId, {
+      const response = await replaceScheduleApi(salonSlug, staffId, {
         days: days.map((day) => ({
           day: day.day,
           startTime: day.isOff ? undefined : day.startTime,
@@ -235,12 +237,43 @@ function ScheduleTab({
           isOff: day.isOff,
         })),
       });
+      setSavedSchedule(response.data.schedule);
+      setEditing(false);
       toast.success("Schedule updated.");
     } catch (caught) {
       setError(extractApiMessage(caught));
     } finally {
       setBusy(false);
     }
+  }
+
+  if (!editing) {
+    const rows = [...savedSchedule].sort((a, b) => WEEKDAYS.indexOf(a.day) - WEEKDAYS.indexOf(b.day));
+    return (
+      <Card>
+        <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+          <CardTitle>Weekly schedule</CardTitle>
+          {canEdit ? <Button size="sm" variant="outline" onClick={() => {
+            setDays(buildEditorDays(savedSchedule));
+            setError(null);
+            setEditing(true);
+          }}>
+            {rows.length ? <Pencil className="size-3.5" aria-hidden="true" /> : <Plus className="size-3.5" aria-hidden="true" />}
+            {rows.length ? "Edit schedule" : "Add schedule"}
+          </Button> : null}
+        </CardHeader>
+        <CardContent>
+          {rows.length === 0 ? <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No schedule added yet.</p> : (
+            <ul className="divide-y rounded-lg border px-4">
+              {rows.map((day) => <li key={day.day} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+                <span className="font-medium">{WEEKDAY_LABELS[day.day]}</span>
+                {day.isOff ? <Badge variant="secondary">Off</Badge> : <span className="tabular-nums text-muted-foreground">{day.startTime ?? "Not set"} – {day.endTime ?? "Not set"}</span>}
+              </li>)}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -300,7 +333,8 @@ function ScheduleTab({
         {error ? <FormError>{error}</FormError> : null}
 
         {canEdit ? (
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" disabled={busy} onClick={() => setEditing(false)}>Cancel</Button>
             <Button onClick={save} disabled={busy}>
               {busy ? "Saving…" : "Save schedule"}
             </Button>
