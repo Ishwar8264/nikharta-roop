@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays, CalendarOff, Scissors } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -89,10 +90,25 @@ export function StaffDetailPanel({
 
   return (
     <Tabs defaultValue="schedule" className="gap-4">
-      <TabsList>
-        <TabsTrigger value="schedule">Schedule</TabsTrigger>
-        <TabsTrigger value="leaves">Leaves</TabsTrigger>
-        <TabsTrigger value="skills">Skills</TabsTrigger>
+      <TabsList
+        aria-label="Staff profile sections"
+        variant="line"
+        className="grid w-full grid-cols-3 gap-0 border-b border-border p-0 group-data-horizontal/tabs:h-auto"
+      >
+        {[
+          { value: "schedule", label: "Schedule", icon: CalendarDays },
+          { value: "leaves", label: "Leaves", icon: CalendarOff },
+          { value: "skills", label: "Skills", icon: Scissors },
+        ].map(({ value, label, icon: Icon }) => (
+          <TabsTrigger
+            key={value}
+            value={value}
+            className="h-12 cursor-pointer gap-2 rounded-none px-2 py-3 text-sm after:bg-primary group-data-horizontal/tabs:after:bottom-[-1px] data-selected:text-primary dark:data-selected:text-primary sm:px-4"
+          >
+            <Icon className="size-4" aria-hidden="true" />
+            {label}
+          </TabsTrigger>
+        ))}
       </TabsList>
 
       <TabsContent value="schedule">
