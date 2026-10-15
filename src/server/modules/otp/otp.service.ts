@@ -74,6 +74,7 @@ export async function sendOtp(input: SendOtpInput): Promise<OtpSendResult> {
     purpose,
     email: user.email,
     setup: user.password === null,
+    staffActivation: input.staffActivation,
   });
 }
 
@@ -143,6 +144,7 @@ export async function issueOtp(input: {
   purpose: OtpPurpose;
   email: string | null;
   setup?: boolean;
+  staffActivation?: boolean;
 }): Promise<OtpSendResult> {
   const code = generateOtp();
   const codeHash = await hashOtp(code);
@@ -150,7 +152,7 @@ export async function issueOtp(input: {
   const otp = await createOtpWithCooldown(input, codeHash, expiresAt);
 
   try {
-    await deliverOtp(input.purpose, input.channel, input.email, code, input.setup);
+    await deliverOtp(input.purpose, input.channel, input.email, code, input.setup, input.staffActivation);
   } catch (error) {
     await deleteOtp(otp.id);
     console.error("OTP delivery failed", error);
@@ -301,6 +303,7 @@ async function deliverOtp(
   email: string | null,
   code: string,
   setup = false,
+  staffActivation = false,
 ): Promise<void> {
   if (channel === "EMAIL" && email && purpose === "PASSWORD_RESET") {
     const { sendPasswordResetEmail } = await import("@/lib/email");
@@ -309,7 +312,7 @@ async function deliverOtp(
   }
 
   if (channel === "EMAIL" && email) {
-    await sendOtpEmail(email, code, setup);
+    await sendOtpEmail(email, code, setup, staffActivation);
     return;
   }
 

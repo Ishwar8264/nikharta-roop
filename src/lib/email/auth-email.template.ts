@@ -21,10 +21,14 @@ interface AuthEmailContent {
 }
 
 /** Creates every representation required for an email-verification message. */
-export function createOtpEmail(code: string, email?: string, setup = false): AuthEmailMessage {
+export function createOtpEmail(code: string, email?: string, setup = false, staffActivation = false): AuthEmailMessage {
   const verificationUrl = new URL("/verify-otp", siteConfig.url);
   if (email) verificationUrl.searchParams.set("email", email);
-  if (setup) verificationUrl.searchParams.set("setup", "1");
+  verificationUrl.searchParams.set("sent", "1");
+  if (staffActivation || setup) verificationUrl.searchParams.set("flow", "staff");
+  if (setup) {
+    verificationUrl.searchParams.set("setup", "1");
+  }
   return {
     subject: `${code} is your ${siteConfig.name} verification code`,
     html: renderAuthEmail({

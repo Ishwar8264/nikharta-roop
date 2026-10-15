@@ -134,10 +134,12 @@ export interface ValidationErrorResponse {
 // ─────────────────────────────────────────────────────────────
 
 export interface SendOtpInput {
+  staffActivation?: boolean;
   email: string;
 }
 
 export interface VerifyOtpInput {
+  createSession?: boolean;
   newPassword?: string;
   email: string;
   code: string;
@@ -156,6 +158,7 @@ export interface SendOtpResponse {
 export interface VerifyOtpResponse {
   message: string;
   data: {
+    staffProfileUrl?: string;
     userId: string;
     channel: "EMAIL" | "PHONE" | "WHATSAPP";
   };

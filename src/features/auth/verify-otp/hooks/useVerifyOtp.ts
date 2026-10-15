@@ -7,10 +7,11 @@ import { ApiError } from "@/lib/api/backend.client";
 import { sendOtpApi } from "../api/sendOtp";
 import { verifyOtpApi } from "../api/verifyOtp";
 
-type Step = "send" | "verify";
+type Step = "send" | "verify" | "complete";
 
 interface UseVerifyOtpResult {
   step: Step;
+  signInUrl: string;
   email: string;
   code: string;
   setCode: (code: string) => void;
@@ -45,8 +46,9 @@ interface UseVerifyOtpResult {
  * gives the user a live countdown instead of an unpredictable 429. The
  * server remains authoritative; this is only a courtesy.
  */
-export function useVerifyOtp(email: string, setup = false): UseVerifyOtpResult {
-  const [step, setStep] = useState<Step>(setup ? "verify" : "send");
+export function useVerifyOtp(email: string, setup = false, codeAlreadySent = false, staffActivation = false): UseVerifyOtpResult {
+  const [signInUrl, setSignInUrl] = useState("/login?flow=staff");
+  const [step, setStep] = useState<Step>(setup || codeAlreadySent ? "verify" : "send");
   const [newPassword, setNewPassword] = useState("");
   const [needsPassword, setNeedsPassword] = useState(setup);
   const [code, setCode] = useState("");
@@ -71,7 +73,7 @@ export function useVerifyOtp(email: string, setup = false): UseVerifyOtpResult {
     setError(null);
 
     try {
-      const res = await sendOtpApi({ email });
+      const res = await sendOtpApi({ email, ...(staffActivation ? { staffActivation: true } : {}) });
       setResendIn(res.data.resendAvailableInSeconds);
       setStep("verify");
     } catch (e) {
@@ -104,8 +106,15 @@ export function useVerifyOtp(email: string, setup = false): UseVerifyOtpResult {
     setError(null);
 
     try {
-      await verifyOtpApi({ email, code, ...(needsPassword ? { newPassword } : {}) });
+      const response = await verifyOtpApi({ email, code, ...(needsPassword ? { newPassword } : {}), ...(staffActivation ? { createSession: false } : {}) });
 
+      if (staffActivation) {
+        setSignInUrl("/login?flow=staff&redirect=" + encodeURIComponent(response.data?.staffProfileUrl ?? "/profile"));
+        setCode("");
+        setNewPassword("");
+        setStep("complete");
+        return;
+      }
       // Force a fresh document request so Server Components read the session
       // cookies before rendering the authenticated destination.
       window.location.replace(onboardingWelcomeUrl(new URLSearchParams(window.location.search).get("redirect")));
@@ -127,6 +136,7 @@ export function useVerifyOtp(email: string, setup = false): UseVerifyOtpResult {
 
   return {
     step,
+    signInUrl,
     email,
     code,
     setCode,

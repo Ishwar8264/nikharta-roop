@@ -464,7 +464,7 @@ export async function countSalonOwners(salonId: string): Promise<number> {
 export async function listUserSalonMemberships(userId: string) {
   return prisma.salonMember.findMany({
     where: { userId, salon: { deletedAt: null } },
-    select: { role: true, salon: { select: { id: true, name: true, slug: true, isActive: true } } },
+    select: { id: true, slug: true, role: true, salon: { select: { id: true, name: true, slug: true, isActive: true } } },
     orderBy: [{ salon: { name: "asc" } }, { salonId: "asc" }],
   });
 }

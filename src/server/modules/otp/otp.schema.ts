@@ -20,12 +20,14 @@ const emailSchema = z
  * API from promising an SMS flow that cannot complete.
  */
 export const sendOtpSchema = z.strictObject({
+  staffActivation: z.boolean().optional(),
   email: emailSchema,
 });
 
 export const verifyOtpSchema = z
   .strictObject({
     email: emailSchema,
+    createSession: z.boolean().optional(),
     newPassword: z
       .string({ error: "Password must be a string" })
       .min(8, "Password must contain at least 8 characters")

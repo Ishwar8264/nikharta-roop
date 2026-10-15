@@ -333,7 +333,7 @@ export async function addSalonMemberByOwner(
   let verificationEmailSent: boolean | null = null;
   if (!member.user.emailVerified && member.user.email) {
     try {
-      await sendOtp({ email: member.user.email });
+      await sendOtp({ email: member.user.email, staffActivation: true });
       verificationEmailSent = true;
     } catch (error) {
       verificationEmailSent = error instanceof OtpCooldownError;

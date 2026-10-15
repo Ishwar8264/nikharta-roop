@@ -15,8 +15,8 @@ export function StaffVerificationNotice({ email }: { email: string }) {
     if (busy) return;
     setBusy(true); setError(null); setMessage(null);
     try {
-      await sendOtpApi({ email });
-      setMessage("Verification email sent.");
+      await sendOtpApi({ email, staffActivation: true });
+      setMessage("Activation email sent. Ask the member to open the link in their inbox.");
     } catch (reason) {
       setError(reason instanceof ApiError ? reason.message : "Unable to send email. Please try again.");
     } finally { setBusy(false); }

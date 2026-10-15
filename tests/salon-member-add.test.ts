@@ -80,7 +80,7 @@ describe("staff addition backend", () => {
     mocks.add.mockResolvedValue({ id: "membership", userId, salonId, role: "STAFF", user: { id: userId, email: "staff@example.com", emailVerified: false } });
     const response = await request();
     expect(response.status).toBe(201);
-    expect(mocks.send).toHaveBeenCalledWith({ email: "staff@example.com" });
+    expect(mocks.send).toHaveBeenCalledWith({ email: "staff@example.com", staffActivation: true });
     expect(await response.json()).toMatchObject({ data: { member: { verificationEmailSent: true } } });
   });
   it("keeps the saved membership pending when email delivery fails", async () => {

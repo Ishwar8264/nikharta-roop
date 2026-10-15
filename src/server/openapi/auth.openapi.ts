@@ -1074,6 +1074,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           additionalProperties: false,
           required: ["email"],
           properties: {
+            staffActivation: { type: "boolean", description: "Send an activation link for salon members without automatic login." },
             email: {
               type: "string",
               format: "email",
@@ -1119,6 +1120,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           additionalProperties: false,
           required: ["email", "code"],
           properties: {
+            createSession: { type: "boolean", default: true, description: "Set false for staff activation: verifies email and sets an initial password without issuing tokens or modifying session cookies." },
             newPassword: { type: "string", minLength: 8, maxLength: 128, description: "Required for passwordless invited accounts. Never overwrites existing passwords." },
             email: {
               type: "string",
@@ -1146,6 +1148,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               type: "object",
               required: ["userId", "channel"],
               properties: {
+                staffProfileUrl: { type: "string", description: "Internal post-login destination for activation without a session." },
                 userId: { $ref: "#/components/schemas/ResourceId" },
                 channel: {
                   type: "string",
