@@ -39,7 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     id: salon.id,
                     label: salon.name,
                     description: role === "OWNER" ? "Owner · Manage salon" : role === "MANAGER" ? "Manager · Manage salon" : "Staff · View salon",
-                    href: role === "STAFF" ? routes.salonDetail(salon.slug) : routes.salonManage(salon.slug),
+                    href: role === "STAFF" ? routes.salonDetail(salon.slug) : routes.salonEdit(salon.slug),
                     icon: <Store className="mt-0.5 size-4" />,
                     className: "items-start gap-2.5",
                   })),

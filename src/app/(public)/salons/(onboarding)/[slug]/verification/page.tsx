@@ -64,11 +64,11 @@ export default async function ManageVerificationPage({ params }: Props) {
     <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
       <header className="space-y-4">
         <Link
-          href={routes.salonManage(slug)}
+          href={routes.salonEdit(slug)}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Back to salon management
+          Back to salon details
         </Link>
       </header>
 

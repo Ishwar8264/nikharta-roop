@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth/get-session";
 import { canCreateSalon } from "@/features/onboarding/policy";
-import { Calendar, Gift, Info, List, Package, Plus, Scissors, Settings, ShieldCheck, Store, Users } from "lucide-react";
+import { Calendar, Gift, Info, List, Package, Plus, Scissors, Settings, ShieldCheck, Store, Users, Clock, ClipboardCheck, Ticket, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/shared/side-nav";
@@ -51,6 +51,7 @@ export async function SalonDirectoryLayout({ children, isSignedIn, salon }: Salo
                 href: routes.salonServices(salon.slug),
                 subItems: [
                   { label: "All services", href: routes.salonServices(salon.slug), matchNested: false, icon: <List className="size-4" /> },
+                  ...(salon.canManage ? [{ label: "Catalog", href: routes.salonServiceCatalog(salon.slug), matchNested: false, icon: <List className="size-4" /> }] : []),
                   ...(salon.canManage ? [{ label: "Add service", href: routes.salonServiceCreate(salon.slug), matchNested: false, icon: <Plus className="size-4" /> }] : []),
                 ],
                 icon: <Scissors className="mt-0.5 size-4" />,
@@ -61,6 +62,7 @@ export async function SalonDirectoryLayout({ children, isSignedIn, salon }: Salo
                 href: routes.salonProducts(salon.slug),
                 subItems: [
                   { label: "All products", href: routes.salonProducts(salon.slug), matchNested: false, icon: <List className="size-4" /> },
+                  ...(salon.canManage ? [{ label: "Catalog", href: routes.salonProductCatalog(salon.slug), matchNested: false, icon: <List className="size-4" /> }] : []),
                   ...(salon.canManage ? [{ label: "Add product", href: routes.salonProductCreate(salon.slug), matchNested: false, icon: <Plus className="size-4" /> }] : []),
                 ],
                 icon: <Package className="mt-0.5 size-4" />,
@@ -71,6 +73,7 @@ export async function SalonDirectoryLayout({ children, isSignedIn, salon }: Salo
                 href: routes.salonPackages(salon.slug),
                 subItems: [
                   { label: "All packages", href: routes.salonPackages(salon.slug), matchNested: false, icon: <List className="size-4" /> },
+                  ...(salon.canManage ? [{ label: "Catalog", href: routes.salonPackageCatalog(salon.slug), matchNested: false, icon: <List className="size-4" /> }] : []),
                   ...(salon.canManage ? [{ label: "Add package", href: routes.salonPackageCreate(salon.slug), matchNested: false, icon: <Plus className="size-4" /> }] : []),
                 ],
                 icon: <Gift className="mt-0.5 size-4" />,
@@ -88,11 +91,24 @@ export async function SalonDirectoryLayout({ children, isSignedIn, salon }: Salo
                 href: routes.salonStaff(salon.slug),
                 icon: <Users className="mt-0.5 size-4" />,
               }, {
-                label: "Manage salon",
-                description: "Update your salon details.",
-                href: routes.salonManage(salon.slug),
-                icon: <Settings className="mt-0.5 size-4" />,
+                label: "Appointments", href: routes.salonAppointments(salon.slug), icon: <Calendar className="mt-0.5 size-4" />,
+              }, {
+                label: "Activate catalog", href: routes.salonTemplates(salon.slug), icon: <ClipboardCheck className="mt-0.5 size-4" />,
+              }, {
+                label: "Coupons", href: routes.salonCoupons(salon.slug), icon: <Ticket className="mt-0.5 size-4" />,
+              }, {
+                label: "Working hours", href: routes.salonWorkingHours(salon.slug), icon: <Clock className="mt-0.5 size-4" />,
+              }, {
+                label: "Settings", href: routes.salonSettings(salon.slug), icon: <Settings className="mt-0.5 size-4" />,
+              }, {
+                label: "Edit salon", href: routes.salonEdit(salon.slug), icon: <Pencil className="mt-0.5 size-4" />,
               }] : []),
+              ...(salon.canManage && salon.isPublic !== false ? [{ label: "Verification", href: routes.salonVerification(salon.slug), icon: <ShieldCheck className="mt-0.5 size-4" /> }] : []),
+              ...(salon.canManage && salon.isPublic === false ? [
+                { label: "Service catalog", href: routes.salonServiceCatalog(salon.slug), icon: <Scissors className="mt-0.5 size-4" /> },
+                { label: "Product catalog", href: routes.salonProductCatalog(salon.slug), icon: <Package className="mt-0.5 size-4" /> },
+                { label: "Package catalog", href: routes.salonPackageCatalog(salon.slug), icon: <Gift className="mt-0.5 size-4" /> },
+              ] : []),
           ] : [
             {
               label: "Browse salons",

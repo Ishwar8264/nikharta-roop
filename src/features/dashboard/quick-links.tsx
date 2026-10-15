@@ -74,13 +74,13 @@ export const CUSTOMER_QUICK_LINKS: readonly QuickLink[] = [
 export function buildSalonManageLinks(salonSlug: string): QuickLink[] {
   return [
     {
-      href: routes.salonAppointmentsManage(salonSlug),
+      href: routes.salonAppointments(salonSlug),
       icon: CalendarDays,
       title: "Appointments",
       description: "Today's bookings, status, and customers in the chair.",
     },
     {
-      href: routes.salonServicesManage(salonSlug),
+      href: routes.salonServiceCatalog(salonSlug),
       icon: Scissors,
       title: "Services",
       description: "Add, edit, and price your salon's services.",
@@ -92,19 +92,19 @@ export function buildSalonManageLinks(salonSlug: string): QuickLink[] {
       description: "Schedules, leaves, and skills for your team.",
     },
     {
-      href: routes.salonProductsManage(salonSlug),
+      href: routes.salonProductCatalog(salonSlug),
       icon: Package,
       title: "Products",
       description: "Manage the products you sell at the salon.",
     },
     {
-      href: routes.salonPackagesManage(salonSlug),
+      href: routes.salonPackageCatalog(salonSlug),
       icon: Package,
       title: "Packages",
       description: "Bundle services into priced packages.",
     },
     {
-      href: routes.salonTemplatesManage(salonSlug),
+      href: routes.salonTemplates(salonSlug),
       icon: FileText,
       title: "Templates",
       description: "Reusable service and pricing templates.",
@@ -116,19 +116,19 @@ export function buildSalonManageLinks(salonSlug: string): QuickLink[] {
       description: "Submit KYC documents and review status.",
     },
     {
-      href: routes.salonCouponsManage(salonSlug),
+      href: routes.salonCoupons(salonSlug),
       icon: Ticket,
       title: "Coupons",
       description: "Create and manage discount coupons.",
     },
     {
-      href: routes.salonSettingsManage(salonSlug),
+      href: routes.salonSettings(salonSlug),
       icon: Settings,
       title: "Settings",
       description: "Booking rules, advance payments, and walk-ins.",
     },
     {
-      href: routes.salonWorkingHoursManage(salonSlug),
+      href: routes.salonWorkingHours(salonSlug),
       icon: Clock,
       title: "Working hours",
       description: "Weekly opening hours customers see on your page.",

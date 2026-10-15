@@ -78,7 +78,7 @@ export default async function SalonProductsPage({
         {canManage ? (
           <div className="flex flex-col gap-2 sm:flex-row xl:shrink-0">
             <NavLink
-              href={routes.salonProductsManage(slug)}
+              href={routes.salonProductCatalog(slug)}
               icon={<Settings2 className="size-4" />}
               className="justify-center"
               variant="outline"

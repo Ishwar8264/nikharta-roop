@@ -49,7 +49,7 @@ interface PageProps {
  * manager of salon A who is *also* a manager of salon B can view salon B's
  * appointments through their own viewer context — that's correct in the
  * abstract, but the salon-side URL is namespaced by salon slug. Hitting
- * `/salons/salon-A/manage/appointments/{salon-B-appointment-id}` must 404
+ * `/salons/salon-A/appointments/{salon-B-appointment-id}` must 404
  * even if the caller could legitimately view that appointment through
  * salon B's URL. The `salonId` comparison enforces that scoping.
  */
@@ -66,7 +66,7 @@ export default async function ManageSalonAppointmentDetailPage({
   if (!user) {
     redirect(
       `/login?redirect=${encodeURIComponent(
-        routes.salonAppointmentManageDetail(slug, appointmentId),
+        routes.salonAppointmentDetail(slug, appointmentId),
       )}`,
     );
   }

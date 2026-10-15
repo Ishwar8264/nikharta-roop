@@ -31,7 +31,7 @@ export default async function ManageTemplatesPage({ params }: Props) {
   const user = await getSession();
   if (!user) {
     redirect(
-      `/login?redirect=${encodeURIComponent(routes.salonTemplatesManage(slug))}`,
+      `/login?redirect=${encodeURIComponent(routes.salonTemplates(slug))}`,
     );
   }
 

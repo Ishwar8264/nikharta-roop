@@ -31,8 +31,8 @@ it("uses permitted salon destinations and includes admin access for super admins
     { role: "STAFF", salon: { id: "p", name: "Private", slug: "private", isActive: false } },
   ]);
   render(await ProfileLayout({ children: "Profile content" }));
-  expect(screen.getByRole("link", { name: /Owned/ }).getAttribute("href")).toBe("/salons/owned/manage");
-  expect(screen.getByRole("link", { name: /Managed/ }).getAttribute("href")).toBe("/salons/managed/manage");
+  expect(screen.getByRole("link", { name: /Owned/ }).getAttribute("href")).toBe("/salons/owned/edit");
+  expect(screen.getByRole("link", { name: /Managed/ }).getAttribute("href")).toBe("/salons/managed/edit");
   expect(screen.getByRole("link", { name: /Staff Salon/ }).getAttribute("href")).toBe("/salons/staff");
   expect(screen.queryByRole("link", { name: /Private/ })).toBeNull();
   expect(screen.getByRole("link", { name: "Admin" }).getAttribute("href")).toBe("/admin/salons/verification");

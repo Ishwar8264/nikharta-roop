@@ -37,7 +37,7 @@ export default async function ManageWorkingHoursPage({ params }: Props) {
   if (!user) {
     redirect(
       `/login?redirect=${encodeURIComponent(
-        routes.salonWorkingHoursManage(slug),
+        routes.salonWorkingHours(slug),
       )}`,
     );
   }

@@ -51,7 +51,7 @@ export function SalonAppointmentList({
         description="Try clearing the filter to see every appointment scheduled for today."
         action={
           <NavLink
-            href={routes.salonAppointmentsManage(salonSlug)}
+            href={routes.salonAppointments(salonSlug)}
             variant="default"
             markActive={false}
           >
@@ -122,7 +122,7 @@ function SalonAppointmentCard({
 }) {
   const customerName = appointment.customer.name ?? "Customer";
   const serviceSummary = summarizeServices(appointment);
-  const href = routes.salonAppointmentManageDetail(
+  const href = routes.salonAppointmentDetail(
     appointment.salon.slug,
     appointment.id,
   );
@@ -168,7 +168,7 @@ function SalonAppointmentRow({
 }: {
   appointment: PublicAppointment;
 }) {
-  const href = routes.salonAppointmentManageDetail(
+  const href = routes.salonAppointmentDetail(
     appointment.salon.slug,
     appointment.id,
   );

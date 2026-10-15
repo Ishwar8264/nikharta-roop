@@ -272,7 +272,7 @@ export function VerificationPanel({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push(routes.salonManage(salonSlug))}
+                  onClick={() => router.push(routes.salonEdit(salonSlug))}
                   className="h-10"
                   disabled={busy}
                 >

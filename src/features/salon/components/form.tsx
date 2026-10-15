@@ -155,7 +155,7 @@ export function SalonForm() {
       }
     }
     const created = await create(values);
-    if (created) router.push(routes.salonManage(created.slug));
+    if (created) router.push(routes.salonEdit(created.slug));
   }
 
   return (

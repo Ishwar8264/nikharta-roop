@@ -28,7 +28,7 @@ export default async function ManageSettingsPage({ params }: Props) {
   const user = await getSession();
   if (!user) {
     redirect(
-      `/login?redirect=${encodeURIComponent(routes.salonSettingsManage(slug))}`,
+      `/login?redirect=${encodeURIComponent(routes.salonSettings(slug))}`,
     );
   }
 

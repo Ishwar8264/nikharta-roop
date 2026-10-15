@@ -29,7 +29,7 @@ export default async function ManageProductsPage({
   const user = await getSession();
   if (!user)
     redirect(
-      `/login?redirect=${encodeURIComponent(routes.salonProductsManage(slug))}`,
+      `/login?redirect=${encodeURIComponent(routes.salonProductCatalog(slug))}`,
     );
   let salon;
   let products;
@@ -104,7 +104,7 @@ export default async function ManageProductsPage({
       {products.hasMore && products.nextCursor ? (
         <Link
           className="inline-block text-primary underline"
-          href={`${routes.salonProductsManage(slug)}?cursor=${encodeURIComponent(products.nextCursor)}`}
+          href={`${routes.salonProductCatalog(slug)}?cursor=${encodeURIComponent(products.nextCursor)}`}
         >
           More products
         </Link>

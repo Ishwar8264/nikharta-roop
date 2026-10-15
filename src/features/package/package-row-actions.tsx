@@ -65,7 +65,7 @@ export function PackageRowActions({ salonSlug, pkg }: PackageRowActionsProps) {
       await deletePackageApi(salonSlug, pkg.id);
       toast.success(`${pkg.name} removed.`);
       setConfirmOpen(false);
-      router.push(routes.salonPackagesManage(salonSlug));
+      router.push(routes.salonPackageCatalog(salonSlug));
       startTransition(() => router.refresh());
     } catch (error) {
       toast.error(

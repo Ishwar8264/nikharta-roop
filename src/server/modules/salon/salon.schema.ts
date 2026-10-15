@@ -1,6 +1,5 @@
 import { salonStatusSchema } from "@/features/salon/status";
 import { z } from "zod";
-import { isResourceId } from "./salon.helpers";
 
 const slugSchema = z
   .string({ error: "Slug must be a string" })
@@ -201,7 +200,7 @@ export const updateSalonSchema = createSalonSchema
 const memberRoleSchema = z.enum(["MANAGER", "STAFF"], { error: "Role must be Staff or Manager" });
 
 /** Salon-specific identity never overwrites an existing personal profile. */
-const memberSlugSchema = slugSchema.refine((value) => value !== "create" && !isResourceId(value), "Slug is reserved");
+const memberSlugSchema = slugSchema.refine((value) => value !== "create" && !resourceIdSchema.safeParse(value).success, "Slug is reserved");
 
 const staffProfileShape = {
   slug: memberSlugSchema.optional(),

@@ -139,9 +139,9 @@ export function SalonDetail({
             </Button>
           ) : null}
           {canEdit ? (
-            <Button variant="outline" size="lg" render={<Link href={routes.salonManage(salon.slug)} />}>
+            <Button variant="outline" size="lg" render={<Link href={routes.salonEdit(salon.slug)} />}>
               <Pencil className="h-4 w-4" aria-hidden="true" />
-              Manage
+              Edit salon
             </Button>
           ) : null}
         </div>

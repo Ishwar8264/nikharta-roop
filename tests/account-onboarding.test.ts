@@ -94,7 +94,7 @@ describe("account onboarding policy", () => {
       "/onboarding",
       "/salons/create",
       "/salons/../../login",
-      "/salons/a/manage",
+      "/salons/a/edit",
     ])
       expect(onboardingDestination(value)).toBe("/salons");
   });

@@ -120,7 +120,7 @@ export default async function ManageSalonAppointmentsPage({
   const user = await getSession();
   if (!user) {
     redirect(
-      `/login?redirect=${encodeURIComponent(routes.salonAppointmentsManage(slug))}`,
+      `/login?redirect=${encodeURIComponent(routes.salonAppointments(slug))}`,
     );
   }
 
@@ -190,7 +190,7 @@ export default async function ManageSalonAppointmentsPage({
         <div className="mt-8 flex justify-center">
           <Link
             className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border bg-background px-3.5 text-sm hover:bg-muted"
-            href={`${routes.salonAppointmentsManage(slug)}?${buildQuery({
+            href={`${routes.salonAppointments(slug)}?${buildQuery({
               ...(status ? { status } : {}),
               ...(fromParam ? { from: fromParam } : {}),
               ...(toParam ? { to: toParam } : {}),
@@ -213,7 +213,7 @@ function StatusFilterChips({
   slug: string;
   status: AppointmentStatus | undefined;
 }) {
-  const base = routes.salonAppointmentsManage(slug);
+  const base = routes.salonAppointments(slug);
   return (
     <nav
       aria-label="Filter appointments by status"

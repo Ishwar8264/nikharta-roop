@@ -156,7 +156,7 @@ describe("verification submission flow", () => {
       }),
     );
     await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(mocks.push).toHaveBeenCalledWith("/salons/new-salon/manage");
+    expect(mocks.push).toHaveBeenCalledWith("/salons/new-salon/edit");
     view.rerender(
       h(VerificationPanel, {
         salonSlug: "new-salon",

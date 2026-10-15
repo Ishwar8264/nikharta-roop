@@ -12,7 +12,7 @@ interface Props { params: Promise<{ slug: string; serviceId: string }> }
 export default async function EditServicePage({ params }: Props) {
   const { slug, serviceId } = await params;
   const user = await getSession();
-  if (!user) redirect(`/login?redirect=${encodeURIComponent(`/salons/${slug}/manage/services/${serviceId}`)}`);
+  if (!user) redirect(`/login?redirect=${encodeURIComponent(`/salons/${slug}/catalog/services/${serviceId}`)}`);
 
   let service;
   try {

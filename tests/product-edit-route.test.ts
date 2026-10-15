@@ -6,7 +6,7 @@ vi.mock("../src/server/modules/salon/salon.service", () => ({ getSalonForService
 vi.mock("../src/features/product/product-form", () => ({ ProductForm: () => null }));
 vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`redirect:${url}`); }, notFound: () => { throw new Error("not-found"); } }));
 import EditProductPage from "../src/app/(public)/salons/[slug]/products/[productSlug]/edit/page";
-import LegacyEditProductPage from "../src/app/(public)/salons/[slug]/manage/products/[productId]/page";
+import LegacyEditProductPage from "../src/app/(public)/salons/[slug]/catalog/products/[productId]/page";
 import { SalonRoleInsufficientError } from "../src/server/modules/salon/salon.errors";
 const props = { params: Promise.resolve({ slug: "salon", productSlug: "shampoo" }) };
 beforeEach(() => {

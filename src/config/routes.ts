@@ -14,10 +14,10 @@ export const routes = {
   onboarding: "/onboarding",
   partnerOnboarding: "/onboarding?type=partner",
   salonDetail: (slug: string) => `/salons/${slug}`,
-  salonManage: (slug: string) => `/salons/${slug}/manage`,
+  salonEdit: (slug: string) => `/salons/${slug}/edit`,
   salonServices: (slug: string) => `/salons/${slug}/services`,
   salonServiceCreate: (slug: string) => `/salons/${slug}/services/create`,
-  salonServicesManage: (slug: string) => `/salons/${slug}/manage/services`,
+  salonServiceCatalog: (slug: string) => `/salons/${slug}/catalog/services`,
   salonServiceEdit: (slug: string, serviceSlug: string) =>
     `/salons/${slug}/services/${serviceSlug}/edit`,
   serviceCategoriesManage: "/service-categories/manage",
@@ -26,7 +26,7 @@ export const routes = {
     `/salons/${slug}/products/${productSlug}`,
   salonProductCreate: (slug: string) =>
     `/salons/${slug}/products/create`,
-  salonProductsManage: (slug: string) => `/salons/${slug}/manage/products`,
+  salonProductCatalog: (slug: string) => `/salons/${slug}/catalog/products`,
   salonProductEdit: (slug: string, productSlug: string) =>
     `/salons/${slug}/products/${productSlug}/edit`,
   productCategoriesManage: "/product-categories/manage",
@@ -36,27 +36,27 @@ export const routes = {
   salonPackages: (slug: string) => `/salons/${slug}/packages`,
   salonPackageDetail: (slug: string, packageId: string) => `/salons/${slug}/packages/${packageId}`,
 
-  // ─── Salon manage — Phase A ───
-  salonAppointmentsManage: (slug: string) =>
-    `/salons/${slug}/manage/appointments`,
-  salonAppointmentManageDetail: (slug: string, appointmentId: string) =>
-    `/salons/${slug}/manage/appointments/${appointmentId}`,
+  // ─── Salon operations (authorized pages) ───
+  salonAppointments: (slug: string) =>
+    `/salons/${slug}/appointments`,
+  salonAppointmentDetail: (slug: string, appointmentId: string) =>
+    `/salons/${slug}/appointments/${appointmentId}`,
   salonStaff: (slug: string) => `/salons/${slug}/staff`,
   salonStaffCreate: (slug: string) => `/salons/${slug}/staff/create`,
   salonStaffDetail: (slug: string, staffId: string) =>
     `/salons/${slug}/staff/${staffId}`,
-  salonPackagesManage: (slug: string) => `/salons/${slug}/manage/packages`,
+  salonPackageCatalog: (slug: string) => `/salons/${slug}/catalog/packages`,
   salonPackageEdit: (slug: string, packageId: string) =>
     `/salons/${slug}/packages/${packageId}/edit`,
-  salonPackageCreate: (slug: string) => `/salons/${slug}/manage/packages/create`,
-  salonTemplatesManage: (slug: string) => `/salons/${slug}/manage/templates`,
-  salonVerification: (slug: string) => `/salons/${slug}/manage/verification`,
-  salonCouponsManage: (slug: string) => `/salons/${slug}/manage/coupons`,
-  salonSettingsManage: (slug: string) => `/salons/${slug}/manage/settings`,
-  salonWorkingHoursManage: (slug: string) =>
-    `/salons/${slug}/manage/working-hours`,
+  salonPackageCreate: (slug: string) => `/salons/${slug}/packages/create`,
+  salonTemplates: (slug: string) => `/salons/${slug}/templates`,
+  salonVerification: (slug: string) => `/salons/${slug}/verification`,
+  salonCoupons: (slug: string) => `/salons/${slug}/coupons`,
+  salonSettings: (slug: string) => `/salons/${slug}/settings`,
+  salonWorkingHours: (slug: string) =>
+    `/salons/${slug}/working-hours`,
   salonCustomerNotes: (slug: string, customerId: string) =>
-    `/salons/${slug}/manage/customers/${customerId}/notes`,
+    `/salons/${slug}/customers/${customerId}/notes`,
 
   // ─── Admin ───
   adminSalonVerification: "/admin/salons/verification",

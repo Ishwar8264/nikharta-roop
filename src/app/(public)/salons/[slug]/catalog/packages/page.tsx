@@ -34,7 +34,7 @@ export default async function ManagePackagesPage({ params }: Props) {
   const user = await getSession();
   if (!user) {
     redirect(
-      `/login?redirect=${encodeURIComponent(routes.salonPackagesManage(slug))}`,
+      `/login?redirect=${encodeURIComponent(routes.salonPackageCatalog(slug))}`,
     );
   }
 

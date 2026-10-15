@@ -12,7 +12,7 @@ interface Props { params: Promise<{ slug: string; productId: string }> }
 export default async function EditProductPage({ params }: Props) {
   const { slug, productId } = await params;
   const user = await getSession();
-  if (!user) redirect(`/login?redirect=${encodeURIComponent(`/salons/${slug}/manage/products/${productId}`)}`);
+  if (!user) redirect(`/login?redirect=${encodeURIComponent(`/salons/${slug}/catalog/products/${productId}`)}`);
 
   let product;
   try {

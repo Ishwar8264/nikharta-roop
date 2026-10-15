@@ -35,7 +35,7 @@ export default async function ManageCouponsPage({ params }: Props) {
   const user = await getSession();
   if (!user) {
     redirect(
-      `/login?redirect=${encodeURIComponent(routes.salonCouponsManage(slug))}`,
+      `/login?redirect=${encodeURIComponent(routes.salonCoupons(slug))}`,
     );
   }
 

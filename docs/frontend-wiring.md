@@ -74,16 +74,16 @@
 Add to `src/config/routes.ts`:
 
 ```ts
-// Salon manage — Phase A
+// Salon operations
 salonPackages: (slug) => `/salons/${slug}/packages`,                    // public
-salonPackagesManage: (slug) => `/salons/${slug}/manage/packages`,
-salonPackageEdit: (slug, id) => `/salons/${slug}/manage/packages/${id}`,
-salonPackageCreate: (slug) => `/salons/${slug}/manage/packages/create`,
-salonTemplatesManage: (slug) => `/salons/${slug}/manage/templates`,     // activation
-salonVerification: (slug) => `/salons/${slug}/manage/verification`,
-salonCouponsManage: (slug) => `/salons/${slug}/manage/coupons`,
-salonSettingsManage: (slug) => `/salons/${slug}/manage/settings`,
-salonCustomerNotes: (slug, customerId) => `/salons/${slug}/manage/customers/${customerId}/notes`,
+salonPackageCatalog: (slug) => `/salons/${slug}/catalog/packages`,
+salonPackageEdit: (slug, id) => `/salons/${slug}/packages/${id}/edit`,
+salonPackageCreate: (slug) => `/salons/${slug}/packages/create`,
+salonTemplates: (slug) => `/salons/${slug}/templates`,     // activation
+salonVerification: (slug) => `/salons/${slug}/verification`,
+salonCoupons: (slug) => `/salons/${slug}/coupons`,
+salonSettings: (slug) => `/salons/${slug}/settings`,
+salonCustomerNotes: (slug, customerId) => `/salons/${slug}/customers/${customerId}/notes`,
 // Admin
 adminSalonVerification: "/admin/salons/verification",                    // review queue (admin layout)
 ```
@@ -92,7 +92,7 @@ adminSalonVerification: "/admin/salons/verification",                    // revi
 
 ## 6. Feature Specs
 
-### 6.1 Catalog Activation (`/salons/[slug]/manage/templates`)
+### 6.1 Catalog Activation (`/salons/[slug]/templates`)
 
 **Owner story:** "I joined, now give me my menu in 5 minutes."
 
@@ -127,7 +127,7 @@ adminSalonVerification: "/admin/salons/verification",                    // revi
 
 **Acceptance:** soft-deleted/inactive packages never appear; empty state: "This salon hasn't added packages yet."
 
-### 6.3 Packages — Manage (`/salons/[slug]/manage/packages[/...]`)
+### 6.3 Packages — Manage (`/salons/[slug]/catalog/packages[/...]`)
 
 **Owner story:** "Create a bridal package, edit price, hide it off-season."
 
@@ -139,7 +139,7 @@ adminSalonVerification: "/admin/salons/verification",                    // revi
 
 **Acceptance:** slug conflict shows 409 message inline; serviceIds must belong to the salon (400 shows "One or more services do not belong to this salon").
 
-### 6.4 Verification (`/salons/[slug]/manage/verification`)
+### 6.4 Verification (`/salons/[slug]/verification`)
 
 **Owner story:** "Submit my license and photos, see why I got rejected, resubmit."
 
@@ -158,7 +158,7 @@ adminSalonVerification: "/admin/salons/verification",                    // revi
 
 **Acceptance:** after admin approves, salon's public pages show the "Verified" badge and `isActive` becomes true (verify via API response).
 
-### 6.5 Salon Coupons (`/salons/[slug]/manage/coupons`)
+### 6.5 Salon Coupons (`/salons/[slug]/coupons`)
 
 **Owner story:** "Run a Diwali offer: GLOW20 — 20% off above ₹999, max 200 off, 100 uses."
 
@@ -182,7 +182,7 @@ adminSalonVerification: "/admin/salons/verification",                    // revi
 
 **Acceptance:** double-click on "Record" creates exactly one transaction (409 handled gracefully).
 
-### 6.7 Salon Settings (`/salons/[slug]/manage/settings`)
+### 6.7 Salon Settings (`/salons/[slug]/settings`)
 
 **Owner story:** "Keep 10 minutes between appointments, take ₹200 advance, no walk-ins on Sundays."
 
@@ -196,7 +196,7 @@ adminSalonVerification: "/admin/salons/verification",                    // revi
 
 **Acceptance:** every field persists independently; PATCH with no fields is blocked by schema (client disables Save when untouched).
 
-### 6.8 Customer Notes (`/salons/[slug]/manage/customers/[customerId]/notes`)
+### 6.8 Customer Notes (`/salons/[slug]/customers/[customerId]/notes`)
 
 **Owner story:** "This customer is allergic to ammonia color — remind my staff."
 
@@ -304,8 +304,8 @@ src/app/sitemap.ts                                     # MODIFY — add package 
 | Building this | Copy the pattern from |
 | --- | --- |
 | Public server page (list) | `src/app/(public)/salons/[slug]/products/page.tsx` |
-| Manage server page + role guard | `src/app/(public)/salons/[slug]/manage/services/page.tsx` |
-| Manage form page + navigation | `src/app/(public)/salons/[slug]/manage/products/create/page.tsx` + `src/features/product/product-form.tsx` |
+| Manage server page + role guard | `src/app/(public)/salons/[slug]/catalog/services/page.tsx` |
+| Manage form page + navigation | `src/app/(public)/salons/[slug]/products/create/page.tsx` + `src/features/product/product-form.tsx` |
 | Client API module | `src/features/salon/api/manage.ts` |
 | Client mutation hook | `src/features/salon/hooks/use-create-salon.ts` |
 | Empty state | `src/components/shared/empty-state.tsx` (usage: products list page) |

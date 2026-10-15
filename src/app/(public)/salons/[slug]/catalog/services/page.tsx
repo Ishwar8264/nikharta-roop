@@ -18,7 +18,7 @@ export default async function ManageServicesPage({ params, searchParams }: Props
   const [{ slug }, { cursor }] = await Promise.all([params, searchParams]);
   if (cursor && !isResourceId(cursor)) notFound();
   const user = await getSession();
-  if (!user) redirect(`/login?redirect=${encodeURIComponent(routes.salonServicesManage(slug))}`);
+  if (!user) redirect(`/login?redirect=${encodeURIComponent(routes.salonServiceCatalog(slug))}`);
 
   let salon;
   let services;
@@ -55,7 +55,7 @@ export default async function ManageServicesPage({ params, searchParams }: Props
           ))}
         </ul>
       )}
-      {services.hasMore && services.nextCursor ? <Link className="inline-block text-primary underline" href={`${routes.salonServicesManage(slug)}?cursor=${encodeURIComponent(services.nextCursor)}`}>More services</Link> : null}
+      {services.hasMore && services.nextCursor ? <Link className="inline-block text-primary underline" href={`${routes.salonServiceCatalog(slug)}?cursor=${encodeURIComponent(services.nextCursor)}`}>More services</Link> : null}
     </main>
   );
 }
