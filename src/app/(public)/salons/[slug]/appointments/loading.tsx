@@ -1,3 +1,4 @@
+import { SkeletonListRows } from "@/features/salon/components/loading-parts";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -7,11 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
  */
 export default function ManageAppointmentsLoading() {
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6" role="status" aria-label="Loading salon content" aria-busy="true">
       <div className="space-y-3">
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="h-9 w-44" />
-        <Skeleton className="h-5 w-64" />
+        <Skeleton className="h-9 w-44 max-w-full" />
+        <Skeleton className="h-5 w-64 max-w-full" />
       </div>
 
       {/* Filter chip row */}
@@ -21,15 +21,7 @@ export default function ManageAppointmentsLoading() {
         ))}
       </div>
 
-      {/* Row list — mobile cards stack on small, table on lg */}
-      <div className="mt-6 space-y-3 lg:hidden">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Skeleton key={index} className="h-32 rounded-xl" />
-        ))}
-      </div>
-      <div className="hidden lg:block">
-        <Skeleton className="h-80 rounded-xl" />
-      </div>
+      <div className="mt-6"><SkeletonListRows count={5} /></div>
     </main>
   );
 }

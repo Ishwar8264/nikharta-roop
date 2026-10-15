@@ -1,31 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/**
- * Skeleton matching the staff detail layout: header + 3-tab panel.
- *
- * The panel skeleton mimics the Tabs list + a single card body so the
- * loading state visually matches the rendered detail page before the data
- * lands. Tab content skeletons are intentionally minimal — most of the
- * perceived load is the page header and the panel chrome.
- */
-export default function ManageStaffDetailLoading() {
-  return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <div className="space-y-3">
-        <Skeleton className="h-4 w-28" />
-        <div className="flex items-start gap-4">
-          <Skeleton className="size-10 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-7 w-44" />
-            <Skeleton className="h-4 w-56" />
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 space-y-4">
-        <Skeleton className="h-9 w-72 rounded-lg" />
-        <Skeleton className="h-80 rounded-xl" />
-      </div>
-    </main>
-  );
+/** Matches the staff profile banner, overlapping avatar and weekly schedule panel. */
+export default function StaffDetailLoading() {
+  return <div className="w-full space-y-5" role="status" aria-label="Loading staff profile" aria-busy="true">
+    <Skeleton className="h-5 w-24" />
+    <div className="overflow-hidden rounded-2xl border bg-card"><Skeleton className="h-36 w-full rounded-none sm:h-48" /><div className="px-4 pb-5 sm:px-6"><Skeleton className="relative -mt-8 size-20 rounded-full ring-4 ring-card sm:size-24" /><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><div className="space-y-2"><Skeleton className="h-7 w-44 max-w-full" /><Skeleton className="h-4 w-28" /></div><div className="flex gap-2"><Skeleton className="h-7 w-20" /><Skeleton className="h-5 w-24 rounded-full" /></div></div><div className="mt-4 flex flex-wrap gap-4"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-44 max-w-full" /></div><Skeleton className="mt-4 h-4 w-3/4" /></div></div>
+    <div className="space-y-4"><Skeleton className="h-9 w-64 max-w-full rounded-lg" /><div className="space-y-3 rounded-xl border bg-card p-4"><Skeleton className="h-6 w-40 max-w-full" /><Skeleton className="h-4 w-3/4" />{Array.from({ length: 7 }, (_, key) => <div key={key} className="flex flex-wrap items-center gap-3 rounded-lg border p-3"><Skeleton className="h-4 w-12" /><Skeleton className="h-5 w-10 rounded-full" /><Skeleton className="h-8 w-24" /><Skeleton className="h-8 w-24" /></div>)}</div></div>
+  </div>;
 }

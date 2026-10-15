@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  */
 export default function ManageSalonAppointmentDetailLoading() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6" role="status" aria-label="Loading salon content" aria-busy="true">
       <Skeleton className="h-4 w-28" />
 
       {/* Header: avatar + name + date */}
@@ -17,20 +17,20 @@ export default function ManageSalonAppointmentDetailLoading() {
         <Skeleton className="size-10 rounded-full" />
         <div className="space-y-2">
           <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-56" />
+          <Skeleton className="h-8 w-48 max-w-full" />
+          <Skeleton className="h-4 w-56 max-w-full" />
         </div>
       </div>
 
       {/* Status + transitions card */}
       <div className="mt-8 space-y-4">
-        <Skeleton className="h-16 rounded-xl" />
+        <div className="space-y-4 rounded-xl border bg-card p-5"><Skeleton className="h-5 w-32 max-w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /><div className="flex justify-between gap-3 border-t pt-3"><Skeleton className="h-4 w-20" /><Skeleton className="h-8 w-24" /></div></div>
         {/* Customer card */}
-        <Skeleton className="h-28 rounded-xl" />
+        <div className="space-y-4 rounded-xl border bg-card p-5"><Skeleton className="h-5 w-32 max-w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /><div className="flex justify-between gap-3 border-t pt-3"><Skeleton className="h-4 w-20" /><Skeleton className="h-8 w-24" /></div></div>
         {/* Services + totals card */}
-        <Skeleton className="h-56 rounded-xl" />
+        <div className="space-y-4 rounded-xl border bg-card p-5"><Skeleton className="h-5 w-32 max-w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /><div className="flex justify-between gap-3 border-t pt-3"><Skeleton className="h-4 w-20" /><Skeleton className="h-8 w-24" /></div></div>
         {/* Payments ledger */}
-        <Skeleton className="h-72 rounded-xl" />
+        <div className="space-y-4 rounded-xl border bg-card p-5"><Skeleton className="h-5 w-32 max-w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /><div className="flex justify-between gap-3 border-t pt-3"><Skeleton className="h-4 w-20" /><Skeleton className="h-8 w-24" /></div></div>
       </div>
     </main>
   );
