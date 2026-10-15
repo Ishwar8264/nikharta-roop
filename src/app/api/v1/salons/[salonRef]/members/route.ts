@@ -4,6 +4,7 @@ import { salonMemberLimiter, rateLimitHeaders } from "@/lib/rate-limit";
 import { getAuthContext } from "@/server/auth/session";
 import {
   SalonMemberExistsError,
+  SalonMemberSlugConflictError,
   SalonMemberAccountUnavailableError,
   SalonNotFoundError,
   SalonRoleInsufficientError,
@@ -183,7 +184,7 @@ export async function POST(
       return NextResponse.json({ message: error.message }, { status: 422 });
     }
 
-    if (error instanceof SalonMemberExistsError) {
+    if (error instanceof SalonMemberExistsError || error instanceof SalonMemberSlugConflictError) {
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
 

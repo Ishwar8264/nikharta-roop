@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import Link from "next/link";
-import { Camera, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/features/auth/shared/components/field";
 import { MediaPickerDialog } from "@/features/media";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { routes } from "@/config/routes";
 import { ApiError } from "@/lib/api/backend.client";
+import { slugify } from "@/features/salon/schemas";
 import { addSalonMemberApi } from "@/features/salon/api/manage";
 
 interface Props {
@@ -29,6 +30,9 @@ interface Props {
 
 const staffFormSchema = z.object({
   name: z.string().trim().min(2, "Enter at least 2 characters.").max(100),
+  slug: z.string().trim().min(2, "Enter a slug with at least 2 characters.").max(80)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens.")
+    .refine((value) => value !== "create" && !/^[a-f0-9]{48}$/.test(value) && !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value), "Choose a different slug."),
   email: z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address.").max(254)),
   title: z.string().trim().max(100),
   description: z.string().trim().max(500),
@@ -41,11 +45,21 @@ type StaffFormValues = z.infer<typeof staffFormSchema>;
 export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
   const router = useRouter();
   const [avatar, setAvatar] = useState<string | null>(null);
-  const { register, control, handleSubmit, formState: { errors } } = useForm<StaffFormValues>({
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [slugWasEdited, setSlugWasEdited] = useState(false);
+  const { register, control, handleSubmit, setValue, clearErrors, formState: { errors } } = useForm<StaffFormValues>({
     resolver: zodResolver(staffFormSchema),
-    defaultValues: { name: "", email: "", title: "", description: "", role: "STAFF" },
+    defaultValues: { name: "", slug: "", email: "", title: "", description: "", role: "STAFF" },
     mode: "onTouched",
   });
+  const name = useWatch({ control, name: "name" });
+  // Follow the name until the user chooses a custom URL.
+  useEffect(() => {
+    if (!slugWasEdited) {
+      setValue("slug", slugify(name), { shouldValidate: false });
+      clearErrors("slug");
+    }
+  }, [name, slugWasEdited, setValue, clearErrors]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +69,7 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
     setError(null);
     try {
       const response = await addSalonMemberApi(salonId, {
-        ...values, avatar,
+        ...values, avatar, bannerImage,
         title: values.title || null, description: values.description || null,
       });
       const member = response.data.member;
@@ -77,83 +91,67 @@ export function AddStaffForm({ salonId, salonSlug, salonName }: Props) {
     <form onSubmit={handleSubmit(submit)} data-form-rounded="true" noValidate>
       <Card className="gap-0 overflow-visible py-0">
         <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
-          <FormHeader title="Add staff" description={`Create a team profile for ${salonName}. New accounts receive an email to verify and choose their own password.`} />
+          <FormHeader title="Add staff" description={salonName} />
         </CardHeader>
-        <CardContent className="space-y-8 px-5 py-6 sm:space-y-10 sm:px-8">
+        <CardContent className="space-y-6 px-5 py-5 sm:px-8">
           <FormError>{error}</FormError>
           <section className="space-y-4" aria-labelledby="staff-profile-heading">
-            <div className="space-y-1">
-              <h2 id="staff-profile-heading" className="text-base font-semibold">Staff profile</h2>
-              <p className="text-sm text-muted-foreground">Add their photo and the details shown on their salon profile.</p>
-            </div>
-            <div className="flex flex-col items-start gap-2">
-              <MediaPickerDialog
-                title="Choose staff photo"
-                mode="single"
-                max={1}
-                maxSizeMB={5}
-                disabled={busy}
-                value={avatar ? [{ url: avatar, publicId: avatar }] : []}
-                onChange={(images) => setAvatar(images[0]?.url ?? null)}
-                triggerClassName="w-auto"
-                trigger={
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-label={avatar ? "Change staff photo" : "Add staff photo"}
-                    className="group relative size-20 shrink-0 cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                  >
-                    <Avatar className="size-full">
-                      {avatar ? <AvatarImage src={avatar} alt="Staff photo" /> : null}
-                      <AvatarFallback className="bg-muted text-muted-foreground">
-                        {avatar ? null : <Camera className="size-6 opacity-40" aria-hidden="true" />}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span
-                      aria-hidden="true"
-                      className="absolute bottom-0.5 right-0.5 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm ring-2 ring-background transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-                      style={{ opacity: avatar ? 0 : 1 }}
-                    >
-                      <Camera className="size-3.5" />
-                    </span>
-                  </button>
-                }
-              />
-              {avatar ? (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setAvatar(null)}
-                  className="text-xs text-muted-foreground underline-offset-2 hover:text-destructive hover:underline disabled:pointer-events-none disabled:opacity-50"
-                >
-                  Remove photo
-                </button>
-              ) : (
-                <p className="text-xs text-muted-foreground">Optional · JPG, PNG, WebP · Up to 5 MB</p>
-              )}
-            </div>
+            <h2 id="staff-profile-heading" className="sr-only">Staff profile</h2>
             <div className="grid items-start gap-4 sm:grid-cols-2">
-              <Field id="staff-name" label="Name" placeholder="e.g. Priya Sharma" autoComplete="name" maxLength={100} required disabled={busy} error={errors.name?.message} {...register("name")} />
-              <Field id="staff-email" label="Email" type="email" placeholder="e.g. priya@example.com" autoComplete="email" maxLength={254} required disabled={busy} error={errors.email?.message} {...register("email")} />
+              <Field id="staff-name" label="Name" placeholder="Priya Sharma" autoComplete="name" maxLength={100} required disabled={busy} error={errors.name?.message} {...register("name")} />
+              <Field id="staff-slug" label="Slug" placeholder="priya-sharma" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={80} required disabled={busy} error={errors.slug?.message} {...register("slug", { onChange: () => setSlugWasEdited(true) })} />
+              <Field id="staff-email" label="Email" type="email" placeholder="priya@example.com" autoComplete="email" maxLength={254} required disabled={busy} error={errors.email?.message} {...register("email")} />
+              <Controller name="role" control={control} render={({ field }) => (
+                <SelectField id="staff-role" label="Salon role" value={field.value} onValueChange={(value) => { if (value) field.onChange(value); }}
+                  options={[{ value: "STAFF", label: "Staff" }, { value: "MANAGER", label: "Manager" }]}
+                  disabled={busy} error={errors.role?.message} triggerProps={{ onBlur: field.onBlur, ref: field.ref }}
+                />
+              )} />
             </div>
-            <p className="text-xs text-muted-foreground">An existing account is linked automatically. Personal account details stay unchanged.</p>
             <Field id="staff-title" label="Professional title (optional)" placeholder="Hair stylist" maxLength={100} disabled={busy} error={errors.title?.message} {...register("title")} />
             <div className="space-y-1.5">
               <Label htmlFor="staff-description">Description (optional)</Label>
-              <Textarea id="staff-description" placeholder="Share their expertise and experience" maxLength={500} rows={4} disabled={busy} aria-invalid={errors.description ? true : undefined} aria-describedby={errors.description ? "staff-description-error" : undefined} {...register("description")} />
+              <Textarea id="staff-description" placeholder="Share their expertise and experience" maxLength={500} rows={3} disabled={busy} aria-invalid={errors.description ? true : undefined} aria-describedby={errors.description ? "staff-description-error" : undefined} {...register("description")} />
               {errors.description ? <p id="staff-description-error" className="text-xs text-destructive">{errors.description.message}</p> : null}
             </div>
+            <p className="text-xs text-muted-foreground">New members receive a verification email.</p>
+            <div className="grid gap-5 sm:grid-cols-[1fr_2fr]">
+              {[
+                { label: "Profile photo", title: "Choose staff photo", value: avatar, setValue: setAvatar },
+                { label: "Banner image", title: "Choose staff banner", value: bannerImage, setValue: setBannerImage },
+              ].map(({ label, title, value, setValue }) => (
+                <div key={label} className="space-y-2">
+                  <p className="text-sm font-medium">{label} <span className="font-normal text-muted-foreground">(optional)</span></p>
+                  <MediaPickerDialog
+                    title={title}
+                    mode="single"
+                    max={1}
+                    maxSizeMB={5}
+                    disabled={busy}
+                    value={value ? [{ url: value, publicId: value }] : []}
+                    onChange={(images) => setValue(images[0]?.url ?? null)}
+                    trigger={
+                      <div className="relative flex h-28 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-muted/20 px-4 text-center transition-colors hover:border-primary/50 hover:bg-muted/40">
+                        {value ? (
+                          <Image src={value} alt={label} fill sizes="(max-width: 640px) 100vw, 350px" className={label === "Profile photo" ? "object-contain" : "object-cover"} />
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <ImagePlus className="size-6 text-muted-foreground" aria-hidden="true" />
+                            <span className="text-sm font-medium">Add image</span>
+                          </div>
+                        )}
+                      </div>
+                    }
+                  />
+                  <div className="flex items-start justify-between gap-2">
+                    {value ? <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => setValue(null)} aria-label={`Remove ${label.toLowerCase()}`} className="h-auto shrink-0 px-1 py-0 text-xs text-muted-foreground">Remove</Button> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">Images are optional · Up to 5 MB each.</p>
           </section>
-          <section className="space-y-4" aria-labelledby="staff-access-heading">
-            <h2 id="staff-access-heading" className="text-base font-semibold">Salon access</h2>
-            <Controller name="role" control={control} render={({ field }) => (
-              <SelectField id="staff-role" label="Salon role" value={field.value} onValueChange={(value) => { if (value) field.onChange(value); }}
-                options={[{ value: "STAFF", label: "Staff" }, { value: "MANAGER", label: "Manager" }]}
-                disabled={busy} error={errors.role?.message} triggerProps={{ onBlur: field.onBlur, ref: field.ref }}
-                description={field.value === "MANAGER" ? "Managers can access bookings and customer information after verification." : "Staff can manage their assigned work after verification."} />
-            )} />
-            <p className="rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">Unverified staff cannot access salon management or receive bookings. You can configure services and hours while verification is pending.</p>
-          </section>
+
         </CardContent>
         <CardFooter className="flex flex-col-reverse items-stretch gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8">
           <Button type="button" variant="outline" disabled={busy} render={<Link href={routes.salonStaff(salonSlug)} />}>Cancel</Button>

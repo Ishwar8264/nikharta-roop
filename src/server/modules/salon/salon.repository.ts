@@ -406,6 +406,7 @@ export async function addSalonMember(input: {
   userId?: string;
   role: "STAFF" | "MANAGER";
   name?: string;
+  slug?: string;
   avatar?: string | null;
   bannerImage?: string | null;
   title?: string | null;
@@ -430,7 +431,7 @@ export async function addSalonMember(input: {
           : await transaction.user.findUnique({ where: { id: input.userId! }, select: { id: true, deletedAt: true } });
         if (!account || account.deletedAt) throw new SalonMemberAccountUnavailableError();
 
-        const slug = await generateUniqueSlug(input.name || "member", async (candidate) =>
+        const slug = input.slug ?? await generateUniqueSlug(input.name || "member", async (candidate) =>
           candidate === "create" || isResourceId(candidate) || Boolean(await transaction.salonMember.findUnique({ where: { salonId_slug: { salonId: input.salonId, slug: candidate } }, select: { id: true } })), "member");
         return transaction.salonMember.create({
           data: { slug, salonId: input.salonId, userId: account.id, role: input.role,

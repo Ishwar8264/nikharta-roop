@@ -16,16 +16,21 @@ export function StaffVerificationNotice({ email }: { email: string }) {
     setBusy(true); setError(null); setMessage(null);
     try {
       await sendOtpApi({ email });
-      setMessage("Verification email sent. The staff member must complete verification themselves.");
+      setMessage("Verification email sent.");
     } catch (reason) {
       setError(reason instanceof ApiError ? reason.message : "Unable to send email. Please try again.");
     } finally { setBusy(false); }
   }
 
   return (
-    <div className="space-y-3 rounded-xl border bg-muted/40 p-4">
-      <p className="text-sm">Email verification is pending. Salon access and customer bookings remain blocked until the staff member verifies their email.</p>
-      <Button type="button" variant="outline" disabled={busy} onClick={() => void resend()}>{busy ? "Sending…" : "Resend verification email"}</Button>
+    <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-4">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">Email verification pending</p>
+          <p className="text-xs text-muted-foreground">Verify email to enable salon access and bookings.</p>
+        </div>
+        <Button type="button" variant="outline" size="sm" className="shrink-0" disabled={busy} onClick={() => void resend()}>{busy ? "Sending…" : "Resend email"}</Button>
+      </div>
       {message ? <p role="status" className="text-sm">{message}</p> : null}
       {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
     </div>

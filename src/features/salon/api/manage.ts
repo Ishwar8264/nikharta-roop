@@ -46,7 +46,7 @@ export function listSalonMembersApi(salonId: string) {
 }
 
 /** Adds an existing user to the salon. */
-export function addSalonMemberApi(salonId: string, input: ({ userId: string; name?: string } | { email: string; name: string }) & { role: "STAFF" | "MANAGER"; avatar?: string | null; bannerImage?: string | null; title?: string | null; description?: string | null }) {
+export function addSalonMemberApi(salonId: string, input: ({ userId: string; name?: string } | { email: string; name: string }) & { role: "STAFF" | "MANAGER"; slug?: string; avatar?: string | null; bannerImage?: string | null; title?: string | null; description?: string | null }) {
   return api.post<{ message: string; data: { member: SalonMember } }>(`${salonPath(salonId)}/members`, input);
 }
 

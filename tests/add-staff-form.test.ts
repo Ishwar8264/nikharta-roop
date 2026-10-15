@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({ add: vi.fn(), push: vi.fn(), refresh: vi.fn(),
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }) }));
 vi.mock("sonner", () => ({ toast: { success: mocks.success, warning: mocks.warning } }));
 vi.mock("../src/features/salon/api/manage", () => ({ addSalonMemberApi: mocks.add }));
-vi.mock("../src/features/media", () => ({ MediaPickerDialog: ({ onChange }: { onChange: (images: Array<{ url: string; publicId: string }>) => void }) => createElement("button", { type: "button", onClick: () => onChange([{ url: "https://example.com/photo.png", publicId: "photo" }]) }, "Choose photo") }));
+vi.mock("../src/features/media", () => ({ MediaPickerDialog: ({ onChange, title }: { title?: string; onChange: (images: Array<{ url: string; publicId: string }>) => void }) => createElement("button", { type: "button", onClick: () => onChange([{ url: title === "Choose staff banner" ? "https://example.com/banner.png" : "https://example.com/photo.png", publicId: "photo" }]) }, title === "Choose staff banner" ? "Choose banner" : "Choose photo") }));
 import { AddStaffForm } from "../src/features/staff/add-staff-form";
 import { ApiError } from "../src/lib/api/backend.client";
 afterEach(cleanup);
@@ -28,8 +28,9 @@ it("submits a complete salon profile and opens its staff editor", async () => {
   await user.type(screen.getByLabelText("Professional title (optional)"), "Hair stylist");
   await user.type(screen.getByLabelText("Description (optional)"), "Hair specialist");
   await user.click(screen.getByRole("button", { name: "Choose photo" }));
+  await user.click(screen.getByRole("button", { name: "Choose banner" }));
   await user.click(screen.getAllByRole("button", { name: "Add staff" }).at(-1)!);
-  await waitFor(() => expect(mocks.add).toHaveBeenCalledWith("salon", { name: "Salon stylist", email: "new@example.com", avatar: "https://example.com/photo.png", title: "Hair stylist", description: "Hair specialist", role: "STAFF" }));
+  await waitFor(() => expect(mocks.add).toHaveBeenCalledWith("salon", { name: "Salon stylist", slug: "salon-stylist", email: "new@example.com", avatar: "https://example.com/photo.png", bannerImage: "https://example.com/banner.png", title: "Hair stylist", description: "Hair specialist", role: "STAFF" }));
   expect(mocks.push).toHaveBeenCalledWith("/salons/my-salon/staff/member");
   expect(mocks.success).toHaveBeenCalledWith("Staff added. Email verification is pending.");
 });
@@ -68,7 +69,32 @@ it("saves the selected manager role and normalizes profile input", async () => {
   await user.click(await screen.findByRole("option", { name: "Manager" }));
   await user.click(screen.getByRole("button", { name: "Add staff" }));
   await waitFor(() => expect(mocks.add).toHaveBeenCalledWith("salon", {
-    name: "Stylist", email: "staff@example.com", avatar: null,
+    name: "Stylist", slug: "stylist", email: "staff@example.com", avatar: null, bannerImage: null,
     title: null, description: null, role: "MANAGER",
   }));
+});
+it("removes a selected banner without clearing the profile photo", async () => {
+  const user = await open();
+  await user.type(screen.getByLabelText(/^Name/), "Salon stylist");
+  await user.type(screen.getByLabelText(/^Email/), "new@example.com");
+  await user.click(screen.getByRole("button", { name: "Choose photo" }));
+  await user.click(screen.getByRole("button", { name: "Choose banner" }));
+  await user.click(screen.getByRole("button", { name: "Remove banner image" }));
+  expect(screen.queryByRole("button", { name: "Remove banner image" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Remove profile photo" })).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Add staff" }));
+  await waitFor(() => expect(mocks.add).toHaveBeenCalledWith("salon", expect.objectContaining({ avatar: "https://example.com/photo.png", bannerImage: null })));
+});
+
+it("auto-fills the slug from the name and preserves a manually edited slug", async () => {
+  const user = await open();
+  await user.type(screen.getByLabelText(/^Name/), "Priya Sharma");
+  expect((screen.getByLabelText(/^Slug/) as HTMLInputElement).value).toBe("priya-sharma");
+  await user.clear(screen.getByLabelText(/^Slug/));
+  await user.type(screen.getByLabelText(/^Slug/), "priya-stylist");
+  await user.type(screen.getByLabelText(/^Name/), " Singh");
+  expect((screen.getByLabelText(/^Slug/) as HTMLInputElement).value).toBe("priya-stylist");
+  await user.type(screen.getByLabelText(/^Email/), "priya@example.com");
+  await user.click(screen.getByRole("button", { name: "Add staff" }));
+  await waitFor(() => expect(mocks.add).toHaveBeenCalledWith("salon", expect.objectContaining({ slug: "priya-stylist" })));
 });

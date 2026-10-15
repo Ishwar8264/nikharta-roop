@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ArrowLeft, Mail, Store } from "lucide-react";
 import { CoverImage } from "@/components/shared/cover-image";
 import { findSalonMemberBySlug } from "@/server/modules/salon/salon.repository";
 import { isResourceId } from "@/server/modules/salon/salon.helpers";
@@ -113,43 +115,59 @@ export default async function ManageStaffDetailPage({ params }: Props) {
   const initial = ((staff.name ?? staff.user.name)?.trim()[0] ?? "?").toUpperCase();
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      {staff.bannerImage ? (
-        <div className="mb-6">
-          <CoverImage src={staff.bannerImage} alt={`${staffName} banner`} aspect="wide" rounded="md" priority />
-        </div>
-      ) : null}
-      <header className="space-y-3">
-        <div className="flex items-start gap-4">
-          <Avatar size="lg">
-            {(staff.avatar ?? staff.user.avatar) ? (
-              <AvatarImage src={staff.avatar ?? staff.user.avatar ?? undefined} alt={staffName} />
-            ) : null}
-            <AvatarFallback>{initial}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-heading text-2xl font-semibold sm:text-3xl">
-                {staffName}
-              </h1>
-              <RoleBadge role={staff.role} />
-              {!staff.user.emailVerified ? <Badge variant="secondary">Pending verification</Badge> : null}
+    <main className="w-full space-y-5">
+      <Link href={routes.salonStaff(slug)} className="inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <ArrowLeft className="size-4" aria-hidden="true" /> All staff
+      </Link>
+      <header className="overflow-hidden rounded-2xl border border-border bg-card">
+        {staff.bannerImage ? (
+          <CoverImage
+            src={staff.bannerImage}
+            alt={`${staffName} banner`}
+            aspect="auto"
+            rounded="none"
+            className="h-36 sm:h-48"
+            priority
+          />
+        ) : null}
+        <div className="px-4 pb-5 sm:px-6">
+          <div className={`relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between ${staff.bannerImage ? "-mt-8" : "pt-5"}`}>
+            <div className="min-w-0">
+              <Avatar size="lg" className="size-20 bg-card ring-4 ring-card sm:size-24">
+                {(staff.avatar ?? staff.user.avatar) ? (
+                  <AvatarImage src={staff.avatar ?? staff.user.avatar ?? undefined} alt={staffName} />
+                ) : null}
+                <AvatarFallback className="text-2xl">{initial}</AvatarFallback>
+              </Avatar>
+              <h1 className="mt-3 break-words text-xl font-semibold tracking-tight sm:text-2xl">{staffName}</h1>
+              {staff.title ? <p className="mt-1 break-words text-sm text-muted-foreground">{staff.title}</p> : null}
             </div>
-            {staff.title ? <p className="mt-1 font-medium">{staff.title}</p> : null}
-            {staff.description ? <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{staff.description}</p> : null}
-            {staff.user.email ? (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {staff.user.email}
-              </p>
-            ) : null}
-            <p className="mt-1 text-sm text-muted-foreground">{salon.name}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <RoleBadge role={staff.role} />
+              <Badge variant="outline" className={staff.user.emailVerified ? "border-success/30 bg-success/10 text-success" : "text-muted-foreground"}>
+                {staff.user.emailVerified ? "Email verified" : "Email pending"}
+              </Badge>
+            </div>
           </div>
+          <div className="mt-4 flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-5">
+            <Link href={routes.salonDetail(slug)} className="inline-flex min-w-0 items-center gap-2 hover:text-foreground">
+              <Store className="size-4 shrink-0" aria-hidden="true" />
+              <span className="break-words">{salon.name}</span>
+            </Link>
+            {staff.user.email ? (
+              <a href={`mailto:${staff.user.email}`} className="inline-flex min-w-0 items-center gap-2 hover:text-foreground">
+                <Mail className="size-4 shrink-0" aria-hidden="true" />
+                <span className="break-all">{staff.user.email}</span>
+              </a>
+            ) : null}
+          </div>
+          {staff.description ? <p className="mt-4 whitespace-pre-wrap break-words border-t border-border pt-4 text-sm leading-relaxed text-muted-foreground">{staff.description}</p> : null}
         </div>
       </header>
 
-      {!staff.user.emailVerified && staff.user.email ? <div className="mt-6"><StaffVerificationNotice email={staff.user.email} /></div> : null}
+      {!staff.user.emailVerified && staff.user.email ? <StaffVerificationNotice email={staff.user.email} /> : null}
 
-      <section className="mt-6">
+      <section aria-label="Staff schedule, leaves, and skills">
         <StaffDetailPanel
           salonSlug={slug}
           staffId={staffId}
@@ -174,7 +192,7 @@ function RoleBadge({ role }: { role: "OWNER" | "MANAGER" | "STAFF" }) {
   const label =
     role === "OWNER" ? "Owner" : role === "MANAGER" ? "Manager" : "Staff";
   return (
-    <Badge variant={variant} className="uppercase">
+    <Badge variant={variant} className="font-medium">
       {label}
     </Badge>
   );

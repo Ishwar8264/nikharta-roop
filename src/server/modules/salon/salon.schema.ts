@@ -201,7 +201,10 @@ export const updateSalonSchema = createSalonSchema
 const memberRoleSchema = z.enum(["MANAGER", "STAFF"], { error: "Role must be Staff or Manager" });
 
 /** Salon-specific identity never overwrites an existing personal profile. */
+const memberSlugSchema = slugSchema.refine((value) => value !== "create" && !isResourceId(value), "Slug is reserved");
+
 const staffProfileShape = {
+  slug: memberSlugSchema.optional(),
   bannerImage: z.url().max(2048).refine((value) => value.startsWith("https://"), "Banner image must use HTTPS").nullable().optional(),
   name: z.string().trim().min(2).max(100),
   avatar: z.url().max(2048).refine((value) => value.startsWith("https://"), "Avatar must use HTTPS").nullable().optional(),
@@ -248,7 +251,7 @@ export const updateSalonStatusSchema = z.strictObject({ status: salonStatusSchem
 export const updateSalonMemberSchema = z.strictObject({
   ...staffProfileShape,
   name: staffProfileShape.name.optional(),
-  slug: slugSchema.refine((value) => value !== "create" && !isResourceId(value), "Slug is reserved").optional(),
+  slug: memberSlugSchema.optional(),
 }).refine((input) => Object.values(input).some((value) => value !== undefined), {
   message: "At least one field must be provided",
 });

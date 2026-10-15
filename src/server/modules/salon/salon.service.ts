@@ -1,3 +1,4 @@
+import { SalonMemberSlugConflictError } from "./salon.errors";
 import { updateSalonMemberSchema } from "./salon.schema";
 import { updateOwnSalonMember } from "./salon.repository";
 import "server-only";
@@ -318,6 +319,7 @@ export async function addSalonMemberByOwner(
     member = await addSalonMember({ actorId, salonId, ...validated });
   } catch (error) {
     if (isUniqueConstraintViolation(error, "userId")) throw new SalonMemberExistsError();
+    if (isUniqueConstraintViolation(error, "slug")) throw new SalonMemberSlugConflictError();
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
       throw new SalonMemberAccountUnavailableError();
     }

@@ -95,4 +95,13 @@ describe.skipIf(process.env.RUN_STAFF_DATABASE_TESTS !== "1")("staff invitation 
     expect((await repository.updateOwnSalonMember(first.userId, salonId, first.id, { slug: "my-custom-name" })).slug).toBe("my-custom-name");
   });
 
+  it("keeps an explicit create slug and rolls back a conflicting slug", async () => {
+    const owner = await prisma.salonMember.findUniqueOrThrow({ where: { userId_salonId: { userId: ownerId, salonId } } });
+    await prisma.salonMember.update({ where: { id: owner.id }, data: { slug: "reserved-name" } });
+    await expect(repository.addSalonMember({ actorId: ownerId, salonId, email, name: "Stylist", slug: "reserved-name", role: "STAFF" })).rejects.toMatchObject({ code: "P2002" });
+    expect(await prisma.user.count({ where: { email } })).toBe(0);
+    const member = await repository.addSalonMember({ actorId: ownerId, salonId, email, name: "Stylist", slug: "chosen-profile", role: "STAFF" });
+    expect(member.slug).toBe("chosen-profile");
+  });
+
 });
