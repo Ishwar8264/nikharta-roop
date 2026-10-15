@@ -1,3 +1,6 @@
+import { SalonMemberSlugConflictError } from "./salon.errors";
+import { updateSalonMemberSchema } from "./salon.schema";
+import { updateOwnSalonMember } from "./salon.repository";
 import "server-only";
 
 import { requirePartnerOnboarding } from "@/server/modules/auth/onboarding.service";
@@ -316,6 +319,7 @@ export async function addSalonMemberByOwner(
     member = await addSalonMember({ actorId, salonId, ...validated });
   } catch (error) {
     if (isUniqueConstraintViolation(error, "userId")) throw new SalonMemberExistsError();
+    if (isUniqueConstraintViolation(error, "slug")) throw new SalonMemberSlugConflictError();
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
       throw new SalonMemberAccountUnavailableError();
     }
@@ -329,7 +333,7 @@ export async function addSalonMemberByOwner(
   let verificationEmailSent: boolean | null = null;
   if (!member.user.emailVerified && member.user.email) {
     try {
-      await sendOtp({ email: member.user.email });
+      await sendOtp({ email: member.user.email, staffActivation: true });
       verificationEmailSent = true;
     } catch (error) {
       verificationEmailSent = error instanceof OtpCooldownError;
@@ -508,4 +512,10 @@ function isUniqueConstraintViolation(error: unknown, field: string): boolean {
   // Keep compatibility with adapters that expose only the rendered
   // constraint name, for example `Salon_placeId_key`.
   return error.message.includes(field);
+}
+
+/** Members and salon owners may edit salon identity; account and role fields are rejected. */
+export async function updateOwnSalonMemberProfile(actorId: string, salonId: string, memberId: string, input: unknown) {
+  const data = updateSalonMemberSchema.parse(input);
+  return updateOwnSalonMember(actorId, salonId, memberId, data);
 }

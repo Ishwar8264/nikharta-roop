@@ -100,7 +100,7 @@ export default async function SalonServicesPage({
         {canManageServices ? (
           <div className="flex flex-col gap-2 sm:flex-row xl:shrink-0">
             <NavLink
-              href={routes.salonServicesManage(slug)}
+              href={routes.salonServiceCatalog(slug)}
               variant="outline"
               markActive={false}
               icon={<Settings2 className="size-4" />}

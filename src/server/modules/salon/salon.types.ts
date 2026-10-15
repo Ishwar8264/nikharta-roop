@@ -92,6 +92,8 @@ export interface PaginatedSalons {
 
 /** Public shape of a salon member. */
 export interface PublicSalonMember {
+  bannerImage?: string | null;
+  slug?: string | null;
   id: string;
   userId: string;
   salonId: string;

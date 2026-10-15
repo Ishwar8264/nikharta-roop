@@ -37,10 +37,11 @@ describe.skipIf(process.env.RUN_STAFF_DATABASE_TESTS !== "1")("staff invitation 
     await prisma.user.deleteMany({ where: { id: { in: ids } } });
   });
   afterAll(async () => { if (prisma) await prisma.$disconnect(); });
-  function add() { return repository.addSalonMember({ actorId: ownerId, salonId, email, name: "Salon stylist", avatar: "https://example.invalid/photo.png", title: "Hair stylist", description: "Salon-specific biography", role: "STAFF" }); }
+  function add() { return repository.addSalonMember({ actorId: ownerId, salonId, email, name: "Salon stylist", avatar: "https://example.invalid/photo.png", bannerImage: "https://example.invalid/original-banner.png", title: "Hair stylist", description: "Salon-specific biography", role: "STAFF" }); }
   it("creates a pending profile, then activates only after recipient OTP and password setup", async () => {
     const member = await add();
     expect(member.title).toBe("Hair stylist");
+    expect(member.bannerImage).toBe("https://example.invalid/original-banner.png");
     expect(member.user.emailVerified).toBe(false);
     expect(await repository.findSalonForViewer({ salonId, userId: member.userId })).toBeNull();
     expect(await staffRepository.findCallerMembership(salonId, member.userId)).toBeNull();
@@ -72,4 +73,37 @@ describe.skipIf(process.env.RUN_STAFF_DATABASE_TESTS !== "1")("staff invitation 
     expect(await prisma.user.count({ where: { email } })).toBe(1);
     expect(await prisma.salonMember.count({ where: { salonId } })).toBe(2);
   });
+  it("allows self profile edits without changing personal identity or the URL on a name edit", async () => {
+    const member = await add();
+    await prisma.user.update({ where: { id: member.userId }, data: { emailVerified: true } });
+    expect(member.slug).toBe("salon-stylist");
+    const updated = await repository.updateOwnSalonMember(member.userId, salonId, member.id, { name: "New display name", title: null, bannerImage: "https://example.invalid/banner.png" });
+    expect(updated).toMatchObject({ name: "New display name", slug: "salon-stylist", title: null, role: "STAFF", bannerImage: "https://example.invalid/banner.png" });
+    expect(await repository.findSalonMemberBySlug(salonId, "salon-stylist")).toEqual({ id: member.id });
+    expect((await repository.updateOwnSalonMember(member.userId, salonId, member.id, { bannerImage: null })).bannerImage).toBeNull();
+    expect(await prisma.user.findUnique({ where: { id: member.userId } })).toMatchObject({ name: "Salon stylist" });
+    expect((await repository.updateOwnSalonMember(ownerId, salonId, member.id, { title: "Owner updated" })).title).toBe("Owner updated");
+    await prisma.salonMember.update({ where: { userId_salonId: { userId: ownerId, salonId } }, data: { role: "MANAGER" } });
+    await expect(repository.updateOwnSalonMember(ownerId, salonId, member.id, { name: "Unauthorized" })).rejects.toMatchObject({ code: "P2025" });
+    await expect(repository.updateOwnSalonMember(member.userId, "missing-salon", member.id, { name: "Unauthorized" })).rejects.toMatchObject({ code: "P2025" });
+  });
+  it("reserves unique slugs and rejects duplicate custom slugs", async () => {
+    const owner = await prisma.salonMember.findUniqueOrThrow({ where: { userId_salonId: { userId: ownerId, salonId } } });
+    await prisma.salonMember.update({ where: { id: owner.id }, data: { slug: "salon-stylist" } });
+    const first = await add();
+    expect(first.slug).toBe("salon-stylist-2");
+    await prisma.user.update({ where: { id: first.userId }, data: { emailVerified: true } });
+    await expect(repository.updateOwnSalonMember(first.userId, salonId, first.id, { slug: "salon-stylist" })).rejects.toMatchObject({ code: "P2002" });
+    expect((await repository.updateOwnSalonMember(first.userId, salonId, first.id, { slug: "my-custom-name" })).slug).toBe("my-custom-name");
+  });
+
+  it("keeps an explicit create slug and rolls back a conflicting slug", async () => {
+    const owner = await prisma.salonMember.findUniqueOrThrow({ where: { userId_salonId: { userId: ownerId, salonId } } });
+    await prisma.salonMember.update({ where: { id: owner.id }, data: { slug: "reserved-name" } });
+    await expect(repository.addSalonMember({ actorId: ownerId, salonId, email, name: "Stylist", slug: "reserved-name", role: "STAFF" })).rejects.toMatchObject({ code: "P2002" });
+    expect(await prisma.user.count({ where: { email } })).toBe(0);
+    const member = await repository.addSalonMember({ actorId: ownerId, salonId, email, name: "Stylist", slug: "chosen-profile", role: "STAFF" });
+    expect(member.slug).toBe("chosen-profile");
+  });
+
 });

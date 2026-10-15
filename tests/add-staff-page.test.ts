@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../src/lib/auth/get-session", () => ({ getSession: mocks.session }));
 vi.mock("../src/server/modules/salon/salon.service", () => ({ getSalonForServiceManagement: mocks.salon }));
 vi.mock("../src/features/staff/add-staff-form", () => ({ AddStaffForm: () => null }));
-import AddStaffPage from "../src/app/(public)/salons/[slug]/manage/staff/create/page";
+import AddStaffPage from "../src/app/(public)/salons/[slug]/staff/create/page";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -18,7 +18,7 @@ beforeEach(() => {
 const props = () => ({ params: Promise.resolve({ slug: "my-salon" }) });
 it("redirects signed-out users back to the create route after login", async () => {
   mocks.session.mockResolvedValue(null);
-  await expect(AddStaffPage(props())).rejects.toThrow("redirect:/login?redirect=%2Fsalons%2Fmy-salon%2Fmanage%2Fstaff%2Fcreate");
+  await expect(AddStaffPage(props())).rejects.toThrow("redirect:/login?redirect=%2Fsalons%2Fmy-salon%2Fstaff%2Fcreate");
   expect(mocks.salon).not.toHaveBeenCalled();
 });
 it("does not render the owner-only form for managers", async () => {

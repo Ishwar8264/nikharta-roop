@@ -8,6 +8,7 @@ import { Resend } from "resend";
 import {
   AUTH_EMAIL_LOGO_CONTENT_ID,
   createOtpEmail,
+  createLoginLockoutEmail,
   createPasswordResetEmail,
 } from "@/lib/email/auth-email.template";
 
@@ -27,7 +28,7 @@ let logoContentPromise: Promise<Buffer> | undefined;
  * server console instead of being sent. This keeps onboarding friction low
  * while production fails fast instead of leaking codes into server logs.
  */
-export async function sendOtpEmail(to: string, code: string, setup = false): Promise<void> {
+export async function sendOtpEmail(to: string, code: string, setup = false, staffActivation = false): Promise<void> {
   assertEmailConfiguration();
 
   if (!resend) {
@@ -35,7 +36,7 @@ export async function sendOtpEmail(to: string, code: string, setup = false): Pro
     return;
   }
 
-  const message = createOtpEmail(code, to, setup);
+  const message = createOtpEmail(code, to, setup, staffActivation);
   const { error } = await resend.emails.send({
     from: emailFrom,
     to,
@@ -71,6 +72,19 @@ export async function sendPasswordResetEmail(
   if (error) {
     throw new Error(`Resend rejected the message: ${error.message}`);
   }
+}
+
+/** Sends at most once per lock transition; callers handle delivery failures. */
+export async function sendLoginLockoutEmail(to: string): Promise<void> {
+  assertEmailConfiguration();
+  if (!resend) return;
+  const { error } = await resend.emails.send({
+    from: emailFrom,
+    to,
+    ...createLoginLockoutEmail(),
+    attachments: [await getLogoAttachment()],
+  });
+  if (error) throw new Error(`Resend rejected the message: ${error.message}`);
 }
 
 /** Prevents production from logging OTPs or using Resend's development sender. */

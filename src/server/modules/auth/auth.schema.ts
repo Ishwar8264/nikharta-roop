@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  COMMON_PASSWORD_MESSAGE,
+  isCommonPassword,
+} from "@/server/auth/breached-password";
+
 const emailSchema = z
   .string({ error: "Email must be a string" })
   .trim()
@@ -33,7 +38,10 @@ export const registerUserSchema = z
     password: z
       .string({ error: "Password must be a string" })
       .min(8, "Password must contain at least 8 characters")
-      .max(128, "Password must contain at most 128 characters"),
+      .max(128, "Password must contain at most 128 characters")
+      .refine((value) => !isCommonPassword(value), {
+        message: COMMON_PASSWORD_MESSAGE,
+      }),
   })
   .refine((input) => Boolean(input.email), {
     message: "Email is required; phone authentication is not available yet",
@@ -80,7 +88,9 @@ export const changePasswordSchema = z.strictObject({
     .string({ error: "Current password must be a string" })
     .min(1, "Current password is required")
     .max(128, "Current password must contain at most 128 characters"),
-  newPassword: passwordRuleSchema,
+  newPassword: passwordRuleSchema.refine((value) => !isCommonPassword(value), {
+    message: COMMON_PASSWORD_MESSAGE,
+  }),
 });
 
 /**

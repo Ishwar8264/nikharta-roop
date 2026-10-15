@@ -21,10 +21,14 @@ interface AuthEmailContent {
 }
 
 /** Creates every representation required for an email-verification message. */
-export function createOtpEmail(code: string, email?: string, setup = false): AuthEmailMessage {
+export function createOtpEmail(code: string, email?: string, setup = false, staffActivation = false): AuthEmailMessage {
   const verificationUrl = new URL("/verify-otp", siteConfig.url);
   if (email) verificationUrl.searchParams.set("email", email);
-  if (setup) verificationUrl.searchParams.set("setup", "1");
+  verificationUrl.searchParams.set("sent", "1");
+  if (staffActivation || setup) verificationUrl.searchParams.set("flow", "staff");
+  if (setup) {
+    verificationUrl.searchParams.set("setup", "1");
+  }
   return {
     subject: `${code} is your ${siteConfig.name} verification code`,
     html: renderAuthEmail({
@@ -58,6 +62,22 @@ export function createPasswordResetEmail(code: string): AuthEmailMessage {
         "If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.",
     }),
     text: `${siteConfig.name}\n\nReset your password\n\nYour password reset code is: ${code}\n\nThis code expires in 10 minutes and can only be used once.\n\nIf you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.\n\nNeed help? ${siteConfig.contact.email}`,
+  };
+}
+
+/** Uses the existing brand shell for the once-per-lock security notification. */
+export function createLoginLockoutEmail(): AuthEmailMessage {
+  return {
+    subject: `${siteConfig.name} sign-in temporarily paused`,
+    html: renderAuthEmail({
+      preheader: "Repeated unsuccessful sign-in attempts triggered a temporary lock.",
+      eyebrow: "Account security",
+      title: "Sign-in temporarily paused",
+      description: "We detected repeated unsuccessful password attempts. Password sign-in is paused for 15 minutes. You can use password recovery if needed.",
+      code: "",
+      securityMessage: "If this was not you, reset your password from the Nikharta Roop website. Never share your password or verification codes.",
+    }),
+    text: `${siteConfig.name}\n\nRepeated unsuccessful sign-in attempts triggered a 15-minute pause. If this was not you, reset your password from the Nikharta Roop website. Never share your password or verification codes.`,
   };
 }
 
@@ -109,6 +129,7 @@ function renderAuthEmail(content: AuthEmailContent): string {
                     <h1 style="margin:0 0 14px; color:#321827; font-family:Georgia,'Times New Roman',serif; font-size:34px; line-height:42px; font-weight:700;">${content.title}</h1>
                     <p style="margin:0; max-width:500px; color:#69545f; font-size:16px; line-height:26px;">${content.description}</p>
 
+                    ${content.code ? `
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%; margin-top:28px;">
                       <tr>
                         <td align="center" style="background-color:#fdf7f4; border:1px solid #efd7d8; border-radius:14px; padding:26px 16px 24px;">
@@ -126,6 +147,7 @@ function renderAuthEmail(content: AuthEmailContent): string {
                         </td>
                       </tr>
                     </table>
+                    ` : ""}
                   </td>
                 </tr>
                 <tr>

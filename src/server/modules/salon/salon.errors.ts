@@ -69,3 +69,11 @@ export class SalonMemberAccountUnavailableError extends Error {
     this.name = "SalonMemberAccountUnavailableError";
   }
 }
+
+/** The member chose a slug already used by another member of the same salon. */
+export class SalonMemberSlugConflictError extends Error {
+  constructor() {
+    super("This member slug is already in use in this salon");
+    this.name = "SalonMemberSlugConflictError";
+  }
+}

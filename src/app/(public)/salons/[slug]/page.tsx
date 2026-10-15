@@ -85,6 +85,7 @@ export default async function SalonDetailPage({ params }: PageProps) {
     <SalonDetail
       salon={salon}
       canEdit={canManage}
+      canAddStaff={membership?.viewerRole === "OWNER"}
       isFavorited={favoriteCheck.isFavorited}
       favoriteId={favoriteCheck.favoriteId}
       currentUserId={user?.id ?? null}

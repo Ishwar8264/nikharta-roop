@@ -18,6 +18,8 @@ export type ReplaceSkillsInput = z.infer<typeof replaceSkillsSchema>;
 
 /** Public shape of a staff member (a SalonMember joined with its User). */
 export interface PublicStaffMember {
+  bannerImage?: string | null;
+  slug?: string | null;
   id: string;
   userId: string;
   salonId: string;

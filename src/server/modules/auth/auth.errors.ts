@@ -36,3 +36,24 @@ export class InvalidCurrentPasswordError extends Error {
     this.name = "InvalidCurrentPasswordError";
   }
 }
+
+/** Thrown when the account is temporarily locked after repeated failed logins. */
+export class AccountLockedError extends Error {
+  public readonly retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds: number) {
+    super(
+      `Too many failed attempts — try again in ${retryAfterSeconds} seconds`,
+    );
+    this.name = "AccountLockedError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+/** Thrown when a password is too common / breached. */
+export class WeakPasswordError extends Error {
+  constructor(message = "This password is too common — please choose a stronger one") {
+    super(message);
+    this.name = "WeakPasswordError";
+  }
+}

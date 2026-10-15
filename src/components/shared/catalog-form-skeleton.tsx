@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Matches the catalogue form's sections and responsive spacing while data loads. */
 export function CatalogFormSkeleton({ entity = "service" }: { entity?: "service" | "product" }) {
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8" role="status" aria-label={`Loading ${entity} form`}>
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8" role="status" aria-busy="true" aria-label={`Loading ${entity} form`}>
       <span className="sr-only">Loading {entity} form…</span>
       <Card className="gap-0 overflow-visible py-0" aria-hidden="true">
         <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">

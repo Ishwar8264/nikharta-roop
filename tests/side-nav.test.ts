@@ -58,7 +58,7 @@ describe("SideNav", () => {
   it("keeps a submenu open on a child route outside the parent URL", () => {
     const previousPath = navigation.pathname;
     try {
-      navigation.pathname = "/salons/glow/manage/products/create";
+      navigation.pathname = "/salons/glow/catalog/products/create";
       const html = renderToStaticMarkup(createElement(SideNav, { items: [{
         href: "/salons/glow/products", label: "Products", subItems: [
           { href: "/salons/glow/products", label: "All products", matchNested: false },

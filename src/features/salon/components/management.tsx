@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -133,7 +132,7 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
   return (
     <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
       <header>
-        <h1 className="mt-4 font-heading text-3xl font-semibold">Manage {salon.name}</h1>
+        <h1 className="mt-4 font-heading text-3xl font-semibold">Edit {salon.name}</h1>
       </header>
 
       <form onSubmit={save} className="space-y-5 rounded-xl border p-6">
@@ -176,7 +175,6 @@ export function SalonManagement({ salon, currentUserId, verification }: Props) {
             </li>
           ))}
         </ul>
-        {isOwner ? <Button render={<Link href={routes.salonStaffCreate(salon.slug)} />}>Add staff</Button> : null}
       </section>
 
       {isOwner ? <section className="space-y-3 rounded-xl border border-destructive/40 p-6"><h2 className="text-xl font-semibold">Delete salon</h2><Button type="button" variant="destructive" disabled={busy} onClick={deleteSalon}>Delete salon</Button></section> : null}

@@ -1,0 +1,6 @@
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonDirectoryShell, SkeletonField } from "@/features/salon/components/loading-parts";
+
+export default function SalonCreateLoading() {
+  return <div role="status" aria-label="Loading salon form" aria-busy="true"><SkeletonDirectoryShell><div className="border bg-card"><div className="space-y-2 border-b px-5 py-5 sm:px-8 sm:py-6"><Skeleton className="h-9 w-40" /><Skeleton className="h-4 w-64 max-w-full" /></div><div className="space-y-8 px-5 py-6 sm:px-8"><div className="space-y-4"><Skeleton className="h-6 w-36" /><div className="grid gap-4 sm:grid-cols-2">{[0, 1, 2, 3].map((key) => <SkeletonField key={key} />)}</div><Skeleton className="h-32 w-full" /></div><div className="space-y-4"><Skeleton className="h-6 w-28" /><div className="grid gap-4 sm:grid-cols-2">{[0, 1, 2, 3].map((key) => <SkeletonField key={key} />)}</div><Skeleton className="h-52 w-full rounded-xl" /></div><div className="grid gap-4 sm:grid-cols-2">{[0, 1].map((key) => <div key={key} className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="aspect-[21/9] min-h-36 w-full rounded-md" /></div>)}</div></div><div className="flex justify-end gap-3 border-t px-5 py-4 sm:px-8"><Skeleton className="h-8 w-20" /><Skeleton className="h-8 w-28" /></div></div></SkeletonDirectoryShell></div>;
+}

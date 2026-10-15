@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { setSessionCookies } from "@/server/auth/cookies";
 import {
   AccountDeactivatedError,
+  AccountLockedError,
   EmailNotVerifiedError,
   InvalidCredentialsError,
 } from "@/server/modules/auth/auth.errors";
@@ -71,6 +72,13 @@ export async function POST(request: Request): Promise<Response> {
 
     return response;
   } catch (error) {
+    if (error instanceof AccountLockedError) {
+      return NextResponse.json(
+        { message: "Too many failed sign-in attempts. Try again later or reset your password." },
+        { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } },
+      );
+    }
+
     if (error instanceof InvalidCredentialsError) {
       return NextResponse.json({ message: error.message }, { status: 401 });
     }

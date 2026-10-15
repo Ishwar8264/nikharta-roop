@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, MailCheck, Send } from "lucide-react";
+import { ArrowLeft, MailCheck, Send, LockKeyhole } from "lucide-react";
 
+import { PasswordField } from "@/features/auth/shared/components/password-field";
 import { Field } from "@/features/auth/shared/components/field";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
@@ -12,19 +13,7 @@ import { FormError } from "@/features/auth/shared/components/form-error";
 import { useVerifyOtp } from "../hooks/useVerifyOtp";
 import { OtpInput } from "../../shared/otpInput";
 
-/**
- * Two-step email verification form.
- *
- * Why email comes from the URL, not a form field:
- * The register flow already established the email; asking again would be a
- * chance for typos and a way to probe other accounts. The query param keeps
- * the page a pure consumer of an already-known fact.
- *
- * Why a missing email renders a fallback instead of a redirect:
- * A redirect would break browser Back after verify, and any link that drops
- * the query. The fallback ("go to login / register") is friendlier and keeps
- * the page stateless.
- */
+/** Reuses the account verification flow for registration and salon membership invitations. */
 export function VerifyOtpForm() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
@@ -33,7 +22,7 @@ export function VerifyOtpForm() {
     return <MissingEmail />;
   }
 
-  return <VerifyOtpFlow email={email} setup={searchParams.get("setup") === "1"} />;
+  return <VerifyOtpFlow key={email} email={email} setup={searchParams.get("setup") === "1"} codeAlreadySent={searchParams.get("sent") === "1"} staffActivation={searchParams.get("flow") === "staff"} />;
 }
 
 /**
@@ -41,9 +30,10 @@ export function VerifyOtpForm() {
  * Hooks cannot be called conditionally. The parent decides whether the flow
  * is even possible; this child assumes a valid email and owns the state.
  */
-function VerifyOtpFlow({ email, setup }: { email: string; setup: boolean }) {
+function VerifyOtpFlow({ email, setup, codeAlreadySent, staffActivation }: { email: string; setup: boolean; codeAlreadySent: boolean; staffActivation: boolean }) {
   const {
     step,
+    signInUrl,
     code,
     setCode,
     newPassword,
@@ -55,7 +45,18 @@ function VerifyOtpFlow({ email, setup }: { email: string; setup: boolean }) {
     isVerifying,
     error,
     resendIn,
-  } = useVerifyOtp(email, setup);
+  } = useVerifyOtp(email, setup, codeAlreadySent, staffActivation);
+
+  if (step === "complete") {
+    return (
+      <div className="w-full space-y-3 text-center" role="status">
+        <MailCheck className="mx-auto size-10 text-success" aria-hidden="true" />
+        <h1 className="text-xl font-semibold">Email verified</h1>
+        <p className="text-sm text-muted-foreground">Your salon account is ready.</p>
+        <Button render={<Link href={signInUrl} />}>Sign in</Button>
+      </div>
+    );
+  }
 
   const isCodeSent = step === "verify";
 
@@ -114,7 +115,7 @@ function VerifyOtpFlow({ email, setup }: { email: string; setup: boolean }) {
             autoFocus
           />
 
-          {needsPassword ? <Field id="setup-password" label="Create your password" type="password" autoComplete="new-password" minLength={8} maxLength={128} required disabled={isVerifying} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} description="Choose your own password. Existing account passwords stay unchanged." /> : null}
+          {needsPassword ? <PasswordField id="setup-password" label="Create your password" placeholder="Create a strong password" icon={<LockKeyhole className="size-4" />} autoComplete="new-password" minLength={8} maxLength={128} required disabled={isVerifying} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /> : null}
 
           <Button
             type="submit"
@@ -142,7 +143,7 @@ function VerifyOtpFlow({ email, setup }: { email: string; setup: boolean }) {
         </form>
       )}
 
-      <div className="border-t border-border pt-4 text-center">
+      {!staffActivation ? <div className="border-t border-border pt-4 text-center">
         <Link
           href={routes.login}
           className="inline-flex min-h-6 items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -150,7 +151,7 @@ function VerifyOtpFlow({ email, setup }: { email: string; setup: boolean }) {
           <ArrowLeft className="size-3.5" aria-hidden="true" />
           Wrong email? Back to sign in
         </Link>
-      </div>
+      </div> : null}
     </div>
   );
 }
@@ -163,26 +164,12 @@ function MissingEmail() {
         <h1 className="font-heading text-2xl font-bold tracking-tight">
           Verify your email
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Open the verification link from your registration flow to continue.
-        </p>
+        <p className="text-sm text-muted-foreground">Enter the email linked to your account.</p>
       </header>
-
-      <div className="flex gap-2">
-        <Button
-          render={<Link href={routes.login} />}
-            variant="outline"
-          className="flex-1"
-        >
-          Sign in
-        </Button>
-        <Button
-          render={<Link href={routes.register} />}
-            className="flex-1"
-        >
-          Create account
-        </Button>
-      </div>
+      <form action={routes.verifyOtp} method="get" className="space-y-4">
+        <Field id="verification-email" name="email" label="Email address" type="email" autoComplete="email" maxLength={254} required />
+        <Button type="submit" className="w-full">Continue</Button>
+      </form>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ user: { upsert: vi.fn(), findUnique: vi.fn() }, salon: { findFirst: vi.fn() }, salonMember: { findFirst: vi.fn(), create: vi.fn() }, $transaction: vi.fn() }));
+const mocks = vi.hoisted(() => ({ user: { upsert: vi.fn(), findUnique: vi.fn() }, salon: { findFirst: vi.fn() }, salonMember: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn() }, $transaction: vi.fn() }));
 vi.mock("../src/lib/prisma", () => ({ prisma: mocks }));
 import { addSalonMember, findSalonForViewer } from "../src/server/modules/salon/salon.repository";
 import { SalonMemberAccountUnavailableError, SalonRoleInsufficientError } from "../src/server/modules/salon/salon.errors";
@@ -15,7 +15,7 @@ beforeEach(() => {
 it("creates an unverified account and salon-specific profile atomically", async () => {
   await addSalonMember(input);
   expect(mocks.user.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { email: input.email }, create: { email: input.email, name: input.name, emailVerified: false }, update: {} }));
-  expect(mocks.salonMember.create).toHaveBeenCalledWith(expect.objectContaining({ data: { salonId: "salon", userId: "staff", role: "STAFF", name: "Stylist", avatar: input.avatar, title: input.title, description: input.description } }));
+  expect(mocks.salonMember.create).toHaveBeenCalledWith(expect.objectContaining({ data: { slug: "stylist", bannerImage: undefined, salonId: "salon", userId: "staff", role: "STAFF", name: "Stylist", avatar: input.avatar, title: input.title, description: input.description } }));
   expect(mocks.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" });
 });
 it("preserves existing personal profiles through an empty upsert update", async () => {

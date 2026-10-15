@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
  * wrapper — the markup diverges too much to share cleanly. A tiny duplication
  * beats a component with five conditional slots.
  */
-interface PasswordFieldProps {
+interface PasswordFieldProps extends Pick<React.ComponentProps<typeof Input>, "value" | "onChange" | "minLength" | "maxLength" | "required"> {
   id: string;
   label: string;
   autoComplete?: "new-password" | "current-password";
@@ -38,6 +38,7 @@ export function PasswordField({
   icon,
   error,
   disabled,
+  ...inputProps
 }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const errorId = `${id}-error`;
@@ -55,6 +56,7 @@ export function PasswordField({
           </span>
         ) : null}
         <Input
+          {...inputProps}
           id={id}
           name={id}
           type={visible ? "text" : "password"}

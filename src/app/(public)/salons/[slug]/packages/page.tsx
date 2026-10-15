@@ -109,7 +109,7 @@ export default async function SalonPackagesPage({ params }: Props) {
         </div>
         {canManage ? (
           <NavLink
-            href={routes.salonPackagesManage(slug)}
+            href={routes.salonPackageCatalog(slug)}
             variant="outline"
             markActive={false}
           >
