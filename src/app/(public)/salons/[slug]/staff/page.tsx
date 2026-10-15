@@ -51,7 +51,7 @@ export default async function ManageStaffPage({ params }: Props) {
   try {
     [salon, staff] = await Promise.all([
       getSalonForServiceManagement(slug, user.id),
-      listStaff(user.id, slug, { limit: 50 }),
+      listStaff(user.id, slug, { limit: 50, role: "STAFF" }),
     ]);
   } catch (error) {
     if (
@@ -64,20 +64,15 @@ export default async function ManageStaffPage({ params }: Props) {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <header className="space-y-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="font-heading text-3xl font-semibold">Staff</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {salon.name} · {staff.items.length} member
-              {staff.items.length === 1 ? "" : "s"}
-            </p>
-          </div>
-        </div>
+    <main className="w-full space-y-3">
+      <header className="flex items-center justify-between gap-3 border-b border-border pb-3">
+        <h1 className="text-base font-semibold">Team members</h1>
+        <span className="text-sm tabular-nums text-muted-foreground">
+          {staff.items.length}{staff.hasMore ? "+" : ""} member{staff.items.length === 1 && !staff.hasMore ? "" : "s"}
+        </span>
       </header>
 
-      <section className="mt-6">
+      <section aria-label={`${salon.name} staff`}>
         <StaffList
           staff={staff.items}
           salonSlug={slug}

@@ -1,4 +1,4 @@
-import { UsersRound } from "lucide-react";
+import { ArrowUpRight, UsersRound } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/shared/empty-state";
@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
-import { cn } from "@/lib/utils";
 import {
   getSchedule,
   listLeaves,
@@ -71,7 +70,7 @@ export async function StaffList({
       <EmptyState
         icon={UsersRound}
         title="No team members yet."
-        description="Salon owners can add registered staff using the Add staff button."
+        description="Add your first team member from the salon overview to get started."
       />
     );
   }
@@ -110,23 +109,27 @@ export async function StaffList({
       </ul>
 
       {/* Desktop: table */}
-      <div className="hidden overflow-hidden rounded-xl border lg:block">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-card lg:block">
+        <table className="w-full min-w-[800px] table-fixed text-sm">
+          <caption className="sr-only">Salon team members, roles, email verification, schedules, and leave records</caption>
+          <thead className="bg-muted/30 text-left text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="px-4 py-3 font-medium">
-                Name
+              <th scope="col" className="w-[30%] px-5 py-3.5 font-medium">
+                Team member
               </th>
-              <th scope="col" className="px-4 py-3 font-medium">
+              <th scope="col" className="w-[12%] px-4 py-3.5 font-medium">
                 Role
               </th>
-              <th scope="col" className="px-4 py-3 font-medium">
+              <th scope="col" className="w-[14%] px-4 py-3.5 font-medium">
+                Email status
+              </th>
+              <th scope="col" className="w-[20%] px-4 py-3.5 font-medium">
                 Schedule
               </th>
-              <th scope="col" className="px-4 py-3 font-medium">
+              <th scope="col" className="w-[10%] px-4 py-3.5 font-medium">
                 Leaves
               </th>
-              <th scope="col" className="px-4 py-3" />
+              <th scope="col" className="w-[14%] px-4 py-3"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -157,10 +160,10 @@ function StaffCard({
   const href = routes.salonStaffDetail(salonSlug, row.member.id);
 
   return (
-    <li className="rounded-xl border bg-card p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Avatar>
+    <li className="rounded-2xl border border-border bg-card p-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar size="lg">
             {(row.member.avatar ?? row.member.user.avatar) ? (
               <AvatarImage
                 src={row.member.avatar ?? row.member.user.avatar ?? undefined}
@@ -170,8 +173,8 @@ function StaffCard({
             <AvatarFallback>{initial}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate font-medium leading-tight">{name}</p>
-            {row.member.title ? <p className="text-xs text-muted-foreground">{row.member.title}</p> : null}
+            <Link href={href} className="block truncate font-semibold leading-6 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{name}</Link>
+            {row.member.title ? <p className="truncate text-xs text-muted-foreground">{row.member.title}</p> : null}
             {row.member.user.email ? (
               <p className="truncate text-xs text-muted-foreground">
                 {row.member.user.email}
@@ -179,12 +182,12 @@ function StaffCard({
             ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2"><RoleBadge role={row.member.role} />{!row.member.user.emailVerified ? <Badge variant="secondary">Pending verification</Badge> : null}</div>
+        <div className="flex flex-wrap gap-2"><RoleBadge role={row.member.role} /><EmailVerificationBadge verified={row.member.user.emailVerified} /></div>
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+      <dl className="mt-4 grid grid-cols-2 gap-3 rounded-lg bg-muted/30 p-3 text-sm">
         <div>
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+          <dt className="text-xs text-muted-foreground">
             Schedule
           </dt>
           <dd className="mt-0.5 font-medium text-foreground">
@@ -192,7 +195,7 @@ function StaffCard({
           </dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+          <dt className="text-xs text-muted-foreground">
             Leaves
           </dt>
           <dd className="mt-0.5 font-medium text-foreground">
@@ -206,9 +209,10 @@ function StaffCard({
           variant="outline"
           size="sm"
           render={<Link href={href} />}
-          aria-label={`Manage ${name}`}
+          aria-label={`View profile for ${name}`}
         >
-          Manage
+          Profile
+          <ArrowUpRight className="size-3.5" aria-hidden="true" />
         </Button>
       </div>
     </li>
@@ -228,10 +232,10 @@ function StaffRowComponent({
   const href = routes.salonStaffDetail(salonSlug, row.member.id);
 
   return (
-    <tr className="hover:bg-muted/40">
-      <td className="px-4 py-3 align-middle">
-        <div className="flex items-center gap-3">
-          <Avatar size="sm">
+    <tr className="transition-colors hover:bg-muted/25 focus-within:bg-muted/25">
+      <td className="px-5 py-5 align-middle">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar size="lg">
             {(row.member.avatar ?? row.member.user.avatar) ? (
               <AvatarImage
                 src={row.member.avatar ?? row.member.user.avatar ?? undefined}
@@ -241,8 +245,8 @@ function StaffRowComponent({
             <AvatarFallback>{initial}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate font-medium leading-tight">{name}</p>
-            {row.member.title ? <p className="text-xs text-muted-foreground">{row.member.title}</p> : null}
+            <Link href={href} className="block truncate font-semibold leading-6 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{name}</Link>
+            {row.member.title ? <p className="truncate text-xs text-muted-foreground">{row.member.title}</p> : null}
             {row.member.user.email ? (
               <p className="truncate text-xs text-muted-foreground">
                 {row.member.user.email}
@@ -252,7 +256,10 @@ function StaffRowComponent({
         </div>
       </td>
       <td className="px-4 py-3 align-middle">
-        <div className="flex flex-wrap gap-2"><RoleBadge role={row.member.role} />{!row.member.user.emailVerified ? <Badge variant="secondary">Pending verification</Badge> : null}</div>
+        <RoleBadge role={row.member.role} />
+      </td>
+      <td className="px-4 py-3 align-middle">
+        <EmailVerificationBadge verified={row.member.user.emailVerified} />
       </td>
       <td className="px-4 py-3 align-middle text-muted-foreground">
         {summarizeSchedule(row.schedule)}
@@ -265,27 +272,37 @@ function StaffRowComponent({
           variant="outline"
           size="sm"
           render={<Link href={href} />}
-          aria-label={`Manage ${name}`}
+          aria-label={`View profile for ${name}`}
         >
-          Manage
+          Profile
+          <ArrowUpRight className="size-3.5" aria-hidden="true" />
         </Button>
       </td>
     </tr>
   );
 }
 
+/** Reflects the account email verification flag returned with each staff member. */
+function EmailVerificationBadge({ verified }: { verified: boolean }) {
+  return (
+    <Badge
+      variant="outline"
+      className={verified ? "gap-1.5 border-success/30 bg-success/10 text-success" : "gap-1.5 text-muted-foreground"}
+      aria-label={`Email verification: ${verified ? "Verified" : "Pending"}`}
+    >
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
+      {verified ? "Verified" : "Pending"}
+    </Badge>
+  );
+}
+
 /** Pill coloured by salon role so the hierarchy reads at a glance. */
 function RoleBadge({ role }: { role: PublicStaffMember["role"] }) {
-  const variant =
-    role === "OWNER"
-      ? "default"
-      : role === "MANAGER"
-        ? "secondary"
-        : "outline";
+  const variant = role === "STAFF" ? "outline" : "secondary";
   const label =
     role === "OWNER" ? "Owner" : role === "MANAGER" ? "Manager" : "Staff";
   return (
-    <Badge variant={variant} className={cn("uppercase")}>
+    <Badge variant={variant} className="font-medium">
       {label}
     </Badge>
   );
