@@ -1,6 +1,9 @@
 "use client";
 
 import { CalendarDays, CalendarOff, Scissors, Plus, Pencil } from "lucide-react";
+import Link from "next/link";
+import { routes } from "@/config/routes";
+import { WEEKDAYS, WEEKDAY_LABELS } from "./staff-schedule-editor";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,14 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api/backend.client";
 
 import {
   cancelLeaveApi,
   createLeaveApi,
-  replaceScheduleApi,
   replaceSkillsApi,
   updateLeaveApi,
 } from "./api";
@@ -114,8 +115,8 @@ export function StaffDetailPanel({
       <TabsContent value="schedule">
         <ScheduleTab
           salonSlug={salonSlug}
-          staffId={staffId}
           schedule={schedule}
+          staffRef={staff.slug ?? staff.id}
           canEdit={isOwner}
         />
       </TabsContent>
@@ -150,199 +151,29 @@ export function StaffDetailPanel({
  * Schedule tab
  * ──────────────────────────────────────────────────────────────────────────── */
 
-const WEEKDAYS = [
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY",
-] as const;
-
-const WEEKDAY_LABELS: Record<(typeof WEEKDAYS)[number], string> = {
-  MONDAY: "Mon",
-  TUESDAY: "Tue",
-  WEDNESDAY: "Wed",
-  THURSDAY: "Thu",
-  FRIDAY: "Fri",
-  SATURDAY: "Sat",
-  SUNDAY: "Sun",
-};
-
-/** Working row shape — kept separate from the read-only `PublicScheduleDay`
- * because the editor needs to mutate `startTime` / `endTime` before sending. */
-interface ScheduleEditorDay {
-  day: (typeof WEEKDAYS)[number];
-  startTime: string;
-  endTime: string;
-  isOff: boolean;
-}
-
-/** Fills missing days with "off" defaults so the PUT body always has 7 rows. */
-function buildEditorDays(schedule: PublicScheduleDay[]): ScheduleEditorDay[] {
-  const byDay = new Map<string, PublicScheduleDay>();
-  for (const row of schedule) byDay.set(row.day, row);
-
-  return WEEKDAYS.map((day) => {
-    const existing = byDay.get(day);
-    return {
-      day,
-      startTime: existing?.startTime ?? "09:00",
-      endTime: existing?.endTime ?? "18:00",
-      isOff: existing?.isOff ?? true,
-    };
-  });
-}
-
 interface ScheduleTabProps {
   salonSlug: string;
-  staffId: string;
+  staffRef: string;
   schedule: PublicScheduleDay[];
   canEdit: boolean;
 }
 
-function ScheduleTab({
-  salonSlug,
-  staffId,
-  schedule,
-  canEdit,
-}: ScheduleTabProps) {
-  const [savedSchedule, setSavedSchedule] = useState(schedule);
-  const [editing, setEditing] = useState(false);
-  const [days, setDays] = useState<ScheduleEditorDay[]>(() =>
-    buildEditorDays(schedule),
-  );
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  function updateDay(
-    index: number,
-    patch: Partial<ScheduleEditorDay>,
-  ): void {
-    setDays((prev) =>
-      prev.map((day, i) => (i === index ? { ...day, ...patch } : day)),
-    );
-  }
-
-  async function save() {
-    setError(null);
-    setBusy(true);
-    try {
-      const response = await replaceScheduleApi(salonSlug, staffId, {
-        days: days.map((day) => ({
-          day: day.day,
-          startTime: day.isOff ? undefined : day.startTime,
-          endTime: day.isOff ? undefined : day.endTime,
-          isOff: day.isOff,
-        })),
-      });
-      setSavedSchedule(response.data.schedule);
-      setEditing(false);
-      toast.success("Schedule updated.");
-    } catch (caught) {
-      setError(extractApiMessage(caught));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!editing) {
-    const rows = [...savedSchedule].sort((a, b) => WEEKDAYS.indexOf(a.day) - WEEKDAYS.indexOf(b.day));
-    return (
-      <Card>
-        <CardHeader className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle>Weekly schedule</CardTitle>
-          {canEdit ? <Button size="sm" variant="outline" onClick={() => {
-            setDays(buildEditorDays(savedSchedule));
-            setError(null);
-            setEditing(true);
-          }}>
-            {rows.length ? <Pencil className="size-3.5" aria-hidden="true" /> : <Plus className="size-3.5" aria-hidden="true" />}
-            {rows.length ? "Edit schedule" : "Add schedule"}
-          </Button> : null}
-        </CardHeader>
-        <CardContent>
-          {rows.length === 0 ? <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No schedule added yet.</p> : (
-            <ul className="divide-y rounded-lg border px-4">
-              {rows.map((day) => <li key={day.day} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-                <span className="font-medium">{WEEKDAY_LABELS[day.day]}</span>
-                {day.isOff ? <Badge variant="secondary">Off</Badge> : <span className="tabular-nums text-muted-foreground">{day.startTime ?? "Not set"} – {day.endTime ?? "Not set"}</span>}
-              </li>)}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Weekly schedule</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {canEdit
-            ? "Toggle a day off, or set its start and end times. Times are in the salon&rsquo;s local timezone."
-            : "Only the salon owner can edit schedules. Reach out to them to change these hours."}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {days.map((day, index) => (
-          <div
-            key={day.day}
-            className="flex flex-wrap items-center gap-3 rounded-lg border p-3 sm:flex-nowrap"
-          >
-            <div className="w-12 shrink-0 text-sm font-medium">
-              {WEEKDAY_LABELS[day.day]}
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={!day.isOff}
-                onCheckedChange={(checked) =>
-                  updateDay(index, { isOff: !checked })
-                }
-                disabled={!canEdit || busy}
-                aria-label={`${WEEKDAY_LABELS[day.day]} working`}
-              />
-              <span className="text-xs text-muted-foreground">
-                {day.isOff ? "Off" : "Working"}
-              </span>
-            </div>
-            <div className="flex flex-1 items-center gap-2">
-              <Input
-                type="time"
-                value={day.startTime}
-                onChange={(e) => updateDay(index, { startTime: e.target.value })}
-                disabled={!canEdit || busy || day.isOff}
-                aria-label={`${WEEKDAY_LABELS[day.day]} start time`}
-                className="max-w-[8rem]"
-              />
-              <span className="text-muted-foreground">–</span>
-              <Input
-                type="time"
-                value={day.endTime}
-                onChange={(e) => updateDay(index, { endTime: e.target.value })}
-                disabled={!canEdit || busy || day.isOff}
-                aria-label={`${WEEKDAY_LABELS[day.day]} end time`}
-                className="max-w-[8rem]"
-              />
-            </div>
-          </div>
-        ))}
-
-        {error ? <FormError>{error}</FormError> : null}
-
-        {canEdit ? (
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" disabled={busy} onClick={() => setEditing(false)}>Cancel</Button>
-            <Button onClick={save} disabled={busy}>
-              {busy ? "Saving…" : "Save schedule"}
-            </Button>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
+function ScheduleTab({ salonSlug, staffRef, schedule, canEdit }: ScheduleTabProps) {
+  const rows = [...schedule].sort((a, b) => WEEKDAYS.indexOf(a.day) - WEEKDAYS.indexOf(b.day));
+  return <Card>
+    <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+      <CardTitle>Weekly schedule</CardTitle>
+      {canEdit ? <Button size="sm" variant="outline" render={<Link href={routes.salonStaffSchedule(salonSlug, staffRef)} scroll={false} />}>
+        {rows.length ? <Pencil className="size-3.5" aria-hidden="true" /> : <Plus className="size-3.5" aria-hidden="true" />}
+        {rows.length ? "Edit schedule" : "Add schedule"}
+      </Button> : null}
+    </CardHeader>
+    <CardContent>
+      {rows.length === 0 ? <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">No schedule added yet.</p> : <ul className="divide-y rounded-lg border px-4">
+        {rows.map((day) => <li key={day.day} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><span className="font-medium">{WEEKDAY_LABELS[day.day]}</span>{day.isOff ? <Badge variant="secondary">Off</Badge> : <span className="tabular-nums text-muted-foreground">{day.startTime ?? "Not set"} – {day.endTime ?? "Not set"}</span>}</li>)}
+      </ul>}
+    </CardContent>
+  </Card>;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

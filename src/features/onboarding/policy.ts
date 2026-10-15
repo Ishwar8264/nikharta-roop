@@ -49,7 +49,7 @@ export function onboardingDestination(
       ) ||
       url.pathname === "/salons" ||
       /^\/salons\/[^/]+(?:\/book|\/services)?$/.test(url.pathname) ||
-      /^\/salons\/[^/]+\/staff\/[^/]+$/.test(url.pathname)
+      /^\/salons\/[^/]+\/staff\/[^/]+(?:\/schedule)?$/.test(url.pathname)
     ) {
       if (url.pathname === "/salons/create") return "/salons";
       return url.pathname + url.search + url.hash;

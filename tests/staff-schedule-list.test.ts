@@ -2,7 +2,6 @@
 import { createElement } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { StaffDetailPanel } from "../src/features/staff/staff-detail-panel";
 import type { PublicScheduleDay } from "../src/features/staff/types";
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
@@ -17,17 +16,13 @@ it("shows only saved schedule rows without editable inputs", () => {
   expect(screen.queryByText("Mon")).toBeNull();
   expect(screen.queryByRole("switch")).toBeNull();
 });
-it("opens the existing editor only after Add and returns to the empty list on Cancel", async () => {
-  const user = userEvent.setup();
+it("links Add to the intercepted schedule route without opening an inline editor", () => {
   show([]);
   expect(screen.getByText("No schedule added yet.")).toBeTruthy();
   expect(screen.queryByRole("switch")).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Add schedule" }));
-  expect(screen.getAllByRole("switch")).toHaveLength(7);
-  await user.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(screen.getByText("No schedule added yet.")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Add schedule" }).getAttribute("href")).toBe("/salons/salon/staff/member/schedule");
 });
 it("keeps schedule modification controls owner-only", () => {
   show([], "STAFF");
-  expect(screen.queryByRole("button", { name: "Add schedule" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Add schedule" })).toBeNull();
 });
