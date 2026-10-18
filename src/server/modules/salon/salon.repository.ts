@@ -1,6 +1,7 @@
 import { PUBLIC_SALON_FILTER } from "@/features/salon/status";
 import { SalonMemberAccountUnavailableError, SalonNotFoundError, SalonRoleInsufficientError, SalonPublicationBlockedError } from "./salon.errors";
 import "server-only";
+import { bypassLocalSalonVerification } from "./local-verification";
 
 import type { SalonCategory } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
@@ -266,10 +267,10 @@ export async function createSalonWithOwner(input: {
   data: Prisma.SalonCreateInput;
 }) {
   return prisma.$transaction(async (transaction) => {
-    // New salons start hidden: they go live only after a SUPER_ADMIN
-    // approves their verification (the review flow flips isActive to true).
+    // Local opt-in permits booking tests without claiming the salon is verified.
+    const bypass = bypassLocalSalonVerification();
     const salon = await transaction.salon.create({
-      data: { ...input.data, status: "DRAFT", isActive: false },
+      data: { ...input.data, status: bypass ? "LIVE" : "DRAFT", isActive: bypass },
       select: PUBLIC_SALON_SELECT,
     });
 

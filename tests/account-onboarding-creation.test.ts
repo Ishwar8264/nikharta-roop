@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PARTNER_TERMS_VERSION } from "../src/features/onboarding/policy";
 const mocks = vi.hoisted(() => ({
   user: vi.fn(),
@@ -26,6 +26,7 @@ const input = createSalonSchema.parse({
   lat: 28.6,
   lng: 77.2,
 });
+afterEach(() => vi.unstubAllEnvs());
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.salon.mockResolvedValue({ id: "new-salon", slug: "example-salon" });
@@ -38,6 +39,15 @@ beforeEach(() => {
   );
 });
 describe("salon creation enforces partner setup in the service", () => {
+  it("allows local publication while preserving pending verification", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("DATABASE_URL", "postgresql://localhost/nikharta_DB");
+    vi.stubEnv("LOCAL_SALON_VERIFICATION_BYPASS", "true");
+    mocks.user.mockResolvedValue({ partnerEligibilityBackfilledAt: new Date() });
+    await createSalon("user", input);
+    expect(mocks.salon.mock.calls[0][0].data).toMatchObject({ isActive: true, status: "LIVE" });
+    expect(mocks.verification).toHaveBeenCalledWith({ data: { salonId: "new-salon", status: "PENDING" } });
+  });
   it("rejects customer, incomplete partner and administrator before any salon write", async () => {
     for (const user of [
       { accountType: "CUSTOMER" },
