@@ -119,10 +119,15 @@ export async function verifyOtpCode(
 
     if (passwordHash) {
       const updated = await transaction.user.updateMany({
-        where: { id: user.id, password: null, deletedAt: null },
-        data: { password: passwordHash, emailVerified: true },
+        where: { id: user.id, accounts: { none: { provider: "credentials" } }, deletedAt: null },
+        data: { emailVerified: true },
       });
       if (updated.count !== 1) throw new OtpInvalidError();
+      const created = await transaction.account.createMany({
+        data: [{ userId: user.id, provider: "credentials", providerUserId: user.id, passwordHash }],
+        skipDuplicates: true,
+      });
+      if (created.count !== 1) throw new OtpInvalidError();
     } else {
       await markUserVerified(user.id, channel, transaction);
     }

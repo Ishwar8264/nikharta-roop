@@ -39,7 +39,7 @@ export async function findUserByEmailOrPhone(input: {
 }): Promise<OtpTargetUser | null> {
   if (!input.email && !input.phone) return null;
 
-  return prisma.user.findFirst({
+  const user = await prisma.user.findFirst({
     where: {
       ...(input.email ? { email: input.email } : {}),
       ...(input.phone ? { phone: input.phone } : {}),
@@ -51,9 +51,12 @@ export async function findUserByEmailOrPhone(input: {
       phone: true,
       emailVerified: true,
       phoneVerified: true,
-      password: true,
+      accounts: { where: { provider: "credentials" }, select: { passwordHash: true } },
     },
   });
+  if (!user) return null;
+  const { accounts, ...identity } = user;
+  return { ...identity, password: accounts[0]?.passwordHash ?? null };
 }
 
 /** Returns the most recent OTP for a user + channel + purpose. */

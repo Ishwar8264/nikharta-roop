@@ -3,6 +3,7 @@ import { CalendarDays, Gift, Heart, House, Plus, Settings, ShieldCheck, Sparkles
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { SideNav } from "@/components/shared/side-nav";
+import { canAccessAdmin, adminDestination } from "@/lib/auth/permissions";
 import { routes } from "@/config/routes";
 import { canCreateSalon, isOnboardingComplete } from "@/features/onboarding/policy";
 import { getSession } from "@/lib/auth/get-session";
@@ -45,8 +46,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   })),
                   ...(user.accountType === "SALON_PARTNER" ? [{ label: canCreateSalon(user) ? "Add salon" : "Complete partner setup", href: canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding, icon: <Plus className="size-4" /> }] : []),
                 ] },
-                { id: "setup", items: user.role === "SUPER_ADMIN"
-                  ? [{ label: "Admin", href: routes.adminSalonVerification, icon: <ShieldCheck className="size-4" /> }]
+                { id: "setup", items: canAccessAdmin(user.role)
+                  ? [{ label: "Admin", href: adminDestination(user.role), icon: <ShieldCheck className="size-4" /> }]
                   : isOnboardingComplete(user) ? [] : [{ label: "Complete account setup", href: routes.onboarding, icon: <UserRound className="size-4" /> }],
                 },
               ]}

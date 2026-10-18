@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import "server-only";
 
 import type { DiscountType } from "@/generated/prisma/client";
@@ -40,7 +41,7 @@ import type {
 
 /** Rejects callers that are not SUPER_ADMIN. */
 function assertAdmin(role: string): void {
-  if (role !== "SUPER_ADMIN") {
+  if (!hasPermission(role, "platform.manage")) {
     // Reuse the same message as the admin module for consistency.
     const err = new Error(
       "Only platform administrators can perform this action",

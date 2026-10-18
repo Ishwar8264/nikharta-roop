@@ -9,7 +9,7 @@ import ProfileError from "../src/app/(dashboard)/profile/error";
 
 it("server renders the badge with the real tooltip exports", () => {
   const html = renderToString(createElement(UserTypeBadge, { role: "SUPER_ADMIN" }));
-  expect(html).toContain("Admin");
+  expect(html).toContain("Super admin");
   expect(html).toContain("button");
 });
 

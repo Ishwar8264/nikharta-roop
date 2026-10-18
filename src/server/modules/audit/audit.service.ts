@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import "server-only";
 
 import {
@@ -14,7 +15,7 @@ import type {
 
 /** Rejects anyone who is not a platform administrator. */
 function assertCanReadAuditLogs(role: string): void {
-  if (role !== "SUPER_ADMIN") throw new AuditLogAccessDeniedError();
+  if (!hasPermission(role, "platform.manage")) throw new AuditLogAccessDeniedError();
 }
 
 /**

@@ -6,6 +6,7 @@ import {
   rateLimitHeaders,
   standardLimiter,
 } from "@/lib/rate-limit";
+import { canAccessAdmin } from "@/lib/auth/permissions";
 import { routes } from "@/config/routes";
 import {
   ACCESS_COOKIE_NAME,
@@ -101,7 +102,7 @@ const AUTH_PATH_PREFIX = "/api/v1/auth";
 const ADMIN_PATH_PREFIXES = ["/api/v1/admin"];
 
 /** Roles allowed to access admin-only routes. */
-const ADMIN_ROLES = new Set(["SUPER_ADMIN"]);
+
 
 /**
  * Returns true when the request may proceed without an access token.
@@ -195,7 +196,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   // ----- 6. Admin gate -----
-  if (isAdminPath(pathname) && !ADMIN_ROLES.has(payload.role)) {
+  if (isAdminPath(pathname) && !canAccessAdmin(payload.role)) {
     return forbiddenResponse();
   }
 

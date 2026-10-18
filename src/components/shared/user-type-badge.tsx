@@ -1,5 +1,6 @@
 "use client";
 
+import { canAccessAdmin } from "@/lib/auth/permissions";
 import { ShieldCheck, Store, UserRound, Users } from "lucide-react";
 import type { SalonMemberRole } from "@/generated/prisma/client";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +20,8 @@ const membershipBadges = {
 
 /** Show account identity without treating salon membership as a platform permission. */
 export function UserTypeBadge({ role, accountType, salonRoles = [] }: UserTypeBadgeProps) {
-  const badges = role === "SUPER_ADMIN"
-    ? [{ label: "Admin", hint: "You have platform administration access.", icon: ShieldCheck }]
+  const badges = canAccessAdmin(role)
+    ? [{ label: role === "SUPER_ADMIN" ? "Super admin" : role === "CONTENT_ADMIN" ? "Content admin" : "Admin", hint: "You have platform administration access.", icon: ShieldCheck }]
     : salonRoles.length
       ? [...new Set(salonRoles)].map((memberRole) => membershipBadges[memberRole])
       : accountType === "SALON_PARTNER"

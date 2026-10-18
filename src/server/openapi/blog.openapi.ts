@@ -85,7 +85,7 @@ export const blogPaths = {
       summary: "Create a blog post draft",
       description:
         "Persists a new post as a draft. Publishing is a separate action. " +
-        "Requires SUPER_ADMIN.",
+        "Requires content administrators.",
       operationId: "createBlogPostDraft",
       security: authenticatedMutation,
       requestBody: {
@@ -107,7 +107,7 @@ export const blogPaths = {
         },
         "400": validationResponse,
         "401": { $ref: "#/components/responses/Unauthorized" },
-        "403": errorResponse("Requires SUPER_ADMIN"),
+        "403": errorResponse("Requires content administrators"),
         "404": errorResponse("Category not found"),
         "409": errorResponse("Post slug already exists"),
       },
@@ -144,7 +144,7 @@ export const blogPaths = {
     patch: {
       tags: ["Blog"],
       summary: "Update a blog post",
-      description: "Requires SUPER_ADMIN. Post id, not slug.",
+      description: "Requires content administrators. Post id, not slug.",
       operationId: "updateBlogPost",
       security: authenticatedMutation,
       parameters: [idParameter("postRef")],
@@ -167,7 +167,7 @@ export const blogPaths = {
         },
         "400": validationResponse,
         "401": { $ref: "#/components/responses/Unauthorized" },
-        "403": errorResponse("Requires SUPER_ADMIN"),
+        "403": errorResponse("Requires content administrators"),
         "404": errorResponse("Post or category not found"),
         "409": errorResponse("Post slug already exists"),
       },
@@ -175,7 +175,7 @@ export const blogPaths = {
     delete: {
       tags: ["Blog"],
       summary: "Soft-delete a blog post",
-      description: "Requires SUPER_ADMIN. Post id, not slug.",
+      description: "Requires content administrators. Post id, not slug.",
       operationId: "deleteBlogPost",
       security: authenticatedMutation,
       parameters: [idParameter("postRef")],
@@ -189,7 +189,7 @@ export const blogPaths = {
           },
         },
         "401": { $ref: "#/components/responses/Unauthorized" },
-        "403": errorResponse("Requires SUPER_ADMIN"),
+        "403": errorResponse("Requires content administrators"),
         "404": errorResponse("Post not found"),
       },
     },
@@ -200,7 +200,7 @@ export const blogPaths = {
       summary: "Publish or unpublish a post",
       description:
         "Toggles the `published` flag. Setting `publishedAt` on first " +
-        "publish; clearing it on unpublish. Requires SUPER_ADMIN.",
+        "publish; clearing it on unpublish. Requires content administrators.",
       operationId: "toggleBlogPostPublish",
       security: authenticatedMutation,
       parameters: [idParameter("postRef")],
@@ -223,7 +223,7 @@ export const blogPaths = {
         },
         "400": validationResponse,
         "401": { $ref: "#/components/responses/Unauthorized" },
-        "403": errorResponse("Requires SUPER_ADMIN"),
+        "403": errorResponse("Requires content administrators"),
         "404": errorResponse("Post not found"),
       },
     },
@@ -303,7 +303,7 @@ export const blogPaths = {
       tags: ["Blog"],
       summary: "Update a comment or flip its approval",
       description:
-        "Authors may edit their own content. SUPER_ADMIN may flip " +
+        "Authors may edit their own content. content administrators may flip " +
         "`isApproved` to hide or unhide a comment.",
       operationId: "updateBlogComment",
       security: authenticatedMutation,
@@ -334,7 +334,7 @@ export const blogPaths = {
     delete: {
       tags: ["Blog"],
       summary: "Delete a comment",
-      description: "Authors may delete their own. SUPER_ADMIN may delete any.",
+      description: "Authors may delete their own. content administrators may delete any.",
       operationId: "deleteBlogComment",
       security: authenticatedMutation,
       parameters: [idParameter("commentId")],
@@ -377,7 +377,7 @@ export const blogPaths = {
     post: {
       tags: ["Blog"],
       summary: "Create a blog category",
-      description: "Requires SUPER_ADMIN.",
+      description: "Requires content administrators.",
       operationId: "createBlogCategory",
       security: authenticatedMutation,
       requestBody: {
@@ -399,7 +399,7 @@ export const blogPaths = {
         },
         "400": validationResponse,
         "401": { $ref: "#/components/responses/Unauthorized" },
-        "403": errorResponse("Requires SUPER_ADMIN"),
+        "403": errorResponse("Requires content administrators"),
         "409": errorResponse("Category slug already exists"),
       },
     },

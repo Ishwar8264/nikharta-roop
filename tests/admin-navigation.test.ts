@@ -12,7 +12,7 @@ vi.mock("next/link", async (original) => ({
 afterEach(cleanup);
 
 it("marks only the current admin destination as active", () => {
-  render(createElement(AdminNavigation));
+  render(createElement(AdminNavigation, { role: "SUPER_ADMIN" }));
   const nav = screen.getByRole("navigation", { name: "Admin navigation" });
   expect(within(nav).getByRole("link", { name: /Users/ }).getAttribute("aria-current")).toBe("page");
   expect(within(nav).getByRole("link", { name: /Salon verification/ }).getAttribute("aria-current")).toBeNull();

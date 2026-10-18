@@ -24,6 +24,8 @@ generator client {
 // ---------- ENUMS ----------
 enum PlatformRole {
   SUPER_ADMIN
+  ADMIN
+  CONTENT_ADMIN
   USER
 }
 
@@ -166,7 +168,6 @@ model User {
   id       String       @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   email    String?      @unique
   phone    String?      @unique
-  password String?
   name     String?
   avatar   String?
   coverImage String?
@@ -200,7 +201,7 @@ model User {
 
   otps                  Otp[]
   refreshTokens         RefreshToken[]
-  socialAccounts        SocialAccount[]
+  accounts              Account[]
   salonMemberships      SalonMember[]
   appointments          Appointment[]
   favorites             Favorite[]
@@ -293,15 +294,18 @@ model RefreshToken {
   @@index([userId])
 }
 
-model SocialAccount {
+// One credential or external provider identity belongs to exactly one user.
+model Account {
   id             String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   userId         String
   user           User     @relation(fields: [userId], references: [id])
   provider       String
   providerUserId String
+  passwordHash   String?
   createdAt      DateTime @default(now())
 
   @@unique([provider, providerUserId])
+  @@unique([userId, provider])
 }
 
 // ---------- SALON & STAFF ----------

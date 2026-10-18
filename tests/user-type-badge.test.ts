@@ -15,7 +15,7 @@ it("shows actual membership roles once without calling a partner an owner", () =
 });
 it("explains the admin badge on keyboard focus", async () => {
   render(createElement(UserTypeBadge, { role: "SUPER_ADMIN" }));
-  expect(screen.getByText("Admin")).toBeTruthy();
+  expect(screen.getByText("Super admin")).toBeTruthy();
   await userEvent.tab();
   expect((await screen.findByRole("tooltip")).textContent).toBe("You have platform administration access.");
 });

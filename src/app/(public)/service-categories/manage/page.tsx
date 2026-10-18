@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -13,7 +14,7 @@ interface Props { searchParams: Promise<{ cursor?: string }> }
 export default async function ManageServiceCategoriesPage({ searchParams }: Props) {
   const user = await getSession();
   if (!user) redirect(`/login?redirect=${encodeURIComponent(routes.serviceCategoriesManage)}`);
-  if (user.role !== "SUPER_ADMIN") notFound();
+  if (!hasPermission(user.role, "platform.manage")) notFound();
 
   const { cursor } = await searchParams;
   if (cursor && !isResourceId(cursor)) notFound();

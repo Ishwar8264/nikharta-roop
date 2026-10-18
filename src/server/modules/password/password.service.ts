@@ -104,9 +104,10 @@ export async function resetPassword(input: ResetPasswordInput): Promise<void> {
     );
     if (!claimed) throw new OtpInvalidError();
 
-    await transaction.user.update({
-      where: { id: user.id },
-      data: { password: passwordHash },
+    await transaction.account.upsert({
+      where: { userId_provider: { userId: user.id, provider: "credentials" } },
+      create: { userId: user.id, provider: "credentials", providerUserId: user.id, passwordHash },
+      update: { passwordHash },
     });
     await transaction.refreshToken.updateMany({
       where: { userId: user.id, revokedAt: null },

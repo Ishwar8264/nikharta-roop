@@ -1,4 +1,5 @@
 import "server-only";
+import { hasPermission } from "@/lib/auth/permissions";
 
 import type { PlatformRole } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -38,7 +39,7 @@ import type {
 
 /** Rejects anyone who is not a SUPER_ADMIN. */
 function assertSuperAdmin(role: string): void {
-  if (role !== "SUPER_ADMIN") throw new AdminAccessDeniedError();
+  if (!hasPermission(role, "roles.assign")) throw new AdminAccessDeniedError();
 }
 
 /**
@@ -95,7 +96,7 @@ export async function listAdminUsers(
   callerRole: string,
   query: ListUsersQuery,
 ): Promise<PaginatedAdminUsers> {
-  assertSuperAdmin(callerRole);
+  if (!hasPermission(callerRole, "users.manage")) throw new AdminAccessDeniedError();
 
   const result = await listUsers(query);
   return {
@@ -165,9 +166,10 @@ export async function setUserAiBlock(
   targetUserId: string,
   input: UpdateAiBlockInput,
 ): Promise<AdminUserView> {
-  assertSuperAdmin(callerRole);
+  if (!hasPermission(callerRole, "users.manage")) throw new AdminAccessDeniedError();
 
   const target = await findAdminUserById(targetUserId);
+  if (target && target.role !== "USER" && !hasPermission(callerRole, "roles.assign")) throw new AdminAccessDeniedError();
   if (!target) throw new AdminUserNotFoundError();
 
   await setAiBlockState({
@@ -195,9 +197,10 @@ export async function setUserAiQuota(
   targetUserId: string,
   input: UpdateAiQuotaInput,
 ): Promise<AdminUserView> {
-  assertSuperAdmin(callerRole);
+  if (!hasPermission(callerRole, "users.manage")) throw new AdminAccessDeniedError();
 
   const target = await findAdminUserById(targetUserId);
+  if (target && target.role !== "USER" && !hasPermission(callerRole, "roles.assign")) throw new AdminAccessDeniedError();
   if (!target) throw new AdminUserNotFoundError();
 
   const usage = target.aiUsage;

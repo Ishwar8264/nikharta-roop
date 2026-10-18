@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -52,7 +53,7 @@ interface PageProps {
  */
 export default async function AdminAuditLogsPage({ searchParams }: PageProps) {
   const user = await getSession();
-  if (!user || user.role !== "SUPER_ADMIN") return null;
+  if (!user || !hasPermission(user.role, "platform.manage")) return null;
 
   const search = await searchParams;
   const cursor =

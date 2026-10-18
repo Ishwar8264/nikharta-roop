@@ -34,6 +34,7 @@ describe.skipIf(process.env.RUN_STAFF_DATABASE_TESTS !== "1")("staff invitation 
     await prisma.otp.deleteMany({ where: { userId: { in: ids } } });
     await prisma.salonMember.deleteMany({ where: { salonId } });
     await prisma.salon.delete({ where: { id: salonId } });
+    await prisma.account.deleteMany({ where: { userId: { in: ids } } });
     await prisma.user.deleteMany({ where: { id: { in: ids } } });
   });
   afterAll(async () => { if (prisma) await prisma.$disconnect(); });
@@ -56,11 +57,12 @@ describe.skipIf(process.env.RUN_STAFF_DATABASE_TESTS !== "1")("staff invitation 
     await expect(otpService.verifyOtpCode({ email, code: "123456", newPassword: "DifferentPassword123" })).rejects.toThrow("Invalid or expired code");
   });
   it("links existing accounts without altering their personal profile or credentials", async () => {
-    const user = await prisma.user.create({ data: { email, name: "Personal name", avatar: "https://example.invalid/personal.png", bio: "Personal bio", password: "existing-password-hash", emailVerified: true } });
+    const user = await prisma.user.create({ data: { email, name: "Personal name", avatar: "https://example.invalid/personal.png", bio: "Personal bio", emailVerified: true } });
+    await prisma.account.create({ data: { userId: user.id, provider: "credentials", providerUserId: user.id, passwordHash: "existing-password-hash" } });
     const member = await add();
     expect(member.userId).toBe(user.id);
     expect(member.name).toBe("Salon stylist");
-    expect(await prisma.user.findUnique({ where: { id: user.id } })).toMatchObject({ name: "Personal name", bio: "Personal bio", avatar: "https://example.invalid/personal.png", password: "existing-password-hash", emailVerified: true });
+    expect(await prisma.user.findUnique({ where: { id: user.id } })).toMatchObject({ name: "Personal name", bio: "Personal bio", avatar: "https://example.invalid/personal.png", emailVerified: true });
   });
   it("rejects deleted accounts without reviving them", async () => {
     await prisma.user.create({ data: { email, deletedAt: new Date() } });

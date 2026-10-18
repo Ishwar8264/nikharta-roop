@@ -1,4 +1,5 @@
 import "server-only";
+import { PLATFORM_ROLES } from "@/lib/auth/permissions";
 
 import { randomUUID } from "node:crypto";
 
@@ -8,7 +9,7 @@ const ISSUER = "salon-app";
 const AUDIENCE = "salon-app-client";
 const ACCESS_TOKEN_TTL = "15m";
 const MINIMUM_SECRET_BYTES = 32;
-const ALLOWED_ROLES = new Set(["SUPER_ADMIN", "USER"]);
+const ALLOWED_ROLES = new Set<string>(PLATFORM_ROLES);
 
 const configuredSecret = process.env.JWT_SECRET;
 

@@ -14,7 +14,7 @@ beforeEach(() => {
   mocks.user.mockResolvedValue({ id: "staff", password: null, emailVerified: false });
   mocks.otp.mockResolvedValue({ id: "otp", attempts: 0, maxAttempts: 5, expiresAt: new Date(Date.now() + 60000), codeHash: "otp-hash" });
   mocks.compare.mockResolvedValue(true); mocks.claim.mockResolvedValue(true); mocks.hash.mockResolvedValue("password-hash"); mocks.update.mockResolvedValue({ count: 1 });
-  mocks.transaction.mockImplementation((callback) => callback({ user: { updateMany: mocks.update } }));
+  mocks.transaction.mockImplementation((callback) => callback({ user: { updateMany: mocks.update }, account: { createMany: vi.fn().mockResolvedValue({ count: 1 }) } }));
 });
 it("requires the recipient to set a password without consuming their code", async () => {
   await expect(verifyOtpCode({ email: input.email, code: input.code })).rejects.toBeInstanceOf(OtpAccountSetupRequiredError);
@@ -23,7 +23,7 @@ it("requires the recipient to set a password without consuming their code", asyn
 it("atomically verifies email and initializes a recipient-chosen password", async () => {
   await expect(verifyOtpCode(input)).resolves.toEqual({ userId: "staff", channel: "EMAIL" });
   expect(mocks.hash).toHaveBeenCalledWith(input.newPassword);
-  expect(mocks.update).toHaveBeenCalledWith({ where: { id: "staff", password: null, deletedAt: null }, data: { password: "password-hash", emailVerified: true } });
+  expect(mocks.update).toHaveBeenCalledWith({ where: { id: "staff", accounts: { none: { provider: "credentials" } }, deletedAt: null }, data: { emailVerified: true } });
   expect(mocks.claim).toHaveBeenCalledOnce();
 });
 it("never overwrites an existing password", async () => {

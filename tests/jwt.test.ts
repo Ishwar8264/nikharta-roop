@@ -61,6 +61,9 @@ describe("signAccessToken", () => {
 });
 
 describe("verifyAccessToken", () => {
+  it.each(["USER", "CONTENT_ADMIN", "ADMIN", "SUPER_ADMIN"])("accepts the supported role %s", async (role) => {
+    expect(await verifyAccessToken(await signAccessToken({ sub: "user-1", role }))).toMatchObject({ sub: "user-1", role });
+  });
   it("round-trips the payload through sign → verify", async () => {
     const token = await signAccessToken(VALID_PAYLOAD);
     const decoded = await verifyAccessToken(token);
@@ -167,7 +170,7 @@ describe("verifyAccessToken", () => {
     // signature is valid, the role check inside verifyAccessToken must throw
     // — this is the second line of defense against a forged-but-signed token
     // carrying an attacker-chosen role.
-    const token = await new SignJWT({ role: "ADMIN" })
+    const token = await new SignJWT({ role: "UNRECOGNIZED_ROLE" })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject("user-1")
       .setIssuer("salon-app")

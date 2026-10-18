@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import type { Metadata } from "next";
 
 import { CouponManager } from "@/features/coupon";
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
  */
 export default async function AdminCouponsPage() {
   const user = await getSession();
-  if (!user || user.role !== "SUPER_ADMIN") return null;
+  if (!user || !hasPermission(user.role, "platform.manage")) return null;
 
   const result = await listAdminCoupons(user.role, { limit: 100 });
 

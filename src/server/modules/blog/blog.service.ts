@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import "server-only";
 
 import { generateUniqueSlug, slugify } from "@/lib/slug";
@@ -58,7 +59,7 @@ import type {
 } from "./blog.types";
 
 /** Roles allowed to manage blog posts. */
-const POST_MANAGER_ROLES = new Set(["SUPER_ADMIN"]);
+
 
 /**
  * Computes reading time from raw content.
@@ -74,7 +75,7 @@ function computeReadingTime(content: string): number {
 
 /** Rejects callers that are not allowed to manage posts. */
 function assertCanManagePosts(role: string): void {
-  if (!POST_MANAGER_ROLES.has(role)) {
+  if (!hasPermission(role, "content.manage")) {
     throw new BlogPostAccessDeniedError();
   }
 }
@@ -106,7 +107,7 @@ export async function getPostBySlug(slug: string): Promise<PublicBlogPost> {
 }
 
 /**
- * Creates a post as a draft. SUPER_ADMIN only.
+ * Creates a post as a draft. content administrators only.
  *
  * Why:
  * `published` is intentionally not settable here — the publish action is a
@@ -176,7 +177,7 @@ export async function createDraftPost(
   }
 }
 
-/** Partially updates a post. SUPER_ADMIN only. */
+/** Partially updates a post. content administrators only. */
 export async function patchPost(
   callerRole: string,
   postId: string,
@@ -254,7 +255,7 @@ export async function patchPost(
   }
 }
 
-/** Soft-deletes a post. SUPER_ADMIN only. */
+/** Soft-deletes a post. content administrators only. */
 export async function removePost(
   callerRole: string,
   postId: string,
@@ -276,7 +277,7 @@ export async function removePost(
 }
 
 /**
- * Publishes or unpublishes a post. SUPER_ADMIN only.
+ * Publishes or unpublishes a post. content administrators only.
  *
  * Why:
  * Stamps `publishedAt` on the first publish. Re-publishing after an unpublish
@@ -368,7 +369,7 @@ export async function createComment(
  * Updates a comment.
  *
  * Why:
- * The author may edit their own content. A SUPER_ADMIN may flip `isApproved`
+ * The author may edit their own content. A content administrators may flip `isApproved`
  * to hide/unhide. Both permissions are checked together — a caller can only
  * perform the action they are entitled to.
  */
@@ -382,7 +383,7 @@ export async function patchComment(
   if (!existing) throw new BlogCommentNotFoundError();
 
   const isAuthor = existing.userId === callerId;
-  const isAdmin = callerRole === "SUPER_ADMIN";
+  const isAdmin = hasPermission(callerRole, "content.manage");
 
   if (input.content !== undefined && !isAuthor) {
     throw new BlogCommentAccessDeniedError();
@@ -419,7 +420,7 @@ export async function patchComment(
  * Deletes a comment.
  *
  * Why:
- * Authors may remove their own. SUPER_ADMIN may remove any. No soft-delete
+ * Authors may remove their own. content administrators may remove any. No soft-delete
  * here because comments are small and the audit trail lives on the post.
  */
 export async function removeComment(
@@ -431,7 +432,7 @@ export async function removeComment(
   if (!existing) throw new BlogCommentNotFoundError();
 
   const isAuthor = existing.userId === callerId;
-  const isAdmin = callerRole === "SUPER_ADMIN";
+  const isAdmin = hasPermission(callerRole, "content.manage");
 
   if (!isAuthor && !isAdmin) throw new BlogCommentAccessDeniedError();
 
@@ -453,7 +454,7 @@ export async function listBlogCategories(
   return listCategories(query);
 }
 
-/** Create a category. SUPER_ADMIN only. */
+/** Create a category. content administrators only. */
 export async function createBlogCategory(
   callerRole: string,
   input: CreateCategoryInput,

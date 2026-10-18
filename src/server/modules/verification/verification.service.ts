@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import "server-only";
 
 import { AdminAccessDeniedError } from "@/server/modules/admin/admin.errors";
@@ -90,7 +91,7 @@ export async function reviewSalonVerification(
   salonRef: string,
   input: ReviewVerificationInput,
 ): Promise<PublicSalonVerification> {
-  if (callerRole !== "SUPER_ADMIN") {
+  if (!hasPermission(callerRole, "salons.verify")) {
     throw new AdminAccessDeniedError();
   }
 
@@ -127,7 +128,7 @@ export async function reviewSalonVerification(
 export async function listPendingVerifications(
   callerRole: string,
 ): Promise<PendingVerificationRow[]> {
-  if (callerRole !== "SUPER_ADMIN") {
+  if (!hasPermission(callerRole, "salons.verify")) {
     throw new AdminAccessDeniedError();
   }
   return findPendingVerifications();

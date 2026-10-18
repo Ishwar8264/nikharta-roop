@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/server/auth/session";
 import { privateVerificationDownload } from "@/lib/cloudinary";
@@ -38,7 +39,7 @@ export async function GET(
       { message: "Document not found" },
       { status: 404, headers },
     );
-  if (auth.role !== "SUPER_ADMIN") {
+  if (!hasPermission(auth.role, "salons.verify")) {
     try {
       const salon = await findSalonForViewer({ salonId, userId: auth.sub });
       if (!salon) throw new SalonNotFoundError();

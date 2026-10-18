@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { hasPermission } from "@/lib/auth/permissions";
 import { notFound } from "next/navigation";
 import { ClipboardList } from "lucide-react";
 
@@ -34,7 +35,7 @@ const submittedAtFormatter = new Intl.DateTimeFormat("en-IN", {
  */
 export default async function AdminVerificationQueuePage() {
   const user = await getSession();
-  if (!user || user.role !== "SUPER_ADMIN") notFound();
+  if (!user || !hasPermission(user.role, "salons.verify")) notFound();
 
   const rows = await listPendingVerifications(user.role);
 
