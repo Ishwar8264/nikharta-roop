@@ -82,7 +82,7 @@ const MemoizedColorButton = React.memo<{
 
   return (
     <Tooltip>
-      <TooltipTrigger render={<ToggleGroupItem tabIndex={0} className="relative size-7 rounded-md p-0" value={color.cssVar} aria-label={label} style={{ backgroundColor: color.cssVar }} onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+      <TooltipTrigger render={<ToggleGroupItem tabIndex={0} className="relative size-7 rounded-md p-0" value={color.cssVar} aria-label={label} style={{ backgroundColor: color.cssVar }} onClick={(e: React.MouseEvent) => {
                       e.preventDefault()
                       onClick(color.cssVar)
                     }} />}>{isSelected && (
@@ -107,6 +107,7 @@ const MemoizedColorPicker = React.memo<{
   onColorChange: (value: string) => void
 }>(({ palette, selectedColor, inverse, onColorChange }) => (
   <ToggleGroup
+    aria-label={`Text colors: ${palette.label}`}
     value={[selectedColor]}
     onValueChange={(values) => {
       const value = values.at(-1)

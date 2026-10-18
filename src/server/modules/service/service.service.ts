@@ -1,3 +1,4 @@
+import { resolveCatalogStatus } from "@/lib/catalog/status";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -90,13 +91,13 @@ export async function listManagedSalonServices(actorId: string, salonRef: string
 }
 
 /** Loads one service, including inactive entries, for its management form. */
-export async function getManagedSalonService(actorId: string, salonRef: string, serviceId: string): Promise<PublicService> {
+export async function getManagedSalonService(actorId: string, salonRef: string, serviceRef: string, lookup: "id" | "slug" = "id"): Promise<PublicService> {
   const salonId = await resolveSalonId(salonRef);
   if (!salonId) throw new SalonNotFoundError();
   const salon = await findSalonForViewer({ salonId, userId: actorId });
   if (!salon) throw new SalonNotFoundError();
   assertRoleAtLeast(salon.viewerRole, "MANAGER");
-  const service = await findServiceById(serviceId);
+  const service = lookup === "slug" ? await findServiceBySlug(salonId, serviceRef, true) : await findServiceById(serviceRef);
   if (!service || service.salonId !== salonId) throw new ServiceNotFoundError();
   return toPublicService(service);
 }
@@ -142,11 +143,14 @@ export async function createSalonService(
       slug,
       price: input.price,
       duration: input.duration,
-      isActive: input.isActive,
+      status: "DRAFT",
+      isActive: false,
       shortDescription: input.shortDescription ?? null,
       description: input.description ?? null,
       descriptionHtml: input.descriptionHtml ?? null,
       descriptionJson: input.descriptionJson ?? null,
+      coverImage: input.coverImage ?? null,
+      bannerImage: input.bannerImage ?? null,
       images: input.images,
     });
 
@@ -209,7 +213,10 @@ export async function updateSalonService(
   if (input.categoryId !== undefined) data.categoryId = input.categoryId;
   if (input.price !== undefined) data.price = input.price;
   if (input.duration !== undefined) data.duration = input.duration;
-  if (input.isActive !== undefined) data.isActive = input.isActive;
+  if (input.status !== undefined || input.isActive !== undefined) {
+    data.status = resolveCatalogStatus(input);
+    data.isActive = data.status === "PUBLISHED";
+  }
   if (input.shortDescription !== undefined) {
     data.shortDescription = input.shortDescription;
   }
@@ -220,6 +227,8 @@ export async function updateSalonService(
   if (input.descriptionJson !== undefined) {
     data.descriptionJson = input.descriptionJson;
   }
+  if (input.coverImage !== undefined) data.coverImage = input.coverImage;
+  if (input.bannerImage !== undefined) data.bannerImage = input.bannerImage;
   if (input.images !== undefined) data.images = input.images;
 
   try {
@@ -394,4 +403,15 @@ function isUniqueConstraintViolation(error: unknown, field: string): boolean {
   const target = error.meta?.target;
   if (Array.isArray(target)) return target.includes(field);
   return typeof target === "string" && target.includes(field);
+}
+
+/** Searches published service options after checking salon management access. */
+export async function listPackageServiceOptions(actorId: string, salonRef: string, query: { search?: string; cursor?: string }) {
+  const salonId = await resolveSalonId(salonRef);
+  if (!salonId) throw new SalonNotFoundError();
+  const salon = await findSalonForViewer({ salonId, userId: actorId });
+  if (!salon) throw new SalonNotFoundError();
+  assertRoleAtLeast(salon.viewerRole, "MANAGER");
+  const result = await listServicesBySalon(salonId, { ...query, limit: 30, sortBy: "name", sortOrder: "asc" });
+  return { ...result, items: result.items.map((service) => ({ id: service.id, name: service.name, price: Number(service.price), duration: service.duration, isActive: service.isActive, category: service.category })) };
 }

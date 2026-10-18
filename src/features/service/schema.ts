@@ -1,3 +1,4 @@
+import { catalogStatusSchema } from "@/lib/catalog/status";
 import { z } from "zod";
 
 const optionalText = (max: number, message: string) =>
@@ -40,7 +41,8 @@ export const createServiceFormSchema = z.strictObject({
     .int("Duration must be an integer")
     .min(5, "Duration must be at least 5 minutes")
     .max(480, "Duration must be at most 480 minutes"),
-  isActive: z.boolean(),
+  status: catalogStatusSchema,
+  isActive: z.boolean().optional(),
   shortDescription: optionalText(
     280,
     "Short description must contain at most 280 characters",
@@ -51,6 +53,8 @@ export const createServiceFormSchema = z.strictObject({
   ),
   descriptionHtml: optionalText(20000, "HTML description is too long"),
   descriptionJson: optionalText(50000, "JSON description is too long"),
+  coverImage: optionalUrl.optional(),
+  bannerImage: optionalUrl.optional(),
   images: z
     .array(optionalUrl)
     .max(10, "At most 10 images are allowed"),

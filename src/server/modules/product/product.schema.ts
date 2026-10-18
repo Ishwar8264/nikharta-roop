@@ -1,3 +1,4 @@
+import { catalogStatusSchema } from "@/lib/catalog/status";
 import { z } from "zod";
 
 import { resourceIdSchema } from "@/server/modules/salon/salon.schema";
@@ -11,6 +12,11 @@ const slugSchema = z
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
     "Slug must contain only lowercase letters, numbers, and hyphens",
   );
+
+// The static create page takes precedence over product slug routes.
+const productSlugSchema = slugSchema.refine((slug) => slug !== "create", {
+  message: 'Slug "create" is reserved',
+});
 
 const optionalUrlSchema = z
   .string({ error: "URL must be a string" })
@@ -94,7 +100,7 @@ export const createProductSchema = z.strictObject({
     .trim()
     .min(2, "Name must contain at least 2 characters")
     .max(120, "Name must contain at most 120 characters"),
-  slug: slugSchema.optional(),
+  slug: productSlugSchema.optional(),
   categoryId: resourceIdSchema.optional(),
   price: z
     .number({ error: "Price must be a number" })
@@ -107,7 +113,6 @@ export const createProductSchema = z.strictObject({
     .min(0, "Stock cannot be negative")
     .max(1_000_000, "Stock is too large")
     .default(0),
-  isActive: z.boolean({ error: "Active flag must be a boolean" }).default(true),
   shortDescription: z
     .string({ error: "Short description must be a string" })
     .trim()
@@ -126,6 +131,8 @@ export const createProductSchema = z.strictObject({
     .string({ error: "JSON description must be a string" })
     .max(50000, "JSON description is too long")
     .optional(),
+  coverImage: optionalUrlSchema.optional(),
+  bannerImage: optionalUrlSchema.optional(),
   images: z
     .array(optionalUrlSchema, { error: "Images must be an array of URLs" })
     .max(10, "At most 10 images are allowed")
@@ -143,9 +150,12 @@ export const createProductSchema = z.strictObject({
 export const updateProductSchema = createProductSchema
   .partial()
   .extend({
+    status: catalogStatusSchema.optional(),
+    isActive: z.boolean().optional(),
     categoryId: createProductSchema.shape.categoryId.nullable(),
+    coverImage: createProductSchema.shape.coverImage.nullable(),
+    bannerImage: createProductSchema.shape.bannerImage.nullable(),
     stock: createProductSchema.shape.stock.removeDefault().optional(),
-    isActive: createProductSchema.shape.isActive.removeDefault().optional(),
     images: createProductSchema.shape.images.removeDefault().optional(),
     shortDescription: createProductSchema.shape.shortDescription.nullable(),
     description: createProductSchema.shape.description.nullable(),
@@ -200,3 +210,6 @@ export const productParamSchema = z.strictObject({
     .min(2, "Product reference must contain at least 2 characters")
     .max(80, "Product reference must contain at most 80 characters"),
 });
+
+/** Publication is changed after creation through the dedicated status endpoint. */
+export const updateProductStatusSchema = z.strictObject({ status: catalogStatusSchema });

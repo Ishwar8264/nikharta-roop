@@ -38,7 +38,6 @@ export function FeaturedSalons() {
         <div className="mt-12 flex justify-center">
           <Button
             render={<Link href={routes.salons} />}
-            nativeButton={false}
             variant="outline"
             size="lg"
           >

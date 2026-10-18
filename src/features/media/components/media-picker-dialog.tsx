@@ -15,8 +15,10 @@ import { cn } from "@/lib/utils";
 
 import type { UploadedImage } from "../types";
 import { MediaPicker } from "./media-picker";
+import { UploadPane } from "./upload-pane";
 
 interface MediaPickerDialogProps {
+  verificationSalonSlug?: string;
   title?: string;
   description?: string;
   value: UploadedImage[];
@@ -33,6 +35,7 @@ interface MediaPickerDialogProps {
 }
 
 export function MediaPickerDialog({
+  verificationSalonSlug,
   title = "Add media",
   description,
   value,
@@ -55,8 +58,9 @@ export function MediaPickerDialog({
         role="button"
         tabIndex={0}
         aria-disabled={disabled}
-        onClick={() => !disabled && setOpen(true)}
-        onKeyDown={(e) => {
+        // Shared React Aria buttons stop bubbling; capture their activation here.
+        onClickCapture={() => !disabled && setOpen(true)}
+        onKeyDownCapture={(e) => {
           if (disabled) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -74,6 +78,7 @@ export function MediaPickerDialog({
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
+          showCloseButton={false}
           className={cn(
             "flex max-h-[90vh] w-[calc(100vw-2rem)] flex-col gap-0 p-0",
             "sm:w-full sm:max-w-5xl",
@@ -102,17 +107,30 @@ export function MediaPickerDialog({
 
           {/* ─── Body — scrollable ─── */}
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5">
-            <MediaPicker
-              value={value}
-              onChange={onChange}
-              onUploadComplete={() => setOpen(false)}
-              mode={mode}
-              max={max}
-              maxSizeMB={maxSizeMB}
-              accept={accept}
-              defaultTab={defaultTab}
-              disabled={disabled}
-            />
+            {verificationSalonSlug ? (
+              <UploadPane
+                verificationSalonSlug={verificationSalonSlug}
+                value={value}
+                onChange={onChange}
+                onUploadComplete={() => setOpen(false)}
+                maxFiles={max}
+                maxSizeMB={maxSizeMB}
+                accept={accept}
+                disabled={disabled}
+              />
+            ) : (
+              <MediaPicker
+                value={value}
+                onChange={onChange}
+                onUploadComplete={() => setOpen(false)}
+                mode={mode}
+                max={max}
+                maxSizeMB={maxSizeMB}
+                accept={accept}
+                defaultTab={defaultTab}
+                disabled={disabled}
+              />
+            )}
           </div>
 
           {/* ─── Footer — always visible ─── */}

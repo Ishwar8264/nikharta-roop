@@ -480,6 +480,7 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       "contentHtml",
       "contentJson",
       "coverImage",
+      "bannerImage",
       "readingTime",
       "views",
       "published",
@@ -503,6 +504,7 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       contentHtml: { type: ["string", "null"] },
       contentJson: { type: ["string", "null"] },
       coverImage: { type: ["string", "null"], format: "uri" },
+      bannerImage: { type: ["string", "null"], format: "uri" },
       readingTime: { type: "integer", minimum: 1 },
       views: { type: "integer", minimum: 0 },
       published: { type: "boolean" },
@@ -566,6 +568,7 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       contentHtml: { type: "string" },
       contentJson: { type: "string" },
       coverImage: { type: "string", format: "uri", maxLength: 2048 },
+      bannerImage: { type: "string", format: "uri", maxLength: 2048 },
       categoryId: { $ref: "#/components/schemas/ResourceId" },
       tags: {
         type: "array",
@@ -595,6 +598,7 @@ export const blogSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       content: { type: "string", minLength: 1, maxLength: 200000 },
       contentHtml: { type: ["string", "null"] },
       contentJson: { type: ["string", "null"] },
+      bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
       coverImage: {
         type: ["string", "null"],
         format: "uri",

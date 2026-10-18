@@ -21,7 +21,7 @@ export function ProductCard({ salonSlug, product }: Props) {
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border bg-card">
       <CoverImage
-        src={product.images[0]}
+        src={product.coverImage ?? product.images[0]}
         alt={product.name}
         aspect="video"
         rounded="none"

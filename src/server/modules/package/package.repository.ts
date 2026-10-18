@@ -1,3 +1,4 @@
+import type { CatalogStatus } from "@/lib/catalog/status";
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,7 @@ const PUBLIC_PACKAGE_SELECT = {
   slug: true,
   price: true,
   duration: true,
+  status: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -29,7 +31,7 @@ export async function listSalonPackages(
     where: {
       salonId,
       deletedAt: null,
-      ...(input.includeInactive ? {} : { isActive: true }),
+      ...(input.includeInactive ? {} : { isActive: true, status: "PUBLISHED" }),
     },
     select: PUBLIC_PACKAGE_SELECT,
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
@@ -50,7 +52,7 @@ export async function listSalonPackages(
 /** Loads an active, non-deleted package by slug within a salon. */
 export async function findPackageBySlug(salonId: string, slug: string) {
   return prisma.package.findFirst({
-    where: { salonId, slug, isActive: true, deletedAt: null },
+    where: { salonId, slug, status: "PUBLISHED", isActive: true, deletedAt: null },
     select: PUBLIC_PACKAGE_SELECT,
   });
 }
@@ -79,6 +81,7 @@ export async function createPackage(data: {
   slug: string;
   price: number;
   duration: number;
+  status: CatalogStatus;
   isActive: boolean;
   serviceIds: string[];
 }) {
@@ -89,6 +92,7 @@ export async function createPackage(data: {
       slug: data.slug,
       price: data.price,
       duration: data.duration,
+      status: data.status,
       isActive: data.isActive,
       services: {
         create: data.serviceIds.map((serviceId) => ({ serviceId })),
@@ -105,6 +109,7 @@ export async function updatePackageById(
     name?: string;
     price?: number;
     duration?: number;
+    status?: CatalogStatus;
     isActive?: boolean;
     serviceIds?: string[];
   },

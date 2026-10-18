@@ -1,16 +1,18 @@
+import { PUBLIC_SALON_FILTER } from "@/features/salon/status";
+import { SalonMemberAccountUnavailableError, SalonNotFoundError, SalonRoleInsufficientError, SalonPublicationBlockedError } from "./salon.errors";
 import "server-only";
 
-import type {
-  Prisma,
-  SalonCategory,
-  SalonMemberRole,
-} from "@/generated/prisma/client";
+import type { SalonCategory } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { generateUniqueSlug } from "@/lib/slug";
+import { isResourceId } from "./salon.helpers";
 
 import type { PublicSalonMember, SalonWithViewerRole } from "./salon.types";
 
 /** Columns safe to return on every public salon response. */
 const PUBLIC_SALON_SELECT = {
+  status: true,
   id: true,
   name: true,
   slug: true,
@@ -30,6 +32,8 @@ const PUBLIC_SALON_SELECT = {
   placeId: true,
   phone: true,
   email: true,
+  coverImage: true,
+  bannerImage: true,
   images: true,
   createdAt: true,
   updatedAt: true,
@@ -52,8 +56,7 @@ export async function listActiveSalons(input: {
   search?: string;
 }) {
   const where: Prisma.SalonWhereInput = {
-    isActive: true,
-    deletedAt: null,
+    ...PUBLIC_SALON_FILTER,
     ...(input.city
       ? { city: { equals: input.city, mode: "insensitive" } }
       : {}),
@@ -95,7 +98,7 @@ export async function listActiveSalons(input: {
 /** Loads a single salon by slug, excluding soft-deleted rows. */
 export async function findSalonBySlug(slug: string) {
   return prisma.salon.findFirst({
-    where: { slug, deletedAt: null, isActive: true },
+    where: { slug, ...PUBLIC_SALON_FILTER },
     select: PUBLIC_SALON_SELECT,
   });
 }
@@ -110,7 +113,7 @@ export async function findSalonBySlug(slug: string) {
  */
 export async function findSalonDetailBySlug(slug: string) {
   return prisma.salon.findFirst({
-    where: { slug, deletedAt: null, isActive: true },
+    where: { slug, ...PUBLIC_SALON_FILTER },
     select: {
       ...PUBLIC_SALON_SELECT,
       verification: { select: { status: true } },
@@ -131,6 +134,7 @@ export async function findSalonDetailBySlug(slug: string) {
           slug: true,
           price: true,
           duration: true,
+          coverImage: true,
           images: true,
           category: { select: { name: true, slug: true } },
         },
@@ -163,16 +167,18 @@ export async function findSalonById(id: string) {
  * single join avoids the N+1 pattern of "fetch salon, then fetch membership"
  * and keeps the authorization check atomic with the data fetch.
  */
-export async function findSalonForViewer(input: {
-  salonId: string;
-  userId: string;
-}) {
+export async function findSalonForViewer(
+  input: ({ salonId: string } | { slug: string }) & { userId: string },
+) {
   const salon = await prisma.salon.findFirst({
-    where: { id: input.salonId, deletedAt: null },
+    where: {
+      ...("salonId" in input ? { id: input.salonId } : { slug: input.slug }),
+      deletedAt: null,
+    },
     select: {
       ...PUBLIC_SALON_SELECT,
       members: {
-        where: { userId: input.userId },
+        where: { userId: input.userId, user: { deletedAt: null, emailVerified: true } },
         select: { role: true },
         take: 1,
       },
@@ -263,7 +269,7 @@ export async function createSalonWithOwner(input: {
     // New salons start hidden: they go live only after a SUPER_ADMIN
     // approves their verification (the review flow flips isActive to true).
     const salon = await transaction.salon.create({
-      data: { ...input.data, isActive: false },
+      data: { ...input.data, status: "DRAFT", isActive: false },
       select: PUBLIC_SALON_SELECT,
     });
 
@@ -290,10 +296,48 @@ export async function updateSalonById(
   id: string,
   data: Prisma.SalonUpdateInput,
 ) {
-  return prisma.salon.update({
-    where: { id },
-    data,
-    select: PUBLIC_SALON_SELECT,
+  return prisma.$transaction(async (transaction) => {
+    await transaction.$queryRaw`SELECT id FROM "Salon" WHERE id = ${id} FOR UPDATE`;
+    const current = await transaction.salon.findUnique({ where: { id } });
+    const identityFields = [
+      "name",
+      "address",
+      "city",
+      "state",
+      "zip",
+      "country",
+      "lat",
+      "lng",
+      "placeId",
+    ] as const;
+    const identityChanged =
+      current &&
+      identityFields.some(
+        (field) => data[field] !== undefined && data[field] !== current[field],
+      );
+    if ((data.status === "LIVE" || data.status === "TEMPORARILY_CLOSED") && (!current?.isActive || identityChanged)) {
+      throw new SalonPublicationBlockedError();
+    }
+    if (identityChanged) {
+      // Proofs describe a specific business and premises. Updating either invalidates that review.
+      await transaction.salonVerification.updateMany({
+        where: { salonId: id, status: { not: "SUSPENDED" } },
+        data: {
+          status: "PENDING",
+          submittedAt: null,
+          reviewedAt: null,
+          reviewedBy: null,
+          documents: Prisma.JsonNull,
+          reason:
+            "Salon identity or location changed. Submit updated verification documents before publication.",
+        },
+      });
+    }
+    return transaction.salon.update({
+      where: { id },
+      data: { ...data, ...(identityChanged ? { isActive: false } : {}) },
+      select: PUBLIC_SALON_SELECT,
+    });
   });
 }
 
@@ -316,8 +360,9 @@ export async function listSalonMembers(
       userId: true,
       salonId: true,
       role: true,
+      slug: true, name: true, avatar: true, bannerImage: true, title: true, description: true,
       user: {
-        select: { id: true, name: true, email: true },
+        select: { id: true, name: true, email: true, emailVerified: true },
       },
     },
     orderBy: [{ role: "asc" }, { id: "asc" }],
@@ -353,28 +398,54 @@ export async function findSalonMemberByUser(input: {
   });
 }
 
-/** Adds a membership row to a salon. */
+/** Creates the account and salon profile atomically, preserving existing personal data. */
 export async function addSalonMember(input: {
+  actorId: string;
   salonId: string;
-  userId: string;
-  role: SalonMemberRole;
+  email?: string;
+  userId?: string;
+  role: "STAFF" | "MANAGER";
+  name?: string;
+  slug?: string;
+  avatar?: string | null;
+  bannerImage?: string | null;
+  title?: string | null;
+  description?: string | null;
 }) {
-  return prisma.salonMember.create({
-    data: {
-      salonId: input.salonId,
-      userId: input.userId,
-      role: input.role,
-    },
-    select: {
-      id: true,
-      userId: true,
-      salonId: true,
-      role: true,
-      user: {
-        select: { id: true, name: true, email: true },
-      },
-    },
-  });
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await prisma.$transaction(async (transaction) => {
+        const owner = await transaction.salonMember.findFirst({
+          where: { salonId: input.salonId, userId: input.actorId, user: { deletedAt: null, emailVerified: true }, salon: { deletedAt: null } },
+          select: { role: true },
+        });
+        if (!owner) throw new SalonNotFoundError();
+        if (owner.role !== "OWNER") throw new SalonRoleInsufficientError();
+
+        const account = input.email
+          ? await transaction.user.upsert({
+              where: { email: input.email }, update: {},
+              create: { email: input.email, name: input.name, emailVerified: false },
+              select: { id: true, deletedAt: true },
+            })
+          : await transaction.user.findUnique({ where: { id: input.userId! }, select: { id: true, deletedAt: true } });
+        if (!account || account.deletedAt) throw new SalonMemberAccountUnavailableError();
+
+        const slug = input.slug ?? await generateUniqueSlug(input.name || "member", async (candidate) =>
+          candidate === "create" || isResourceId(candidate) || Boolean(await transaction.salonMember.findUnique({ where: { salonId_slug: { salonId: input.salonId, slug: candidate } }, select: { id: true } })), "member");
+        return transaction.salonMember.create({
+          data: { slug, salonId: input.salonId, userId: account.id, role: input.role,
+            name: input.name, avatar: input.avatar, bannerImage: input.bannerImage, title: input.title, description: input.description },
+          select: { id: true, userId: true, salonId: true, role: true, slug: true, name: true, avatar: true, bannerImage: true, title: true, description: true,
+            user: { select: { id: true, name: true, email: true, emailVerified: true } } },
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      // Retry serialization conflicts and concurrent account creation; uniqueness still wins.
+      if (attempt < 2 && error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2002"].includes(error.code)) continue;
+      throw error;
+    }
+  }
 }
 
 /** Removes a membership row. */
@@ -387,4 +458,44 @@ export async function countSalonOwners(salonId: string): Promise<number> {
   return prisma.salonMember.count({
     where: { salonId, role: "OWNER" },
   });
+}
+
+/** List the signed-in user's salon links without loading full salon records. */
+export async function listUserSalonMemberships(userId: string) {
+  return prisma.salonMember.findMany({
+    where: { userId, salon: { deletedAt: null } },
+    select: { id: true, slug: true, role: true, salon: { select: { id: true, name: true, slug: true, isActive: true } } },
+    orderBy: [{ salon: { name: "asc" } }, { salonId: "asc" }],
+  });
+}
+
+/** Count active catalogue entries for an already-authorised owner's dashboard, including private salons. */
+export async function countSalonActiveCatalog(salonId: string) {
+  const where = { salonId, isActive: true, deletedAt: null };
+  const [services, packages] = await Promise.all([
+    prisma.service.count({ where }),
+    prisma.package.count({ where }),
+  ]);
+  return { services, packages };
+}
+
+/** Permission is checked in the write: the member themselves or a verified owner of this salon. */
+export async function updateOwnSalonMember(actorId: string, salonId: string, memberId: string,
+  data: { name?: string; slug?: string; avatar?: string | null; bannerImage?: string | null; title?: string | null; description?: string | null }) {
+  return prisma.salonMember.update({
+    where: { id: memberId, salonId, user: { deletedAt: null }, salon: { deletedAt: null },
+      OR: [
+        { userId: actorId, user: { emailVerified: true } },
+        { salon: { members: { some: { userId: actorId, role: "OWNER", user: { deletedAt: null, emailVerified: true } } } } },
+      ],
+    },
+    data,
+    select: { id: true, slug: true, userId: true, salonId: true, role: true, name: true, avatar: true, bannerImage: true, title: true, description: true,
+      user: { select: { id: true, name: true, email: true, emailVerified: true } } },
+  });
+}
+
+/** Resolve a browser slug without changing the ID-based member APIs. */
+export async function findSalonMemberBySlug(salonId: string, slug: string) {
+  return prisma.salonMember.findUnique({ where: { salonId_slug: { salonId, slug } }, select: { id: true } });
 }

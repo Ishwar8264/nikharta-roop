@@ -282,6 +282,10 @@
 }
 
 /* Card forms opt into one consistent radius without changing auth/search UI. */
+:where([data-form-rounded="true"] [data-slot="select-trigger"]) {
+  height: 2.75rem;
+}
+
 :where(
   [data-form-rounded="true"] [data-slot="input"],
   [data-form-rounded="true"] [data-slot="textarea"],

@@ -7,10 +7,15 @@ import { cn } from "@/lib/utils";
 
 import { signUpload } from "../actions";
 import { saveMedia } from "../actions/save-media";
+import {
+  registerVerificationUpload,
+  signVerificationUpload,
+} from "@/features/verification/upload-actions";
 import { uploadToCloudinary } from "../lib/upload-to-cloudinary";
 import type { UploadedImage, UploadTask } from "../types";
 
 interface UploadPaneProps {
+  verificationSalonSlug?: string;
   value: UploadedImage[];
   onChange: (next: UploadedImage[]) => void;
   /** Fired after every file in a batch succeeds — used for auto-close. */
@@ -24,6 +29,7 @@ interface UploadPaneProps {
 const DEFAULT_ACCEPT = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 
 export function UploadPane({
+  verificationSalonSlug,
   value,
   onChange,
   onUploadComplete,
@@ -73,7 +79,9 @@ export function UploadPane({
         );
 
         try {
-          const signature = await signUpload();
+          const signature = verificationSalonSlug
+            ? await signVerificationUpload(verificationSalonSlug)
+            : await signUpload();
           const result = await uploadToCloudinary({
             file: task.file,
             signature,
@@ -83,13 +91,19 @@ export function UploadPane({
               ),
           });
 
-          await saveMedia(result);
+          let saved = result;
+          if (verificationSalonSlug)
+            saved = await registerVerificationUpload(
+              verificationSalonSlug,
+              result.publicId,
+            );
+          else await saveMedia(result);
 
-          uploaded.push(result);
+          uploaded.push(saved);
           setTasks((prev) =>
             prev.map((t) =>
               t.id === task.id
-                ? { ...t, status: "done", progress: 100, result }
+                ? { ...t, status: "done", progress: 100, result: saved }
                 : t,
             ),
           );
@@ -123,7 +137,16 @@ export function UploadPane({
         }, 700);
       }
     },
-    [accept, maxFiles, maxSizeMB, onChange, remaining, value, onUploadComplete],
+    [
+      accept,
+      maxFiles,
+      maxSizeMB,
+      onChange,
+      remaining,
+      value,
+      onUploadComplete,
+      verificationSalonSlug,
+    ],
   );
 
   const doneCount = tasks.filter((t) => t.status === "done").length;

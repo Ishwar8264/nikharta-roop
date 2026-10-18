@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAuthContext } from "@/server/auth/session";
 import {
+  SalonPublicationBlockedError,
   SalonPlaceConflictError,
   SalonNotFoundError,
   SalonRoleInsufficientError,
@@ -154,6 +155,9 @@ export async function PATCH(
       { status: 200 },
     );
   } catch (error) {
+    if (error instanceof SalonPublicationBlockedError) {
+      return NextResponse.json({ message: error.message }, { status: 409 });
+    }
     if (error instanceof SalonNotFoundError) {
       return NextResponse.json({ message: error.message }, { status: 404 });
     }

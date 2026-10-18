@@ -117,11 +117,18 @@ export async function findUserById(
       email: true,
       phone: true,
       avatar: true,
+      coverImage: true,
       bio: true,
       lat: true,
       lng: true,
       role: true,
       isOnboarded: true,
+      accountType: true,
+      onboardingCompletedAt: true,
+      partnerCompletedAt: true,
+      partnerTermsVersion: true,
+      partnerTermsAcceptedAt: true,
+      partnerEligibilityBackfilledAt: true,
       emailVerified: true,
       phoneVerified: true,
       loyaltyPoints: true,
@@ -160,6 +167,7 @@ export async function updateUserProfile(
   data: {
     name?: string | null;
     avatar?: string | null;
+    coverImage?: string | null;
     bio?: string | null;
     lat?: number | null;
     lng?: number | null;
@@ -174,11 +182,18 @@ export async function updateUserProfile(
       email: true,
       phone: true,
       avatar: true,
+      coverImage: true,
       bio: true,
       lat: true,
       lng: true,
       role: true,
       isOnboarded: true,
+      accountType: true,
+      onboardingCompletedAt: true,
+      partnerCompletedAt: true,
+      partnerTermsVersion: true,
+      partnerTermsAcceptedAt: true,
+      partnerEligibilityBackfilledAt: true,
       emailVerified: true,
       phoneVerified: true,
       loyaltyPoints: true,

@@ -46,6 +46,7 @@ export default async function CreateSalonServicePage({ params }: PageProps) {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
       <CreateServiceForm
+        salonId={salon.id}
         salonName={salon.name}
         salonSlug={salon.slug}
         categories={categories}

@@ -1,0 +1,10 @@
+CREATE TYPE "CatalogStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'PAUSED', 'ARCHIVED');
+ALTER TABLE "Service" ADD COLUMN "status" "CatalogStatus" NOT NULL DEFAULT 'DRAFT';
+UPDATE "Service" SET "status" = CASE WHEN "isActive" THEN 'PUBLISHED'::"CatalogStatus" ELSE 'PAUSED'::"CatalogStatus" END;
+ALTER TABLE "Service" ALTER COLUMN "isActive" SET DEFAULT false;
+ALTER TABLE "Product" ADD COLUMN "status" "CatalogStatus" NOT NULL DEFAULT 'DRAFT';
+UPDATE "Product" SET "status" = CASE WHEN "isActive" THEN 'PUBLISHED'::"CatalogStatus" ELSE 'PAUSED'::"CatalogStatus" END;
+ALTER TABLE "Product" ALTER COLUMN "isActive" SET DEFAULT false;
+ALTER TABLE "Package" ADD COLUMN "status" "CatalogStatus" NOT NULL DEFAULT 'DRAFT';
+UPDATE "Package" SET "status" = CASE WHEN "isActive" THEN 'PUBLISHED'::"CatalogStatus" ELSE 'PAUSED'::"CatalogStatus" END;
+ALTER TABLE "Package" ALTER COLUMN "isActive" SET DEFAULT false;

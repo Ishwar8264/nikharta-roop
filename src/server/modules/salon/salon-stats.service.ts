@@ -5,11 +5,10 @@ import {
   toLocalDateString,
 } from "@/server/modules/appointment/appointment.availability";
 import { listAppointmentsForSalon } from "@/server/modules/appointment/appointment.service";
-import { listSalonPackageCatalog } from "@/server/modules/package/package.service";
-import { listSalonServices } from "@/server/modules/service/service.service";
 import { SalonVerificationNotFoundError } from "@/server/modules/verification/verification.errors";
 import { getSalonVerification } from "@/server/modules/verification/verification.service";
 
+import { countSalonActiveCatalog } from "./salon.repository";
 import { findOwnedSalonSummary } from "./salon.service";
 import type { SalonOwnerStats } from "./salon-stats.types";
 
@@ -32,10 +31,9 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * manages, or null when the caller is not a salon owner/manager.
  *
  * Why parallel fetches:
- * Five independent reads drive this card — today's appointments, this week's
- * completed appointments (for revenue), the active package count, the active
- * service count, and the verification row. Firing them in `Promise.all`
- * collapses five sequential round-trips into one wave, keeping the dashboard
+ * Independent reads drive this card — today's appointments, this week's
+ * completed appointments (for revenue), active catalogue counts and verification.
+ * Fetching them in parallel keeps the dashboard
  * TTFB competitive with the previous ComingSoon placeholder.
  *
  * Why the call signature is `userId` only:
@@ -49,8 +47,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * completed revenue" — both are bounded by a single day or week. 100 is
  * well above the realistic max for one salon; if a salon ever exceeds it,
  * the card quietly under-counts rather than paging the API server-side.
- * The same cap is applied to the services and packages catalogues for
- * consistency; neither realistically exceeds 100 active rows.
+ * Catalogue totals use database counts rather than paginated public lists.
  *
  * Why the verification catch is narrow:
  * `getSalonVerification` throws `SalonVerificationNotFoundError` for salons
@@ -78,7 +75,7 @@ export async function getSalonOwnerStats(
   const weekFromIso = toIsoDateTimeWithOffset(weekStartDate, 0, 0, 0, offsetMin);
   const weekToIso = toIsoDateTimeWithOffset(weekEndDate, 23, 59, 59, offsetMin);
 
-  const [todaysAppts, weekCompletedAppts, packages, services, verification] =
+  const [todaysAppts, weekCompletedAppts, catalog, verification] =
     await Promise.all([
       listAppointmentsForSalon(userId, salon.slug, {
         limit: 100,
@@ -91,15 +88,7 @@ export async function getSalonOwnerStats(
         from: weekFromIso,
         to: weekToIso,
       }),
-      listSalonPackageCatalog(salon.slug, {
-        limit: 100,
-        includeInactive: false,
-      }),
-      listSalonServices(salon.slug, {
-        limit: 100,
-        sortBy: "createdAt",
-        sortOrder: "desc",
-      }),
+      countSalonActiveCatalog(salon.id),
       getSalonVerification(userId, salon.slug).catch((error: unknown) => {
         if (error instanceof SalonVerificationNotFoundError) return null;
         throw error;
@@ -157,8 +146,8 @@ export async function getSalonOwnerStats(
     thisWeekRevenue,
     pendingVerification:
       verification === null || verification.status === "PENDING",
-    activeServices: services.items.length,
-    activePackages: packages.items.length,
+    activeServices: catalog.services,
+    activePackages: catalog.packages,
   };
 }
 

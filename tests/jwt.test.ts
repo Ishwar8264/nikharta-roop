@@ -64,7 +64,28 @@ describe("verifyAccessToken", () => {
   it("round-trips the payload through sign → verify", async () => {
     const token = await signAccessToken(VALID_PAYLOAD);
     const decoded = await verifyAccessToken(token);
-    expect(decoded).toEqual(VALID_PAYLOAD);
+    expect(decoded).toEqual({
+      ...VALID_PAYLOAD,
+      jti: expect.stringMatching(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/),
+    });
+  });
+
+  it("issues distinct token ids for the same user", async () => {
+    const first = await verifyAccessToken(await signAccessToken(VALID_PAYLOAD));
+    const second = await verifyAccessToken(await signAccessToken(VALID_PAYLOAD));
+    expect(first.jti).not.toBe(second.jti);
+  });
+
+  it("continues accepting valid tokens issued before jti was added", async () => {
+    const token = await new SignJWT({ role: VALID_PAYLOAD.role })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject(VALID_PAYLOAD.sub)
+      .setIssuer("salon-app")
+      .setAudience("salon-app-client")
+      .setIssuedAt()
+      .setExpirationTime("15m")
+      .sign(new TextEncoder().encode(TEST_SECRET));
+    expect(await verifyAccessToken(token)).toEqual({ ...VALID_PAYLOAD, jti: undefined });
   });
 
   it("rejects a tampered token (signature no longer matches)", async () => {

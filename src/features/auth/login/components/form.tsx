@@ -36,6 +36,7 @@ export function LoginForm({
 }) {
   const { login, isLoading, error, fieldErrors } = useLogin();
   const searchParams = useSearchParams();
+  const returnTo = searchParams.get("redirect");
   const justRegistered = searchParams.get("registered") === "1";
   const justVerified = searchParams.get("verified") === "1";
   const justReset = searchParams.get("reset") === "1";
@@ -137,7 +138,7 @@ export function LoginForm({
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link
-          href={routes.register}
+          href={returnTo ? `${routes.register}?redirect=${encodeURIComponent(returnTo)}` : routes.register}
           className="font-medium text-foreground underline-offset-4 hover:underline"
         >
           Create one

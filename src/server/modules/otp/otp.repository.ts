@@ -29,6 +29,7 @@ export interface OtpTargetUser {
   phone: string | null;
   emailVerified: boolean;
   phoneVerified: boolean;
+  password: string | null;
 }
 
 /** Looks up a non-deleted user by email or phone. */
@@ -50,6 +51,7 @@ export async function findUserByEmailOrPhone(input: {
       phone: true,
       emailVerified: true,
       phoneVerified: true,
+      password: true,
     },
   });
 }

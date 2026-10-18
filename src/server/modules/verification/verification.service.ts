@@ -23,6 +23,10 @@ import type {
   ReviewVerificationInput,
   SubmitVerificationInput,
 } from "./verification.types";
+import {
+  reviewVerificationSchema,
+  submitVerificationSchema,
+} from "./verification.schema";
 
 /** Loads the verification for a salon the caller manages. MANAGER+. */
 export async function getSalonVerification(
@@ -68,7 +72,8 @@ export async function submitSalonVerification(
     throw new SalonVerificationSuspendedError();
   }
 
-  return submitVerification(salonId, input.documents);
+  const validated = submitVerificationSchema.parse(input);
+  return submitVerification(salonId, callerId, validated.documents);
 }
 
 /**
@@ -98,11 +103,14 @@ export async function reviewSalonVerification(
     throw new SalonAlreadyVerifiedError();
   }
 
+  const validated = reviewVerificationSchema.parse(input);
   return applyVerificationDecision({
     salonId,
-    status: input.status,
-    reason: input.reason ?? null,
+    status: validated.status,
+    reason: validated.reason ?? null,
     reviewerId: callerId,
+    expectedUpdatedAt: validated.expectedUpdatedAt,
+    evidence: validated.evidence,
   });
 }
 

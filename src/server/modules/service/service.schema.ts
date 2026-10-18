@@ -1,3 +1,4 @@
+import { catalogStatusSchema } from "@/lib/catalog/status";
 import { z } from "zod";
 
 import { resourceIdSchema } from "@/server/modules/salon/salon.schema";
@@ -103,7 +104,6 @@ export const createServiceSchema = z.strictObject({
     .int("Duration must be an integer")
     .min(5, "Duration must be at least 5 minutes")
     .max(480, "Duration must be at most 480 minutes"),
-  isActive: z.boolean({ error: "Active flag must be a boolean" }).default(true),
   shortDescription: z
     .string({ error: "Short description must be a string" })
     .trim()
@@ -122,6 +122,8 @@ export const createServiceSchema = z.strictObject({
     .string({ error: "JSON description must be a string" })
     .max(50000, "JSON description is too long")
     .optional(),
+  coverImage: optionalUrlSchema.optional(),
+  bannerImage: optionalUrlSchema.optional(),
   images: z
     .array(optionalUrlSchema, { error: "Images must be an array of URLs" })
     .max(10, "At most 10 images are allowed")
@@ -139,8 +141,11 @@ export const createServiceSchema = z.strictObject({
 export const updateServiceSchema = createServiceSchema
   .partial()
   .extend({
+    status: catalogStatusSchema.optional(),
+    isActive: z.boolean().optional(),
     categoryId: createServiceSchema.shape.categoryId.nullable(),
-    isActive: createServiceSchema.shape.isActive.removeDefault().optional(),
+    coverImage: createServiceSchema.shape.coverImage.nullable(),
+    bannerImage: createServiceSchema.shape.bannerImage.nullable(),
     images: createServiceSchema.shape.images.removeDefault().optional(),
     shortDescription: createServiceSchema.shape.shortDescription.nullable(),
     description: createServiceSchema.shape.description.nullable(),
@@ -194,3 +199,6 @@ export const serviceParamSchema = z.strictObject({
     .min(2, "Service reference must contain at least 2 characters")
     .max(80, "Service reference must contain at most 80 characters"),
 });
+
+/** Publication is changed after creation through the dedicated status endpoint. */
+export const updateServiceStatusSchema = z.strictObject({ status: catalogStatusSchema });

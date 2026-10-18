@@ -1,13 +1,17 @@
+import { listUserSalonMemberships } from "@/server/modules/salon/salon.repository";
+import { routes } from "@/config/routes";
 import { NextResponse } from "next/server";
 
 import { setSessionCookies } from "@/server/auth/cookies";
 import { issueTokenPair } from "@/server/auth/token.service";
 import { getCurrentUser } from "@/server/modules/auth/auth.service";
 import {
+  OtpAccountSetupRequiredError,
   OtpExpiredError,
   OtpInvalidError,
   OtpMaxAttemptsError,
 } from "@/server/modules/otp/otp.errors";
+import { WeakPasswordError } from "@/server/modules/auth/auth.errors";
 import { verifyOtpSchema } from "@/server/modules/otp/otp.schema";
 import { verifyOtpCode } from "@/server/modules/otp/otp.service";
 
@@ -54,6 +58,13 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const result = await verifyOtpCode(validation.data);
+    // Staff activation must not replace an owner session or sign in the invited member.
+    if (validation.data.createSession === false) {
+      const memberships = await listUserSalonMemberships(result.userId);
+      const membership = memberships.find(({ role, salon }) => role !== "OWNER" && salon.isActive);
+      const staffProfileUrl = membership ? routes.salonStaffDetail(membership.salon.slug, membership.slug ?? membership.id) : routes.profile;
+      return NextResponse.json({ message: "Verification successful", data: { ...result, staffProfileUrl } }, { status: 200 });
+    }
 
     // Verification flipped the emailVerified flag; now load the full user
     // record so we can issue tokens with the correct role. getCurrentUser
@@ -93,6 +104,10 @@ export async function POST(request: Request): Promise<Response> {
 
     return response;
   } catch (error) {
+    if (error instanceof OtpAccountSetupRequiredError) {
+      return NextResponse.json({ message: error.message, code: "ACCOUNT_SETUP_REQUIRED" }, { status: 422 });
+    }
+
     if (error instanceof OtpInvalidError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
@@ -103,6 +118,10 @@ export async function POST(request: Request): Promise<Response> {
 
     if (error instanceof OtpMaxAttemptsError) {
       return NextResponse.json({ message: error.message }, { status: 429 });
+    }
+
+    if (error instanceof WeakPasswordError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
     return NextResponse.json(

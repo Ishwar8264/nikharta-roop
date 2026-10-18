@@ -1,7 +1,9 @@
+import { onboardingPaths } from "./onboarding.openapi";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 /** Authentication paths: register, login, refresh, OTP, passwords, sessions. */
 export const authPaths = {
+      ...onboardingPaths,
       "/api/v1/auth/register": {
         post: {
           tags: ["Authentication"],
@@ -146,7 +148,21 @@ export const authPaths = {
             },
             "403": {
               description:
-                "Account exists but email is not verified, or account is deactivated",
+                "Account is deactivated",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "429": {
+              description: "Temporary identifier lockout or IP rate limit",
+              headers: {
+                "Retry-After": {
+                  description: "Seconds before another sign-in attempt",
+                  schema: { type: "integer" },
+                },
+              },
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -171,8 +187,8 @@ export const authPaths = {
           description:
             "Exchanges the `refreshToken` httpOnly cookie for a new access + " +
             "refresh token pair. The previous refresh token is revoked on every " +
-            "successful call. Reuse of a revoked token revokes every session for " +
-            "that user, forcing a full re-login. Send the readable `csrfToken` " +
+            "initial rotation. Within 10 seconds, retries recover its exact live successor. " +
+            "Later reuse revokes all refresh sessions. Send the readable `csrfToken` " +
             "cookie value in the `x-csrf-token` header.",
           operationId: "refreshTokens",
           security: [{ csrfToken: [] }],
@@ -510,6 +526,7 @@ export const authPaths = {
             },
           },
           responses: {
+            "422": { description: "Invited account must choose a password before verification" },
             "200": {
               description: "Code accepted — identifier is now verified",
               content: {
@@ -1057,6 +1074,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           additionalProperties: false,
           required: ["email"],
           properties: {
+            staffActivation: { type: "boolean", description: "Send an activation link for salon members without automatic login." },
             email: {
               type: "string",
               format: "email",
@@ -1102,6 +1120,8 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           additionalProperties: false,
           required: ["email", "code"],
           properties: {
+            createSession: { type: "boolean", default: true, description: "Set false for staff activation: verifies email and sets an initial password without issuing tokens or modifying session cookies." },
+            newPassword: { type: "string", minLength: 8, maxLength: 128, description: "Required for passwordless invited accounts. Never overwrites existing passwords." },
             email: {
               type: "string",
               format: "email",
@@ -1128,6 +1148,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               type: "object",
               required: ["userId", "channel"],
               properties: {
+                staffProfileUrl: { type: "string", description: "Internal post-login destination for activation without a session." },
                 userId: { $ref: "#/components/schemas/ResourceId" },
                 channel: {
                   type: "string",
@@ -1225,11 +1246,19 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "email",
             "phone",
             "avatar",
+            "coverImage",
             "bio",
             "lat",
             "lng",
             "role",
             "isOnboarded",
+            "accountType",
+            "onboardingCompletedAt",
+            "partnerCompletedAt",
+            "partnerTermsVersion",
+            "partnerTermsAcceptedAt",
+            "partnerEligibilityBackfilledAt",
+
             "emailVerified",
             "phoneVerified",
             "loyaltyPoints",
@@ -1242,6 +1271,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             email: { type: ["string", "null"], format: "email" },
             phone: { type: ["string", "null"] },
             avatar: { type: ["string", "null"], format: "uri" },
+            coverImage: { type: ["string", "null"], format: "uri" },
             bio: { type: ["string", "null"] },
             lat: { type: ["number", "null"], format: "float" },
             lng: { type: ["number", "null"], format: "float" },
@@ -1250,6 +1280,13 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               enum: ["SUPER_ADMIN", "USER"],
             },
             isOnboarded: { type: "boolean" },
+            accountType: { type: ["string", "null"], enum: ["CUSTOMER", "SALON_PARTNER", null] },
+            partnerTermsVersion: { type: ["string", "null"] },
+            onboardingCompletedAt: { type: ["string", "null"], format: "date-time" },
+            partnerCompletedAt: { type: ["string", "null"], format: "date-time" },
+            partnerTermsAcceptedAt: { type: ["string", "null"], format: "date-time" },
+            partnerEligibilityBackfilledAt: { type: ["string", "null"], format: "date-time" },
+
             emailVerified: { type: "boolean" },
             phoneVerified: { type: "boolean" },
             loyaltyPoints: { type: "integer" },
@@ -1290,6 +1327,12 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               format: "uri",
               maxLength: 2048,
               example: "https://cdn.example.com/avatars/ishwar.png",
+            },
+            coverImage: {
+              type: ["string", "null"],
+              format: "uri",
+              maxLength: 2048,
+              description: "Profile cover image URL. Set to null to remove it.",
             },
             bio: {
               type: ["string", "null"],

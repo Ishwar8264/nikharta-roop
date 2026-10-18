@@ -15,12 +15,14 @@ import type {
 
 /** Columns safe to return on every public staff response. */
 const PUBLIC_STAFF_SELECT = {
+  slug: true,
   id: true,
   userId: true,
   salonId: true,
   role: true,
+  name: true, avatar: true, bannerImage: true, title: true, description: true,
   user: {
-    select: { id: true, name: true, email: true, avatar: true },
+    select: { id: true, name: true, email: true, avatar: true, emailVerified: true },
   },
 } as const satisfies Prisma.SalonMemberSelect;
 
@@ -64,24 +66,13 @@ export async function listSalonStaff(
 
 /** Loads a single SalonMember by primary key (scoped to the salon). */
 export async function findStaffMemberInSalon(staffId: string, salonId: string) {
-  return prisma.salonMember.findFirst({
-    where: { id: staffId, salonId },
-    select: {
-      id: true,
-      userId: true,
-      salonId: true,
-      role: true,
-      user: {
-        select: { id: true, name: true, email: true, avatar: true },
-      },
-    },
-  });
+  return prisma.salonMember.findFirst({ where: { id: staffId, salonId }, select: PUBLIC_STAFF_SELECT });
 }
 
 /** Returns the caller's SalonMember row for a salon, or null. */
 export async function findCallerMembership(salonId: string, userId: string) {
   return prisma.salonMember.findUnique({
-    where: { userId_salonId: { userId, salonId } },
+    where: { userId_salonId: { userId, salonId }, user: { emailVerified: true, deletedAt: null } },
     select: { role: true },
   });
 }
@@ -307,6 +298,8 @@ export async function listStaffForService(
     where: {
       serviceId,
       staff: {
+        emailVerified: true,
+        deletedAt: null,
         salonMemberships: {
           some: { salonId },
         },
@@ -320,9 +313,10 @@ export async function listStaffForService(
           name: true,
           email: true,
           avatar: true,
+          emailVerified: true,
           salonMemberships: {
             where: { salonId },
-            select: { id: true, userId: true, salonId: true, role: true },
+            select: { id: true, userId: true, salonId: true, role: true, name: true, avatar: true, bannerImage: true, title: true, description: true },
             take: 1,
           },
         },
@@ -340,11 +334,13 @@ export async function listStaffForService(
         userId: membership!.userId,
         salonId: membership!.salonId,
         role: membership!.role,
+        name: membership!.name, avatar: membership!.avatar, bannerImage: membership!.bannerImage, title: membership!.title, description: membership!.description,
         user: {
           id: staff.id,
-          name: staff.name,
+          name: membership!.name ?? staff.name,
           email: staff.email,
-          avatar: staff.avatar,
+          avatar: membership!.avatar ?? staff.avatar,
+          emailVerified: staff.emailVerified,
         },
       };
     });

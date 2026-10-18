@@ -205,7 +205,7 @@ export async function createAppointment(
   callerId: string,
   input: CreateAppointmentInput,
 ): Promise<PublicAppointment> {
-  const salonId = await resolveSalonId(input.salonRef, true);
+  const salonId = await resolveSalonId(input.salonRef, true, true);
   if (!salonId) throw new SalonNotFoundError();
 
   const callerMembership = await findSalonForViewer({
@@ -753,8 +753,11 @@ export async function getAvailability(
   salonRef: string,
   query: AvailabilityQuery,
 ): Promise<AvailabilityResult> {
-  const salonId = await resolveSalonId(salonRef, true);
+  const salonId = await resolveSalonId(salonRef, true, true);
   if (!salonId) throw new SalonNotFoundError();
+
+  const staff = await findSalonForViewer({ salonId, userId: query.staffId });
+  if (!staff) throw new AppointmentStaffNotFoundError();
 
   const timezone = await getActiveSalonTimezone(salonId);
   if (!timezone) throw new SalonNotFoundError();
@@ -838,6 +841,9 @@ async function validateStaffAvailability(input: {
   endTime: Date;
   excludeAppointmentId?: string;
 }): Promise<void> {
+  const staff = await findSalonForViewer({ salonId: input.salonId, userId: input.staffUserId });
+  if (!staff) throw new AppointmentStaffNotFoundError();
+
   const salonRow = await import("@/lib/prisma").then(({ prisma }) =>
     prisma.salon.findUnique({
       where: { id: input.salonId },

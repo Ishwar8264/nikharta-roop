@@ -100,6 +100,8 @@ export const createSalonSchema = z.strictObject({
     .pipe(z.email({ error: "Email format is invalid" }))
     .transform((email) => email.toLowerCase())
     .optional(),
+  coverImage: z.string().trim().url("URL is invalid").max(2048).optional(),
+  bannerImage: z.string().trim().url("URL is invalid").max(2048).optional(),
   images: z
     .array(z.string().url("URL is invalid"), {
       error: "Images must be an array of URLs",

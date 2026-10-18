@@ -1,3 +1,4 @@
+import type { CatalogStatus } from "@/lib/catalog/status";
 export interface ServiceCategoryOption {
   id: string;
   name: string;
@@ -16,10 +17,13 @@ export interface SalonService extends CreatedService {
   description: string | null;
   descriptionHtml: string | null;
   descriptionJson: string | null;
+  coverImage: string | null;
+  bannerImage: string | null;
   images: string[];
 }
 
 export interface CreatedService {
+  status: CatalogStatus;
   id: string;
   salonId: string;
   name: string;

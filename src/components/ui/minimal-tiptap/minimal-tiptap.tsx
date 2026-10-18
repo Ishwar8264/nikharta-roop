@@ -1,5 +1,6 @@
 import "./styles/index.css"
 
+import type { ReactNode } from "react"
 import type { Content, Editor } from "@tiptap/react"
 import type { UseMinimalTiptapEditorProps } from "./hooks/use-minimal-tiptap"
 import { EditorContent, EditorContext } from "@tiptap/react"
@@ -19,6 +20,8 @@ export interface MinimalTiptapProps extends Omit<
   UseMinimalTiptapEditorProps,
   "onUpdate"
 > {
+  variant?: "default" | "compact"
+  renderToolbarAction?: (editor: Editor) => ReactNode
   value?: Content
   onChange?: (value: Content, editor: Editor) => void
   className?: string
@@ -71,6 +74,8 @@ const Toolbar = ({ editor }: { editor: Editor }) => (
 export const MinimalTiptapEditor = ({
   value,
   onChange,
+  variant,
+  renderToolbarAction,
   className,
   editorContentClassName,
   ...props
@@ -89,6 +94,8 @@ export const MinimalTiptapEditor = ({
     <EditorContext.Provider value={{ editor }}>
       <MainMinimalTiptapEditor
         editor={editor}
+        variant={variant}
+        renderToolbarAction={renderToolbarAction}
         className={className}
         editorContentClassName={editorContentClassName}
       />
@@ -102,6 +109,8 @@ export default MinimalTiptapEditor
 
 export const MainMinimalTiptapEditor = ({
   editor: providedEditor,
+  variant = "default",
+  renderToolbarAction,
   className,
   editorContentClassName,
 }: MinimalTiptapProps & { editor: Editor }) => {
@@ -109,6 +118,31 @@ export const MainMinimalTiptapEditor = ({
 
   if (!editor) {
     return null
+  }
+
+  if (variant === "compact") {
+    return (
+      <div className="flex w-full flex-col gap-2">
+        <div className={cn(
+          "rounded-md border border-input bg-background shadow-xs",
+          "focus-within:border-ring focus-within:ring-ring/20 focus-within:ring-2",
+          className
+        )}>
+          <EditorContent editor={editor} className={cn(
+            "minimal-tiptap-editor p-3 [&_.ProseMirror]:min-h-24 [&_.ProseMirror]:text-sm",
+            editorContentClassName
+          )} />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div role="group" aria-label="Text formatting" inert={!editor.isEditable} className={cn("flex items-center gap-0.5 rounded-md border border-border bg-muted/20 p-1 [&_svg]:size-3.5", !editor.isEditable && "opacity-50")}>
+            <SectionTwo editor={editor} activeActions={["bold", "italic", "strikethrough"]} mainActionCount={3} size="sm" />
+            <Separator orientation="vertical" className="mx-1 h-4" />
+            <SectionFour editor={editor} activeActions={["bulletList", "orderedList"]} mainActionCount={2} size="sm" />
+          </div>
+          {renderToolbarAction?.(editor)}
+        </div>
+      </div>
+    )
   }
 
   return (

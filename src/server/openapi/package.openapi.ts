@@ -42,6 +42,26 @@ function salonRefParameter(): OpenAPIV3.ParameterObject {
 
 /** OpenAPI paths for salon packages / combos. */
 export const packagePaths = {
+  "/api/v1/salons/{salonRef}/packages/{packageRef}/status": {
+    patch: {
+      tags: ["Packages"],
+      summary: "Update package status",
+      description: "Requires MANAGER access. Changes publication after creation; existing records are retained.",
+      operationId: "updatePackageStatus",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "salonRef", in: "path", required: true, schema: { type: "string" } }, { name: "packageRef", in: "path", required: true, schema: { type: "string" } }],
+      requestBody: { required: true, content: { "application/json": { schema: { type: "object", additionalProperties: false, required: ["status"], properties: { status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] } } } } } },
+      responses: {
+        "200": { description: "Status updated", content: { "application/json": { schema: { $ref: "#/components/schemas/PackageResponse" } } } },
+        "400": { description: "Invalid status or request" },
+        "401": { description: "Authentication required" },
+        "403": { description: "Insufficient salon permissions" },
+        "404": { description: "Salon or item not found" },
+        "409": { description: "Publication requirements not met" },
+      },
+    },
+  },
+
   "/api/v1/salons/{salonRef}/packages": {
     get: {
       tags: ["Packages"],
@@ -246,7 +266,8 @@ export const packageSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       slug: { type: "string" },
       price: { type: "number", description: "Package price in INR" },
       duration: { type: "integer", description: "Total minutes" },
-      isActive: { type: "boolean" },
+      status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] },
+            isActive: { type: "boolean" },
       services: {
         type: "array",
         items: { $ref: "#/components/schemas/PackageServiceLine" },
@@ -287,6 +308,7 @@ export const packageSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
   },
   CreatePackageRequest: {
     type: "object",
+          description: "Creates a Draft. Update publication through the dedicated status endpoint after creation.",
     required: ["name", "slug", "price", "duration"],
     properties: {
       name: { type: "string" },
@@ -296,7 +318,6 @@ export const packageSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       },
       price: { type: "number" },
       duration: { type: "integer", minimum: 5, maximum: 1440 },
-      isActive: { type: "boolean", default: true },
       serviceIds: {
         type: "array",
         items: { $ref: "#/components/schemas/ResourceId" },
@@ -311,7 +332,8 @@ export const packageSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       name: { type: "string" },
       price: { type: "number" },
       duration: { type: "integer", minimum: 5, maximum: 1440 },
-      isActive: { type: "boolean" },
+      status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] },
+            isActive: { type: "boolean" },
       serviceIds: {
         type: "array",
         items: { $ref: "#/components/schemas/ResourceId" },

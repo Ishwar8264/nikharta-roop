@@ -1,3 +1,4 @@
+import type { CatalogStatus } from "@/lib/catalog/status";
 import "server-only";
 
 import type { PublicService } from "./service.types";
@@ -17,11 +18,14 @@ interface ServiceRowForMapper {
   slug: string;
   price: { toNumber(): number };
   duration: number;
+  status: CatalogStatus;
   isActive: boolean;
   shortDescription: string | null;
   description: string | null;
   descriptionHtml: string | null;
   descriptionJson: string | null;
+  coverImage: string | null;
+  bannerImage: string | null;
   images: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -45,11 +49,14 @@ export function toPublicService(row: ServiceRowForMapper): PublicService {
     slug: row.slug,
     price: row.price.toNumber(),
     duration: row.duration,
+    status: row.status,
     isActive: row.isActive,
     shortDescription: row.shortDescription,
     description: row.description,
     descriptionHtml: row.descriptionHtml,
     descriptionJson: row.descriptionJson,
+    coverImage: row.coverImage,
+    bannerImage: row.bannerImage,
     images: row.images,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

@@ -1,7 +1,7 @@
 export { updateProfileApi } from "./api";
 export { ProfileForm } from "./profile-form";
 export type {
-  CurrentUserWire,
+  UserProfile,
   ProfileFormProps,
   UpdateProfileBody,
 } from "./types";
