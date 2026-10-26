@@ -209,11 +209,16 @@ Candidate `20261026064000_account_and_profile_onboarding` extends the target des
 it is not deployed to the configured database.
 
 - User starts `PENDING_VERIFICATION`. Explicit account activation changes it to
-  `ACTIVE` after email or phone verification; `SUSPENDED` blocks account access.
-  The database rejects an ACTIVE user with neither identifier verified. Verification
-  flags alone do not automatically activate or unsuspend a user. Soft deletion
-  remains independently authoritative. Existing non-deleted verified users are
-  backfilled ACTIVE; other users retain the pending default.
+  `ACTIVE` after email or phone verification. `SUSPENDED` is temporary platform
+  restriction, `BANNED` is an indefinite policy restriction, and `DEACTIVATED`
+  represents a user-disabled account. `PENDING_DELETION` preserves the account
+  during its deletion grace period; `DELETED` is the final soft-deleted tombstone.
+  The database rejects an ACTIVE user with neither identifier verified and keeps
+  `DELETED` consistent with `deletedAt`. Verification flags alone do not activate,
+  unsuspend, unban or reactivate a user. Existing deleted users are backfilled
+  DELETED, existing non-deleted verified users ACTIVE, and remaining users retain
+  the pending default. Temporary login lockout remains separate authentication
+  state rather than an account lifecycle status.
 - Both PERSONAL and SALON profiles start `DRAFT`. Creating or verifying a User
   never activates either profile. A newly created Salon also retains its existing
   DRAFT default. Existing profile records are conservatively backfilled DRAFT;
@@ -231,18 +236,20 @@ it is not deployed to the configured database.
 - UserOnboarding retains legacy completion/consent fields unchanged and gains
   currentStep, draft and updatedAt for resumable account onboarding. Account
   onboarding completion is independent of both login access and profile completion.
-- OTP purposes are REGISTRATION_VERIFICATION, LOGIN, EMAIL_VERIFICATION,
-  PHONE_VERIFICATION and PASSWORD_RESET. Channel (EMAIL, PHONE, WHATSAPP) describes
-  delivery, not intent. Legacy purposes and the existing default are preserved.
-  Future issuance should explicitly select the purpose; verification must match
-  user, channel and purpose and atomically consume an unexpired code. A LOGIN OTP
-  must not change verification or suspension state as a side effect. Registration
-  verification may verify the matching identifier and activate an eligible pending
-  account in the same transaction, without completing onboarding.
-- Existing codeHash, expiresAt, attempts/maxAttempts and isUsed remain. Optional
-  usedAt records future consumption time; unknown historical times stay null.
-  A non-null usedAt requires isUsed=true. Expiry and attempt enforcement still
-  require atomic verification logic; purpose enums alone do not enforce it.
+- OTP purpose describes intent: REGISTRATION, LOGIN, PASSWORD_RESET,
+  CONTACT_VERIFICATION, CONTACT_CHANGE, SECURE_ACTION or STAFF_ACTIVATION.
+  Delivery channel is independently EMAIL, SMS, WHATSAPP or VOICE, while target
+  identifies EMAIL or PHONE ownership. Purpose has no default; every issuance
+  path must choose its intent explicitly. PUSH is excluded because push approval
+  is a different challenge mechanism rather than code delivery.
+- OTP lifecycle is PENDING, SENT, DELIVERED, VERIFIED, FAILED, EXPIRED or
+  CANCELLED. `status` replaces the ambiguous `isUsed` flag; optional verifiedAt
+  records known successful verification time. Legacy used codes become VERIFIED,
+  expired codes become EXPIRED and other codes remain PENDING because historical
+  delivery cannot be inferred. Legacy PHONE delivery becomes SMS, and legacy
+  email/phone verification purposes become CONTACT_VERIFICATION. Verification
+  must match user, target, channel and purpose and atomically transition one
+  unexpired code. Attempts are constrained to zero through maxAttempts.
 
 The lifecycle candidate is followed by
 `20261026065000_profile_action_guards`, which adds the following storage rules:

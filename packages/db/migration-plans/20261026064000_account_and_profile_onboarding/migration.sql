@@ -1,16 +1,83 @@
 -- Candidate only: deploy with matching account/profile authorization changes.
-ALTER TYPE "OtpPurpose" ADD VALUE 'REGISTRATION_VERIFICATION';
-ALTER TYPE "OtpPurpose" ADD VALUE 'LOGIN';
-CREATE TYPE "UserStatus" AS ENUM ('PENDING_VERIFICATION', 'ACTIVE', 'SUSPENDED');
+BEGIN;
+
+ALTER TYPE "OtpPurpose" RENAME TO "OtpPurpose_legacy";
+CREATE TYPE "OtpPurpose" AS ENUM (
+  'REGISTRATION',
+  'LOGIN',
+  'PASSWORD_RESET',
+  'CONTACT_VERIFICATION',
+  'CONTACT_CHANGE',
+  'SECURE_ACTION',
+  'STAFF_ACTIVATION'
+);
+CREATE TYPE "OtpTarget" AS ENUM ('EMAIL', 'PHONE');
+CREATE TYPE "OtpStatus" AS ENUM (
+  'PENDING',
+  'SENT',
+  'DELIVERED',
+  'VERIFIED',
+  'FAILED',
+  'EXPIRED',
+  'CANCELLED'
+);
+
+ALTER TABLE "Otp"
+  ALTER COLUMN "purpose" DROP DEFAULT,
+  ADD COLUMN "target" "OtpTarget",
+  ADD COLUMN "status" "OtpStatus" NOT NULL DEFAULT 'PENDING',
+  ADD COLUMN "verifiedAt" TIMESTAMP(3);
+UPDATE "Otp" SET
+  "target" = CASE WHEN "channel" = 'EMAIL' THEN 'EMAIL'::"OtpTarget" ELSE 'PHONE'::"OtpTarget" END,
+  "status" = CASE
+    WHEN "isUsed" THEN 'VERIFIED'::"OtpStatus"
+    WHEN "expiresAt" <= CURRENT_TIMESTAMP THEN 'EXPIRED'::"OtpStatus"
+    ELSE 'PENDING'::"OtpStatus"
+  END;
+ALTER TABLE "Otp" ALTER COLUMN "target" SET NOT NULL;
+ALTER TABLE "Otp" ALTER COLUMN "purpose" TYPE "OtpPurpose" USING (
+  CASE "purpose"::text
+    WHEN 'PASSWORD_RESET' THEN 'PASSWORD_RESET'
+    WHEN 'EMAIL_VERIFICATION' THEN 'CONTACT_VERIFICATION'
+    WHEN 'PHONE_VERIFICATION' THEN 'CONTACT_VERIFICATION'
+  END
+)::"OtpPurpose";
+DROP TYPE "OtpPurpose_legacy";
+
+ALTER TYPE "OtpChannel" RENAME TO "OtpChannel_legacy";
+CREATE TYPE "OtpChannel" AS ENUM ('EMAIL', 'SMS', 'WHATSAPP', 'VOICE');
+ALTER TABLE "Otp" ALTER COLUMN "channel" TYPE "OtpChannel" USING (
+  CASE "channel"::text
+    WHEN 'PHONE' THEN 'SMS'
+    ELSE "channel"::text
+  END
+)::"OtpChannel";
+DROP TYPE "OtpChannel_legacy";
+
+ALTER TABLE "Otp" DROP COLUMN "isUsed";
+CREATE INDEX "Otp_userId_status_idx" ON "Otp"("userId", "status");
+CREATE INDEX "Otp_userId_purpose_status_idx" ON "Otp"("userId", "purpose", "status");
+ALTER TABLE "Otp" ADD CONSTRAINT "Otp_attempts_check"
+CHECK ("attempts" >= 0 AND "maxAttempts" > 0 AND "attempts" <= "maxAttempts");
+ALTER TABLE "Otp" ADD CONSTRAINT "Otp_verified_time_check"
+CHECK ("verifiedAt" IS NULL OR "status" = 'VERIFIED');
+CREATE TYPE "UserStatus" AS ENUM (
+  'PENDING_VERIFICATION',
+  'ACTIVE',
+  'SUSPENDED',
+  'BANNED',
+  'DEACTIVATED',
+  'PENDING_DELETION',
+  'DELETED'
+);
 CREATE TYPE "ProfileStatus" AS ENUM ('DRAFT', 'ACTIVE', 'SUSPENDED', 'ARCHIVED');
 CREATE TYPE "OnboardingStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED');
 
 ALTER TABLE "User" ADD COLUMN "status" "UserStatus" NOT NULL DEFAULT 'PENDING_VERIFICATION';
--- Preserve existing verified account access; deletion remains independently authoritative.
-UPDATE "User" SET "status" = 'ACTIVE'
-WHERE "deletedAt" IS NULL AND ("emailVerified" OR "phoneVerified");
 ALTER TABLE "User" ADD CONSTRAINT "User_active_verified_check"
 CHECK ("status" <> 'ACTIVE' OR "emailVerified" OR "phoneVerified");
+ALTER TABLE "User" ADD CONSTRAINT "User_deleted_status_check"
+CHECK (("status" = 'DELETED') = ("deletedAt" IS NOT NULL)) NOT VALID;
 
 ALTER TABLE "Profile" ADD COLUMN "status" "ProfileStatus" NOT NULL DEFAULT 'DRAFT';
 ALTER TABLE "UserOnboarding"
@@ -79,7 +146,12 @@ $$;
 CREATE TRIGGER "ProfileOnboarding_immutable_identity" BEFORE UPDATE ON "ProfileOnboarding"
 FOR EACH ROW EXECUTE FUNCTION preserve_profile_onboarding_identity();
 
--- Historical consumption times are unknown; keep them null rather than fabricate them.
-ALTER TABLE "Otp" ADD COLUMN "usedAt" TIMESTAMP(3);
-ALTER TABLE "Otp" ADD CONSTRAINT "Otp_consumption_check"
-CHECK ("usedAt" IS NULL OR "isUsed");
+-- Preserve existing lifecycle facts without inventing moderation history.
+UPDATE "User" SET "status" = 'DELETED' WHERE "deletedAt" IS NOT NULL;
+UPDATE "User" SET "status" = 'ACTIVE'
+WHERE "deletedAt" IS NULL AND ("emailVerified" OR "phoneVerified");
+
+COMMIT;
+BEGIN;
+ALTER TABLE "User" VALIDATE CONSTRAINT "User_deleted_status_check";
+COMMIT;

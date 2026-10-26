@@ -63,8 +63,11 @@ test("custom auth upgrade and social schema invariants", { skip: !databaseUrl },
     const customer = await createUser("Customer");
     const staff = await createUser("Staff");
     const outsider = await createUser("Outsider");
+    const deletedUser = await createUser("Deleted user");
+    await client.query('UPDATE "User" SET "deletedAt" = now() WHERE id = $1', [deletedUser]);
     await client.query('INSERT INTO "Account" ("userId", provider, "providerUserId", "passwordHash") VALUES ($1, \'credentials\', $1, \'unchanged-hash\')', [legacyAdmin]);
     await client.query('INSERT INTO "RefreshToken" ("userId", "tokenHash", "expiresAt") VALUES ($1, \'unchanged-token-hash\', now() + interval \'1 day\')', [legacyAdmin]);
+    await client.query('INSERT INTO "Otp" ("userId", channel, purpose, "codeHash", "isUsed", "expiresAt") VALUES ($1, \'EMAIL\', \'EMAIL_VERIFICATION\', \'used-code\', true, now() + interval \'1 day\'), ($1, \'PHONE\', \'PHONE_VERIFICATION\', \'expired-code\', false, now() - interval \'1 day\')', [legacyAdmin]);
     const salon = (await client.query('INSERT INTO "Salon" (name, slug, address, city, state, zip, lat, lng, images, "updatedAt") VALUES (\'Salon\', \'test-salon\', \'Address\', \'Delhi\', \'Delhi\', \'110001\', 28, 77, ARRAY[]::text[], now()) RETURNING id')).rows[0].id as string;
     await client.query('INSERT INTO "SalonMember" ("userId", "salonId", role) VALUES ($1, $3, \'OWNER\'), ($2, $3, \'STAFF\')', [legacyAdmin, staff, salon]);
 
@@ -89,7 +92,7 @@ test("custom auth upgrade and social schema invariants", { skip: !databaseUrl },
 
     // Explicit test-only activation: migrations must leave identities in DRAFT.
     assert.equal((await client.query('SELECT count(*)::int AS count FROM "Profile" WHERE status <> \'DRAFT\'')).rows[0].count, 0);
-    await client.query('UPDATE "User" SET "emailVerified" = true, status = \'ACTIVE\'');
+    await client.query('UPDATE "User" SET "emailVerified" = true, status = \'ACTIVE\' WHERE "deletedAt" IS NULL');
     await client.query('UPDATE "ProfileOnboarding" SET status = \'COMPLETED\', "completedAt" = now()');
     await client.query('UPDATE "Profile" SET status = \'ACTIVE\'');
 
@@ -109,7 +112,8 @@ test("custom auth upgrade and social schema invariants", { skip: !databaseUrl },
       assert.equal((await client.query('SELECT "tokenHash" FROM "RefreshToken" WHERE "userId" = $1', [legacyAdmin])).rows[0].tokenHash, "unchanged-token-hash");
       const roles = await client.query("SELECT e.enumlabel FROM pg_enum e JOIN pg_type ty ON ty.oid = e.enumtypid JOIN pg_namespace ns ON ns.oid = ty.typnamespace WHERE ty.typname = 'PlatformRole' AND ns.nspname = $1 ORDER BY e.enumsortorder", [schema]);
       assert.deepEqual(roles.rows.map((row) => row.enumlabel), ["ADMIN", "CONTENT_ADMIN", "USER"]);
-      assert.equal(profiles.length, 5);
+      assert.equal(profiles.length, 6);
+      assert.equal((await client.query('SELECT status FROM "User" WHERE id = $1', [deletedUser])).rows[0].status, "DELETED");
     });
 
     await t.test("moves public data, consent state, and balances without fabricating history", async () => {
@@ -362,8 +366,39 @@ test("custom auth upgrade and social schema invariants", { skip: !databaseUrl },
       await fails('DELETE FROM "ProfileOnboarding" WHERE "profileId" = $1', [profile.id], "23514");
       await fails('INSERT INTO "ProfileOnboarding" ("profileId") VALUES ($1)', [profile.id], "23505");
       const purposes = (await client.query("SELECT unnest(enum_range(NULL::\"OtpPurpose\"))::text AS purpose")).rows.map((row) => row.purpose);
-      assert.ok(purposes.includes("LOGIN"));
-      assert.ok(purposes.includes("REGISTRATION_VERIFICATION"));
+      assert.deepEqual(purposes, [
+        "REGISTRATION",
+        "LOGIN",
+        "PASSWORD_RESET",
+        "CONTACT_VERIFICATION",
+        "CONTACT_CHANGE",
+        "SECURE_ACTION",
+        "STAFF_ACTIVATION",
+      ]);
+      const channels = (await client.query("SELECT unnest(enum_range(NULL::\"OtpChannel\"))::text AS channel")).rows.map((row) => row.channel);
+      assert.deepEqual(channels, ["EMAIL", "SMS", "WHATSAPP", "VOICE"]);
+      const otpRows = (await client.query('SELECT channel, target, purpose, status, "verifiedAt" FROM "Otp" ORDER BY "codeHash"')).rows;
+      assert.deepEqual(otpRows, [
+        { channel: "SMS", target: "PHONE", purpose: "CONTACT_VERIFICATION", status: "EXPIRED", verifiedAt: null },
+        { channel: "EMAIL", target: "EMAIL", purpose: "CONTACT_VERIFICATION", status: "VERIFIED", verifiedAt: null },
+      ]);
+      await fails('INSERT INTO "Otp" ("userId", channel, target, purpose, status, "codeHash", "verifiedAt", "expiresAt") VALUES ($1, \'EMAIL\', \'EMAIL\', \'LOGIN\', \'PENDING\', \'invalid-time\', now(), now() + interval \'5 minutes\')', [legacyAdmin], "23514");
+      await fails('INSERT INTO "Otp" ("userId", channel, target, purpose, "codeHash", attempts, "maxAttempts", "expiresAt") VALUES ($1, \'SMS\', \'PHONE\', \'SECURE_ACTION\', \'invalid-attempts\', 6, 5, now() + interval \'5 minutes\')', [legacyAdmin], "23514");
+      await client.query('INSERT INTO "Otp" ("userId", channel, target, purpose, status, "codeHash", "verifiedAt", "expiresAt") VALUES ($1, \'VOICE\', \'PHONE\', \'LOGIN\', \'VERIFIED\', \'voice-login\', now(), now() + interval \'5 minutes\')', [legacyAdmin]);
+      const statuses = (await client.query("SELECT unnest(enum_range(NULL::\"UserStatus\"))::text AS status")).rows.map((row) => row.status);
+      assert.deepEqual(statuses, [
+        "PENDING_VERIFICATION",
+        "ACTIVE",
+        "SUSPENDED",
+        "BANNED",
+        "DEACTIVATED",
+        "PENDING_DELETION",
+        "DELETED",
+      ]);
+      await client.query('UPDATE "User" SET status = \'PENDING_DELETION\' WHERE id = $1', [user.id]);
+      await fails('UPDATE "User" SET status = \'DELETED\' WHERE id = $1', [user.id], "23514");
+      await fails('UPDATE "User" SET "deletedAt" = now() WHERE id = $1', [user.id], "23514");
+      await client.query('UPDATE "User" SET status = \'DELETED\', "deletedAt" = now() WHERE id = $1', [user.id]);
     });
 
   } finally {

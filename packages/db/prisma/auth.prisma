@@ -8,22 +8,44 @@ enum PlatformRole {
 
 enum OtpChannel {
   EMAIL
-  PHONE
+  SMS
   WHATSAPP
+  VOICE
+}
+
+enum OtpTarget {
+  EMAIL
+  PHONE
+}
+
+enum OtpStatus {
+  PENDING
+  SENT
+  DELIVERED
+  VERIFIED
+  FAILED
+  EXPIRED
+  CANCELLED
 }
 
 enum UserStatus {
   PENDING_VERIFICATION
   ACTIVE
   SUSPENDED
+  BANNED
+  DEACTIVATED
+  PENDING_DELETION
+  DELETED
 }
 
 enum OtpPurpose {
-  REGISTRATION_VERIFICATION
+  REGISTRATION
   LOGIN
-  EMAIL_VERIFICATION
-  PHONE_VERIFICATION
   PASSWORD_RESET
+  CONTACT_VERIFICATION
+  CONTACT_CHANGE
+  SECURE_ACTION
+  STAFF_ACTIVATION
 }
 
 enum AccountType {
@@ -94,17 +116,18 @@ model Otp {
   userId      String
   user        User       @relation(fields: [userId], references: [id])
   channel     OtpChannel
-  purpose     OtpPurpose @default(EMAIL_VERIFICATION)
+  target      OtpTarget
+  purpose     OtpPurpose
+  status      OtpStatus  @default(PENDING)
   codeHash    String
   attempts    Int        @default(0)
   maxAttempts Int        @default(5)
-  isUsed      Boolean    @default(false)
-  usedAt      DateTime?
+  verifiedAt  DateTime?
   expiresAt   DateTime
   createdAt   DateTime   @default(now())
 
-  @@index([userId, isUsed])
-  @@index([userId, purpose, isUsed])
+  @@index([userId, status])
+  @@index([userId, purpose, status])
   @@index([userId, channel, purpose, createdAt(sort: Desc)])
   @@index([expiresAt])
 }
