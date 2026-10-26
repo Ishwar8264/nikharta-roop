@@ -17,7 +17,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test:schema": "tsx --test tests/social-schema.test.ts"
   },
   "devDependencies": {
     "@nikharta-roop/typescript-config": "workspace:*",

@@ -1,0 +1,47 @@
+// Media models. Existing table names and stored values remain unchanged.
+
+enum MediaPurpose {
+  VERIFICATION
+  GENERAL
+  SALON
+  PRODUCT
+  SERVICE
+  BLOG
+  AVATAR
+  REVIEW
+}
+
+model MediaAsset {
+  slug   String @unique @default(dbgenerated("('media-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id     String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  url      String
+  publicId String @unique // Cloudinary public_id — delete/transform ke liye
+  folder   String // "nikharta-roop/{userId}"
+
+  // Cloudinary metadata
+  width  Int?
+  height Int?
+  format String?
+  bytes  Int?
+
+  // Categorization for library filters
+  purpose MediaPurpose @default(GENERAL)
+
+  // Soft link — orphan cleanup ke liye. NULL = library me pada hai, kahin attach nahi.
+  attachedToType String? // "SALON" | "PRODUCT" | "SERVICE" | "BLOG"
+  attachedToId   String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  feedAttachments    FeedPostMedia[]
+  messageAttachments ChatMessageMedia[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, purpose, deletedAt])
+  @@index([attachedToType, attachedToId])
+}

@@ -1,0 +1,175 @@
+// Engagement models. Existing table names and stored values remain unchanged.
+
+enum LoyaltyTxnType {
+  EARNED
+  REDEEMED
+  EXPIRED
+  REFUNDED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+model Favorite {
+  actorProfileId String
+  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  slug   String @unique @default(dbgenerated("('favorite-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id     String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  salonId String?
+  salon   Salon?  @relation(fields: [salonId], references: [id])
+
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([actorProfileId, salonId])
+  @@unique([actorProfileId, serviceId])
+  @@unique([actorProfileId, productId])
+  @@index([userId])
+  @@index([actorProfileId])
+}
+
+model ServiceReview {
+  actorProfileId String
+  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  slug      String   @unique @default(dbgenerated("('service-review-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id        String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String?
+  images    String[] // Review photos
+  createdAt DateTime @default(now())
+
+  @@unique([serviceId, actorProfileId])
+  @@index([serviceId])
+  @@index([actorProfileId])
+}
+
+model ProductReview {
+  actorProfileId String
+  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  slug      String   @unique @default(dbgenerated("('product-review-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id        String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String?
+  images    String[]
+  createdAt DateTime @default(now())
+
+  @@unique([productId, actorProfileId])
+  @@index([productId])
+  @@index([actorProfileId])
+}
+
+model CustomerNote {
+  slug       String   @unique @default(dbgenerated("('customer-note-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id         String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  customerId String
+  customer   User     @relation("CustomerNoteCustomer", fields: [customerId], references: [id])
+  salonId    String
+  salon      Salon    @relation(fields: [salonId], references: [id])
+  note       String
+  createdBy  String // staff userId
+  author     User     @relation("CustomerNoteAuthor", fields: [createdBy], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([customerId, salonId])
+  @@index([salonId, createdAt(sort: Desc)])
+}
+
+model StaffRating {
+  slug    String @unique @default(dbgenerated("('staff-rating-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id      String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  staffId String
+  staff   User   @relation("StaffRatingStaff", fields: [staffId], references: [id])
+
+  customerId String
+  customer   User   @relation("StaffRatingCustomer", fields: [customerId], references: [id])
+
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([appointmentId, staffId])
+  @@index([staffId])
+}
+
+model LoyaltyTransaction {
+  slug              String         @unique @default(dbgenerated("('loyalty-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id                String         @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId            String
+  user              User           @relation(fields: [userId], references: [id])
+  points            Int // +/- points
+  type              LoyaltyTxnType
+  shortDescription  String?
+  description       String?
+  descriptionHtml   String?
+  descriptionJson   Json?
+  descriptionFormat ContentFormat  @default(TEXT)
+  referenceId       String? // Appointment ID etc.
+  createdAt         DateTime       @default(now())
+
+  @@index([userId])
+}
+
+model Notification {
+  slug      String              @unique @default(dbgenerated("('notification-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id        String              @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  channel   NotificationChannel @default(IN_APP)
+  status    NotificationStatus  @default(PENDING)
+  data      String? // JSON payload
+  readAt    DateTime?
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, status])
+}
+
+model AuditLog {
+  slug      String   @unique @default(dbgenerated("('audit-log-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id        String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId    String? // Kaun kiya (Admin/Staff)
+  action    String // "CREATE", "UPDATE", "DELETE"
+  entity    String // "Salon", "Service", etc.
+  entityId  String?
+  oldData   String? // JSON
+  newData   String? // JSON
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+}

@@ -1,0 +1,99 @@
+// Public identity is independent of login identity and current salon membership.
+enum ProfileType {
+  PERSONAL
+  SALON
+}
+
+enum ProfileStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum OnboardingStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Profile {
+  status         ProfileStatus      @default(DRAFT)
+  onboarding     ProfileOnboarding?
+  slug           String        @unique @default(dbgenerated("('profile-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id             String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  type           ProfileType
+  personalUserId String?       @unique
+  salonId        String?       @unique
+  displayName    String?
+  avatar         String?
+  coverImage     String?
+  bio            String?
+  bioHtml        String?
+  bioJson        Json?
+  bioFormat      ContentFormat @default(TEXT)
+  lat            Float?
+  lng            Float?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @default(now()) @updatedAt
+
+  // The migration enforces exactly one owner matching the profile type.
+  // Profile owns public display fields. Authentication, physical salon location,
+  // and current membership permissions remain with their respective entities.
+  personalUser User?  @relation(fields: [personalUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  salon        Salon? @relation(fields: [salonId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  favorites      Favorite[]
+  serviceReviews ServiceReview[]
+  productReviews ProductReview[]
+  blogPosts      BlogPost[]
+  blogComments   BlogComment[]
+
+  feedPosts                FeedPost[]
+  feedComments             FeedComment[]
+  feedLikes                FeedLike[]
+  firstConversations       Conversation[]            @relation("FirstConversationProfile")
+  secondConversations      Conversation[]            @relation("SecondConversationProfile")
+  conversationParticipants ConversationParticipant[]
+}
+
+// Account onboarding/consent is business state, not a public profile or login role.
+// Preserve the existing completion flag during migration; do not invent past dates.
+model UserOnboarding {
+  userId                         String       @id
+  currentStep                    String?
+  draft                          Json?
+  updatedAt                      DateTime     @default(now()) @updatedAt
+  accountType                    AccountType?
+  isOnboarded                    Boolean      @default(false)
+  onboardingCompletedAt          DateTime?
+  partnerCompletedAt             DateTime?
+  partnerTermsVersion            String?
+  partnerTermsAcceptedAt         DateTime?
+  partnerEligibilityBackfilledAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+// Spendable points belong to the real person, never a shared salon identity.
+// LoyaltyTransaction remains the ledger; balance and ledger updates must be atomic.
+model LoyaltyWallet {
+  userId    String   @id
+  points    Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+// One resumable onboarding record per public identity, independent of account access.
+model ProfileOnboarding {
+  profileId   String           @id
+  status      OnboardingStatus @default(PENDING)
+  currentStep String?
+  draft       Json?
+  completedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now()) @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}

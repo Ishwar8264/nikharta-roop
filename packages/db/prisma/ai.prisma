@@ -1,0 +1,82 @@
+// Ai models. Existing table names and stored values remain unchanged.
+
+enum AiContextType {
+  GENERAL
+  STAFF
+  PRODUCT
+  SERVICE
+}
+
+model UserAiUsage {
+  id     String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  dailyLimit   Int      @default(500)
+  dailyUsed    Int      @default(0)
+  dailyResetAt DateTime
+
+  weeklyLimit   Int      @default(3000)
+  weeklyUsed    Int      @default(0)
+  weeklyResetAt DateTime
+
+  monthlyLimit   Int      @default(10000)
+  monthlyUsed    Int      @default(0)
+  monthlyResetAt DateTime
+
+  isBlocked   Boolean @default(false)
+  blockReason String?
+
+  updatedAt DateTime @updatedAt
+}
+
+model AiUsageLog {
+  id     String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  chatId String?
+  chat   AiChat? @relation(fields: [chatId], references: [id])
+
+  inputTokens  Int @default(0)
+  outputTokens Int @default(0)
+  totalTokens  Int @default(0)
+
+  model       String
+  cost        Float? // USD me track karo
+  contextType AiContextType @default(GENERAL)
+  createdAt   DateTime      @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+model AiChat {
+  slug   String  @unique @default(dbgenerated("('ai-chat-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id     String  @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId String
+  user   User    @relation(fields: [userId], references: [id])
+  title  String?
+
+  contextType AiContextType @default(GENERAL)
+  contextId   String?
+
+  createdAt DateTime     @default(now())
+  messages  AiMessage[]
+  usageLogs AiUsageLog[]
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model AiMessage {
+  slug      String   @unique @default(dbgenerated("('ai-message-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id        String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  chatId    String
+  chat      AiChat   @relation(fields: [chatId], references: [id])
+  role      String
+  content   String
+  tokens    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
+}

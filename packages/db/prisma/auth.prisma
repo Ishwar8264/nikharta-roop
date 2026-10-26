@@ -1,0 +1,140 @@
+// Auth models. Existing table names and stored values remain unchanged.
+
+enum PlatformRole {
+  ADMIN
+  CONTENT_ADMIN
+  USER
+}
+
+enum OtpChannel {
+  EMAIL
+  PHONE
+  WHATSAPP
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum OtpPurpose {
+  REGISTRATION_VERIFICATION
+  LOGIN
+  EMAIL_VERIFICATION
+  PHONE_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum AccountType {
+  CUSTOMER
+  SALON_PARTNER
+}
+
+model User {
+  id    String       @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  email String?      @unique
+  phone String?      @unique
+  role  PlatformRole @default(USER)
+
+  status UserStatus @default(PENDING_VERIFICATION)
+
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
+
+  // Soft delete
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  otps                  Otp[]
+  refreshTokens         RefreshToken[]
+  accounts              Account[]
+  salonMemberships      SalonMember[]
+  appointments          Appointment[]
+  favorites             Favorite[]
+  serviceReviews        ServiceReview[]
+  productReviews        ProductReview[]
+  blogPosts             BlogPost[]
+  blogComments          BlogComment[]
+  aiChats               AiChat[]
+  aiUsage               UserAiUsage?
+  aiUsageLogs           AiUsageLog[]
+  notifications         Notification[]
+  loyaltyTxns           LoyaltyTransaction[]
+  staffRatingsGiven     StaffRating[]        @relation("StaffRatingCustomer")
+  staffRatingsReceived  StaffRating[]        @relation("StaffRatingStaff")
+  staffSchedules        StaffSchedule[]
+  staffLeaves           StaffLeave[]
+  primaryAppointments   Appointment[]        @relation("AppointmentPrimaryStaff")
+  appointmentServices   AppointmentService[] @relation("AppointmentServiceStaff")
+  staffSkills           StaffServiceSkill[]
+  mediaAssets           MediaAsset[]
+  customerNotes         CustomerNote[]       @relation("CustomerNoteCustomer")
+  authoredNotes         CustomerNote[]       @relation("CustomerNoteAuthor")
+  verificationsReviewed SalonVerification[]
+
+  onboarding    UserOnboarding?
+  loyaltyWallet LoyaltyWallet?
+
+  personalProfile        Profile?
+  feedPostsWritten       FeedPost[]
+  feedCommentsWritten    FeedComment[]
+  feedLikesPerformed     FeedLike[]
+  chatMessagesSent       ChatMessage[]
+  conversationReadStates ConversationReadState[]
+
+  @@index([role])
+  @@index([deletedAt])
+}
+
+model Otp {
+  id          String     @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  channel     OtpChannel
+  purpose     OtpPurpose @default(EMAIL_VERIFICATION)
+  codeHash    String
+  attempts    Int        @default(0)
+  maxAttempts Int        @default(5)
+  isUsed      Boolean    @default(false)
+  usedAt      DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, isUsed])
+  @@index([userId, purpose, isUsed])
+  @@index([userId, channel, purpose, createdAt(sort: Desc)])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  userAgent String? // Device info
+  ipAddress String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Account {
+  id             String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  provider       String
+  // Validated OIDC issuer; null for credentials and legacy/non-OIDC identities.
+  issuer         String?
+  providerUserId String
+  passwordHash   String?
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+}
