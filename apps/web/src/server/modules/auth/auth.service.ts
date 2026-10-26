@@ -1,0 +1,408 @@
+import "server-only";
+
+import { Prisma } from "@nikharta-roop/db/client";
+import { prisma } from "@/lib/prisma";
+import { sendLoginLockoutEmail } from "@/lib/email";
+import { COMMON_PASSWORD_MESSAGE, isCommonPassword } from "@nikharta-roop/shared/validation/breached-password";
+import {
+  clearLockout,
+  lockoutRetryAfterSeconds,
+  recordFailedAttempt,
+} from "@/server/auth/login-lockout";
+import { logAuthError, logAuthEvent } from "@/server/auth/auth.logger";
+import { hashPassword, verifyPassword } from "@/server/auth/password";
+import {
+  hashRefreshToken,
+  issueTokenPair,
+  issueTokenPairInTransaction,
+  type TokenPair,
+} from "@/server/auth/token.service";
+import { PasswordUnchangedError } from "@/server/modules/password/password.errors";
+import { sendOtp } from "@/server/modules/otp/otp.service";
+
+import {
+  AccountDeactivatedError,
+  AccountLockedError,
+  EmailNotVerifiedError,
+  InvalidCredentialsError,
+  InvalidCurrentPasswordError,
+  WeakPasswordError,
+} from "./auth.errors";
+import {
+  createUser,
+  findActiveSessionByHash,
+  findActiveSessions,
+  findExistingIdentifiers,
+  findUserById,
+  findUserForLogin,
+  findUserWithPasswordById,
+  revokeActiveSessionById,
+  updateUserProfile,
+} from "./auth.repository";
+import type {
+  AuthSession,
+  ChangePasswordInput,
+  CurrentUser,
+  DeleteAccountInput,
+  LoginMetadata,
+  LoginResult,
+  LoginUserInput,
+  LoginUserRecord,
+  RegisteredUser,
+  RegisterUserInput,
+  UpdateProfileInput,
+} from "@nikharta-roop/shared/types/server/auth";
+import { RegistrationConflictError } from "./registration-conflict.error";
+
+/**
+ * A precomputed scrypt hash used only when the user is not found during login.
+ *
+ * Why:
+ * Without this, a missing user returns in ~1ms while a wrong password takes
+ * ~100ms. Attackers can measure that gap to enumerate valid emails. Running a
+ * dummy verification keeps both paths roughly equal in time.
+ *
+ * Generated once with hashPassword("dummy-timing-equalizer").
+ */
+const DUMMY_PASSWORD_HASH =
+  "scrypt$N=131072,r=8,p=1$AAAAAAAAAAAAAAAAAAAAAA$" +
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+/**
+ * Applies registration rules and persists a safely hashed password.
+ *
+ * Why:
+ * Keeping this workflow outside the route makes it independently testable and
+ * prevents HTTP concerns from leaking into authentication business logic.
+ */
+export async function registerUser(
+  input: RegisterUserInput,
+): Promise<RegisteredUser> {
+  if (isCommonPassword(input.password)) {
+    throw new WeakPasswordError(COMMON_PASSWORD_MESSAGE);
+  }
+
+  const existing = await findExistingIdentifiers(input);
+
+  if (input.email && existing?.email === input.email) {
+    throw new RegistrationConflictError("Email already exists");
+  }
+
+  if (input.phone && existing?.phone === input.phone) {
+    throw new RegistrationConflictError("Phone already exists");
+  }
+
+  const passwordHash = await hashPassword(input.password);
+
+  try {
+    return await createUser({
+      name: input.name,
+      email: input.email,
+      phone: input.phone,
+      passwordHash,
+    });
+  } catch (error) {
+    // A concurrent registration can pass the pre-check, so DB uniqueness wins.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new RegistrationConflictError("Email or phone already exists");
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Authenticates a user and issues a token pair.
+ *
+ * Why:
+ * Business rules (timing-equalized verification, verification flags, token
+ * issuance) live here so the route only handles HTTP concerns.
+ */
+export async function loginUser(
+  input: LoginUserInput,
+  metadata: LoginMetadata = {},
+): Promise<LoginResult> {
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const retryAfter = await lockoutRetryAfterSeconds(normalizedEmail);
+  if (retryAfter > 0) {
+    throw new AccountLockedError(retryAfter);
+  }
+
+  const user = await findUserForLogin(input);
+
+  // Always verify against something so response time does not leak existence.
+  const hashToVerify = user?.password ?? DUMMY_PASSWORD_HASH;
+  const passwordMatches = await verifyPassword(input.password, hashToVerify);
+
+  if (!user || !user.password || !passwordMatches) {
+    // Count unknown identifiers too: lockout responses must not reveal registration.
+    const triggered = await recordFailedAttempt(normalizedEmail);
+    if (triggered) {
+      logAuthEvent("warn", "auth.login.lockout_triggered", { userId: user?.id });
+      if (user?.email && user.password && !user.deletedAt) {
+        try {
+          await sendLoginLockoutEmail(user.email);
+        } catch (error) {
+          // Delivery failure cannot undo the lock or expose provider details.
+          logAuthError("auth.login.lockout_alert_failed", error, { userId: user.id });
+        }
+      }
+    }
+    const retryAfter = await lockoutRetryAfterSeconds(normalizedEmail);
+    if (retryAfter > 0) throw new AccountLockedError(retryAfter);
+    throw new InvalidCredentialsError();
+  }
+
+  if (user.deletedAt) {
+    throw new AccountDeactivatedError();
+  }
+
+  // If the identifier used is unverified, block login until it is verified.
+  if (!user.emailVerified) {
+    // Silently re-issue a verification code so a real user still finds a
+    // fresh OTP in their inbox. Failures and cooldown violations are ignored —
+    // the login response must stay indistinguishable from invalid credentials.
+    if (user.email) {
+      sendOtp({ email: user.email }).catch(() => undefined);
+    }
+    throw new EmailNotVerifiedError();
+  }
+
+  // Failures from parallel requests may have locked the identifier during scrypt.
+  const remainingLock = await lockoutRetryAfterSeconds(normalizedEmail);
+  if (remainingLock > 0) throw new AccountLockedError(remainingLock);
+  const tokens = await issueTokenPair(user.id, user.role, metadata);
+  await clearLockout(normalizedEmail);
+  logAuthEvent("info", "auth.login.success", { userId: user.id });
+
+  return {
+    user: toPublicUser(user),
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    accessTokenExpiresIn: tokens.accessTokenExpiresIn,
+    refreshTokenExpiresAt: tokens.refreshTokenExpiresAt,
+  };
+}
+
+/**
+ * Loads the current user's profile for a verified access-token subject.
+ *
+ * Why:
+ * Returns `null` rather than throwing when the user no longer exists so the
+ * route can map both "no token" and "user deleted" to the same 401 response.
+ */
+export async function getCurrentUser(
+  userId: string,
+): Promise<CurrentUser | null> {
+  const user = await findUserById(userId);
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    avatar: user.avatar,
+    coverImage: user.coverImage,
+    bio: user.bio,
+    lat: user.lat,
+    lng: user.lng,
+    role: user.role,
+    isOnboarded: user.isOnboarded,
+    accountType: user.accountType,
+    onboardingCompletedAt: user.onboardingCompletedAt,
+    partnerCompletedAt: user.partnerCompletedAt,
+    partnerTermsVersion: user.partnerTermsVersion,
+    partnerTermsAcceptedAt: user.partnerTermsAcceptedAt,
+    partnerEligibilityBackfilledAt: user.partnerEligibilityBackfilledAt,
+    emailVerified: user.emailVerified,
+    phoneVerified: user.phoneVerified,
+    loyaltyPoints: user.loyaltyPoints,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
+
+/**
+ * Verifies the current password and replaces it with a new hash.
+ *
+ * Why:
+ * Runs the password write and session rotation in one transaction. On success
+ * every old refresh token is revoked and a new pair is issued for this device.
+ * This keeps the caller signed in without preserving a pre-change session ID.
+ */
+export async function changePassword(
+  userId: string,
+  input: ChangePasswordInput,
+  metadata: LoginMetadata = {},
+): Promise<TokenPair> {
+  const user = await findUserWithPasswordById(userId);
+
+  if (!user || !user.password) {
+    throw new InvalidCurrentPasswordError();
+  }
+
+  const matches = await verifyPassword(input.currentPassword, user.password);
+  if (!matches) {
+    throw new InvalidCurrentPasswordError();
+  }
+
+  if (isCommonPassword(input.newPassword)) {
+    throw new WeakPasswordError(COMMON_PASSWORD_MESSAGE);
+  }
+
+  // Reject reuse so "change" actually changes something.
+  const samePassword = await verifyPassword(input.newPassword, user.password);
+  if (samePassword) {
+    throw new PasswordUnchangedError();
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+  return prisma.$transaction(async (transaction) => {
+    const updated = await transaction.account.updateMany({
+      // Comparing the hash prevents two concurrent changes that both verified
+      // the old password from silently overwriting each other.
+      where: { userId, provider: "credentials", passwordHash: user.password, user: { deletedAt: null } },
+      data: { passwordHash },
+    });
+
+    if (updated.count !== 1) {
+      throw new InvalidCurrentPasswordError();
+    }
+
+    await transaction.refreshToken.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
+    });
+
+    return issueTokenPairInTransaction(
+      transaction,
+      userId,
+      // Role is loaded from the authenticated user record, never the JWT.
+      (await transaction.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { role: true },
+      })).role,
+      metadata,
+    );
+  });
+}
+
+/**
+ * Applies a partial profile update.
+ *
+ * Why:
+ * Only editable fields are accepted by the schema, so repository spread
+ * cannot touch role, email, phone, or verification flags.
+ */
+export async function updateProfile(
+  userId: string,
+  input: UpdateProfileInput,
+): Promise<CurrentUser> {
+  try {
+    return await updateUserProfile(userId, input);
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new AccountDeactivatedError();
+    }
+
+    throw error;
+  }
+}
+
+/** Returns all live refresh sessions and marks the cookie-backed session. */
+export async function listSessions(
+  userId: string,
+  currentRefreshToken: string | null,
+): Promise<AuthSession[]> {
+  const sessions = await findActiveSessions(userId);
+  const currentSession = currentRefreshToken
+    ? await findActiveSessionByHash(
+        userId,
+        hashRefreshToken(currentRefreshToken),
+      )
+    : null;
+
+  return sessions.map((session) => ({
+    ...session,
+    isCurrent: session.id === currentSession?.id,
+  }));
+}
+
+/** Revokes one user-owned session and reports whether it was the current one. */
+export async function revokeSession(
+  userId: string,
+  sessionId: string,
+  currentRefreshToken: string | null,
+): Promise<{ revoked: boolean; wasCurrent: boolean }> {
+  const currentSession = currentRefreshToken
+    ? await findActiveSessionByHash(
+        userId,
+        hashRefreshToken(currentRefreshToken),
+      )
+    : null;
+  const revoked = await revokeActiveSessionById(userId, sessionId);
+
+  return { revoked, wasCurrent: revoked && currentSession?.id === sessionId };
+}
+
+/**
+ * Soft-deletes the account after confirming the current password.
+ *
+ * Why:
+ * Deletion is destructive. Requiring the password makes a stolen access token
+ * insufficient on its own. The user row stays with `deletedAt` set so
+ * appointments, reviews, and audit trails keep their foreign keys; all live
+ * refresh tokens are revoked in the same transaction so no session survives.
+ */
+export async function deleteAccount(
+  userId: string,
+  input: DeleteAccountInput,
+): Promise<void> {
+  const user = await findUserWithPasswordById(userId);
+
+  if (!user || !user.password) {
+    throw new InvalidCurrentPasswordError();
+  }
+
+  const matches = await verifyPassword(input.password, user.password);
+  if (!matches) {
+    throw new InvalidCurrentPasswordError();
+  }
+
+  await prisma.$transaction(async (transaction) => {
+    const deleted = await transaction.user.updateMany({
+      where: { id: userId, accounts: { some: { provider: "credentials", passwordHash: user.password } }, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+
+    if (deleted.count !== 1) {
+      throw new InvalidCurrentPasswordError();
+    }
+
+    await transaction.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  });
+}
+
+/** Strips server-only fields (password, verification flags) from the user. */
+function toPublicUser(user: LoginUserRecord): RegisteredUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    createdAt: user.createdAt,
+  };
+}

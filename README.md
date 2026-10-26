@@ -32,15 +32,37 @@ Premium salon discovery & booking platform for India. Customers browse salons, s
 - **Cron jobs** — appointment reminders, notification retry, OTP/token cleanup, coupon expiry (Vercel Cron, secret-protected)
 - **SEO** — sitemap, robots, JSON-LD, Open Graph, canonical URLs
 
+## Workspace
+
+```text
+apps/web/     # Next.js frontend, API, business logic, and integration tests
+apps/mobile/  # Reserved; no mobile app or dependencies yet
+packages/
+  api-client/        # Reserved for shared HTTP clients
+  db/                # Prisma schema, migrations, seed, and server-only client
+  shared/            # Platform-independent schemas, types, and contracts
+  theme/             # Reserved for shared design tokens
+  typescript-config/ # Reserved for shared TypeScript configuration
+```
+
+Run workspace commands from the repository root. Web environment files live in
+`apps/web/.env*`. Prisma CLI and seed load `apps/web/.env` explicitly, while
+hosting-provided environment variables take precedence. Web runtime env loading
+continues to use Next.js conventions. `apps/mobile` remains clean.
+
+The web app consumes `@nikharta-roop/shared` for validation/contracts and
+`@nikharta-roop/db` for server-only Prisma access. API client and theme packages
+remain scaffolds; their extraction is separate.
+
 ## Getting Started
 
 Prerequisites: Node.js ≥ 20.9, pnpm 10, PostgreSQL (with `gen_random_uuid()` support, i.e. PG 13+).
 
 ```bash
-pnpm install          # also runs `prisma generate`
-cp .env.example .env  # fill in the values (see Environment)
-pnpm exec prisma migrate deploy
-pnpm exec prisma db seed
+cp apps/web/.env.example apps/web/.env # fill in values (see Environment)
+pnpm install          # also runs database package `prisma generate`
+pnpm db:deploy        # explicitly apply existing database migrations
+pnpm db:seed
 pnpm dev              # http://localhost:3000
 ```
 
@@ -74,7 +96,7 @@ Production-only services (fail-fast checks exist for email, JWT, and rate limits
 ## Architecture
 
 ```
-src/
+apps/web/src/
   proxy.ts          # Edge proxy: CSRF, rate limiting, JWT auth, admin gate (Next "middleware")
   app/
     (public)/       # Pages (server components)
@@ -82,13 +104,12 @@ src/
     swagger-ui/     # OpenAPI docs (env-gated)
   server/
     auth/           # JWT, refresh rotation, OTP, OAuth, CSRF, cookies
-    modules/<x>/    # Feature modules: schema (zod), service (business rules),
+    modules/<x>/    # Feature modules: service (business rules),
                     # repository (Prisma), authorization, errors, types
     cron/           # Shared cron runner + jobs
     openapi/        # OpenAPI spec builders
   features/<x>/     # Client-side feature code (components, hooks, API client, actions)
-  lib/              # Cross-cutting: prisma singleton, email, cloudinary, rate-limit, SEO
-  generated/prisma/ # Generated Prisma client
+  lib/              # Cross-cutting: DB import boundary, email, cloudinary, rate-limit, SEO
 ```
 
 Conventions worth knowing:
@@ -107,10 +128,52 @@ Conventions worth knowing:
 | `pnpm build` | Production build |
 | `pnpm start` | Serve production build |
 | `pnpm lint` | ESLint (Next config) |
-| `pnpm exec tsc --noEmit` | Typecheck |
-| `pnpm exec prisma migrate dev` | Create/apply migrations |
-| `pnpm exec prisma db seed` | Seed service categories & admin |
+| `pnpm typecheck` | Typecheck |
+| `pnpm db:migrate` | Create/apply migrations |
+| `pnpm db:seed` | Seed service categories & admin |
 
 ## API
 
 REST API is versioned under `/api/v1`. Set `API_DOCS_ENABLED=true` and open `/swagger-ui` for the interactive OpenAPI spec. Auth: `Authorization: Bearer <accessToken>` for API clients; httpOnly cookies for browsers (refresh at `/api/v1/auth/refresh`).
+
+## Monorepo commands and deployment
+
+- `pnpm dev:web`: start only the web app.
+- `pnpm test`: run web tests through Turbo; database suites remain opt-in.
+- `pnpm db:generate`: regenerate the web Prisma client without changing the database.
+- `pnpm --filter @nikharta-roop/web exec <command>`: run a tool from the web directory.
+- Prisma schema, migration history, and seed live in `packages/db/prisma`.
+- For Vercel, set the project Root Directory to `apps/web` and allow workspace files
+  outside that directory. Keep installation at the workspace root; use
+  `pnpm --dir ../.. build` as the build command to run the Turbo build. Configure
+  the existing production environment variables on the hosting project.
+
+Turbo caches web build output and lint results. Environment files and declared
+environment variables participate in build hashing. Prisma generation, tests,
+and type checks always run; migrations and seeds are explicit commands and are
+never part of build or development tasks.
+
+## Shared package boundaries
+
+- `packages/typescript-config/base.json`: strict defaults for future shared packages.
+  The existing web TypeScript settings remain unchanged.
+- `packages/shared`: platform-independent schemas, types, and constants. Import
+  specific entries such as `@nikharta-roop/shared/schemas/salon` or
+  `@nikharta-roop/shared/types/client/salon`. Server projection types and JSON-facing
+  types remain separate to preserve existing date representations.
+- `packages/api-client`: shared HTTP clients; browser cookie/CSRF handling and native
+  token handling must use separate entries when implemented.
+- `packages/db`: server-only Prisma singleton, schema, migration history, and seed.
+  Generated client imports use `@nikharta-roop/db/client`. Shared domain enum types
+  are checked against Prisma enum types during `pnpm typecheck`. Never import the
+  DB package into mobile or browser runtime code.
+- `packages/theme/theme.css`: empty token stylesheet, not imported by the web app.
+
+`pnpm typecheck` includes shared packages and database enum contract checks. `pnpm format:check` checks formatting;
+`pnpm format` rewrites files and should only be used intentionally, since existing
+application code has not been reformatted as part of this migration.
+
+Validation rules, DTO shapes, and existing database migrations were preserved during
+extraction. Browser upload state (`File`) and web-specific coupon presentation
+validation remain in the web app. `pnpm db:validate` validates the schema without
+applying migrations. Database mutation commands remain explicit opt-in actions.

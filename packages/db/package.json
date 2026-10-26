@@ -1,0 +1,38 @@
+{
+  "name": "@nikharta-roop/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Server-only Prisma client, database schema, and migration history.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/generated/prisma/client.ts",
+    "./enums": "./src/generated/prisma/enums.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio"
+  },
+  "devDependencies": {
+    "@nikharta-roop/typescript-config": "workspace:*",
+    "typescript": "5.9.3",
+    "prisma": "7.10.0",
+    "tsx": "^4.23.15",
+    "dotenv": "^17.4.2",
+    "@types/pg": "^8.23.1",
+    "@types/node": "^20"
+  },
+  "dependencies": {
+    "@nikharta-roop/shared": "workspace:*",
+    "server-only": "0.0.1",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "pg": "^8.23.0"
+  }
+}

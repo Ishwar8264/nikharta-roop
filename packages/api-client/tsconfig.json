@@ -1,0 +1,7 @@
+{
+  "extends": "@nikharta-roop/typescript-config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"]
+  }
+}
