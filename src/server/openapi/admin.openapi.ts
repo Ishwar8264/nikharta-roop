@@ -73,7 +73,7 @@ export const adminPaths = {
         {
           name: "role",
           in: "query",
-          schema: { type: "string", enum: ["SUPER_ADMIN", "USER"] },
+          schema: { type: "string", enum: ["SUPER_ADMIN", "ADMIN", "CONTENT_ADMIN", "USER"] },
         },
         {
           name: "includeDeleted",
@@ -358,7 +358,7 @@ export const adminSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
       phone: { type: ["string", "null"] },
       name: { type: ["string", "null"] },
       avatar: { type: ["string", "null"], format: "uri" },
-      role: { type: "string", enum: ["SUPER_ADMIN", "USER"] },
+      role: { type: "string", enum: ["SUPER_ADMIN", "ADMIN", "CONTENT_ADMIN", "USER"] },
       emailVerified: { type: "boolean" },
       phoneVerified: { type: "boolean" },
       loyaltyPoints: { type: "integer", minimum: 0 },
@@ -378,7 +378,7 @@ export const adminSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
     additionalProperties: false,
     required: ["role"],
     properties: {
-      role: { type: "string", enum: ["SUPER_ADMIN", "USER"] },
+      role: { type: "string", enum: ["SUPER_ADMIN", "ADMIN", "CONTENT_ADMIN", "USER"] },
     },
   },
   AdminAiBlockRequest: {

@@ -262,11 +262,11 @@ export async function changePassword(
 
   const passwordHash = await hashPassword(input.newPassword);
   return prisma.$transaction(async (transaction) => {
-    const updated = await transaction.user.updateMany({
+    const updated = await transaction.account.updateMany({
       // Comparing the hash prevents two concurrent changes that both verified
       // the old password from silently overwriting each other.
-      where: { id: userId, password: user.password, deletedAt: null },
-      data: { password: passwordHash },
+      where: { userId, provider: "credentials", passwordHash: user.password, user: { deletedAt: null } },
+      data: { passwordHash },
     });
 
     if (updated.count !== 1) {
@@ -381,7 +381,7 @@ export async function deleteAccount(
 
   await prisma.$transaction(async (transaction) => {
     const deleted = await transaction.user.updateMany({
-      where: { id: userId, password: user.password, deletedAt: null },
+      where: { id: userId, accounts: { some: { provider: "credentials", passwordHash: user.password } }, deletedAt: null },
       data: { deletedAt: new Date() },
     });
 

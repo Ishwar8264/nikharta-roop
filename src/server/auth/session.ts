@@ -1,4 +1,5 @@
 import "server-only";
+import { prisma } from "@/lib/prisma";
 
 import { verifyAccessToken, type AccessTokenPayload } from "./jwt";
 import { ACCESS_COOKIE_NAME } from "./auth.constants";
@@ -22,7 +23,10 @@ export async function getAuthContext(
   if (!token) return null;
 
   try {
-    return await verifyAccessToken(token);
+    const payload = await verifyAccessToken(token);
+    // Re-read permissions so demotion and account deletion apply immediately.
+    const user = await prisma.user.findFirst({ where: { id: payload.sub, deletedAt: null }, select: { role: true } });
+    return user ? { ...payload, role: user.role } : null;
   } catch {
     // Expired, tampered, or wrong issuer — all collapse to "not signed in".
     // We never surface the underlying jose error to avoid leaking details.

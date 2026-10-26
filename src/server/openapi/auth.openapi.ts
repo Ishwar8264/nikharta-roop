@@ -1277,7 +1277,7 @@ export const authSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             lng: { type: ["number", "null"], format: "float" },
             role: {
               type: "string",
-              enum: ["SUPER_ADMIN", "USER"],
+              enum: ["SUPER_ADMIN", "ADMIN", "CONTENT_ADMIN", "USER"],
             },
             isOnboarded: { type: "boolean" },
             accountType: { type: ["string", "null"], enum: ["CUSTOMER", "SALON_PARTNER", null] },

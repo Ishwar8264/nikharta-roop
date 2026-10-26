@@ -92,13 +92,13 @@ export interface ListAdminUsersQuery {
   cursor?: string;
   limit?: number;
   search?: string;
-  role?: "SUPER_ADMIN" | "USER";
+  role?: PlatformRole;
   includeDeleted?: boolean;
 }
 
 /** Body for `changeUserRoleApi`. */
 export interface UpdateUserRoleBody {
-  role: "SUPER_ADMIN" | "USER";
+  role: PlatformRole;
 }
 
 /** Body for `setUserAiBlockApi`. */

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { hasPermission } from "@/lib/auth/permissions";
 
 import { UsersManager } from "@/features/admin";
 import type { AdminUserView } from "@/features/admin";
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
  */
 export default async function AdminUsersPage() {
   const user = await getSession();
-  if (!user || user.role !== "SUPER_ADMIN") {
+  if (!user || !hasPermission(user.role, "users.manage")) {
     // The layout already calls notFound(), but TS doesn't know that — narrow
     // the type so the service call below gets a concrete string.
     return null;
@@ -49,7 +50,7 @@ export default async function AdminUsersPage() {
         </p>
       </header>
 
-      <UsersManager users={users} />
+      <UsersManager users={users} callerRole={user.role} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -20,7 +21,7 @@ export default async function ManageProductCategoriesPage({
     redirect(
       `/login?redirect=${encodeURIComponent(routes.productCategoriesManage)}`,
     );
-  if (user.role !== "SUPER_ADMIN") notFound();
+  if (!hasPermission(user.role, "platform.manage")) notFound();
   const { cursor } = await searchParams;
   if (cursor && !isResourceId(cursor)) notFound();
   const categories = await listProductCategories({ cursor, limit: 50 });

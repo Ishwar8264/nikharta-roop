@@ -1,4 +1,5 @@
 import "server-only";
+import { randomBytes } from "node:crypto";
 
 import { prisma } from "@/lib/prisma";
 
@@ -48,12 +49,14 @@ export async function findExistingIdentifiers(
 export async function createUser(
   input: CreateUserRecord,
 ): Promise<RegisteredUser> {
+  const userId = randomBytes(24).toString("hex");
   return prisma.user.create({
     data: {
+      id: userId,
       name: input.name,
       email: input.email,
       phone: input.phone,
-      password: input.passwordHash,
+      accounts: { create: { provider: "credentials", providerUserId: userId, passwordHash: input.passwordHash } },
     },
     select: PUBLIC_USER_FIELDS,
   });
@@ -80,7 +83,7 @@ export async function findUserForLogin(
 
   if (conditions.length === 0) return null;
 
-  return prisma.user.findFirst({
+  const user = await prisma.user.findFirst({
     where: {
       OR: conditions,
     },
@@ -89,7 +92,7 @@ export async function findUserForLogin(
       name: true,
       email: true,
       phone: true,
-      password: true,
+      accounts: { where: { provider: "credentials" }, select: { passwordHash: true } },
       role: true,
       emailVerified: true,
       phoneVerified: true,
@@ -97,6 +100,9 @@ export async function findUserForLogin(
       createdAt: true,
     },
   });
+  if (!user) return null;
+  const { accounts, ...identity } = user;
+  return { ...identity, password: accounts[0]?.passwordHash ?? null };
 }
 
 /**
@@ -149,10 +155,11 @@ export async function findUserById(
 export async function findUserWithPasswordById(
   userId: string,
 ): Promise<UserWithPasswordRecord | null> {
-  return prisma.user.findFirst({
+  const user = await prisma.user.findFirst({
     where: { id: userId, deletedAt: null },
-    select: { id: true, password: true },
+    select: { id: true, accounts: { where: { provider: "credentials" }, select: { passwordHash: true } } },
   });
+  return user ? { id: user.id, password: user.accounts[0]?.passwordHash ?? null } : null;
 }
 
 /**

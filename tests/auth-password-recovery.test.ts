@@ -19,7 +19,7 @@ beforeEach(() => {
   mocks.candidate.mockResolvedValue({ id: "otp", attempts: 0 });
   mocks.claim.mockResolvedValue(true);
   mocks.transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => callback({
-    user: { update: mocks.userUpdate }, refreshToken: { updateMany: mocks.revoke },
+    account: { upsert: mocks.userUpdate }, refreshToken: { updateMany: mocks.revoke },
   }));
 });
 it("clears identifier lockout after committing password reset and session revocation", async () => {

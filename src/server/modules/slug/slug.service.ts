@@ -1,4 +1,5 @@
 import "server-only";
+import { hasPermission } from "@/lib/auth/permissions";
 
 import { assertRoleAtLeast } from "@/server/modules/salon/salon.authorization";
 import { SalonAccessDeniedError, SalonNotFoundError } from "@/server/modules/salon/salon.errors";
@@ -14,7 +15,7 @@ export async function checkSlugAvailability(actor: { sub: string; role: string }
     const salon = await findSalonForViewer({ salonId: input.salonId, userId: actor.sub });
     if (!salon) throw new SalonNotFoundError();
     assertRoleAtLeast(salon.viewerRole, "MANAGER");
-  } else if (input.resource !== "salon" && actor.role !== "SUPER_ADMIN") {
+  } else if (input.resource !== "salon" && !hasPermission(actor.role, input.resource.startsWith("blog-") ? "content.manage" : "platform.manage")) {
     throw new SalonAccessDeniedError();
   }
 

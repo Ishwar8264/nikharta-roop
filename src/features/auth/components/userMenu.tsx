@@ -1,4 +1,5 @@
 "use client";
+import { canAccessAdmin, adminDestination } from "@/lib/auth/permissions";
 
 import { LogOut, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -80,12 +81,12 @@ export function UserMenu({ user }: { user: CurrentUser }) {
               ) : null}
             </DropdownMenuItem>
 
-            {user.role === "SUPER_ADMIN" && (
+            {canAccessAdmin(user.role) && (
               <DropdownMenuItem
                 textValue="Admin"
                 render={
                   <Link
-                    href={routes.adminSalonVerification}
+                    href={adminDestination(user.role)}
                     className={cn(
                       "flex w-full cursor-pointer items-center gap-2",
                       pathname.startsWith("/admin/") && "bg-accent",
