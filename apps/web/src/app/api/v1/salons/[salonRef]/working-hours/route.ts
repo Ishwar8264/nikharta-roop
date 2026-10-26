@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { WorkingHoursSalonNotFoundError } from "@/server/modules/salon-working-hours/working-hours.errors";
 import { replaceWorkingHoursSchema } from "@nikharta-roop/shared/schemas/working-hours";
 import {

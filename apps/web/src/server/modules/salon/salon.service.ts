@@ -3,8 +3,6 @@ import { updateSalonMemberSchema } from "@nikharta-roop/shared/schemas/salon";
 import { updateOwnSalonMember } from "./salon.repository";
 import "server-only";
 
-import { requirePartnerOnboarding } from "@/server/modules/auth/onboarding.service";
-
 import { Prisma } from "@nikharta-roop/db/client";
 import { generateUniqueSlug } from "@/lib/slug";
 import { writeAuditLog } from "@/server/modules/audit/audit.writer";
@@ -34,8 +32,6 @@ import {
   softDeleteSalonById,
   updateSalonById,
 } from "./salon.repository";
-import { sendOtp } from "@/server/modules/otp/otp.service";
-import { OtpCooldownError } from "@/server/modules/otp/otp.errors";
 import { addSalonMemberSchema } from "@nikharta-roop/shared/schemas/salon";
 import { toPublicSalonDetail } from "./salon.mapper";
 import type {
@@ -163,7 +159,6 @@ export async function createSalon(
   ownerId: string,
   input: CreateSalonInput,
 ): Promise<PublicSalon> {
-  await requirePartnerOnboarding(ownerId);
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const slug = input.slug ?? (await generateSlugOrFail(input.name));
 
@@ -329,17 +324,7 @@ export async function addSalonMemberByOwner(
   writeAuditLog({ userId: actorId, action: "CREATE", entity: "SalonMember", entityId: member.id,
     newData: { salonId, memberUserId: member.userId, role: member.role } });
 
-  // Membership stays pending if delivery fails. Do not report the saved profile as a failed add.
-  let verificationEmailSent: boolean | null = null;
-  if (!member.user.emailVerified && member.user.email) {
-    try {
-      await sendOtp({ email: member.user.email, staffActivation: true });
-      verificationEmailSent = true;
-    } catch (error) {
-      verificationEmailSent = error instanceof OtpCooldownError;
-    }
-  }
-  return { ...member, verificationEmailSent };
+  return { ...member, verificationEmailSent: null };
 }
 
 /**

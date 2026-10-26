@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { salonMemberLimiter, rateLimitHeaders } from "@/lib/rate-limit";
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import {
   SalonMemberExistsError,
   SalonMemberSlugConflictError,

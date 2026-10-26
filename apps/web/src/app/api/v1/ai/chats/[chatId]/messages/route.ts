@@ -6,7 +6,7 @@ import {
 } from "ai";
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import {
   AiChatNotFoundError,
   AiInvalidContextError,

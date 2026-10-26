@@ -3,7 +3,6 @@ import { routes } from "@/config/routes";
 import { getSession } from "@/lib/auth/get-session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { listOAuthProviders } from "@/server/auth/oauth/providers";
 
 export const metadata: Metadata = {
   title: "Create account · Nikharta Roop",
@@ -27,8 +26,5 @@ export default async function RegisterPage({
   const user = await getSession();
   if (user) redirect(routes.dashboard);
 
-  const providers = listOAuthProviders().filter(
-    (provider) => provider.configured,
-  );
-  return <RegisterForm providers={providers} returnTo={params.redirect} />;
+  return <RegisterForm providers={[]} returnTo={params.redirect} />;
 }

@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ auth: vi.fn(), update: vi.fn() }));
-vi.mock("../src/server/auth/session", () => ({ getAuthContext: mocks.auth }));
+vi.mock("../src/server/security/request-context", () => ({ getAuthContext: mocks.auth }));
 vi.mock("../src/lib/prisma", () => ({ prisma: { salonMember: { update: mocks.update } } }));
 import { PATCH } from "../src/app/api/v1/salons/[salonRef]/members/[memberId]/route";
 import { Prisma } from "@nikharta-roop/db/client";

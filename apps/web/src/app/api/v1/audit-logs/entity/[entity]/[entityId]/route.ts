@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { AuditLogAccessDeniedError } from "@/server/modules/audit/audit.errors";
 import {
   auditEntityParamSchema,

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ auth: vi.fn(), list: vi.fn() }));
-vi.mock("../src/server/auth/session", () => ({ getAuthContext: mocks.auth }));
+vi.mock("../src/server/security/request-context", () => ({ getAuthContext: mocks.auth }));
 vi.mock("../src/server/modules/service/service.service", () => ({ listPackageServiceOptions: mocks.list }));
 import { GET } from "../src/app/api/v1/salons/[salonRef]/service-options/route";
 import { SalonRoleInsufficientError } from "../src/server/modules/salon/salon.errors";

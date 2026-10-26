@@ -1,15 +1,6 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-
-import {
-  ChangePasswordForm,
-  DeleteAccountDialog,
-  SessionsPanel,
-} from "@/features/settings";
-import type { AuthSessionWire } from "@/features/settings";
+import { ChangePasswordForm, DeleteAccountDialog } from "@/features/settings";
 import { getSession } from "@/lib/auth/get-session";
-import { REFRESH_COOKIE_NAME } from "@/server/auth/auth.constants";
-import { listSessions } from "@/server/modules/auth/auth.service";
 
 export const metadata: Metadata = {
   title: "Settings | Nikharta Roop",
@@ -38,19 +29,6 @@ export default async function SettingsPage() {
   const user = await getSession();
   if (!user) return null; // layout already redirects to /login
 
-  const cookieStore = await cookies();
-  const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value ?? null;
-  const sessions = await listSessions(user.id, refreshToken);
-
-  const wire: AuthSessionWire[] = sessions.map((session) => ({
-    id: session.id,
-    userAgent: session.userAgent,
-    ipAddress: session.ipAddress,
-    createdAt: session.createdAt.toISOString(),
-    expiresAt: session.expiresAt.toISOString(),
-    isCurrent: session.isCurrent,
-  }));
-
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
       <header>
@@ -66,7 +44,6 @@ export default async function SettingsPage() {
 
       <div className="mt-8 space-y-6">
         <ChangePasswordForm />
-        <SessionsPanel initial={wire} />
         <DeleteAccountDialog />
       </div>
     </main>

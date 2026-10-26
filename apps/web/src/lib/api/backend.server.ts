@@ -1,6 +1,5 @@
 import "server-only";
 
-import { ACCESS_COOKIE_NAME } from "@/server/auth/auth.constants";
 import { cookies } from "next/headers";
 
 /**
@@ -102,8 +101,6 @@ async function request<T>(
     const cookieHeader = cookieStore.toString();
     if (cookieHeader) headers.set("cookie", cookieHeader);
 
-    const accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value;
-    if (accessToken) headers.set("authorization", `Bearer ${accessToken}`);
   }
 
   let body: string | undefined;

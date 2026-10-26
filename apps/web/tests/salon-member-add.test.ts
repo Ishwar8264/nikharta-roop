@@ -1,19 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  auth: vi.fn(), limit: vi.fn(), salon: vi.fn(), add: vi.fn(), audit: vi.fn(), send: vi.fn(),
+  auth: vi.fn(), limit: vi.fn(), salon: vi.fn(), add: vi.fn(), audit: vi.fn(),
 }));
-vi.mock("../src/server/auth/session", () => ({ getAuthContext: mocks.auth }));
+vi.mock("../src/server/security/request-context", () => ({ getAuthContext: mocks.auth }));
 vi.mock("../src/lib/rate-limit", () => ({ salonMemberLimiter: { limit: mocks.limit }, rateLimitHeaders: () => ({ "Retry-After": "60" }) }));
 vi.mock("../src/server/modules/salon/salon.repository", () => ({
   findSalonForViewer: mocks.salon, addSalonMember: mocks.add,
 }));
 vi.mock("../src/server/modules/audit/audit.writer", () => ({ writeAuditLog: mocks.audit }));
-vi.mock("../src/server/modules/auth/onboarding.service", () => ({ requirePartnerOnboarding: vi.fn() }));
-
-vi.mock("../src/server/modules/otp/otp.service", () => ({ sendOtp: mocks.send }));
-
-import { OtpCooldownError, OtpDeliveryError } from "../src/server/modules/otp/otp.errors";
 import { SalonMemberAccountUnavailableError } from "../src/server/modules/salon/salon.errors";
 import { Prisma } from "@nikharta-roop/db/client";
 import { POST } from "../src/app/api/v1/salons/[salonRef]/members/route";
@@ -76,28 +71,11 @@ describe("staff addition backend", () => {
     mocks.add.mockRejectedValue(new Prisma.PrismaClientKnownRequestError("foreign key", { code: "P2003", clientVersion: "7" }));
     expect((await request()).status).toBe(422);
   });
-  it("sends verification for pending accounts", async () => {
+  it("leaves verification delivery for the replacement auth flow", async () => {
     mocks.add.mockResolvedValue({ id: "membership", userId, salonId, role: "STAFF", user: { id: userId, email: "staff@example.com", emailVerified: false } });
     const response = await request();
     expect(response.status).toBe(201);
-    expect(mocks.send).toHaveBeenCalledWith({ email: "staff@example.com", staffActivation: true });
-    expect(await response.json()).toMatchObject({ data: { member: { verificationEmailSent: true } } });
-  });
-  it("keeps the saved membership pending when email delivery fails", async () => {
-    mocks.add.mockResolvedValue({ id: "membership", userId, salonId, role: "STAFF", user: { id: userId, email: "staff@example.com", emailVerified: false } });
-    mocks.send.mockRejectedValue(new OtpDeliveryError());
-    const response = await request();
-    expect(response.status).toBe(201);
-    expect(await response.json()).toMatchObject({ data: { member: { verificationEmailSent: false } } });
-  });
-  it("treats an existing valid-code cooldown as pending delivery", async () => {
-    mocks.add.mockResolvedValue({ id: "membership", userId, salonId, role: "STAFF", user: { id: userId, email: "staff@example.com", emailVerified: false } });
-    mocks.send.mockRejectedValue(new OtpCooldownError(60));
-    expect((await request()).status).toBe(201);
-  });
-  it("does not send redundant verification for verified accounts", async () => {
-    await request();
-    expect(mocks.send).not.toHaveBeenCalled();
+    expect(await response.json()).toMatchObject({ data: { member: { verificationEmailSent: null } } });
   });
   it("rate limits additions before lookups", async () => {
     mocks.limit.mockResolvedValue({ success: false });

@@ -4,7 +4,6 @@ import { getSession } from "@/lib/auth/get-session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { listOAuthProviders } from "@/server/auth/oauth/providers";
 export const metadata: Metadata = {
   title: "Sign in · Nikharta Roop",
   description: "Sign in to your Nikharta Roop account.",
@@ -23,12 +22,9 @@ export default async function LoginPage() {
   const user = await getSession();
   if (user) redirect(routes.dashboard);
 
-  const providers = listOAuthProviders().filter(
-    (provider) => provider.configured,
-  );
   return (
     <Suspense fallback={null}>
-      <LoginForm providers={providers} />
+      <LoginForm providers={[]} />
     </Suspense>
   );
 }

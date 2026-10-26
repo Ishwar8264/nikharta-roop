@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { AdminAccessDeniedError } from "@/server/modules/admin/admin.errors";
 import { aiUsageStatsQuerySchema } from "@nikharta-roop/shared/schemas/admin";
 import { getAdminAiUsageStats } from "@/server/modules/admin/admin.service";

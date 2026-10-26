@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { AppointmentAccessDeniedError } from "@/server/modules/appointment/appointment.errors";
 import { listSalonAppointmentsQuerySchema } from "@nikharta-roop/shared/schemas/appointment";
 import { listAppointmentsForSalon } from "@/server/modules/appointment/appointment.service";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { LoyaltyTransactionNotFoundError } from "@/server/modules/loyalty/loyalty.errors";
 import { transactionParamSchema } from "@nikharta-roop/shared/schemas/loyalty";
 import { getTransaction } from "@/server/modules/loyalty/loyalty.service";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { SalonNotFoundError } from "@/server/modules/salon/salon.errors";
 import { salonRefParamSchema } from "@nikharta-roop/shared/schemas/salon";
 import { listStaffQuerySchema } from "@nikharta-roop/shared/schemas/staff";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { getBalance } from "@/server/modules/loyalty/loyalty.service";
 
 /** Returns the caller's loyalty balance and applied rates. */

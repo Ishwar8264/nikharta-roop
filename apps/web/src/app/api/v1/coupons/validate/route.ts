@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { validateCouponSchema } from "@nikharta-roop/shared/schemas/coupon";
 import { validatePublicCoupon } from "@/server/modules/coupon/coupon.service";
 

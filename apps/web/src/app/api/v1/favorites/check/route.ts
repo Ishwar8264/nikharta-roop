@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { checkFavoriteQuerySchema } from "@nikharta-roop/shared/schemas/favorite";
 import { checkFavorite } from "@/server/modules/favorite/favorite.service";
 

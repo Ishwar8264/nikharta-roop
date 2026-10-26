@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { FavoriteNotFoundError } from "@/server/modules/favorite/favorite.errors";
 import { favoriteParamSchema } from "@nikharta-roop/shared/schemas/favorite";
 import { removeFavorite } from "@/server/modules/favorite/favorite.service";

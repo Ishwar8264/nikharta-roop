@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { unexpectedApiError } from "@/server/api/dev-response";
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { SalonAccessDeniedError, SalonNotFoundError, SalonRoleInsufficientError } from "@/server/modules/salon/salon.errors";
 import { slugAvailabilityQuerySchema } from "@nikharta-roop/shared/schemas/slug";
 import { checkSlugAvailability } from "@/server/modules/slug/slug.service";

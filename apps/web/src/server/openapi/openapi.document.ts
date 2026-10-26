@@ -6,7 +6,6 @@ import { adminPaths, adminSchemas } from "./admin.openapi";
 import { aiPaths, aiSchemas } from "./ai.openapi";
 import { appointmentPaths, appointmentSchemas } from "./appointment.openapi";
 import { auditPaths, auditSchemas } from "./audit.openapi";
-import { authPaths, authSchemas } from "./auth.openapi";
 import { blogPaths, blogSchemas } from "./blog.openapi";
 import { catalogPaths, catalogSchemas } from "./catalog.openapi";
 import {
@@ -24,7 +23,6 @@ import { favoritePaths, favoriteSchemas } from "./favorite.openapi";
 import { loyaltyPaths, loyaltySchemas } from "./loyalty.openapi";
 import { mediaPaths, mediaSchemas } from "./media.openapi";
 import { notificationPaths, notificationSchemas } from "./notification.openapi";
-import { oauthPaths, oauthSchemas } from "./oauth.openapi";
 import { packagePaths, packageSchemas } from "./package.openapi";
 import { paymentPaths, paymentSchemas } from "./payment.openapi";
 import { productPaths, productSchemas } from "./product.openapi";
@@ -58,13 +56,8 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       description:
         "Salon marketplace API — discover salons, book appointments, manage " +
         "catalog, packages, coupons, payments, and verification.\n\n" +
-        "**Quick start**\n" +
-        "- Public endpoints (salon directory, catalog, packages) need no auth.\n" +
-        "- For everything else, sign in via `/api/v1/auth/login` and use the " +
-        "returned `accessToken` (Authorize button → bearerAuth), or rely on " +
-        "the httpOnly cookie for browser flows.\n" +
-        "- Cookie-authenticated mutations additionally require the " +
-        "`x-csrf-token` header copied from the `csrfToken` cookie.\n" +
+        "Authentication endpoints are temporarily unavailable while their " +
+        "replacement contract is designed. Protected endpoints fail closed.\n" +
         "- All lists are cursor-paginated (`meta.nextCursor`).",
       contact: {
         name: "Nikharta Roop",
@@ -79,7 +72,6 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
     ],
     tags: [
       { name: "Slugs", description: "Resource slug availability checks" },
-      { name: "Authentication", description: "User identity operations" },
       { name: "System", description: "Service availability operations" },
       { name: "Salons", description: "Salon directory and management" },
       { name: "Services", description: "Salon service catalogue" },
@@ -161,14 +153,12 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       },
     ],
     paths: {
-      ...authPaths,
       ...salonPaths,
       ...servicePaths,
       ...productPaths,
       ...staffPaths,
       ...systemPaths,
       ...slugPaths,
-      ...oauthPaths,
       ...couponPaths,
       ...catalogPaths,
       ...packagePaths,
@@ -199,14 +189,12 @@ export function getOpenApiDocument(): OpenAPIV3_1.Document {
       },
       schemas: {
         ...commonSchemas,
-        ...authSchemas,
         ...salonSchemas,
         ...serviceSchemas,
         ...productSchemas,
         ...staffSchemas,
         ...systemSchemas,
         ...slugSchemas,
-        ...oauthSchemas,
         ...couponSchemas,
         ...catalogSchemas,
         ...packageSchemas,

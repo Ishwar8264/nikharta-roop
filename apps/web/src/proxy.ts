@@ -1,60 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import {
-  authLimiter,
-  authenticatedLimiter,
-  rateLimitHeaders,
-  standardLimiter,
-} from "@/lib/rate-limit";
-import { canAccessAdmin } from "@/lib/auth/permissions";
 import { routes } from "@/config/routes";
-import {
-  ACCESS_COOKIE_NAME,
-  CSRF_COOKIE_NAME,
-} from "@/server/auth/auth.constants";
-import { isMutationRequestTrusted } from "@/server/auth/csrf";
-import { verifyAccessToken } from "@/server/auth/jwt";
+import { rateLimitHeaders, standardLimiter } from "@/lib/rate-limit";
 
-/**
- * Routes reachable without any access token for every HTTP method.
- *
- * Why:
- * Registration, login, refresh, logout, OTP, and password recovery must all
- * work before a session exists (or after one has ended). Health checks are
- * called by monitoring tools that carry no credentials.
- */
 const FULLY_PUBLIC_PATHS = new Set<string>([
-  "/api/v1/auth/register",
-  "/api/v1/auth/login",
-  "/api/v1/auth/refresh",
-  "/api/v1/auth/logout",
-  "/api/v1/auth/otp/send",
-  "/api/v1/auth/otp/verify",
-  "/api/v1/auth/password/forgot",
-  "/api/v1/auth/password/reset",
   "/api/v1/health",
   "/api/v1/coupons/validate",
   "/api/v1/cron/appointment-reminders",
   "/api/v1/cron/notification-retry",
-  "/api/v1/cron/otp-cleanup",
-  "/api/v1/cron/token-cleanup",
-  "/api/v1/auth/oauth/providers",
-  "/api/v1/auth/oauth/google",
-  "/api/v1/auth/oauth/google/callback",
-  "/api/v1/auth/oauth/apple",
-  "/api/v1/auth/oauth/apple/callback",
-  "/api/v1/auth/oauth/facebook",
-  "/api/v1/auth/oauth/facebook/callback",
 ]);
 
-/**
- * Exact paths where only GET and HEAD are public; mutations still require auth.
- *
- * Why:
- * Browsing the salon directory must work for anonymous visitors, but creating
- * a salon needs a signed-in owner. Splitting by method keeps the read surface
- * open without opening the write surface.
- */
 const PUBLIC_GET_PATHS = new Set<string>([
   "/api/v1/salons",
   "/api/v1/services/categories",
@@ -66,15 +21,6 @@ const PUBLIC_GET_PATHS = new Set<string>([
   "/api/v1/catalog/templates",
 ]);
 
-/**
- * Regex patterns for paths where GET/HEAD is public but deeper nesting is not.
- *
- * Why:
- * `/api/v1/salons/{slug}` is a public detail lookup, but
- * `/api/v1/salons/{id}/members` must stay behind auth. The pattern matches
- * exactly one trailing segment so nested resources fall through to the normal
- * authentication check.
- */
 const PUBLIC_GET_PATTERNS: RegExp[] = [
   /^\/api\/v1\/salons\/[^/]+$/,
   /^\/api\/v1\/salons\/[^/]+\/services$/,
@@ -95,128 +41,46 @@ const PUBLIC_GET_PATTERNS: RegExp[] = [
   /^\/api\/v1\/coupons\/[^/]+$/,
 ];
 
-/** Auth paths that get the stricter limiter, even though they are public. */
-const AUTH_PATH_PREFIX = "/api/v1/auth";
-
-/** Path prefixes that require elevated platform roles. */
-const ADMIN_PATH_PREFIXES = ["/api/v1/admin"];
-
-/** Roles allowed to access admin-only routes. */
-
-
-/**
- * Returns true when the request may proceed without an access token.
- *
- * Why:
- * Centralising the "is this public?" decision keeps the ordering of checks
- * explicit and easy to audit as new resources are added. Safe methods only —
- * a public GET path is never implicitly a public POST.
- */
 function isPublicRequest(pathname: string, method: string): boolean {
   if (FULLY_PUBLIC_PATHS.has(pathname)) return true;
-
   if (method !== "GET" && method !== "HEAD") return false;
-  if (PUBLIC_GET_PATHS.has(pathname)) return true;
-  return PUBLIC_GET_PATTERNS.some((pattern) => pattern.test(pathname));
+  return PUBLIC_GET_PATHS.has(pathname) ||
+    PUBLIC_GET_PATTERNS.some((pattern) => pattern.test(pathname));
 }
 
-/**
- * Performs rate limiting, authentication, and role checks for API routes.
- *
- * Why:
- * Proxy runs before every matched request and is the cheapest place to reject
- * abusive, unauthenticated, or unauthorized traffic before it reaches route
- * handlers. It verifies the JWT signature and expiry without hitting the
- * database; resource authorization still belongs close to the data source.
- *
- * Verified identity is forwarded as `x-auth-*` request headers so handlers
- * can read it cheaply. Sensitive handlers must still authorize their resource
- * access close to the data; this boundary only proves current identity/role.
- */
+/** Keeps public reads available and rejects every protected request fail-closed. */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
-  const { pathname } = request.nextUrl;
-  const publicRequest = isPublicRequest(pathname, request.method);
+  if (isPublicRequest(request.nextUrl.pathname, request.method)) {
+    if (request.nextUrl.pathname === "/api/v1/health") return NextResponse.next();
 
-  // ----- 1. CSRF / cross-origin mutation protection -----
-  if (!isMutationRequestTrusted(request)) {
-    return NextResponse.json(
-      { message: "Invalid or missing CSRF token" },
-      { status: 403 },
-    );
-  }
-
-  // ----- 2. Rate limiting -----
-  // Public auth routes are the most attacked; they get the strict limiter
-  // keyed by IP. Everything else gets keyed by user id once verified, or IP
-  // when the caller is anonymous.
-  if (
-    FULLY_PUBLIC_PATHS.has(pathname) &&
-    pathname.startsWith(AUTH_PATH_PREFIX)
-  ) {
-    const ip = clientIp(request);
-    const result = await authLimiter.limit(ip);
-
-    if (!result.success) {
-      return tooManyRequests(result);
-    }
-  } else if (publicRequest && pathname !== "/api/v1/health") {
     const result = await standardLimiter.limit(clientIp(request));
-    if (!result.success) return tooManyRequests(result);
-  }
-
-  // ----- 3. Public routes skip auth (rate limited above when applicable) -----
-  if (publicRequest) {
+    if (!result.success) {
+      return NextResponse.json(
+        { message: "Too many requests. Please try again later." },
+        { status: 429, headers: rateLimitHeaders(result) },
+      );
+    }
     return NextResponse.next();
   }
 
-  // ----- 4. Extract + verify token -----
-  const token = extractAccessToken(request);
-
-  if (!token) {
-    // Anonymous traffic still gets the standard limiter so a single IP
-    // cannot hammer protected endpoints hoping for a lucky 200.
-    const result = await standardLimiter.limit(clientIp(request));
-    if (!result.success) return tooManyRequests(result);
-
-    return unauthorizedResponse(request);
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { message: "Authentication is temporarily unavailable" },
+      { status: 401 },
+    );
   }
 
-  let payload: { sub: string; role: string };
-
-  try {
-    payload = await verifyAccessToken(token);
-  } catch {
-    return unauthorizedResponse(request);
-  }
-
-  // ----- 5. Authenticated rate limit (keyed by user id) -----
-  const result = await authenticatedLimiter.limit(payload.sub);
-  if (!result.success) {
-    return tooManyRequests(result);
-  }
-
-  // ----- 6. Admin gate -----
-  if (isAdminPath(pathname) && !canAccessAdmin(payload.role)) {
-    return forbiddenResponse();
-  }
-
-  // ----- 7. Forward identity to handler -----
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-auth-user-id", payload.sub);
-  requestHeaders.set("x-auth-role", payload.role);
-
-  return NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+  return NextResponse.redirect(new URL(routes.login, request.url));
 }
 
-/**
- * Restricts the proxy to versioned API routes.
- *
- * Why:
- * Without a matcher, proxy would run on static assets, image optimizations,
- * and the Swagger UI — adding latency to traffic unrelated to auth.
- */
+function clientIp(request: NextRequest): string {
+  const platformIp = (request as NextRequest & { ip?: string }).ip;
+  if (platformIp) return platformIp;
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "anonymous";
+}
+
 export const config = {
   matcher: [
     "/api/v1/:path*",
@@ -229,96 +93,3 @@ export const config = {
     "/loyalty/:path*",
   ],
 };
-
-/** Returns true when the path lives under an admin-only prefix. */
-function isAdminPath(pathname: string): boolean {
-  return ADMIN_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-}
-
-/** Reads the access token from the Authorization header or cookie. */
-function extractAccessToken(request: NextRequest): string | null {
-  const header = request.headers.get("authorization");
-
-  if (header) {
-    const [scheme, value] = header.split(/\s+/, 2);
-    if (scheme?.toLowerCase() === "bearer" && value) {
-      return value.trim() || null;
-    }
-  }
-
-  return request.cookies.get(ACCESS_COOKIE_NAME)?.value ?? null;
-}
-
-/** Extracts the client IP for rate limiting.
- *
- * The platform-provided `request.ip` (Vercel) is preferred because it cannot
- * be spoofed by the caller. Forwarded headers are only consulted as a
- * fallback for local development — a caller can rotate them freely, so any
- * deployment that is reachable without a trusted proxy should configure
- * Upstash analytics or a proxy-aware IP source.
- */
-function clientIp(request: NextRequest): string {
-  const platformIp = (request as NextRequest & { ip?: string }).ip;
-  if (platformIp) return platformIp;
-
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  return request.headers.get("x-real-ip") ?? "anonymous";
-}
-
-/** Returns JSON for APIs and preserves the destination for page sign-in. */
-function unauthorizedResponse(request: NextRequest): NextResponse {
-  if (!request.nextUrl.pathname.startsWith("/api/")) {
-    // The access cookie is deliberately short-lived while the CSRF cookie
-    // shares the refresh-session lifetime. Its presence lets document
-    // navigations attempt cookie rotation before requiring another login.
-    if (request.cookies.has(CSRF_COOKIE_NAME)) {
-      const recoveryUrl = new URL(routes.sessionRefresh, request.url);
-      recoveryUrl.searchParams.set(
-        "redirect",
-        `${request.nextUrl.pathname}${request.nextUrl.search}`,
-      );
-      return NextResponse.redirect(recoveryUrl);
-    }
-
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set(
-      "redirect",
-      `${request.nextUrl.pathname}${request.nextUrl.search}`,
-    );
-    return NextResponse.redirect(loginUrl);
-  }
-
-  return NextResponse.json(
-    { message: "Authentication required" },
-    { status: 401 },
-  );
-}
-
-/** 403 for authenticated users who lack the required role. */
-function forbiddenResponse(): NextResponse {
-  return NextResponse.json(
-    { message: "You do not have permission to access this resource" },
-    { status: 403 },
-  );
-}
-
-/** 429 with standard rate-limit headers so clients can back off. */
-function tooManyRequests(result: {
-  limit: number;
-  remaining: number;
-  reset: number;
-}): NextResponse {
-  return NextResponse.json(
-    { message: "Too many requests. Please try again later." },
-    {
-      status: 429,
-      headers: rateLimitHeaders(result),
-    },
-  );
-}

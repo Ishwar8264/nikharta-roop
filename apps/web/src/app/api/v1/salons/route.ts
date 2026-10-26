@@ -1,7 +1,6 @@
-import { PartnerOnboardingRequiredError } from "@/server/modules/auth/onboarding.service";
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import {
   SalonPlaceConflictError,
   SlugConflictError,
@@ -112,9 +111,6 @@ export async function POST(request: Request): Promise<Response> {
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof PartnerOnboardingRequiredError) {
-      return NextResponse.json({ message: error.message, code: "PARTNER_ONBOARDING_REQUIRED", onboardingUrl: "/onboarding?type=partner" }, { status: 403 });
-    }
     if (error instanceof SlugConflictError) {
       console.warn("Salon creation conflict", {
         ownerId: auth.sub,

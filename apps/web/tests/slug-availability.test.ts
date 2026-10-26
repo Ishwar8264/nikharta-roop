@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 vi.mock("../src/lib/prisma", () => ({ prisma: mocks.prisma }));
-vi.mock("../src/server/auth/session", () => ({ getAuthContext: mocks.auth }));
+vi.mock("../src/server/security/request-context", () => ({ getAuthContext: mocks.auth }));
 
 import { GET } from "../src/app/api/v1/slugs/availability/route";
 import { slugAvailabilityQuerySchema, slugResources } from "@nikharta-roop/shared/schemas/slug";

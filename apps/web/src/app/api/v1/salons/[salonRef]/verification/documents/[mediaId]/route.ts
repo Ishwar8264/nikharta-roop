@@ -1,6 +1,6 @@
 import { hasPermission } from "@/lib/auth/permissions";
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { privateVerificationDownload } from "@/lib/cloudinary";
 import { findMediaAssetById } from "@/server/modules/media/media.repository";
 import { findSalonForViewer } from "@/server/modules/salon/salon.repository";

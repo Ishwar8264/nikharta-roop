@@ -2,7 +2,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { NextResponse } from "next/server";
 
 import { logDevApiEvent, unexpectedApiError } from "@/server/api/dev-response";
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { ServiceCategorySlugConflictError } from "@/server/modules/service/service.errors";
 import {
   createCategorySchema,

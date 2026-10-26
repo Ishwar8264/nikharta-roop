@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ auth: vi.fn(), salon: vi.fn(), service: vi.fn(), product: vi.fn(), package: vi.fn() }));
-vi.mock("../src/server/auth/session", () => ({ getAuthContext: mocks.auth }));
+vi.mock("../src/server/security/request-context", () => ({ getAuthContext: mocks.auth }));
 vi.mock("../src/server/modules/salon/salon.service", () => ({ updateSalon: mocks.salon }));
 vi.mock("../src/server/modules/service/service.service", () => ({ updateSalonService: mocks.service }));
 vi.mock("../src/server/modules/product/product.service", () => ({ updateSalonProduct: mocks.product }));

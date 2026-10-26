@@ -1,7 +1,7 @@
 import { hasPermission } from "@/lib/auth/permissions";
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { ProductCategorySlugConflictError } from "@/server/modules/product/product.errors";
 import {
   createCategorySchema,

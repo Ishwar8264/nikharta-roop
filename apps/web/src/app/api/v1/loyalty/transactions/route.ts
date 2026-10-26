@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAuthContext } from "@/server/auth/session";
+import { getAuthContext } from "@/server/security/request-context";
 import { listTransactionsQuerySchema } from "@nikharta-roop/shared/schemas/loyalty";
 import { listTransactions } from "@/server/modules/loyalty/loyalty.service";
 

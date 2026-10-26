@@ -6,7 +6,7 @@ const mock = vi.hoisted(() => ({
   asset: vi.fn(),
   download: vi.fn(),
 }));
-vi.mock("../src/server/auth/session", () => ({ getAuthContext: mock.auth }));
+vi.mock("../src/server/security/request-context", () => ({ getAuthContext: mock.auth }));
 vi.mock("../src/server/modules/salon/salon.repository", () => ({
   findSalonForViewer: mock.salon,
 }));

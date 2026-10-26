@@ -1,9 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-
-import { logoutAction } from "../actions/logout-action";
 
 /**
  * Ends the session via a Server Action and navigates home.
@@ -21,14 +18,10 @@ import { logoutAction } from "../actions/logout-action";
  */
 export function useLogout(): { logout: () => void; isLoading: boolean } {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
 
   function logout() {
-    startTransition(async () => {
-      await logoutAction();
-      router.replace("/");
-    });
+    router.replace("/");
   }
 
-  return { logout, isLoading: isPending };
+  return { logout, isLoading: false };
 }
