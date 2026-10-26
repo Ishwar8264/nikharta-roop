@@ -31,7 +31,7 @@ interface SalonCardProps {
  * One real anchor, whole-card clickability, no nested links.
  */
 export function SalonCard({ salon, className }: SalonCardProps) {
-  const cover = salon.images[0];
+  const cover = salon.coverImage ?? salon.images[0];
   const location = [salon.city, salon.state].filter(Boolean).join(", ");
 
   return (
@@ -62,6 +62,7 @@ export function SalonCard({ salon, className }: SalonCardProps) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-2 p-4">
+        {salon.status === "TEMPORARILY_CLOSED" ? <p className="text-xs font-medium text-muted-foreground">Temporarily closed</p> : null}
         <h3 className="line-clamp-1 font-heading text-base font-semibold tracking-tight text-foreground">
           {salon.name}
         </h3>

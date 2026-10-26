@@ -1,46 +1,71 @@
 "use client";
 
-import { Slider as SliderPrimitive } from "@base-ui/react/slider";
 import { cn } from "cn";
+import {
+  SliderFill,
+  Slider as SliderPrimitive,
+  SliderThumb,
+  SliderTrack,
+  type SliderProps as SliderPrimitiveProps,
+} from "react-aria-components";
 
-/**
- * Accessible range slider built on Base UI.
- *
- * Why a thin wrapper:
- * Base UI's slider ships as separate primitives (Root/Control/Track/Indicator/Thumb);
- * the salon settings form (and any future numeric picker) wants one styled
- * component with the standard track+thumb look. The wrapper composes the
- * primitives once so the visual contract lives in one place.
- */
-function Slider({
+type SliderValue = number | number[];
+type SliderProps<T extends SliderValue = SliderValue> = Omit<
+  SliderPrimitiveProps<T>,
+  "className"
+> & {
+  className?: string;
+  min?: number;
+  max?: number;
+  disabled?: boolean;
+  onValueChange?: (value: T) => void;
+};
+
+function Slider<T extends SliderValue = SliderValue>({
   className,
+  min,
+  max,
+  disabled,
+  onValueChange,
   ...props
-}: SliderPrimitive.Root.Props<number>) {
+}: SliderProps<T>) {
   return (
-    <SliderPrimitive.Root
+    <SliderPrimitive
+      className={cn(
+        "group relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
+        className,
+      )}
       data-slot="slider"
-      className={cn("relative flex w-full items-center py-2", className)}
       {...props}
+      minValue={min ?? props.minValue}
+      maxValue={max ?? props.maxValue}
+      isDisabled={disabled || props.isDisabled}
+      onChange={onValueChange ?? props.onChange}
     >
-      <SliderPrimitive.Control
-        data-slot="slider-control"
-        className="relative flex h-4 w-full touch-none items-center outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        <SliderPrimitive.Track
-          data-slot="slider-track"
-          className="relative h-1.5 grow rounded-full bg-muted"
-        >
-          <SliderPrimitive.Indicator
-            data-slot="slider-indicator"
-            className="absolute h-full rounded-full bg-primary"
-          />
-        </SliderPrimitive.Track>
-        <SliderPrimitive.Thumb
-          data-slot="slider-thumb"
-          className="block size-4 rounded-full border border-primary bg-background shadow-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-        />
-      </SliderPrimitive.Control>
-    </SliderPrimitive.Root>
+      {({ state }) => {
+        return (
+          <>
+            <SliderTrack
+              data-slot="slider-track"
+              className="relative grow rounded-full bg-muted select-none data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
+            >
+              <SliderFill
+                data-slot="slider-range"
+                className="absolute bg-primary select-none data-horizontal:h-full data-vertical:w-full"
+              />
+              {state.values.map((_, index) => (
+                <SliderThumb
+                  data-slot="slider-thumb"
+                  key={index}
+                  index={index}
+                  className="absolute block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none group-data-horizontal:top-[50%] group-data-vertical:left-[50%] after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+                />
+              ))}
+            </SliderTrack>
+          </>
+        );
+      }}
+    </SliderPrimitive>
   );
 }
 

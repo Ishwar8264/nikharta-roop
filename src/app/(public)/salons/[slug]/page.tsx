@@ -32,13 +32,15 @@ export async function generateMetadata({
       salon.description?.slice(0, 160) ??
       `${salon.name} in ${salon.city}, ${salon.state}.`;
 
+    const socialImage = salon.bannerImage ?? salon.coverImage ?? salon.images[0];
+
     return {
       title: `${salon.name} · Nikharta Roop`,
       description,
       openGraph: {
         title: salon.name,
         description,
-        images: salon.images[0] ? [salon.images[0]] : undefined,
+        images: socialImage ? [socialImage] : undefined,
         type: "website",
       },
     };
@@ -77,13 +79,13 @@ export default async function SalonDetailPage({ params }: PageProps) {
       : Promise.resolve({ isFavorited: false, favoriteId: null }),
   ]);
 
+  const canManage = membership?.viewerRole === "OWNER" || membership?.viewerRole === "MANAGER";
+
   return (
     <SalonDetail
       salon={salon}
-      canEdit={
-        membership?.viewerRole === "OWNER" ||
-        membership?.viewerRole === "MANAGER"
-      }
+      canEdit={canManage}
+      canAddStaff={membership?.viewerRole === "OWNER"}
       isFavorited={favoriteCheck.isFavorited}
       favoriteId={favoriteCheck.favoriteId}
       currentUserId={user?.id ?? null}

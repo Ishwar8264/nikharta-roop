@@ -17,7 +17,7 @@ if (process.env.NODE_ENV === "production" && !hasUpstashConfig) {
 // every server instance. In local dev (or when Upstash is not configured) we
 // fall back to an in-memory Map — it resets on every restart and does not
 // share state across processes, which is fine for a single dev server.
-const redis = hasUpstashConfig ? Redis.fromEnv() : undefined;
+export const redis = hasUpstashConfig ? Redis.fromEnv() : undefined;
 
 /** Sliding-window limiter that falls back to memory when Redis is absent. */
 function createLimiter(config: {
@@ -124,3 +124,6 @@ export const authenticatedLimiter = createLimiter({
   window: "1 m",
   prefix: "ratelimit:authenticated",
 });
+
+/** Limits exact-email account probing across all salons for each actor. */
+export const salonMemberLimiter = createLimiter({ tokens: 10, window: "1 m", prefix: "ratelimit:salon-member" });

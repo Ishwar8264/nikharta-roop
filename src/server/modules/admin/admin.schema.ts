@@ -33,7 +33,7 @@ export const listUsersQuerySchema = z.strictObject({
     .max(120, "Search must contain at most 120 characters")
     .optional(),
   role: z
-    .enum(["SUPER_ADMIN", "USER"], { error: "Role is invalid" })
+    .enum(["SUPER_ADMIN", "ADMIN", "CONTENT_ADMIN", "USER"], { error: "Role is invalid" })
     .optional(),
   includeDeleted: z
     .enum(["true", "false"], {
@@ -45,7 +45,7 @@ export const listUsersQuerySchema = z.strictObject({
 
 /** Role change body. */
 export const updateUserRoleSchema = z.strictObject({
-  role: z.enum(["SUPER_ADMIN", "USER"], { error: "Role is invalid" }),
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "CONTENT_ADMIN", "USER"], { error: "Role is invalid" }),
 });
 
 /**

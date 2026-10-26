@@ -1,3 +1,4 @@
+import type { SalonStatus } from "@/features/salon/status";
 import type { z } from "zod";
 
 import type {
@@ -21,6 +22,7 @@ export type AddSalonMemberInput = z.infer<typeof addSalonMemberSchema>;
 
 /** Salon row shape returned to public clients. */
 export interface PublicSalon {
+  status: SalonStatus;
   id: string;
   name: string;
   slug: string;
@@ -40,6 +42,8 @@ export interface PublicSalon {
   placeId: string | null;
   phone: string | null;
   email: string | null;
+  coverImage: string | null;
+  bannerImage: string | null;
   images: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -60,6 +64,7 @@ export interface SalonServicePreview {
   slug: string;
   price: number;
   duration: number;
+  coverImage: string | null;
   images: string[];
   category: { name: string; slug: string } | null;
 }
@@ -87,13 +92,20 @@ export interface PaginatedSalons {
 
 /** Public shape of a salon member. */
 export interface PublicSalonMember {
+  bannerImage?: string | null;
+  slug?: string | null;
   id: string;
   userId: string;
   salonId: string;
   role: SalonMemberRole;
+  name: string | null;
+  avatar: string | null;
+  title: string | null;
+  description: string | null;
+  verificationEmailSent?: boolean | null;
   user: {
     id: string;
     name: string | null;
-    email: string | null;
+    email: string | null; emailVerified: boolean;
   };
 }

@@ -33,7 +33,7 @@ interface UseRegisterResult {
  * that didn't return a session; with the backend fixed, the workaround goes
  * away — and with it, the risk of a password living in browser storage.
  */
-export function useRegister(): UseRegisterResult {
+export function useRegister(returnTo?: string): UseRegisterResult {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +60,8 @@ export function useRegister(): UseRegisterResult {
     try {
       await registerApi(parsed.data);
 
-      router.push(routes.verifyOtpForEmail(parsed.data.email));
+      const verificationUrl = routes.verifyOtpForEmail(parsed.data.email);
+      router.push(returnTo ? `${verificationUrl}&redirect=${encodeURIComponent(returnTo)}` : verificationUrl);
     } catch (e) {
       if (e instanceof ApiError) {
         const data = e.data as { errors?: FieldError[] } | null;

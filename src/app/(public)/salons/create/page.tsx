@@ -1,3 +1,5 @@
+import { canCreateSalon } from "@/features/onboarding/policy";
+import { SalonDirectoryLayout } from "@/features/salon/components/directory-layout";
 import { SalonForm } from "@/features/salon/components/form";
 import { getSession } from "@/lib/auth/get-session";
 import type { Metadata } from "next";
@@ -20,9 +22,11 @@ export default async function NewSalonPage() {
   const user = await getSession();
   if (!user) redirect("/login?redirect=%2Fsalons%2Fcreate");
 
+  if (!canCreateSalon(user)) redirect("/onboarding?type=partner");
+
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+    <SalonDirectoryLayout isSignedIn>
       <SalonForm />
-    </div>
+    </SalonDirectoryLayout>
   );
 }

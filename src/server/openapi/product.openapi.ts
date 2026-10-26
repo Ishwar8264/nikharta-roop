@@ -2,6 +2,26 @@ import type { OpenAPIV3_1 } from "openapi-types";
 
 /** Product paths: categories and salon products. */
 export const productPaths = {
+  "/api/v1/salons/{salonRef}/products/{productRef}/status": {
+    patch: {
+      tags: ["Products"],
+      summary: "Update product status",
+      description: "Requires MANAGER access. Changes publication after creation; existing records are retained.",
+      operationId: "updateProductStatus",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "salonRef", in: "path", required: true, schema: { type: "string" } }, { name: "productRef", in: "path", required: true, schema: { type: "string" } }],
+      requestBody: { required: true, content: { "application/json": { schema: { type: "object", additionalProperties: false, required: ["status"], properties: { status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] } } } } } },
+      responses: {
+        "200": { description: "Status updated", content: { "application/json": { schema: { $ref: "#/components/schemas/ProductResponse" } } } },
+        "400": { description: "Invalid status or request" },
+        "401": { description: "Authentication required" },
+        "403": { description: "Insufficient salon permissions" },
+        "404": { description: "Salon or item not found" },
+        "409": { description: "Publication requirements not met" },
+      },
+    },
+  },
+
       "/api/v1/products/categories": {
         get: {
           tags: ["Products"],
@@ -354,6 +374,8 @@ export const productSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "description",
             "descriptionHtml",
             "descriptionJson",
+            "coverImage",
+            "bannerImage",
             "images",
             "createdAt",
             "updatedAt",
@@ -377,11 +399,14 @@ export const productSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             slug: { type: "string" },
             price: { type: "number", format: "double" },
             stock: { type: "integer" },
+            status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] },
             isActive: { type: "boolean" },
             shortDescription: { type: ["string", "null"] },
             description: { type: ["string", "null"] },
             descriptionHtml: { type: ["string", "null"] },
             descriptionJson: { type: ["string", "null"] },
+            coverImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+            bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
             images: { type: "array", items: { type: "string", format: "uri" } },
             createdAt: { type: "string", format: "date-time" },
             updatedAt: { type: "string", format: "date-time" },
@@ -389,6 +414,7 @@ export const productSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
         },
         CreateProductRequest: {
           type: "object",
+          description: "Creates a Draft. Update publication through the dedicated status endpoint after creation.",
           additionalProperties: false,
           required: ["name", "price"],
           properties: {
@@ -412,11 +438,12 @@ export const productSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               maximum: 1000000,
               default: 0,
             },
-            isActive: { type: "boolean", default: true },
             shortDescription: { type: "string", maxLength: 280 },
             description: { type: "string", maxLength: 5000 },
             descriptionHtml: { type: "string", maxLength: 20000 },
             descriptionJson: { type: "string", maxLength: 50000 },
+            coverImage: { type: "string", format: "uri", maxLength: 2048 },
+            bannerImage: { type: "string", format: "uri", maxLength: 2048 },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },
@@ -450,11 +477,14 @@ export const productSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               multipleOf: 0.01,
             },
             stock: { type: "integer", minimum: 0, maximum: 1000000 },
+            status: { type: "string", enum: ["DRAFT", "PUBLISHED", "PAUSED", "ARCHIVED"] },
             isActive: { type: "boolean" },
             shortDescription: { type: ["string", "null"], maxLength: 280 },
             description: { type: ["string", "null"], maxLength: 5000 },
             descriptionHtml: { type: ["string", "null"], maxLength: 20000 },
             descriptionJson: { type: ["string", "null"], maxLength: 50000 },
+            coverImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+            bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },

@@ -42,6 +42,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
     type = "text",
     icon,
     error,
+    required,
     description,
     className,
     name,
@@ -63,7 +64,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
 
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} required={required}>{label}</Label>
       <div className="relative">
         {icon ? (
           <span
@@ -78,6 +79,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           ref={ref}
           id={id}
           name={name ?? id}
+          required={required}
           type={type}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}

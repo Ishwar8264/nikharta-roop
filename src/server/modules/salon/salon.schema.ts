@@ -1,3 +1,4 @@
+import { salonStatusSchema } from "@/features/salon/status";
 import { z } from "zod";
 
 const slugSchema = z
@@ -156,6 +157,8 @@ export const createSalonSchema = z.strictObject({
     .pipe(z.email({ error: "Email format is invalid" }))
     .transform((email) => email.toLowerCase())
     .optional(),
+  coverImage: optionalUrlSchema.optional(),
+  bannerImage: optionalUrlSchema.optional(),
   images: z
     .array(optionalUrlSchema, { error: "Images must be an array of URLs" })
     .max(20, "At most 20 images are allowed")
@@ -172,6 +175,7 @@ export const createSalonSchema = z.strictObject({
 export const updateSalonSchema = createSalonSchema
   .partial()
   .extend({
+    status: salonStatusSchema.optional(),
     // Defaults belong to creation only. PATCH must preserve omitted fields.
     category: createSalonSchema.shape.category.removeDefault().optional(),
     country: createSalonSchema.shape.country.removeDefault().optional(),
@@ -181,6 +185,8 @@ export const updateSalonSchema = createSalonSchema
     description: createSalonSchema.shape.description.nullable(),
     descriptionHtml: createSalonSchema.shape.descriptionHtml.nullable(),
     descriptionJson: createSalonSchema.shape.descriptionJson.nullable(),
+    coverImage: createSalonSchema.shape.coverImage.nullable(),
+    bannerImage: createSalonSchema.shape.bannerImage.nullable(),
     placeId: createSalonSchema.shape.placeId.nullable(),
     phone: createSalonSchema.shape.phone.nullable(),
     email: createSalonSchema.shape.email.nullable(),
@@ -190,13 +196,26 @@ export const updateSalonSchema = createSalonSchema
     { message: "At least one field must be provided" },
   );
 
-/** Body for adding a member to a salon. */
-export const addSalonMemberSchema = z.strictObject({
-  userId: resourceIdSchema,
-  role: z.enum(["OWNER", "MANAGER", "STAFF"], {
-    error: "Role is invalid",
-  }),
-});
+/** Ownership changes are excluded from the staff management flow. */
+const memberRoleSchema = z.enum(["MANAGER", "STAFF"], { error: "Role must be Staff or Manager" });
+
+/** Salon-specific identity never overwrites an existing personal profile. */
+const memberSlugSchema = slugSchema.refine((value) => value !== "create" && !resourceIdSchema.safeParse(value).success, "Slug is reserved");
+
+const staffProfileShape = {
+  slug: memberSlugSchema.optional(),
+  bannerImage: z.url().max(2048).refine((value) => value.startsWith("https://"), "Banner image must use HTTPS").nullable().optional(),
+  name: z.string().trim().min(2).max(100),
+  avatar: z.url().max(2048).refine((value) => value.startsWith("https://"), "Avatar must use HTTPS").nullable().optional(),
+  title: z.string().trim().max(100).nullable().optional(),
+  description: z.string().trim().max(500).nullable().optional(),
+};
+
+/** Accept exactly one account identifier; retain ID-based API clients. */
+export const addSalonMemberSchema = z.union([
+  z.strictObject({ email: z.string().trim().toLowerCase().pipe(z.email().max(254)), role: memberRoleSchema, ...staffProfileShape }),
+  z.strictObject({ userId: resourceIdSchema, role: memberRoleSchema, ...staffProfileShape, name: staffProfileShape.name.optional() }),
+]);
 
 /**
  * URL params for routes keyed by either a slug or a resource id.
@@ -222,4 +241,16 @@ export const salonMemberParamSchema = z.strictObject({
     .min(2, "Salon reference must contain at least 2 characters")
     .max(80, "Salon reference must contain at most 80 characters"),
   memberId: resourceIdSchema,
+});
+
+/** Changes publication independently of profile details. */
+export const updateSalonStatusSchema = z.strictObject({ status: salonStatusSchema });
+
+/** Self-service profile updates cannot change membership or account permissions. */
+export const updateSalonMemberSchema = z.strictObject({
+  ...staffProfileShape,
+  name: staffProfileShape.name.optional(),
+  slug: memberSlugSchema.optional(),
+}).refine((input) => Object.values(input).some((value) => value !== undefined), {
+  message: "At least one field must be provided",
 });

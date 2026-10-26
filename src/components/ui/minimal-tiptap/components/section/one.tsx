@@ -110,7 +110,8 @@ export const SectionOne: React.FC<SectionOneProps> = ({
     ({ label, element: Element, level, className, shortcuts }: TextStyle) => (
       <DropdownMenuItem
         key={label}
-        onClick={() => handleStyleChange(level)}
+        textValue={label}
+        onAction={() => handleStyleChange(level)}
         className={cn("flex flex-row items-center justify-between gap-4", {
           "bg-accent": level
             ? editor.isActive("heading", { level })

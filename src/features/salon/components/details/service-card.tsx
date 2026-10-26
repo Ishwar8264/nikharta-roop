@@ -13,6 +13,7 @@ interface ServiceCardData {
   slug: string;
   price: number;
   duration: number;
+  coverImage?: string | null;
   images: string[];
   category: { name: string; slug: string } | null;
 }
@@ -21,6 +22,7 @@ interface SalonServiceCardProps {
   salonSlug: string;
   service: ServiceCardData;
   className?: string;
+  canBook?: boolean;
 }
 
 const priceFormatter = new Intl.NumberFormat(siteConfig.locale, {
@@ -34,6 +36,7 @@ export function SalonServiceCard({
   salonSlug,
   service,
   className,
+  canBook = true,
 }: SalonServiceCardProps) {
   return (
     <article
@@ -43,7 +46,7 @@ export function SalonServiceCard({
       )}
     >
       <CoverImage
-        src={service.images[0]}
+        src={service.coverImage ?? service.images[0]}
         alt={service.name}
         aspect="video"
         rounded="none"
@@ -82,6 +85,7 @@ export function SalonServiceCard({
           >
             Details
           </NavLink>
+          {canBook ? (
           <NavLink
             href={`${routes.salonBooking(salonSlug)}?service=${encodeURIComponent(service.slug)}`}
             variant="outline"
@@ -90,6 +94,7 @@ export function SalonServiceCard({
           >
             Book
           </NavLink>
+          ) : null}
         </div>
       </div>
     </article>

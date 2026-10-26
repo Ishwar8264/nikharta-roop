@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
-import { FormHeader } from "@/components/shared";
+import { FormHeader, SelectField, SlugField } from "@/components/shared";
+import { checkSlugAvailability } from "@/lib/api/slug-availability";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,13 +19,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { routes } from "@/config/routes";
 import { Field } from "@/features/auth/shared/components/field";
 import { FormError } from "@/features/auth/shared/components/form-error";
@@ -67,22 +61,33 @@ const DEFAULT_VALUES = {
   placeId: undefined,
   phone: undefined,
   email: undefined,
+  coverImage: undefined,
+  bannerImage: undefined,
   images: [],
 } satisfies CreateSalonFormInput;
 
 export function SalonForm() {
   const router = useRouter();
-  const { create, isLoading, error, fieldErrors } = useCreateSalon();
+  const {
+    create,
+    isLoading: isCreating,
+    error,
+    fieldErrors,
+  } = useCreateSalon();
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [coverImages, setCoverImages] = useState<UploadedImage[]>([]);
+  const [bannerImages, setBannerImages] = useState<UploadedImage[]>([]);
   const [slugWasEdited, setSlugWasEdited] = useState(false);
 
   const {
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     handleSubmit,
     register,
     setError,
     setValue,
+    clearErrors,
+    setFocus,
   } = useForm<CreateSalonFormInput, unknown, CreateSalonFormValues>({
     resolver: zodResolver(createSalonSchema),
     defaultValues: DEFAULT_VALUES,
@@ -90,6 +95,7 @@ export function SalonForm() {
     reValidateMode: "onChange",
     shouldFocusError: true,
   });
+  const isLoading = isCreating || isSubmitting;
 
   const name = useWatch({ control, name: "name" });
   const latitude = useWatch({ control, name: "lat" });
@@ -101,9 +107,10 @@ export function SalonForm() {
 
   useEffect(() => {
     if (!slugWasEdited) {
+      clearErrors("slug");
       setValue("slug", slugify(name), { shouldValidate: false });
     }
-  }, [name, setValue, slugWasEdited]);
+  }, [name, setValue, slugWasEdited, clearErrors]);
 
   useEffect(() => {
     for (const [field, message] of Object.entries(fieldErrors)) {
@@ -124,105 +131,122 @@ export function SalonForm() {
   }
 
   async function submit(values: CreateSalonFormValues) {
+    if (values.slug) {
+      try {
+        const result = await checkSlugAvailability({
+          resource: "salon",
+          slug: values.slug,
+        });
+        if (!result.available) {
+          setError("slug", {
+            type: "availability",
+            message: "This slug is already taken. Choose another.",
+          });
+          setFocus("slug");
+          return;
+        }
+      } catch {
+        setError("slug", {
+          type: "availability",
+          message: "Could not check availability. Please try again.",
+        });
+        setFocus("slug");
+        return;
+      }
+    }
     const created = await create(values);
-    if (created) router.push(routes.salonDetail(created.slug));
+    if (created) router.push(routes.salonEdit(created.slug));
   }
 
   return (
     <form onSubmit={handleSubmit(submit)} data-form-rounded="true" noValidate>
       <Card className="gap-0 overflow-visible py-0">
         <CardHeader className="border-b px-5 py-5 sm:px-8 sm:py-6">
-          <FormHeader
-            title="Create a salon"
-            description="Fill in the details below. You can edit everything later."
-          />
+          <FormHeader title="Create a salon" description="Create a draft, then complete verification and go live from salon details." />
         </CardHeader>
-        <CardContent className="space-y-10 px-5 py-5 sm:px-8 sm:py-5">
+        <CardContent className="space-y-8 px-5 py-6 sm:space-y-10 sm:px-8">
           <FormError>{error}</FormError>
 
           <Section
             title="Basic information"
-            description="How your salon appears across the platform."
+            description="Help customers get to know your salon."
           >
             <div className="grid items-start gap-4 sm:grid-cols-2">
               <Field
                 id="name"
+                required
                 label="Salon name"
-                placeholder="Élan Studio Mumbai"
+                placeholder="e.g. Glow Salon"
                 autoComplete="organization"
                 disabled={isLoading}
                 error={errors.name?.message}
                 {...register("name")}
               />
-              <Field
-                id="slug"
-                label="URL slug"
-                placeholder="elan-studio-mumbai"
-                autoCapitalize="none"
-                spellCheck={false}
-                disabled={isLoading}
-                error={errors.slug?.message}
-                {...register("slug", {
-                  setValueAs: (value: string) => value || undefined,
-                  onChange: () => setSlugWasEdited(true),
-                })}
+              <Controller
+                name="slug"
+                control={control}
+                render={({ field }) => (
+                  <SlugField
+                    id="slug"
+                    resource="salon"
+                    label="URL slug"
+                    placeholder="e.g. glow-salon"
+                    value={field.value ?? ""}
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    onValueChange={(value) => {
+                      setSlugWasEdited(true);
+                      clearErrors("slug");
+                      field.onChange(value || undefined);
+                    }}
+                    disabled={isLoading}
+                    error={errors.slug?.message}
+                  />
+                )}
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="category">Category</Label>
+            <div className="grid items-start gap-4 sm:grid-cols-3">
               <Controller
                 name="category"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger
-                      id="category"
-                      className="h-11 w-full rounded-md sm:w-56"
-                      disabled={isLoading}
-                      onBlur={field.onBlur}
-                      aria-invalid={errors.category ? true : undefined}
-                      aria-describedby={
-                        errors.category ? "category-error" : undefined
-                      }
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SelectField
+                    id="category"
+                    label="Category"
+                    options={CATEGORIES}
+                    name={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isLoading}
+                    error={errors.category?.message}
+                    triggerProps={{ onBlur: field.onBlur, ref: field.ref }}
+                  />
                 )}
               />
-              <FieldError
-                id="category-error"
-                message={errors.category?.message}
-              />
+              <div className="space-y-1.5 sm:col-span-2">
+                <Field
+                  id="shortDescription"
+                  label="Short description"
+                  placeholder="e.g. Haircuts, colour and beauty care"
+                  maxLength={280}
+                  disabled={isLoading}
+                  error={errors.shortDescription?.message}
+                  aria-describedby="shortDescription-count"
+                  {...register("shortDescription", {
+                    setValueAs: (value: string) => value || undefined,
+                  })}
+                />
+                <p
+                  id="shortDescription-count"
+                  className="text-right text-xs text-muted-foreground"
+                  aria-live="polite"
+                >
+                  {shortDescription.length}/280 characters
+                </p>
+              </div>
             </div>
-
-            <Field
-              id="shortDescription"
-              label="Short description"
-              placeholder="A concise summary shown in salon cards and previews"
-              maxLength={280}
-              disabled={isLoading}
-              error={errors.shortDescription?.message}
-              aria-describedby="shortDescription-count"
-              {...register("shortDescription", {
-                setValueAs: (value: string) => value || undefined,
-              })}
-            />
-            <p
-              id="shortDescription-count"
-              className="text-right text-xs text-muted-foreground"
-              aria-live="polite"
-            >
-              {shortDescription.length}/280 characters
-            </p>
 
             <Controller
               name="descriptionHtml"
@@ -231,6 +255,8 @@ export function SalonForm() {
                 <div className="space-y-1.5">
                   <Label htmlFor="description">Description</Label>
                   <RichTextEditor
+                    variant="compact"
+                    aiContext={`Salon name: ${name || "Not provided"}. Summary: ${shortDescription || "Not provided"}.`}
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onOutputsChange={({ text, html, json }) => {
@@ -249,7 +275,7 @@ export function SalonForm() {
                     }}
                     onBlur={field.onBlur}
                     output="html"
-                    placeholder="What makes this salon special?"
+                    placeholder="Share your services, expertise and salon experience."
                     disabled={isLoading}
                   />
                   <p
@@ -271,18 +297,73 @@ export function SalonForm() {
             />
           </Section>
 
+          <Section title="Contact">
+            <div className="grid items-start gap-4 sm:grid-cols-2">
+              <FormControl
+                id="phone"
+                label="Phone number (optional)"
+                error={errors.phone?.message}
+              >
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <PhoneInput
+                      initialCountry="in"
+                      onlyCountries={["in"]}
+                      countrySelectorMode="OFF"
+                      value={field.value ?? ""}
+                      onValueChange={(value) =>
+                        field.onChange(value || undefined)
+                      }
+                      disabled={isLoading}
+                      inputProps={{
+                        id: "phone",
+                        onBlur: field.onBlur,
+                        autoComplete: "tel",
+                        placeholder: "e.g. 98765 43210",
+                        "aria-invalid": errors.phone ? true : undefined,
+                        "aria-describedby": errors.phone
+                          ? "phone-error"
+                          : undefined,
+                      }}
+                    />
+                  )}
+                />
+              </FormControl>
+
+              <Field
+                id="email"
+                label="Email address (optional)"
+                type="email"
+                placeholder="e.g. hello@glowsalon.com"
+                autoComplete="email"
+                disabled={isLoading}
+                error={errors.email?.message}
+                {...register("email", {
+                  setValueAs: (value: string) => value || undefined,
+                })}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Customers can use these details to contact your salon.
+            </p>
+          </Section>
+
           <Section
             title="Location"
-            description="Where customers can find you. Drag the pin to fine-tune."
+            description="Add your address and confirm the salon location on the map."
           >
             <FormControl
               id="address"
+              required
               label="Street address"
               error={errors.address?.message}
             >
               <Input
                 id="address"
-                placeholder="Shop 12, Linking Road, Bandra West"
+                required
+                placeholder="e.g. Shop 12, Linking Road"
                 autoComplete="street-address"
                 disabled={isLoading}
                 aria-invalid={errors.address ? true : undefined}
@@ -294,8 +375,9 @@ export function SalonForm() {
             <div className="grid items-start gap-4 sm:grid-cols-3">
               <Field
                 id="city"
+                required
                 label="City"
-                placeholder="Mumbai"
+                placeholder="e.g. Mumbai"
                 autoComplete="address-level2"
                 disabled={isLoading}
                 error={errors.city?.message}
@@ -303,8 +385,9 @@ export function SalonForm() {
               />
               <Field
                 id="state"
+                required
                 label="State"
-                placeholder="Maharashtra"
+                placeholder="e.g. Maharashtra"
                 autoComplete="address-level1"
                 disabled={isLoading}
                 error={errors.state?.message}
@@ -312,8 +395,9 @@ export function SalonForm() {
               />
               <Field
                 id="zip"
+                required
                 label="PIN code"
-                placeholder="400050"
+                placeholder="e.g. 400050"
                 inputMode="numeric"
                 autoComplete="postal-code"
                 disabled={isLoading}
@@ -380,56 +464,119 @@ export function SalonForm() {
             />
           </Section>
 
-          <Section
-            title="Contact"
-            description="Optional, but helps customers reach you."
-          >
-            <FormControl id="phone" label="Phone" error={errors.phone?.message}>
-              <Controller
-                name="phone"
-                control={control}
-                render={({ field }) => (
-                  <PhoneInput
-                    value={field.value ?? ""}
-                    onValueChange={(value) =>
-                      field.onChange(value || undefined)
-                    }
-                    disabled={isLoading}
-                    inputProps={{
-                      id: "phone",
-                      onBlur: field.onBlur,
-                      autoComplete: "tel",
-                      "aria-invalid": errors.phone ? true : undefined,
-                      "aria-describedby": errors.phone
-                        ? "phone-error"
-                        : undefined,
-                    }}
-                  />
-                )}
-              />
-            </FormControl>
-
-            <Field
-              id="email"
-              label="Email"
-              type="email"
-              placeholder="hello@salon.com"
-              autoComplete="email"
-              disabled={isLoading}
-              error={errors.email?.message}
-              {...register("email", {
-                setValueAs: (value: string) => value || undefined,
-              })}
-            />
+          <Section title="Cover and banner">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(
+                [
+                  {
+                    field: "coverImage",
+                    label: "Cover image",
+                    dimensions: "1260 × 540 px",
+                    usage: "Shown in salon listings.",
+                    selected: coverImages,
+                    setSelected: setCoverImages,
+                  },
+                  {
+                    field: "bannerImage",
+                    label: "Banner image",
+                    dimensions: "1680 × 720 px",
+                    usage: "Shown at the top of your salon page.",
+                    selected: bannerImages,
+                    setSelected: setBannerImages,
+                  },
+                ] as const
+              ).map(
+                ({
+                  field,
+                  label,
+                  dimensions,
+                  usage,
+                  selected,
+                  setSelected,
+                }) => (
+                  <div key={field} className="space-y-2">
+                    <p className="text-sm font-medium">{label}</p>
+                    <MediaPickerDialog
+                      title={`Choose ${label.toLowerCase()}`}
+                      value={selected}
+                      onChange={(next) => {
+                        setSelected(next);
+                        setValue(field, next[0]?.url, {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                          shouldValidate: true,
+                        });
+                      }}
+                      mode="single"
+                      max={1}
+                      maxSizeMB={5}
+                      disabled={isLoading}
+                      trigger={
+                        <div className={`relative flex aspect-[21/9] items-center justify-center overflow-hidden rounded-md border border-dashed border-border bg-muted/30 px-4 text-center transition-colors hover:border-primary/40 hover:bg-muted/50 ${selected[0] ? "" : "min-h-36"}`}>
+                          {selected[0] ? (
+                            <Image
+                              src={selected[0].url}
+                              alt={label}
+                              fill
+                              sizes="400px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-1.5">
+                              <ImagePlus
+                                className="size-5 text-muted-foreground"
+                                aria-hidden="true"
+                              />
+                              <span className="text-sm font-medium">
+                                Choose {label.toLowerCase()}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                Recommended: {dimensions}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                JPG, PNG, WebP or AVIF · Up to 5 MB per image.
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {usage}
+                      {selected.length > 0 && ` Recommended: ${dimensions} (21:9).`}
+                    </p>
+                    {selected.length > 0 ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isLoading}
+                        onClick={() => {
+                          setSelected([]);
+                          setValue(field, undefined, {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                            shouldValidate: true,
+                          });
+                        }}
+                      >
+                        Remove {label.toLowerCase()}
+                      </Button>
+                    ) : null}
+                    <FieldError
+                      id={`${field}-error`}
+                      message={errors[field]?.message}
+                    />
+                  </div>
+                ),
+              )}
+            </div>
           </Section>
 
-          <Section
-            title="Gallery"
-            description="Up to 20 images. The first one becomes the cover."
-          >
+          <Section title="Gallery">
             {images.length < 20 ? (
               <MediaPickerDialog
-                title="Add media"
+                title="Add photos"
                 description="Upload new images or pick from your library."
                 value={images}
                 onChange={syncImages}
@@ -444,13 +591,10 @@ export function SalonForm() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-semibold text-foreground">
-                        Add media
+                        Add photos
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Upload new images or choose from your media library
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        JPG · PNG · WebP · AVIF · Max 5MB
+                        Up to 20 photos · JPG, PNG, WebP or AVIF · Up to 5 MB each.
                       </p>
                     </div>
                   </div>
@@ -459,17 +603,17 @@ export function SalonForm() {
             ) : null}
 
             {images.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              <div className="flex flex-wrap gap-3">
                 {images.map((image, index) => (
                   <div
                     key={image.publicId}
-                    className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
+                    className="group relative aspect-square w-24 shrink-0 overflow-hidden rounded-lg border border-border bg-muted sm:w-32"
                   >
                     <Image
                       src={image.url}
                       alt=""
                       fill
-                      sizes="200px"
+                      sizes="(min-width: 640px) 128px, 96px"
                       className="object-cover"
                     />
                     {!isLoading ? (
@@ -491,23 +635,27 @@ export function SalonForm() {
 
             <p className="text-xs text-muted-foreground">
               {images.length}/20 images
-              {images.length > 0 ? " · First image becomes the cover" : ""}
             </p>
 
             <FieldError id="images-error" message={errors.images?.message} />
           </Section>
         </CardContent>
 
-        <CardFooter className="flex flex-col-reverse gap-3 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
+        <CardFooter className="flex flex-col-reverse items-stretch gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-8">
           <Button
             type="button"
             variant="outline"
+            className="h-10 sm:min-w-28"
             onClick={() => router.back()}
             disabled={isLoading}
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="h-10 sm:min-w-32"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <>
                 <Loader2
@@ -530,13 +678,22 @@ interface FormControlProps {
   id: string;
   label: string;
   error?: string;
+  required?: boolean;
   children: React.ReactNode;
 }
 
-function FormControl({ id, label, error, children }: FormControlProps) {
+function FormControl({
+  id,
+  label,
+  error,
+  required,
+  children,
+}: FormControlProps) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} required={required}>
+        {label}
+      </Label>
       {children}
       <FieldError id={`${id}-error`} message={error} />
     </div>
@@ -563,19 +720,23 @@ function Section({
   const headingId = `section-${title.toLowerCase().replaceAll(" ", "-")}`;
 
   return (
-    <section className="space-y-5" aria-labelledby={headingId}>
-      <header className="border-b border-border pb-3">
+    <section className="space-y-4" aria-labelledby={headingId}>
+      <header className="space-y-1 border-b border-border pb-3">
         <h2
           id={headingId}
-          className="font-heading text-xl font-semibold tracking-tight text-foreground"
+          className="font-heading text-lg font-semibold tracking-tight text-foreground"
         >
           {title}
         </h2>
-        {description ? (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        ) : null}
       </header>
-      <div className="space-y-5">{children}</div>
+      <div className="space-y-4">
+        {children}
+        {description ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }

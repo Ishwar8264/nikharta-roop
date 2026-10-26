@@ -2,6 +2,14 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { sendLoginLockoutEmail } from "@/lib/email";
+import { COMMON_PASSWORD_MESSAGE, isCommonPassword } from "@/server/auth/breached-password";
+import {
+  clearLockout,
+  lockoutRetryAfterSeconds,
+  recordFailedAttempt,
+} from "@/server/auth/login-lockout";
+import { logAuthError, logAuthEvent } from "@/server/auth/auth.logger";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 import {
   hashRefreshToken,
@@ -14,9 +22,11 @@ import { sendOtp } from "@/server/modules/otp/otp.service";
 
 import {
   AccountDeactivatedError,
+  AccountLockedError,
   EmailNotVerifiedError,
   InvalidCredentialsError,
   InvalidCurrentPasswordError,
+  WeakPasswordError,
 } from "./auth.errors";
 import {
   createUser,
@@ -68,6 +78,10 @@ const DUMMY_PASSWORD_HASH =
 export async function registerUser(
   input: RegisterUserInput,
 ): Promise<RegisteredUser> {
+  if (isCommonPassword(input.password)) {
+    throw new WeakPasswordError(COMMON_PASSWORD_MESSAGE);
+  }
+
   const existing = await findExistingIdentifiers(input);
 
   if (input.email && existing?.email === input.email) {
@@ -111,6 +125,12 @@ export async function loginUser(
   input: LoginUserInput,
   metadata: LoginMetadata = {},
 ): Promise<LoginResult> {
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const retryAfter = await lockoutRetryAfterSeconds(normalizedEmail);
+  if (retryAfter > 0) {
+    throw new AccountLockedError(retryAfter);
+  }
+
   const user = await findUserForLogin(input);
 
   // Always verify against something so response time does not leak existence.
@@ -118,6 +138,21 @@ export async function loginUser(
   const passwordMatches = await verifyPassword(input.password, hashToVerify);
 
   if (!user || !user.password || !passwordMatches) {
+    // Count unknown identifiers too: lockout responses must not reveal registration.
+    const triggered = await recordFailedAttempt(normalizedEmail);
+    if (triggered) {
+      logAuthEvent("warn", "auth.login.lockout_triggered", { userId: user?.id });
+      if (user?.email && user.password && !user.deletedAt) {
+        try {
+          await sendLoginLockoutEmail(user.email);
+        } catch (error) {
+          // Delivery failure cannot undo the lock or expose provider details.
+          logAuthError("auth.login.lockout_alert_failed", error, { userId: user.id });
+        }
+      }
+    }
+    const retryAfter = await lockoutRetryAfterSeconds(normalizedEmail);
+    if (retryAfter > 0) throw new AccountLockedError(retryAfter);
     throw new InvalidCredentialsError();
   }
 
@@ -136,7 +171,12 @@ export async function loginUser(
     throw new EmailNotVerifiedError();
   }
 
+  // Failures from parallel requests may have locked the identifier during scrypt.
+  const remainingLock = await lockoutRetryAfterSeconds(normalizedEmail);
+  if (remainingLock > 0) throw new AccountLockedError(remainingLock);
   const tokens = await issueTokenPair(user.id, user.role, metadata);
+  await clearLockout(normalizedEmail);
+  logAuthEvent("info", "auth.login.success", { userId: user.id });
 
   return {
     user: toPublicUser(user),
@@ -166,11 +206,18 @@ export async function getCurrentUser(
     email: user.email,
     phone: user.phone,
     avatar: user.avatar,
+    coverImage: user.coverImage,
     bio: user.bio,
     lat: user.lat,
     lng: user.lng,
     role: user.role,
     isOnboarded: user.isOnboarded,
+    accountType: user.accountType,
+    onboardingCompletedAt: user.onboardingCompletedAt,
+    partnerCompletedAt: user.partnerCompletedAt,
+    partnerTermsVersion: user.partnerTermsVersion,
+    partnerTermsAcceptedAt: user.partnerTermsAcceptedAt,
+    partnerEligibilityBackfilledAt: user.partnerEligibilityBackfilledAt,
     emailVerified: user.emailVerified,
     phoneVerified: user.phoneVerified,
     loyaltyPoints: user.loyaltyPoints,
@@ -203,6 +250,10 @@ export async function changePassword(
     throw new InvalidCurrentPasswordError();
   }
 
+  if (isCommonPassword(input.newPassword)) {
+    throw new WeakPasswordError(COMMON_PASSWORD_MESSAGE);
+  }
+
   // Reject reuse so "change" actually changes something.
   const samePassword = await verifyPassword(input.newPassword, user.password);
   if (samePassword) {
@@ -211,11 +262,11 @@ export async function changePassword(
 
   const passwordHash = await hashPassword(input.newPassword);
   return prisma.$transaction(async (transaction) => {
-    const updated = await transaction.user.updateMany({
+    const updated = await transaction.account.updateMany({
       // Comparing the hash prevents two concurrent changes that both verified
       // the old password from silently overwriting each other.
-      where: { id: userId, password: user.password, deletedAt: null },
-      data: { password: passwordHash },
+      where: { userId, provider: "credentials", passwordHash: user.password, user: { deletedAt: null } },
+      data: { passwordHash },
     });
 
     if (updated.count !== 1) {
@@ -330,7 +381,7 @@ export async function deleteAccount(
 
   await prisma.$transaction(async (transaction) => {
     const deleted = await transaction.user.updateMany({
-      where: { id: userId, password: user.password, deletedAt: null },
+      where: { id: userId, accounts: { some: { provider: "credentials", passwordHash: user.password } }, deletedAt: null },
       data: { deletedAt: new Date() },
     });
 

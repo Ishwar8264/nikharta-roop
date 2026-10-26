@@ -1,3 +1,4 @@
+import type { CatalogStatus } from "@/lib/catalog/status";
 import type { z } from "zod";
 
 import type {
@@ -18,6 +19,7 @@ export interface PublicPackage {
   slug: string;
   price: number;
   duration: number;
+  status: CatalogStatus;
   isActive: boolean;
   services: Array<{
     serviceId: string;

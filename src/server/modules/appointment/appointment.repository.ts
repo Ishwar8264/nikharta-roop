@@ -1,3 +1,4 @@
+import { BOOKABLE_SALON_FILTER } from "@/features/salon/status";
 import "server-only";
 
 import type { DayOfWeek, Prisma } from "@/generated/prisma/client";
@@ -222,7 +223,7 @@ export async function getActiveSalonTimezone(
   salonId: string,
 ): Promise<string | null> {
   const salon = await prisma.salon.findFirst({
-    where: { id: salonId, isActive: true, deletedAt: null },
+    where: { id: salonId, ...BOOKABLE_SALON_FILTER },
     select: { timezone: true },
   });
 

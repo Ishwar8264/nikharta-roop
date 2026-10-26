@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import { NextResponse } from "next/server";
 
 import { getAuthContext } from "@/server/auth/session";
@@ -73,7 +74,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  if (auth.role !== "SUPER_ADMIN") {
+  if (!hasPermission(auth.role, "platform.manage")) {
     return NextResponse.json(
       { message: "You do not have permission to access this resource" },
       { status: 403 },

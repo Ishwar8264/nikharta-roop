@@ -91,7 +91,7 @@ export function SalonStatsCard({ stats }: SalonStatsCardProps) {
           </li>
           <li>
             <Link
-              href={routes.salonServicesManage(salon.slug)}
+              href={routes.salonServiceCatalog(salon.slug)}
               className={cn(
                 "group/stat block rounded-lg outline-none",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -108,7 +108,7 @@ export function SalonStatsCard({ stats }: SalonStatsCardProps) {
           </li>
           <li>
             <Link
-              href={routes.salonPackagesManage(salon.slug)}
+              href={routes.salonPackageCatalog(salon.slug)}
               className={cn(
                 "group/stat block rounded-lg outline-none",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",

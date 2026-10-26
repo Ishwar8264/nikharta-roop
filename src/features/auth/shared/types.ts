@@ -47,11 +47,18 @@ export interface CurrentUser {
   email: string | null;
   phone: string | null;
   avatar: string | null;
+  coverImage: string | null;
   bio: string | null;
   lat: number | null;
   lng: number | null;
   role: string;
   isOnboarded: boolean;
+  accountType: "CUSTOMER" | "SALON_PARTNER" | null;
+  onboardingCompletedAt: Date | null;
+  partnerCompletedAt: Date | null;
+  partnerTermsVersion: string | null;
+  partnerTermsAcceptedAt: Date | null;
+  partnerEligibilityBackfilledAt: Date | null;
   emailVerified: boolean;
   phoneVerified: boolean;
   loyaltyPoints: number;
@@ -127,10 +134,13 @@ export interface ValidationErrorResponse {
 // ─────────────────────────────────────────────────────────────
 
 export interface SendOtpInput {
+  staffActivation?: boolean;
   email: string;
 }
 
 export interface VerifyOtpInput {
+  createSession?: boolean;
+  newPassword?: string;
   email: string;
   code: string;
 }
@@ -148,6 +158,7 @@ export interface SendOtpResponse {
 export interface VerifyOtpResponse {
   message: string;
   data: {
+    staffProfileUrl?: string;
     userId: string;
     channel: "EMAIL" | "PHONE" | "WHATSAPP";
   };

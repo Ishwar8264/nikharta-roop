@@ -41,8 +41,7 @@ export function FinalCta() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button
               render={<Link href={routes.salons} />}
-              nativeButton={false}
-              size="lg"
+                size="lg"
             >
               {finalCta.primaryCta.label}
               <ArrowRight className="ml-1 h-4 w-4" />
@@ -50,8 +49,7 @@ export function FinalCta() {
 
             <Button
               render={<Link href={routes.contact} />}
-              nativeButton={false}
-              variant="secondary"
+                variant="secondary"
               size="lg"
             >
               {finalCta.secondaryCta.label}

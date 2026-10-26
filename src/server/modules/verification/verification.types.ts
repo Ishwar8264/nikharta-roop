@@ -17,10 +17,14 @@ export interface PublicSalonVerification {
   submittedAt: Date | null;
   reviewedAt: Date | null;
   reason: string | null;
+  updatedAt: Date;
 }
 
 /** Salon fields surfaced alongside each pending verification row. */
 export interface PendingVerificationSalon {
+  address: string;
+  state: string;
+  zip: string;
   id: string;
   slug: string;
   name: string;
@@ -32,6 +36,7 @@ export interface PendingVerificationSalon {
  * salon fields the queue UI renders.
  */
 export interface PendingVerificationRow {
+  updatedAt: Date;
   status: SalonVerificationStatus;
   documents: unknown | null;
   submittedAt: Date | null;

@@ -2,18 +2,22 @@
 
 import { useEffect, useState } from "react";
 
-import { routes } from "@/config/routes";
+import { onboardingWelcomeUrl } from "@/features/onboarding/policy";
 import { ApiError } from "@/lib/api/backend.client";
 import { sendOtpApi } from "../api/sendOtp";
 import { verifyOtpApi } from "../api/verifyOtp";
 
-type Step = "send" | "verify";
+type Step = "send" | "verify" | "complete";
 
 interface UseVerifyOtpResult {
   step: Step;
+  signInUrl: string;
   email: string;
   code: string;
   setCode: (code: string) => void;
+  newPassword: string;
+  setNewPassword: (value: string) => void;
+  needsPassword: boolean;
   sendCode: () => Promise<void>;
   verifyCode: () => Promise<void>;
   isSending: boolean;
@@ -42,8 +46,11 @@ interface UseVerifyOtpResult {
  * gives the user a live countdown instead of an unpredictable 429. The
  * server remains authoritative; this is only a courtesy.
  */
-export function useVerifyOtp(email: string): UseVerifyOtpResult {
-  const [step, setStep] = useState<Step>("send");
+export function useVerifyOtp(email: string, setup = false, codeAlreadySent = false, staffActivation = false): UseVerifyOtpResult {
+  const [signInUrl, setSignInUrl] = useState("/login?flow=staff");
+  const [step, setStep] = useState<Step>(setup || codeAlreadySent ? "verify" : "send");
+  const [newPassword, setNewPassword] = useState("");
+  const [needsPassword, setNeedsPassword] = useState(setup);
   const [code, setCode] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -66,7 +73,7 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
     setError(null);
 
     try {
-      const res = await sendOtpApi({ email });
+      const res = await sendOtpApi({ email, ...(staffActivation ? { staffActivation: true } : {}) });
       setResendIn(res.data.resendAvailableInSeconds);
       setStep("verify");
     } catch (e) {
@@ -99,18 +106,26 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
     setError(null);
 
     try {
-      await verifyOtpApi({ email, code });
+      const response = await verifyOtpApi({ email, code, ...(needsPassword ? { newPassword } : {}), ...(staffActivation ? { createSession: false } : {}) });
 
+      if (staffActivation) {
+        setSignInUrl("/login?flow=staff&redirect=" + encodeURIComponent(response.data?.staffProfileUrl ?? "/profile"));
+        setCode("");
+        setNewPassword("");
+        setStep("complete");
+        return;
+      }
       // Force a fresh document request so Server Components read the session
       // cookies before rendering the authenticated destination.
-      window.location.replace(routes.dashboard);
+      window.location.replace(onboardingWelcomeUrl(new URLSearchParams(window.location.search).get("redirect")));
     } catch (e) {
       if (e instanceof ApiError) {
+        if (e.status === 422) setNeedsPassword(true);
         setError(e.message);
         // Clear the code on rejection so the user can retype without
         // manually deleting six digits. The email is still theirs; they
         // can resend if the code has truly expired.
-        setCode("");
+        if (e.status !== 422) setCode("");
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -121,9 +136,13 @@ export function useVerifyOtp(email: string): UseVerifyOtpResult {
 
   return {
     step,
+    signInUrl,
     email,
     code,
     setCode,
+    newPassword,
+    setNewPassword,
+    needsPassword,
     sendCode,
     verifyCode,
     isSending,

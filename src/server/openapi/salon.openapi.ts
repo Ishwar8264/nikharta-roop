@@ -2,6 +2,26 @@ import type { OpenAPIV3_1 } from "openapi-types";
 
 /** Salon paths: directory, members, and weekly working hours. */
 export const salonPaths = {
+  "/api/v1/salons/{salonRef}/status": {
+    patch: {
+      tags: ["Salons"],
+      summary: "Update salon status",
+      description: "Requires MANAGER access. Changes publication after creation; existing records are retained.",
+      operationId: "updateSalonStatus",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "salonRef", in: "path", required: true, schema: { type: "string" } }],
+      requestBody: { required: true, content: { "application/json": { schema: { type: "object", additionalProperties: false, required: ["status"], properties: { status: { type: "string", enum: ["DRAFT", "LIVE", "TEMPORARILY_CLOSED", "ARCHIVED"] } } } } } },
+      responses: {
+        "200": { description: "Status updated", content: { "application/json": { schema: { $ref: "#/components/schemas/SalonResponse" } } } },
+        "400": { description: "Invalid status or request" },
+        "401": { description: "Authentication required" },
+        "403": { description: "Insufficient salon permissions" },
+        "404": { description: "Salon or item not found" },
+        "409": { description: "Publication requirements not met" },
+      },
+    },
+  },
+
       "/api/v1/salons": {
         get: {
           tags: ["Salons"],
@@ -71,7 +91,7 @@ export const salonPaths = {
           tags: ["Salons"],
           summary: "Create a salon",
           description:
-            "Any authenticated user can open a salon and becomes its first OWNER. " +
+            "An eligible salon partner can open a salon and becomes its first OWNER. " +
             "If `slug` is omitted it is derived from `name` with numeric suffixes " +
             "on collision.",
           operationId: "createSalon",
@@ -113,6 +133,17 @@ export const salonPaths = {
                   schema: { $ref: "#/components/schemas/ErrorResponse" },
                 },
               },
+            },
+            "403": {
+              description: "Partner onboarding required",
+              content: { "application/json": { schema: {
+                type: "object", required: ["message", "code", "onboardingUrl"],
+                properties: {
+                  message: { type: "string" },
+                  code: { type: "string", const: "PARTNER_ONBOARDING_REQUIRED" },
+                  onboardingUrl: { type: "string", const: "/onboarding?type=partner" },
+                },
+              } } },
             },
             "409": {
               description: "Slug already in use",
@@ -397,7 +428,7 @@ export const salonPaths = {
         post: {
           tags: ["Salons"],
           summary: "Add a salon member",
-          description: "Requires OWNER on the target salon.",
+          description: "Requires OWNER on the target salon. Creates an unverified account for a new email and preserves existing personal profiles. Pending accounts cannot access salon management or receive bookings.",
           operationId: "addSalonMember",
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -417,6 +448,8 @@ export const salonPaths = {
             },
           },
           responses: {
+            "422": { description: "Account is deleted or an ID-based account is missing" },
+            "429": { description: "Staff addition rate limit exceeded" },
             "201": {
               description: "Member added",
               content: {
@@ -479,6 +512,32 @@ export const salonPaths = {
         },
       },
       "/api/v1/salons/{id}/members/{memberId}": {
+        patch: {
+          tags: ["Salons"], summary: "Update your salon member profile",
+          description: "The member themselves or a verified owner of the same salon. Managers cannot edit other members. Cannot change role, account, email, or verification. Slugs are unique within a salon; name changes preserve the slug. IDs and the slug create are reserved.",
+          operationId: "updateOwnSalonMember", security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: "id", in: "path", required: true, schema: { type: "string" }, description: "Salon internal ID" },
+            { name: "memberId", in: "path", required: true, schema: { type: "string" }, description: "Membership internal ID" },
+          ],
+          requestBody: { required: true, content: { "application/json": { schema: {
+            type: "object", additionalProperties: false, minProperties: 1,
+            properties: {
+              name: { type: "string", minLength: 2, maxLength: 100 },
+              slug: { type: "string", minLength: 2, maxLength: 80, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$", example: "ishwar-sahani" },
+              bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048, description: "HTTPS URL; null clears the banner" },
+              avatar: { type: ["string", "null"], format: "uri", maxLength: 2048, description: "HTTPS URL" },
+              title: { type: ["string", "null"], maxLength: 100 },
+              description: { type: ["string", "null"], maxLength: 500 },
+            },
+          } } } },
+          responses: {
+            "200": { description: "Member updated", content: { "application/json": { schema: { $ref: "#/components/schemas/SalonMemberResponse" } } } },
+            "400": { description: "Invalid body or IDs" }, "401": { description: "Authentication required" },
+            "404": { description: "Member not found or not editable by this account" },
+            "409": { description: "Slug already in use in this salon" }, "500": { description: "Unable to update member" },
+          },
+        },
         delete: {
           tags: ["Salons"],
           summary: "Remove a salon member",
@@ -706,6 +765,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "updatedAt",
           ],
           properties: {
+            status: { type: "string", enum: ["DRAFT", "LIVE", "TEMPORARILY_CLOSED", "ARCHIVED"] },
             id: { $ref: "#/components/schemas/ResourceId" },
             name: { type: "string" },
             slug: { type: "string" },
@@ -728,6 +788,8 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             placeId: { type: ["string", "null"] },
             phone: { type: ["string", "null"] },
             email: { type: ["string", "null"], format: "email" },
+            coverImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+            bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },
@@ -773,6 +835,8 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             placeId: { type: "string", maxLength: 255 },
             phone: { type: "string", pattern: "^\\+[1-9]\\d{7,14}$" },
             email: { type: "string", format: "email", maxLength: 254 },
+            coverImage: { type: "string", format: "uri", maxLength: 2048 },
+            bannerImage: { type: "string", format: "uri", maxLength: 2048 },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },
@@ -786,6 +850,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           additionalProperties: false,
           minProperties: 1,
           properties: {
+            status: { type: "string", enum: ["DRAFT", "LIVE", "TEMPORARILY_CLOSED", "ARCHIVED"], description: "Live and temporarily closed require current verification. Draft and archived are hidden; temporarily closed blocks new bookings." },
             name: { type: "string", minLength: 2, maxLength: 120 },
             slug: {
               type: "string",
@@ -821,6 +886,8 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             placeId: { type: "string", maxLength: 255 },
             phone: { type: "string", pattern: "^\\+[1-9]\\d{7,14}$" },
             email: { type: "string", format: "email", maxLength: 254 },
+            coverImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+            bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },
@@ -871,6 +938,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             "slug",
             "price",
             "duration",
+            "coverImage",
             "images",
             "category",
           ],
@@ -880,6 +948,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
             slug: { type: "string" },
             price: { type: "number", minimum: 0 },
             duration: { type: "integer", minimum: 5 },
+            coverImage: { type: ["string", "null"], format: "uri" },
             images: {
               type: "array",
               items: { type: "string", format: "uri" },
@@ -969,6 +1038,11 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           type: "object",
           required: ["id", "userId", "salonId", "role", "user"],
           properties: {
+            slug: { type: ["string", "null"], description: "Stable salon-scoped profile URL slug" },
+            name: { type: ["string", "null"] }, avatar: { type: ["string", "null"] },
+            bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+            title: { type: ["string", "null"] }, description: { type: ["string", "null"] },
+            verificationEmailSent: { type: ["boolean", "null"] },
             id: { $ref: "#/components/schemas/ResourceId" },
             userId: { $ref: "#/components/schemas/ResourceId" },
             salonId: { $ref: "#/components/schemas/ResourceId" },
@@ -978,6 +1052,7 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
               required: ["id", "name", "email"],
               properties: {
                 id: { $ref: "#/components/schemas/ResourceId" },
+                emailVerified: { type: "boolean" },
                 name: { type: ["string", "null"] },
                 email: { type: ["string", "null"], format: "email" },
               },
@@ -985,13 +1060,28 @@ export const salonSchemas: Record<string, OpenAPIV3_1.SchemaObject> = {
           },
         },
         AddSalonMemberRequest: {
-          type: "object",
-          additionalProperties: false,
-          required: ["userId", "role"],
-          properties: {
-            userId: { $ref: "#/components/schemas/ResourceId" },
-            role: { type: "string", enum: ["OWNER", "MANAGER", "STAFF"] },
-          },
+          oneOf: [
+            { type: "object", additionalProperties: false, required: ["email", "name", "role"], properties: {
+              email: { type: "string", format: "email", maxLength: 254 },
+              name: { type: "string", minLength: 2, maxLength: 100 },
+              bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048, description: "HTTPS URL; null clears the banner" },
+              slug: { type: "string", minLength: 2, maxLength: 80, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$", description: "Optional custom URL slug. Must be unique within this salon; reserved IDs and create are rejected." },
+              avatar: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+              title: { type: ["string", "null"], maxLength: 100 },
+              description: { type: ["string", "null"], maxLength: 500 },
+              role: { type: "string", enum: ["MANAGER", "STAFF"] },
+            } },
+            { type: "object", additionalProperties: false, required: ["userId", "role"], properties: {
+              userId: { $ref: "#/components/schemas/ResourceId" },
+              name: { type: "string", minLength: 2, maxLength: 100 },
+              bannerImage: { type: ["string", "null"], format: "uri", maxLength: 2048, description: "HTTPS URL; null clears the banner" },
+              slug: { type: "string", minLength: 2, maxLength: 80, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$", description: "Optional custom URL slug. Must be unique within this salon; reserved IDs and create are rejected." },
+              avatar: { type: ["string", "null"], format: "uri", maxLength: 2048 },
+              title: { type: ["string", "null"], maxLength: 100 },
+              description: { type: ["string", "null"], maxLength: 500 },
+              role: { type: "string", enum: ["MANAGER", "STAFF"] },
+            } },
+          ],
         },
         SalonMemberResponse: {
           type: "object",

@@ -8,7 +8,14 @@ import { AdminReviewSheet } from "./admin-review-sheet";
 import type { SalonVerification } from "./api";
 
 interface AdminVerificationRowProps {
-  salon: { slug: string; name: string; city?: string | null };
+  salon: {
+    slug: string;
+    name: string;
+    city?: string | null;
+    address?: string;
+    state?: string;
+    zip?: string;
+  };
   verification: SalonVerification;
 }
 

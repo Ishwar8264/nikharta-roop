@@ -76,7 +76,7 @@ interface ReviewFormProps {
   /** When in edit mode, the existing review to seed the form with. */
   initial?: Pick<PublicReview, "rating" | "comment">;
   /** Called after a successful save with the freshly-persisted review. */
-  onSaved: (review: PublicReview) => void;
+  onSaved?: (review: PublicReview) => void;
   /** Called when the user cancels (edit mode only). */
   onCancel?: () => void;
   /** Called when the user deletes their review (edit mode only). */
@@ -159,7 +159,7 @@ export function ReviewForm({
       // Re-fetch the server-rendered list so the new/edited row appears
       // without forcing the user to navigate away and back.
       router.refresh();
-      onSaved(review);
+      onSaved?.(review);
     } catch (caught) {
       setFormMessage(
         caught instanceof ApiError

@@ -70,7 +70,7 @@ export async function findUserByEmail(
 }
 
 /**
- * Finds a SocialAccount by provider + provider user id.
+ * Finds an Account by provider + provider user id.
  *
  * Why:
  * The provider user id (Google `sub`, Apple `sub`, Facebook id) is the
@@ -82,7 +82,7 @@ export async function findSocialAccountByProvider(input: {
   provider: OAuthProviderId;
   providerUserId: string;
 }): Promise<{ id: string; userId: string } | null> {
-  return prisma.socialAccount.findUnique({
+  return prisma.account.findUnique({
     where: {
       provider_providerUserId: {
         provider: input.provider,
@@ -98,7 +98,7 @@ export async function findSocialAccountByProvider(input: {
  *
  * Why:
  * When the provider's verified email matches an existing local account,
- * the user is the same person. Adding a SocialAccount row lets future
+ * the user is the same person. Adding an Account row lets future
  * logins through that provider find them without re-checking the email.
  *
  * The unique constraint on (provider, providerUserId) makes this a no-op
@@ -110,7 +110,7 @@ export async function linkSocialAccount(input: {
   provider: OAuthProviderId;
   providerUserId: string;
 }): Promise<void> {
-  await prisma.socialAccount.upsert({
+  await prisma.account.upsert({
     where: {
       provider_providerUserId: {
         provider: input.provider,
@@ -131,7 +131,7 @@ export async function linkSocialAccount(input: {
  *
  * Why:
  * A first-time OAuth login has no local password. The user is created with
- * `password: null`, `emailVerified: true` (the provider already proved the
+ * no credentials account, `emailVerified: true` (the provider already proved the
  * address), and `isOnboarded: false` so the UI can prompt for a phone
  * number or profile details after the first sign-in.
  */
@@ -148,7 +148,6 @@ export async function createOAuthUser(input: {
       avatar: input.avatar,
       // No password — this account can only be accessed via the provider
       // until the user sets one through the password-change flow.
-      password: null,
       emailVerified: input.emailVerified,
       isOnboarded: false,
     },

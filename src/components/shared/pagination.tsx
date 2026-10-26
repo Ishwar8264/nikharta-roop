@@ -46,7 +46,6 @@ export function Pagination({
     <div className={cn("flex justify-center pt-12", className)}>
       <Button
         render={<Link href={buildHref(nextCursor)} />}
-        nativeButton={false}
         variant="outline"
         size="lg"
       >

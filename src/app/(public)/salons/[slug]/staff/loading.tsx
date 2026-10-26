@@ -1,0 +1,10 @@
+import { Skeleton } from "@/components/ui/skeleton";
+
+/** Matches the compact team header, mobile cards and desktop status columns. */
+export default function StaffLoading() {
+  return <div className="w-full space-y-3" role="status" aria-label="Loading staff" aria-busy="true">
+    <div className="flex items-center justify-between border-b pb-3"><Skeleton className="h-5 w-32" /><Skeleton className="h-4 w-20" /></div>
+    <div className="space-y-3 lg:hidden">{[0, 1, 2].map((key) => <div key={key} className="space-y-4 rounded-2xl border bg-card p-4"><div className="flex items-center gap-3"><Skeleton className="size-10 shrink-0 rounded-full" /><div className="flex-1 space-y-2"><Skeleton className="h-5 w-36 max-w-full" /><Skeleton className="h-3 w-44 max-w-full" /></div></div><div className="flex gap-2"><Skeleton className="h-5 w-14 rounded-full" /><Skeleton className="h-5 w-20 rounded-full" /></div><div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/30 p-3">{[0, 1].map((field) => <div key={field} className="space-y-2"><Skeleton className="h-3 w-16" /><Skeleton className="h-4 w-20" /></div>)}</div><Skeleton className="h-7 w-24" /></div>)}</div>
+    <div className="hidden overflow-x-auto rounded-2xl border bg-card lg:block"><div className="min-w-[800px]"><div className="grid grid-cols-[30%_12%_14%_20%_10%_14%] bg-muted/30 py-3.5">{[0, 1, 2, 3, 4, 5].map((key) => <div key={key} className="px-4"><Skeleton className="h-3 w-16 max-w-full" /></div>)}</div><div className="divide-y">{[0, 1, 2, 3].map((key) => <div key={key} className="grid grid-cols-[30%_12%_14%_20%_10%_14%] items-center py-5"><div className="flex min-w-0 items-center gap-3 px-5"><Skeleton className="size-10 shrink-0 rounded-full" /><div className="min-w-0 flex-1 space-y-2"><Skeleton className="h-4 w-28 max-w-full" /><Skeleton className="h-3 w-36 max-w-full" /></div></div>{[0, 1, 2, 3, 4].map((field) => <div key={field} className="px-4"><Skeleton className="h-5 w-20 max-w-full rounded-full" /></div>)}</div>)}</div></div></div>
+  </div>;
+}

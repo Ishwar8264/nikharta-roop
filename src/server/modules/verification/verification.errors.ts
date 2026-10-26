@@ -1,5 +1,14 @@
 import "server-only";
 
+export class VerificationValidationError extends Error {}
+export class VerificationConflictError extends Error {
+  constructor() {
+    super(
+      "This submission changed or was already reviewed. Reload before continuing.",
+    );
+  }
+}
+
 /** Thrown when a salon has no verification row yet. */
 export class SalonVerificationNotFoundError extends Error {
   constructor() {

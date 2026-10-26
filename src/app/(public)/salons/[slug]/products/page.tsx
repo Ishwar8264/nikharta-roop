@@ -1,7 +1,7 @@
+import { Settings2 } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { BackButton } from "@/components/shared/back-button";
 import { NavLink } from "@/components/shared/nav-link";
 import { routes } from "@/config/routes";
 import { ProductCard } from "@/features/product/product-card";
@@ -65,31 +65,26 @@ export default async function SalonProductsPage({
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <BackButton href={routes.salonDetail(slug)} variant="secondary" />
-      <header className="mt-8 flex flex-wrap items-end justify-between gap-4">
+    <main className="min-w-0">
+
+      <header className="flex flex-col gap-3 border-b border-border pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="text-sm text-primary">{salon.name}</p>
-          <h1 className="mt-2 font-heading text-3xl font-semibold">Products</h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">{salon.name}</p>
+          <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Products</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Explore products available at this salon.
           </p>
         </div>
         {canManage ? (
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row xl:shrink-0">
             <NavLink
-              href={routes.salonProductsManage(slug)}
+              href={routes.salonProductCatalog(slug)}
+              icon={<Settings2 className="size-4" />}
+              className="justify-center"
               variant="outline"
               markActive={false}
             >
               Manage products
-            </NavLink>
-            <NavLink
-              href={routes.salonProductCreate(slug)}
-              variant="default"
-              markActive={false}
-            >
-              Add product
             </NavLink>
           </div>
         ) : null}
@@ -104,7 +99,7 @@ export default async function SalonProductsPage({
         </NavLink>
       ) : null}
       {products.items.length ? (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {products.items.map((product) => (
             <ProductCard key={product.id} salonSlug={slug} product={product} />
           ))}

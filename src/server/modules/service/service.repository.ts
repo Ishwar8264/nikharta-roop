@@ -1,3 +1,4 @@
+import { PUBLIC_SALON_FILTER, BOOKABLE_SALON_FILTER } from "@/features/salon/status";
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
@@ -15,11 +16,14 @@ const PUBLIC_SERVICE_SELECT = {
   slug: true,
   price: true,
   duration: true,
+  status: true,
   isActive: true,
   shortDescription: true,
   description: true,
   descriptionHtml: true,
   descriptionJson: true,
+  coverImage: true,
+  bannerImage: true,
   images: true,
   createdAt: true,
   updatedAt: true,
@@ -44,11 +48,11 @@ const PUBLIC_CATEGORY_SELECT = {
 export async function resolveSalonId(
   ref: string,
   activeOnly = false,
+  bookableOnly = false,
 ): Promise<string | null> {
   const salon = await prisma.salon.findFirst({
     where: {
-      deletedAt: null,
-      ...(activeOnly ? { isActive: true } : {}),
+      ...(bookableOnly ? BOOKABLE_SALON_FILTER : activeOnly ? PUBLIC_SALON_FILTER : { deletedAt: null }),
       OR: [{ id: ref }, { slug: ref }],
     },
     select: { id: true },
@@ -80,6 +84,7 @@ export async function listServicesBySalon(
 ) {
   const where: Prisma.ServiceWhereInput = {
     salonId,
+    status: "PUBLISHED",
     isActive: true,
     deletedAt: null,
     ...(input.category ? { category: { slug: input.category } } : {}),
@@ -139,9 +144,9 @@ export async function listManagedServicesBySalon(salonId: string, cursor?: strin
 }
 
 /** Loads a single active service by slug within a salon. */
-export async function findServiceBySlug(salonId: string, slug: string) {
+export async function findServiceBySlug(salonId: string, slug: string, includeInactive = false) {
   return prisma.service.findFirst({
-    where: { salonId, slug, isActive: true, deletedAt: null },
+    where: { salonId, slug, ...(includeInactive ? {} : { status: "PUBLISHED" as const, isActive: true }), deletedAt: null },
     select: PUBLIC_SERVICE_SELECT,
   });
 }

@@ -53,3 +53,27 @@ export class LastOwnerRemovalError extends Error {
     this.name = "LastOwnerRemovalError";
   }
 }
+
+/** Publication requires current verification, including unchanged business identity. */
+export class SalonPublicationBlockedError extends Error {
+  constructor() {
+    super("Complete salon verification before going live. Identity or location changes require a new review.");
+    this.name = "SalonPublicationBlockedError";
+  }
+}
+
+/** Missing and deleted accounts share an error to avoid exposing account history. */
+export class SalonMemberAccountUnavailableError extends Error {
+  constructor() {
+    super("No eligible account found. Ask the staff member to register first.");
+    this.name = "SalonMemberAccountUnavailableError";
+  }
+}
+
+/** The member chose a slug already used by another member of the same salon. */
+export class SalonMemberSlugConflictError extends Error {
+  constructor() {
+    super("This member slug is already in use in this salon");
+    this.name = "SalonMemberSlugConflictError";
+  }
+}

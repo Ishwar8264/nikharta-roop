@@ -1,3 +1,4 @@
+import type { CatalogStatus } from "@/lib/catalog/status";
 /**
  * Browser-safe mirror of `src/server/modules/package/package.types.ts`.
  */
@@ -8,6 +9,7 @@ export interface PublicPackage {
   slug: string;
   price: number;
   duration: number;
+  status: CatalogStatus;
   isActive: boolean;
   services: Array<{
     serviceId: string;

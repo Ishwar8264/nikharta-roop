@@ -1,6 +1,9 @@
 import "server-only";
 
 import type { OtpChannel, OtpPurpose } from "@/generated/prisma/client";
+import { isCommonPassword } from "@/server/auth/breached-password";
+import { hashPassword } from "@/server/auth/password";
+import { WeakPasswordError } from "@/server/modules/auth/auth.errors";
 import { sendOtpEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import {
@@ -13,6 +16,7 @@ import {
 } from "@/server/auth/otp";
 
 import {
+  OtpAccountSetupRequiredError,
   OtpCooldownError,
   OtpDeliveryError,
   OtpExpiredError,
@@ -69,6 +73,8 @@ export async function sendOtp(input: SendOtpInput): Promise<OtpSendResult> {
     channel,
     purpose,
     email: user.email,
+    setup: user.password === null,
+    staffActivation: input.staffActivation,
   });
 }
 
@@ -95,6 +101,14 @@ export async function verifyOtpCode(
     code: input.code,
   });
 
+  // Only an email OTP may initialize a password; existing credentials are never overwritten.
+  const needsPassword = channel === "EMAIL" && user.password === null;
+  if (needsPassword && !input.newPassword) throw new OtpAccountSetupRequiredError();
+  if (needsPassword && isCommonPassword(input.newPassword!)) {
+    throw new WeakPasswordError();
+  }
+  const passwordHash = needsPassword ? await hashPassword(input.newPassword!) : undefined;
+
   await prisma.$transaction(async (transaction) => {
     const claimed = await claimOtp(
       candidate.id,
@@ -103,7 +117,20 @@ export async function verifyOtpCode(
     );
     if (!claimed) throw new OtpInvalidError();
 
-    await markUserVerified(user.id, channel, transaction);
+    if (passwordHash) {
+      const updated = await transaction.user.updateMany({
+        where: { id: user.id, accounts: { none: { provider: "credentials" } }, deletedAt: null },
+        data: { emailVerified: true },
+      });
+      if (updated.count !== 1) throw new OtpInvalidError();
+      const created = await transaction.account.createMany({
+        data: [{ userId: user.id, provider: "credentials", providerUserId: user.id, passwordHash }],
+        skipDuplicates: true,
+      });
+      if (created.count !== 1) throw new OtpInvalidError();
+    } else {
+      await markUserVerified(user.id, channel, transaction);
+    }
   });
 
   return { userId: user.id, channel };
@@ -121,6 +148,8 @@ export async function issueOtp(input: {
   channel: OtpChannel;
   purpose: OtpPurpose;
   email: string | null;
+  setup?: boolean;
+  staffActivation?: boolean;
 }): Promise<OtpSendResult> {
   const code = generateOtp();
   const codeHash = await hashOtp(code);
@@ -128,7 +157,7 @@ export async function issueOtp(input: {
   const otp = await createOtpWithCooldown(input, codeHash, expiresAt);
 
   try {
-    await deliverOtp(input.purpose, input.channel, input.email, code);
+    await deliverOtp(input.purpose, input.channel, input.email, code, input.setup, input.staffActivation);
   } catch (error) {
     await deleteOtp(otp.id);
     console.error("OTP delivery failed", error);
@@ -278,6 +307,8 @@ async function deliverOtp(
   channel: OtpChannel,
   email: string | null,
   code: string,
+  setup = false,
+  staffActivation = false,
 ): Promise<void> {
   if (channel === "EMAIL" && email && purpose === "PASSWORD_RESET") {
     const { sendPasswordResetEmail } = await import("@/lib/email");
@@ -286,7 +317,7 @@ async function deliverOtp(
   }
 
   if (channel === "EMAIL" && email) {
-    await sendOtpEmail(email, code);
+    await sendOtpEmail(email, code, setup, staffActivation);
     return;
   }
 

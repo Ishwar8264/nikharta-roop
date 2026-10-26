@@ -1,3 +1,4 @@
+import { resolveCatalogStatus } from "@/lib/catalog/status";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -101,14 +102,15 @@ export async function listManagedSalonProducts(
 export async function getManagedSalonProduct(
   actorId: string,
   salonRef: string,
-  productId: string,
+  productRef: string,
+  lookup: "id" | "slug" = "id",
 ): Promise<PublicProduct> {
   const salonId = await resolveSalonId(salonRef);
   if (!salonId) throw new SalonNotFoundError();
   const salon = await findSalonForViewer({ salonId, userId: actorId });
   if (!salon) throw new SalonNotFoundError();
   assertRoleAtLeast(salon.viewerRole, "MANAGER");
-  const product = await findProductById(productId);
+  const product = lookup === "slug" ? await findProductBySlug(salonId, productRef, true) : await findProductById(productRef);
   if (!product || product.salonId !== salonId) throw new ProductNotFoundError();
   return toPublicProduct(product);
 }
@@ -154,11 +156,14 @@ export async function createSalonProduct(
       slug,
       price: input.price,
       stock: input.stock,
-      isActive: input.isActive,
+      status: "DRAFT",
+      isActive: false,
       shortDescription: input.shortDescription ?? null,
       description: input.description ?? null,
       descriptionHtml: input.descriptionHtml ?? null,
       descriptionJson: input.descriptionJson ?? null,
+      coverImage: input.coverImage ?? null,
+      bannerImage: input.bannerImage ?? null,
       images: input.images,
     });
 
@@ -221,7 +226,10 @@ export async function updateSalonProduct(
   if (input.categoryId !== undefined) data.categoryId = input.categoryId;
   if (input.price !== undefined) data.price = input.price;
   if (input.stock !== undefined) data.stock = input.stock;
-  if (input.isActive !== undefined) data.isActive = input.isActive;
+  if (input.status !== undefined || input.isActive !== undefined) {
+    data.status = resolveCatalogStatus(input);
+    data.isActive = data.status === "PUBLISHED";
+  }
   if (input.shortDescription !== undefined) {
     data.shortDescription = input.shortDescription;
   }
@@ -232,6 +240,8 @@ export async function updateSalonProduct(
   if (input.descriptionJson !== undefined) {
     data.descriptionJson = input.descriptionJson;
   }
+  if (input.coverImage !== undefined) data.coverImage = input.coverImage;
+  if (input.bannerImage !== undefined) data.bannerImage = input.bannerImage;
   if (input.images !== undefined) data.images = input.images;
 
   try {
@@ -365,7 +375,7 @@ async function generateSlugOrFail(
   try {
     return await generateUniqueSlug(
       name,
-      (candidate) => productSlugExistsInSalon(salonId, candidate),
+      (candidate) => candidate === "create" ? Promise.resolve(true) : productSlugExistsInSalon(salonId, candidate),
       "product",
     );
   } catch {

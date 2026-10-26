@@ -1,4 +1,9 @@
+import { SalonMemberSlugConflictError } from "./salon.errors";
+import { updateSalonMemberSchema } from "./salon.schema";
+import { updateOwnSalonMember } from "./salon.repository";
 import "server-only";
+
+import { requirePartnerOnboarding } from "@/server/modules/auth/onboarding.service";
 
 import { Prisma } from "@/generated/prisma/client";
 import { generateUniqueSlug } from "@/lib/slug";
@@ -8,6 +13,7 @@ import { assertRoleAtLeast } from "./salon.authorization";
 import {
   LastOwnerRemovalError,
   SalonMemberExistsError,
+  SalonMemberAccountUnavailableError,
   SalonNotFoundError,
   SalonPlaceConflictError,
   SlugConflictError,
@@ -21,7 +27,6 @@ import {
   findSalonBySlug,
   findSalonForViewer,
   findSalonMemberById,
-  findSalonMemberByUser,
   listActiveSalons,
   listSalonMembers,
   removeSalonMember,
@@ -29,6 +34,9 @@ import {
   softDeleteSalonById,
   updateSalonById,
 } from "./salon.repository";
+import { sendOtp } from "@/server/modules/otp/otp.service";
+import { OtpCooldownError } from "@/server/modules/otp/otp.errors";
+import { addSalonMemberSchema } from "./salon.schema";
 import { toPublicSalonDetail } from "./salon.mapper";
 import type {
   AddSalonMemberInput,
@@ -99,18 +107,12 @@ export async function findOwnedSalonSummary(
   return findOwnedSalonSummaryRepo(userId);
 }
 
-/** Loads a salon only when the caller can manage its catalogue. */
+/** Allows owners and managers to set up inactive salons before approval. */
 export async function getSalonForServiceManagement(
   slug: string,
   userId: string,
 ): Promise<SalonWithViewerRole> {
-  const publicSalon = await findSalonBySlug(slug);
-  if (!publicSalon) throw new SalonNotFoundError();
-
-  const salon = await findSalonForViewer({
-    salonId: publicSalon.id,
-    userId,
-  });
+  const salon = await findSalonForViewer({ slug, userId });
   if (!salon) throw new SalonNotFoundError();
 
   assertRoleAtLeast(salon.viewerRole, "MANAGER");
@@ -161,6 +163,7 @@ export async function createSalon(
   ownerId: string,
   input: CreateSalonInput,
 ): Promise<PublicSalon> {
+  await requirePartnerOnboarding(ownerId);
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const slug = input.slug ?? (await generateSlugOrFail(input.name));
 
@@ -306,42 +309,37 @@ export async function addSalonMemberByOwner(
   actorId: string,
   salonId: string,
   input: AddSalonMemberInput,
-): Promise<PublicSalonMember> {
+): Promise<PublicSalonMember & { verificationEmailSent: boolean | null }> {
   const salon = await loadSalonForViewer(salonId, actorId);
   assertRoleAtLeast(salon.viewerRole, "OWNER");
+  const validated = addSalonMemberSchema.parse(input);
 
-  const existing = await findSalonMemberByUser({
-    salonId,
-    userId: input.userId,
-  });
-  if (existing) throw new SalonMemberExistsError();
-
+  let member: PublicSalonMember;
   try {
-    const member = await addSalonMember({
-      salonId,
-      userId: input.userId,
-      role: input.role,
-    });
-
-    writeAuditLog({
-      userId: actorId,
-      action: "CREATE",
-      entity: "SalonMember",
-      entityId: member.id,
-      newData: {
-        salonId,
-        memberUserId: input.userId,
-        role: input.role,
-      },
-    });
-
-    return member;
+    member = await addSalonMember({ actorId, salonId, ...validated });
   } catch (error) {
-    if (isUniqueConstraintViolation(error, "userId")) {
-      throw new SalonMemberExistsError();
+    if (isUniqueConstraintViolation(error, "userId")) throw new SalonMemberExistsError();
+    if (isUniqueConstraintViolation(error, "slug")) throw new SalonMemberSlugConflictError();
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      throw new SalonMemberAccountUnavailableError();
     }
     throw error;
   }
+
+  writeAuditLog({ userId: actorId, action: "CREATE", entity: "SalonMember", entityId: member.id,
+    newData: { salonId, memberUserId: member.userId, role: member.role } });
+
+  // Membership stays pending if delivery fails. Do not report the saved profile as a failed add.
+  let verificationEmailSent: boolean | null = null;
+  if (!member.user.emailVerified && member.user.email) {
+    try {
+      await sendOtp({ email: member.user.email, staffActivation: true });
+      verificationEmailSent = true;
+    } catch (error) {
+      verificationEmailSent = error instanceof OtpCooldownError;
+    }
+  }
+  return { ...member, verificationEmailSent };
 }
 
 /**
@@ -436,6 +434,8 @@ function buildSalonCreateInput(
     placeId: input.placeId ?? null,
     phone: input.phone ?? null,
     email: input.email ?? null,
+    coverImage: input.coverImage ?? null,
+    bannerImage: input.bannerImage ?? null,
     images: input.images,
   };
 }
@@ -454,6 +454,7 @@ function buildSalonUpdateInput(
 ): Prisma.SalonUpdateInput {
   const data: Prisma.SalonUpdateInput = {};
 
+  if (input.status !== undefined) data.status = input.status;
   if (input.name !== undefined) data.name = input.name;
   if (input.slug !== undefined) data.slug = input.slug;
   if (input.shortDescription !== undefined) {
@@ -478,6 +479,8 @@ function buildSalonUpdateInput(
   if (input.placeId !== undefined) data.placeId = input.placeId;
   if (input.phone !== undefined) data.phone = input.phone;
   if (input.email !== undefined) data.email = input.email;
+  if (input.coverImage !== undefined) data.coverImage = input.coverImage;
+  if (input.bannerImage !== undefined) data.bannerImage = input.bannerImage;
   if (input.images !== undefined) data.images = input.images;
 
   return data;
@@ -509,4 +512,10 @@ function isUniqueConstraintViolation(error: unknown, field: string): boolean {
   // Keep compatibility with adapters that expose only the rendered
   // constraint name, for example `Salon_placeId_key`.
   return error.message.includes(field);
+}
+
+/** Members and salon owners may edit salon identity; account and role fields are rejected. */
+export async function updateOwnSalonMemberProfile(actorId: string, salonId: string, memberId: string, input: unknown) {
+  const data = updateSalonMemberSchema.parse(input);
+  return updateOwnSalonMember(actorId, salonId, memberId, data);
 }

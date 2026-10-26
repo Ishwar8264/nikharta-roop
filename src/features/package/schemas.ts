@@ -1,9 +1,10 @@
+import { catalogStatusSchema } from "@/lib/catalog/status";
 import { z } from "zod";
 
 import { createPackageSchema } from "@/server/modules/package/package.schema";
 
 /** Reuses the API's package schema so client and server rules stay aligned. */
-export const packageFormSchema = createPackageSchema;
+export const packageFormSchema = createPackageSchema.extend({ status: catalogStatusSchema.optional() });
 export type PackageFormInput = z.input<typeof packageFormSchema>;
 export type PackageFormValues = z.output<typeof packageFormSchema>;
 

@@ -63,11 +63,18 @@ export interface CurrentUser {
   email: string | null;
   phone: string | null;
   avatar: string | null;
+  coverImage: string | null;
   bio: string | null;
   lat: number | null;
   lng: number | null;
   role: string;
   isOnboarded: boolean;
+  accountType: "CUSTOMER" | "SALON_PARTNER" | null;
+  onboardingCompletedAt: Date | null;
+  partnerCompletedAt: Date | null;
+  partnerTermsVersion: string | null;
+  partnerTermsAcceptedAt: Date | null;
+  partnerEligibilityBackfilledAt: Date | null;
   emailVerified: boolean;
   phoneVerified: boolean;
   loyaltyPoints: number;

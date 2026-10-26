@@ -4,8 +4,12 @@ import type { Content, Editor } from "@tiptap/react";
 import { Loader2 } from "lucide-react";
 import { useCallback } from "react";
 
+import dynamic from "next/dynamic";
+
 import { cn } from "@/lib/utils";
 import { MinimalTiptapEditor } from "../ui/minimal-tiptap";
+
+const DescriptionWritingDialog = dynamic(() => import("./description-writing-dialog").then((m) => m.DescriptionWritingDialog));
 
 type EditorOutput = "html" | "json" | "text" | "markdown";
 
@@ -16,6 +20,8 @@ export interface RichTextEditorOutputs {
 }
 
 interface RichTextEditorProps {
+  variant?: "default" | "compact";
+  aiContext?: string;
   /** Controlled value. Format must match `output`. */
   value: string;
   /** Fires with the editor's serialized output on every change. */
@@ -49,6 +55,8 @@ interface RichTextEditorProps {
  * clear it on every keystroke.
  */
 export function RichTextEditor({
+  variant = "default",
+  aiContext,
   value,
   onChange,
   onOutputsChange,
@@ -101,6 +109,10 @@ export function RichTextEditor({
 
   return (
     <MinimalTiptapEditor
+      variant={variant}
+      renderToolbarAction={aiContext !== undefined ? (editor) => (
+        <DescriptionWritingDialog editor={editor} context={aiContext} disabled={disabled} />
+      ) : undefined}
       value={value || ""}
       onChange={handleChange}
       onBlur={onBlur}
@@ -114,7 +126,7 @@ export function RichTextEditor({
         disabled && "pointer-events-none opacity-60",
         className,
       )}
-      editorContentClassName={cn("p-4", contentClassName)}
+      editorContentClassName={cn(variant === "default" && "p-4", contentClassName)}
     />
   );
 }

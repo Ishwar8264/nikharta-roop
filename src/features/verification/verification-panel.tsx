@@ -7,15 +7,18 @@ import {
   Clock,
   FileText,
   Mail,
-  Plus,
+  Upload,
   Trash2,
-  X,
+  Pencil,
+  ShieldCheck,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { routes } from "@/config/routes";
+import { SelectField } from "@/components/shared/select-field";
 import { FormError } from "@/features/auth/shared/components/form-error";
 import { ApiError } from "@/lib/api/backend.client";
 import { siteConfig } from "@/config/site";
@@ -26,34 +29,33 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { submitVerificationApi } from "./api";
 import type { SalonVerification, VerificationStatus } from "./api";
+import { REQUIRED_DOCUMENT_KINDS, VERIFICATION_DOCUMENT_KINDS } from "./policy";
 
 /** Common Indian salon KYC document kinds the picker offers. */
-const DOCUMENT_KINDS = [
-  "Shop license",
-  "PAN",
-  "GST certificate",
-  "Salon photo 1",
-  "Salon photo 2",
-] as const;
+const DOCUMENT_KINDS = VERIFICATION_DOCUMENT_KINDS;
+
+const DOCUMENT_GUIDANCE: Record<string, string> = {
+  "Shop license": "A clear photo of your shop or business license.",
+  PAN: "A clear photo of the salon owner's PAN card.",
+  "GST certificate":
+    "A clear photo of your salon's GST registration certificate.",
+  "Salon photo 1": "Show the entrance and your salon's signboard.",
+  "Salon photo 2": "Show the salon interior and workstations.",
+};
 
 interface VerificationPanelProps {
   salonSlug: string;
+  salonName: string;
   initial: SalonVerification;
   /** True only when the viewer is the salon's OWNER — only owners may submit. */
   canSubmit: boolean;
 }
 
 interface DraftDocument {
+  mediaId?: string;
   /** Local id so React keys stay stable during edit/delete. */
   tempId: string;
   kind: string;
@@ -72,6 +74,7 @@ interface DraftDocument {
  */
 export function VerificationPanel({
   salonSlug,
+  salonName,
   initial,
   canSubmit,
 }: VerificationPanelProps) {
@@ -87,6 +90,16 @@ export function VerificationPanel({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const status = initial.status;
+  const heading = (
+    <div className="min-w-0 space-y-2">
+      <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+        Verify your salon
+      </h1>
+      <p className="break-words text-lg font-medium text-foreground sm:text-xl">
+        {salonName}
+      </p>
+    </div>
+  );
 
   function toggleForm() {
     setFormError(null);
@@ -94,7 +107,7 @@ export function VerificationPanel({
     setShowForm((open) => !open);
   }
 
-  function addDocument(image: UploadedImage) {
+  function addDocument(image: UploadedImage, kind: string) {
     setFieldErrors({});
     setDocuments((prev) => [
       ...prev,
@@ -103,7 +116,8 @@ export function VerificationPanel({
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
             : `doc-${prev.length}-${Date.now()}`,
-        kind: "",
+        kind,
+        mediaId: image.mediaId,
         url: image.url,
       },
     ]);
@@ -112,7 +126,9 @@ export function VerificationPanel({
   function replaceDocument(tempId: string, image: UploadedImage) {
     setDocuments((prev) =>
       prev.map((doc) =>
-        doc.tempId === tempId ? { ...doc, url: image.url } : doc,
+        doc.tempId === tempId
+          ? { ...doc, url: image.url, mediaId: image.mediaId }
+          : doc,
       ),
     );
   }
@@ -131,19 +147,23 @@ export function VerificationPanel({
   function validate(): string | null {
     if (documents.length === 0) return "Add at least one document to submit.";
     for (const doc of documents) {
+      if (!doc.mediaId)
+        return "Replace older documents with private verification uploads before submitting.";
       const trimmedKind = doc.kind.trim();
-      if (!trimmedKind) return "Every document needs a kind label.";
+      if (!trimmedKind)
+        return "Choose a type for each document before continuing.";
       if (trimmedKind.length > 50)
         return "Document kinds must be 50 characters or fewer.";
       if (!doc.url) return "Every document needs an uploaded file.";
-      try {
-        // Mirrors the zod url() rule on the server schema.
-        new URL(doc.url);
-      } catch {
-        return "One of the document URLs is invalid.";
-      }
     }
     if (documents.length > 20) return "At most 20 documents are allowed.";
+    const missing = REQUIRED_DOCUMENT_KINDS.filter(
+      (kind) => !documents.some((doc) => doc.kind === kind),
+    );
+    if (missing.length)
+      return `Add the required documents: ${missing.join(", ")}.`;
+    if (new Set(documents.map((doc) => doc.mediaId)).size !== documents.length)
+      return "Each document must use a different uploaded file.";
     return null;
   }
 
@@ -161,7 +181,7 @@ export function VerificationPanel({
       await submitVerificationApi(salonSlug, {
         documents: documents.map((doc) => ({
           kind: doc.kind.trim(),
-          url: doc.url,
+          mediaId: doc.mediaId!,
         })),
       });
       toast.success("Documents submitted. We'll review within 1–2 days.");
@@ -194,24 +214,32 @@ export function VerificationPanel({
 
   return (
     <div className="space-y-6">
+      {status !== "PENDING" || isOnboarding ? (
+        <div className="rounded-xl border bg-card p-5 sm:p-6">{heading}</div>
+      ) : null}
       <StatusBanner
+        heading={heading}
         status={status}
+        hasSubmitted={!isOnboarding}
         reason={initial.reason}
         onResubmit={canSubmit && status === "REJECTED" ? toggleForm : undefined}
       />
 
       {showForm && canSubmit ? (
-        <Card>
-          <CardContent className="space-y-5">
+        <Card
+          className="gap-0 overflow-visible rounded-xl py-0"
+          data-form-rounded="true"
+        >
+          <CardContent className="space-y-6 px-5 py-5 sm:px-6 sm:py-6">
             <div className="space-y-1">
-              <h2 className="font-heading text-xl font-semibold">
+              <h2 className="font-heading text-lg font-semibold">
                 {isOnboarding
-                  ? "Submit your verification documents"
-                  : "Resubmit your verification documents"}
+                  ? "Verification documents"
+                  : "Update verification documents"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Upload your shop license, ID, and salon photos. We review most
-                submissions within 1–2 business days.
+                Choose a document type, upload a clear photo, then review and
+                submit.
               </p>
             </div>
 
@@ -221,6 +249,7 @@ export function VerificationPanel({
 
             {step === 1 ? (
               <StepDocuments
+                salonSlug={salonSlug}
                 documents={documents}
                 fieldErrors={fieldErrors}
                 onAdd={addDocument}
@@ -237,13 +266,14 @@ export function VerificationPanel({
               />
             )}
           </CardContent>
-          <CardFooter className="flex flex-wrap justify-end gap-3 px-5 py-4 sm:px-8">
+          <CardFooter className="flex flex-col-reverse items-stretch gap-3 rounded-b-xl border-t bg-muted/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
             {step === 1 ? (
               <>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={toggleForm}
+                  onClick={() => router.push(routes.salonEdit(salonSlug))}
+                  className="h-10"
                   disabled={busy}
                 >
                   Cancel
@@ -259,6 +289,7 @@ export function VerificationPanel({
                     setFormError(null);
                     setStep(2);
                   }}
+                  className="h-10"
                   disabled={busy || documents.length === 0}
                 >
                   Review documents
@@ -270,6 +301,7 @@ export function VerificationPanel({
                   type="button"
                   variant="outline"
                   onClick={() => setStep(1)}
+                  className="h-10"
                   disabled={busy}
                 >
                   Back
@@ -277,6 +309,7 @@ export function VerificationPanel({
                 <Button
                   type="button"
                   onClick={submit}
+                  className="h-10"
                   disabled={busy}
                 >
                   {busy ? "Submitting…" : "Submit for review"}
@@ -301,7 +334,9 @@ export function VerificationPanel({
 /* -------------------------------------------------------------------------- */
 
 interface StatusBannerProps {
+  heading: React.ReactNode;
   status: VerificationStatus;
+  hasSubmitted: boolean;
   reason: string | null;
   onResubmit?: () => void;
 }
@@ -310,25 +345,85 @@ interface StatusBannerProps {
  * Coloured banner keyed off the verification status. Each variant carries one
  * next-action so the owner always knows what to do next.
  */
-function StatusBanner({ status, reason, onResubmit }: StatusBannerProps) {
+function StatusBanner({
+  heading,
+  status,
+  hasSubmitted,
+  reason,
+  onResubmit,
+}: StatusBannerProps) {
   if (status === "VERIFIED") {
     return (
       <Banner
         tone="success"
         icon={<CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
         title="Your salon is verified"
-        body="Customers see the verified badge on your public profile."
+        body="Verification is complete. Manage your salon status to go live when ready."
       />
     );
   }
 
   if (status === "PENDING") {
+    if (hasSubmitted) {
+      return (
+        <section
+          role="status"
+          aria-labelledby="verification-thank-you"
+          className="overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm"
+        >
+          <div className="space-y-5 p-5 sm:p-7">
+            <div className="flex flex-col gap-4 border-b border-primary/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
+              {heading}
+              <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-warning/40 bg-warning px-3 py-1 text-xs font-medium text-warning-foreground">
+                <Clock className="size-3.5" aria-hidden="true" />
+                Under review
+              </span>
+            </div>
+            <div className="space-y-2">
+              <h2
+                id="verification-thank-you"
+                className="flex items-start gap-2 font-heading text-lg font-semibold tracking-tight text-foreground sm:text-xl"
+              >
+                <CheckCircle2
+                  className="mt-0.5 size-5 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+                Thank you for choosing Nikharta Roop!
+              </h2>
+              <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+                We&apos;ve received your documents and we&apos;re reviewing your
+                salon. You&apos;re one step closer to welcoming new customers.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 border-t border-primary/10 bg-background/30 px-5 py-4 sm:grid-cols-2 sm:px-7">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                What happens next?
+              </p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                After approval, set your salon status to Live in Manage salon.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">Review time</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Usually 1–2 business days. Check this page for updates.
+              </p>
+            </div>
+          </div>
+        </section>
+      );
+    }
     return (
       <Banner
-        tone="warning"
-        icon={<Clock className="h-5 w-5" aria-hidden="true" />}
-        title="We're reviewing your documents"
-        body="Usually takes 1–2 days. You'll get a notification once a decision is made."
+        tone="neutral"
+        icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />}
+        title={reason ? "Verification required" : "Salon created"}
+        body={
+          reason ||
+          "Submit your documents for approval. After approval, set your salon status to Live in Manage salon."
+        }
       />
     );
   }
@@ -393,7 +488,7 @@ function StatusBanner({ status, reason, onResubmit }: StatusBannerProps) {
 }
 
 interface BannerProps {
-  tone: "success" | "warning" | "destructive";
+  tone: "success" | "warning" | "destructive" | "neutral";
   icon: React.ReactNode;
   title: string;
   body: React.ReactNode;
@@ -403,14 +498,16 @@ interface BannerProps {
 function Banner({ tone, icon, title, body, action }: BannerProps) {
   return (
     <div
+      role="status"
       className={cn(
-        "flex flex-col gap-3 rounded-xl border border-l-4 p-4 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between",
+        tone === "neutral" && "border-border bg-muted/20",
         tone === "success" &&
-          "border-success/30 border-l-success bg-success/10 text-success-foreground",
+          "border-success/30 bg-success/10 text-success-foreground",
         tone === "warning" &&
-          "border-warning/30 border-l-warning bg-warning/10 text-warning-foreground",
+          "border-warning/30 bg-warning/10 text-warning-foreground",
         tone === "destructive" &&
-          "border-destructive/30 border-l-destructive bg-destructive/10 text-destructive",
+          "border-destructive/30 bg-destructive/10 text-destructive",
       )}
     >
       <div className="flex items-start gap-3">
@@ -440,22 +537,54 @@ function Banner({ tone, icon, title, body, action }: BannerProps) {
 
 function StepIndicator({ step }: { step: 1 | 2 }) {
   return (
-    <ol className="flex items-center gap-2 text-xs text-muted-foreground">
-      <StepDot label="1. Documents" active={step === 1} />
-      <span aria-hidden="true" className="h-px w-6 bg-border" />
-      <StepDot label="2. Review & submit" active={step === 2} />
+    <ol
+      aria-label="Verification progress"
+      className="grid grid-cols-2 gap-3 border-b pb-5"
+    >
+      <StepDot
+        number={1}
+        label="Documents"
+        active={step === 1}
+        completed={step === 2}
+      />
+      <StepDot number={2} label="Review and submit" active={step === 2} />
     </ol>
   );
 }
 
-function StepDot({ label, active }: { label: string; active: boolean }) {
+function StepDot({
+  number,
+  label,
+  active,
+  completed,
+}: {
+  number: number;
+  label: string;
+  active: boolean;
+  completed?: boolean;
+}) {
   return (
     <li
+      aria-current={active ? "step" : undefined}
       className={cn(
-        "rounded-full px-2.5 py-1 font-medium",
-        active ? "bg-primary text-primary-foreground" : "bg-muted",
+        "flex items-center gap-2 text-xs sm:text-sm",
+        active ? "font-medium text-foreground" : "text-muted-foreground",
       )}
     >
+      <span
+        className={cn(
+          "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-medium",
+          active || completed
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground",
+        )}
+      >
+        {completed ? (
+          <CheckCircle2 className="size-4" aria-label="Completed" />
+        ) : (
+          number
+        )}
+      </span>
       {label}
     </li>
   );
@@ -466,16 +595,18 @@ function StepDot({ label, active }: { label: string; active: boolean }) {
 /* -------------------------------------------------------------------------- */
 
 interface StepDocumentsProps {
+  salonSlug: string;
   documents: DraftDocument[];
   fieldErrors: Record<string, string>;
   disabled: boolean;
-  onAdd: (image: UploadedImage) => void;
+  onAdd: (image: UploadedImage, kind: string) => void;
   onReplace: (tempId: string, image: UploadedImage) => void;
   onRemove: (tempId: string) => void;
   onKindChange: (tempId: string, kind: string) => void;
 }
 
 function StepDocuments({
+  salonSlug,
   documents,
   fieldErrors,
   disabled,
@@ -484,90 +615,99 @@ function StepDocuments({
   onRemove,
   onKindChange,
 }: StepDocumentsProps) {
+  const [selectedKind, setSelectedKind] = useState<string | null>(null);
+  const uploadDisabled = disabled || !selectedKind || documents.length >= 20;
+  const picker = (
+    <MediaPickerDialog
+      verificationSalonSlug={salonSlug}
+      title={
+        selectedKind
+          ? `Upload ${selectedKind.toLowerCase()}`
+          : "Upload document"
+      }
+      description={selectedKind ? DOCUMENT_GUIDANCE[selectedKind] : undefined}
+      value={[]}
+      onChange={(next) => {
+        const image = next[0];
+        if (image && selectedKind) onAdd(image, selectedKind);
+      }}
+      mode="single"
+      max={1}
+      maxSizeMB={5}
+      disabled={uploadDisabled}
+      triggerClassName="w-full sm:w-auto"
+      trigger={
+        <Button
+          type="button"
+          disabled={uploadDisabled}
+          className="h-11 w-full gap-2 sm:w-auto"
+        >
+          <Upload className="size-4" aria-hidden="true" /> Upload document
+        </Button>
+      }
+    />
+  );
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <Label>Documents</Label>
-          <p className="text-xs text-muted-foreground">
-            {documents.length} of 20 added. At least one required.
-          </p>
-        </div>
-        <MediaPickerDialog
-          title="Add verification documents"
-          description="Upload your shop license, ID, and salon photos."
-          value={[]}
-          onChange={(next) => {
-            for (const image of next) onAdd(image);
-          }}
-          mode="multiple"
-          max={20}
-          trigger={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={disabled || documents.length >= 20}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Add document
-            </Button>
-          }
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Required: PAN, applicable shop registration or licence, entrance photo
+        and interior photo. GST is optional. Documents are private and reviewed
+        before publication.
+      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <SelectField
+          id="upload-document-type"
+          label="Document type"
+          isRequired
+          options={DOCUMENT_KINDS.map((kind) => ({ value: kind, label: kind }))}
+          value={selectedKind}
+          onValueChange={setSelectedKind}
+          placeholder="Choose a document type"
+          disabled={disabled || documents.length >= 20}
+          className="min-w-0 flex-1"
         />
+        {picker}
       </div>
-
-      {documents.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 text-center">
-          <FileText
-            className="mx-auto h-8 w-8 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <p className="mt-2 text-sm text-muted-foreground">
-            Add at least one document to continue.
-          </p>
-        </div>
-      ) : (
+      <div className="space-y-1 text-xs text-muted-foreground">
+        <p>
+          {selectedKind
+            ? DOCUMENT_GUIDANCE[selectedKind]
+            : "Select a document type to enable upload."}
+        </p>
+        <p>JPG, PNG, WebP or AVIF · Up to 5 MB per image</p>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t pt-4">
+        <h3 className="text-sm font-medium">Uploaded documents</h3>
+        <span className="text-xs text-muted-foreground">
+          {documents.length}/20
+        </span>
+      </div>
+      {documents.length > 0 ? (
         <ul className="space-y-3">
           {documents.map((doc, index) => (
             <li
               key={doc.tempId}
               className="flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center"
             >
-              <DocumentThumb
-                url={doc.url}
-                alt={`Document ${index + 1}`}
-                onRemove={disabled ? undefined : () => onRemove(doc.tempId)}
-                removeLabel={`Remove document ${index + 1}`}
-              />
+              <DocumentThumb url={doc.url} alt={`Document ${index + 1}`} />
               <div className="flex-1 space-y-1.5">
-                <Label htmlFor={`kind-${doc.tempId}`}>Document kind</Label>
-                <Select
-                  value={doc.kind}
+                <SelectField
+                  id={`kind-${doc.tempId}`}
+                  label="Document type"
+                  isRequired
+                  options={DOCUMENT_KINDS.map((kind) => ({
+                    value: kind,
+                    label: kind,
+                  }))}
+                  value={doc.kind || null}
                   onValueChange={(value) =>
                     onKindChange(doc.tempId, value ?? "")
                   }
-                >
-                  <SelectTrigger
-                    id={`kind-${doc.tempId}`}
-                    className="w-full"
-                    disabled={disabled}
-                  >
-                    <SelectValue placeholder="Select a kind" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DOCUMENT_KINDS.map((kind) => (
-                      <SelectItem key={kind} value={kind}>
-                        {kind}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {fieldErrors[`documents.${index}.kind`] ? (
-                  <p className="text-xs text-destructive">
-                    {fieldErrors[`documents.${index}.kind`]}
-                  </p>
-                ) : null}
+                  placeholder="Choose a document type"
+                  disabled={disabled}
+                  error={fieldErrors[`documents.${index}.kind`]}
+                />
                 {fieldErrors[`documents.${index}.url`] ? (
                   <p className="text-xs text-destructive">
                     {fieldErrors[`documents.${index}.url`]}
@@ -576,9 +716,11 @@ function StepDocuments({
               </div>
               <div className="flex items-center gap-2">
                 <MediaPickerDialog
+                  verificationSalonSlug={salonSlug}
                   title="Replace document"
+                  disabled={disabled}
                   description="Pick a new file to replace this document."
-                  value={[{ url: doc.url, publicId: doc.url }]}
+                  value={[]}
                   onChange={(next) => {
                     const first = next[0];
                     if (first) onReplace(doc.tempId, first);
@@ -610,55 +752,37 @@ function StepDocuments({
             </li>
           ))}
         </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No documents added yet. Add at least one to continue.
+        </p>
       )}
     </div>
   );
 }
 
-/** Square thumbnail for an uploaded document URL. Optional overlay remove
- *  button sits at the top-right corner so the thumbnail itself is the
- *  affordance — the dedicated "Replace"/trash row below remains for explicit
- *  flows. */
-function DocumentThumb({
-  url,
-  alt,
-  onRemove,
-  removeLabel = "Remove document",
-}: {
-  url: string;
-  alt: string;
-  onRemove?: () => void;
-  removeLabel?: string;
-}) {
-  const isImage = /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url);
+/** Compact preview for the document list and submission review. */
+function DocumentThumb({ url, alt }: { url: string; alt: string }) {
+  const isImage =
+    url.startsWith("/api/v1/salons/") ||
+    /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(url);
   return (
-    <div className="relative h-16 w-16 shrink-0">
-      <div className="relative h-full w-full overflow-hidden rounded-lg border bg-muted">
-        {isImage ? (
-          <Image
-            src={url}
-            alt={alt}
-            fill
-            sizes="64px"
-            className="object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <FileText className="h-6 w-6" aria-hidden="true" />
-          </div>
-        )}
-      </div>
-      {onRemove ? (
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label={removeLabel}
-          className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-destructive shadow-sm transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <X className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-      ) : null}
+    <div className="relative size-16 shrink-0 overflow-hidden rounded-lg border bg-muted">
+      {isImage ? (
+        <Image
+          unoptimized
+          src={url}
+          alt={alt}
+          fill
+          sizes="64px"
+          className="object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <FileText className="size-6" aria-hidden="true" />
+        </div>
+      )}
     </div>
   );
 }
@@ -710,7 +834,7 @@ function StepReview({ documents, onEdit, disabled }: StepReviewProps) {
         disabled={disabled}
         className="gap-1"
       >
-        <X className="h-4 w-4" aria-hidden="true" />
+        <Pencil className="h-4 w-4" aria-hidden="true" />
         Edit documents
       </Button>
     </div>
@@ -728,7 +852,13 @@ function StepReview({ documents, onEdit, disabled }: StepReviewProps) {
 function seedDrafts(initial: SalonVerification): DraftDocument[] {
   if (!initial.documents) return [];
   if (!Array.isArray(initial.documents)) return [];
-  return (initial.documents as Array<{ kind?: unknown; url?: unknown }>)
+  return (
+    initial.documents as Array<{
+      kind?: unknown;
+      url?: unknown;
+      mediaId?: unknown;
+    }>
+  )
     .filter(
       (entry): entry is { kind: string; url: string } =>
         Boolean(entry) &&
@@ -737,6 +867,10 @@ function seedDrafts(initial: SalonVerification): DraftDocument[] {
         typeof entry.url === "string",
     )
     .map((entry, index) => ({
+      mediaId:
+        "mediaId" in entry && typeof entry.mediaId === "string"
+          ? entry.mediaId
+          : undefined,
       tempId: `seed-${index}-${entry.url}`,
       kind: entry.kind,
       url: entry.url,

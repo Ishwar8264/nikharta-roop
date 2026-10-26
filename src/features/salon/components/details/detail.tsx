@@ -10,6 +10,7 @@ import {
   Phone,
   Scissors,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -44,6 +45,7 @@ const SECTION_LINKS = [
 interface SalonDetailProps {
   salon: PublicSalonDetail;
   canEdit?: boolean;
+  canAddStaff?: boolean;
   /** True when the signed-in viewer already has this salon in their favourites. */
   isFavorited?: boolean;
   /** The favorite row id, when known — needed to call DELETE on unfavorite. */
@@ -55,12 +57,13 @@ interface SalonDetailProps {
 export function SalonDetail({
   salon,
   canEdit,
+  canAddStaff = false,
   isFavorited = false,
   favoriteId = null,
   currentUserId = null,
 }: SalonDetailProps) {
-  const cover = salon.images[0];
-  const gallery = salon.images.slice(1);
+  const banner = salon.bannerImage ?? salon.coverImage ?? salon.images[0];
+  const gallery = salon.images;
   const hasDescription = [
     salon.descriptionHtml,
     salon.descriptionJson,
@@ -72,16 +75,16 @@ export function SalonDetail({
     <article className="mx-auto w-full max-w-6xl space-y-2 py-2 ">
       <BackButton href="/salons" variant="secondary" />
 
-      {/* Cover */}
+      {/* Banner */}
       <div className="relative">
-        {cover ? (
+        {banner ? (
           <CoverImage
-            src={salon.images[0] ?? null}
+            src={banner}
             alt={salon.name}
             aspect="wide"
             rounded="md"
             priority
-            emptyLabel="No cover image"
+            emptyLabel="No banner image"
           />
         ) : null}
       </div>
@@ -116,13 +119,10 @@ export function SalonDetail({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button
-            render={<Link href={routes.salonBooking(salon.slug)} />}
-            size="lg"
-          >
+          {salon.status === "LIVE" ? <Button size="lg" render={<Link href={routes.salonBooking(salon.slug)} />}>
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
             Book appointment
-          </Button>
+          </Button> : <Badge variant="secondary">Temporarily closed · Bookings unavailable</Badge>}
           {currentUserId ? (
             <FavoriteButton
               targetType="salon"
@@ -132,14 +132,16 @@ export function SalonDetail({
               initialFavoriteId={favoriteId}
             />
           ) : null}
+          {canAddStaff ? (
+            <Button variant="outline" size="lg" render={<Link href={routes.salonStaffCreate(salon.slug)} />}>
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Add staff
+            </Button>
+          ) : null}
           {canEdit ? (
-            <Button
-              variant="outline"
-              size="lg"
-              render={<Link href={routes.salonManage(salon.slug)} />}
-            >
+            <Button variant="outline" size="lg" render={<Link href={routes.salonEdit(salon.slug)} />}>
               <Pencil className="h-4 w-4" aria-hidden="true" />
-              Manage
+              Edit salon
             </Button>
           ) : null}
         </div>
@@ -216,7 +218,7 @@ export function SalonDetail({
           {gallery.length > 0 ? (
             <section id="gallery" className="scroll-mt-24 space-y-3">
               <h2 className="font-heading text-xl font-semibold">Gallery</h2>
-              <SalonGallery images={gallery} name={salon.name} />
+              <SalonGallery images={gallery} name={salon.name} eagerImageSrc={banner} />
             </section>
           ) : null}
 
@@ -256,6 +258,7 @@ export function SalonDetail({
                   <SalonServiceCard
                     key={service.id}
                     salonSlug={salon.slug}
+                    canBook={salon.status === "LIVE"}
                     service={service}
                   />
                 ))}
@@ -359,16 +362,14 @@ export function SalonDetail({
       {/* Sticky mobile book bar — full-width primary CTA, always reachable
           without scrolling back to the top. Hidden on >= sm where the
           in-header Book button is always in view. */}
+      {salon.status === "LIVE" ? (
       <div className="sticky bottom-0 z-30 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:hidden">
-        <Button
-          render={<Link href={routes.salonBooking(salon.slug)} />}
-          className="w-full"
-          size="lg"
-        >
+        <Button size="lg" className="w-full" render={<Link href={routes.salonBooking(salon.slug)} />}>
           <CalendarDays className="h-4 w-4" aria-hidden="true" />
           Book appointment at {salon.name}
         </Button>
       </div>
+      ) : null}
     </article>
   );
 }

@@ -38,10 +38,12 @@ import { useRegister } from "../hooks/useRegister";
  */
 export function RegisterForm({
   providers = [],
+  returnTo,
 }: {
   providers?: readonly OAuthOption[];
+  returnTo?: string;
 }) {
-  const { register, isLoading, error, fieldErrors } = useRegister();
+  const { register, isLoading, error, fieldErrors } = useRegister(returnTo);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -138,7 +140,7 @@ export function RegisterForm({
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href={routes.login}
+          href={returnTo ? `${routes.login}?redirect=${encodeURIComponent(returnTo)}` : routes.login}
           className="font-medium text-foreground underline-offset-4 hover:underline"
         >
           Sign in

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { routes } from "@/config/routes";
+import { onboardingDestination, onboardingWelcomeUrl } from "@/features/onboarding/policy";
 import { ApiError } from "@/lib/api/backend.client";
 
 import { FIELD } from "../../shared/constants";
@@ -96,16 +96,14 @@ export function useLogin(): UseLoginResult {
 }
 
 /** Returns a safe internal destination preserved by the auth proxy. */
-function getPostLoginDestination(): string {
-  const requested = new URLSearchParams(window.location.search).get("redirect");
+export function getPostLoginDestination(search = window.location.search): string {
+  const params = new URLSearchParams(search);
+  const requested = params.get("redirect");
 
-  // Protocol-relative paths (`//host`) are external even though they start
-  // with a slash, so only a single leading slash is accepted.
-  if (requested?.startsWith("/") && !requested.startsWith("//")) {
-    return requested;
+  if (params.get("flow") === "staff") {
+    return onboardingDestination(requested || "/profile");
   }
-
-  return routes.dashboard;
+  return onboardingWelcomeUrl(requested);
 }
 
 /**

@@ -62,6 +62,7 @@ export async function listMediaAssets(
   const where: Prisma.MediaAssetWhereInput = {
     userId,
     deletedAt: null,
+    NOT: { purpose: "VERIFICATION" },
     ...(query.purpose ? { purpose: query.purpose } : {}),
     ...(query.unattached ? { attachedToType: null, attachedToId: null } : {}),
   };

@@ -5,7 +5,14 @@ import {
   OTP_RESEND_COOLDOWN_SECONDS,
   otpExpiryFromNow,
 } from "@/server/auth/otp";
+import {
+  COMMON_PASSWORD_MESSAGE,
+  isCommonPassword,
+} from "@/server/auth/breached-password";
+import { clearLockout } from "@/server/auth/login-lockout";
+import { logAuthError } from "@/server/auth/auth.logger";
 import { hashPassword } from "@/server/auth/password";
+import { WeakPasswordError } from "@/server/modules/auth/auth.errors";
 import {
   OtpDeliveryError,
   OtpInvalidError,
@@ -83,6 +90,10 @@ export async function resetPassword(input: ResetPasswordInput): Promise<void> {
     code: input.code,
   });
 
+  if (isCommonPassword(input.newPassword)) {
+    throw new WeakPasswordError(COMMON_PASSWORD_MESSAGE);
+  }
+
   const passwordHash = await hashPassword(input.newPassword);
 
   await prisma.$transaction(async (transaction) => {
@@ -93,15 +104,24 @@ export async function resetPassword(input: ResetPasswordInput): Promise<void> {
     );
     if (!claimed) throw new OtpInvalidError();
 
-    await transaction.user.update({
-      where: { id: user.id },
-      data: { password: passwordHash },
+    await transaction.account.upsert({
+      where: { userId_provider: { userId: user.id, provider: "credentials" } },
+      create: { userId: user.id, provider: "credentials", providerUserId: user.id, passwordHash },
+      update: { passwordHash },
     });
     await transaction.refreshToken.updateMany({
       where: { userId: user.id, revokedAt: null },
       data: { revokedAt: new Date() },
     });
   });
+
+  // Recovery should restore sign-in. Redis failure must not report a committed
+  // password reset as failed or ask the user to reuse an already-consumed OTP.
+  try {
+    await clearLockout(input.email);
+  } catch (error) {
+    logAuthError("auth.password_reset.lockout_clear_failed", error, { userId: user.id });
+  }
 }
 
 // Re-export to avoid an extra import in the route.

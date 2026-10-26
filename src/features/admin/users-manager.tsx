@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { hasPermission, type PlatformRole } from "@/lib/auth/permissions";
 import { EmptyState } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,12 +49,15 @@ import type { AdminUserView } from "./types";
 
 interface UsersManagerProps {
   users: AdminUserView[];
+  callerRole: string;
 }
 
 const roleBadgeVariant: Record<AdminUserView["role"], "secondary" | "default"> =
   {
     USER: "secondary",
     SUPER_ADMIN: "default",
+    ADMIN: "default",
+    CONTENT_ADMIN: "secondary",
   };
 
 /**
@@ -70,7 +74,7 @@ const roleBadgeVariant: Record<AdminUserView["role"], "secondary" | "default"> =
  * pattern. We apply the change immediately, fire the request, and only revert
  * on failure — the toast confirms the outcome.
  */
-export function UsersManager({ users }: UsersManagerProps) {
+export function UsersManager({ users, callerRole }: UsersManagerProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -107,10 +111,10 @@ export function UsersManager({ users }: UsersManagerProps) {
                 </p>
               </div>
               <Badge variant={roleBadgeVariant[user.role]}>
-                {user.role === "SUPER_ADMIN" ? "Admin" : "User"}
+                {user.role.replaceAll("_", " ")}
               </Badge>
             </div>
-            <UserRowActions user={user} onSaved={refresh} />
+            <UserRowActions user={user} callerRole={callerRole} onSaved={refresh} />
           </li>
         ))}
       </ul>
@@ -140,7 +144,7 @@ export function UsersManager({ users }: UsersManagerProps) {
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={roleBadgeVariant[user.role]}>
-                    {user.role === "SUPER_ADMIN" ? "Admin" : "User"}
+                    {user.role.replaceAll("_", " ")}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
@@ -171,7 +175,7 @@ export function UsersManager({ users }: UsersManagerProps) {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <UserRowActions user={user} onSaved={refresh} />
+                  <UserRowActions user={user} callerRole={callerRole} onSaved={refresh} />
                 </td>
               </tr>
             ))}
@@ -183,25 +187,24 @@ export function UsersManager({ users }: UsersManagerProps) {
 }
 
 interface UserRowActionsProps {
+  callerRole: string;
   user: AdminUserView;
   onSaved: () => void;
 }
 
 /** All three mutations for one user — role select, AI toggle, quota dialog. */
-function UserRowActions({ user, onSaved }: UserRowActionsProps) {
+function UserRowActions({ user, callerRole, onSaved }: UserRowActionsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [blockOpen, setBlockOpen] = useState(false);
   const [quotaOpen, setQuotaOpen] = useState(false);
 
-  async function handleRoleChange(next: "USER" | "SUPER_ADMIN") {
+  async function handleRoleChange(next: PlatformRole) {
     if (next === user.role) return;
     try {
       await changeUserRoleApi(user.id, { role: next });
       toast.success(
-        next === "SUPER_ADMIN"
-          ? `${user.name ?? "User"} promoted to admin.`
-          : `${user.name ?? "User"} demoted to user.`,
+        `${user.name ?? "User"} role updated to ${next.replaceAll("_", " ")}.`,
       );
       startTransition(() => router.refresh());
     } catch (error) {
@@ -238,23 +241,25 @@ function UserRowActions({ user, onSaved }: UserRowActionsProps) {
       <Select
         value={user.role}
         onValueChange={(value) =>
-          handleRoleChange(value as "USER" | "SUPER_ADMIN")
+          handleRoleChange(value as PlatformRole)
         }
-        disabled={isPending}
+        disabled={isPending || !hasPermission(callerRole, "roles.assign")}
       >
         <SelectTrigger size="sm" className="min-w-[7rem]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="USER">User</SelectItem>
-          <SelectItem value="SUPER_ADMIN">Admin</SelectItem>
+          <SelectItem value="CONTENT_ADMIN">Content admin</SelectItem>
+          <SelectItem value="ADMIN">Admin</SelectItem>
+          <SelectItem value="SUPER_ADMIN">Super admin</SelectItem>
         </SelectContent>
       </Select>
 
       <Switch
         checked={user.aiUsage?.isBlocked ?? false}
         onCheckedChange={handleBlockToggle}
-        disabled={isPending || !user.aiUsage}
+        disabled={isPending || !user.aiUsage || (user.role !== "USER" && !hasPermission(callerRole, "roles.assign"))}
         aria-label={`Toggle AI block for ${user.name ?? user.id}`}
       />
 
@@ -262,7 +267,7 @@ function UserRowActions({ user, onSaved }: UserRowActionsProps) {
         variant="outline"
         size="sm"
         onClick={() => setQuotaOpen(true)}
-        disabled={isPending || !user.aiUsage}
+        disabled={isPending || !user.aiUsage || (user.role !== "USER" && !hasPermission(callerRole, "roles.assign"))}
       >
         <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
         Quota

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { hasPermission } from "@/lib/auth/permissions";
 import { notFound } from "next/navigation";
 import { ClipboardList } from "lucide-react";
 
@@ -34,7 +35,7 @@ const submittedAtFormatter = new Intl.DateTimeFormat("en-IN", {
  */
 export default async function AdminVerificationQueuePage() {
   const user = await getSession();
-  if (!user || user.role !== "SUPER_ADMIN") notFound();
+  if (!user || !hasPermission(user.role, "salons.verify")) notFound();
 
   const rows = await listPendingVerifications(user.role);
 
@@ -82,6 +83,7 @@ function QueueRow({ row }: QueueRowProps) {
   // expects JSON-serialized (string) dates. Convert at the boundary.
   const verification: SalonVerification = {
     status: row.status,
+    updatedAt: row.updatedAt.toISOString(),
     documents: row.documents,
     submittedAt: row.submittedAt ? row.submittedAt.toISOString() : null,
     reviewedAt: row.reviewedAt ? row.reviewedAt.toISOString() : null,
@@ -100,11 +102,7 @@ function QueueRow({ row }: QueueRowProps) {
         </p>
       </div>
       <AdminVerificationRow
-        salon={{
-          slug: row.salon.slug,
-          name: row.salon.name,
-          city: row.salon.city,
-        }}
+        salon={row.salon}
         verification={verification}
       />
     </li>

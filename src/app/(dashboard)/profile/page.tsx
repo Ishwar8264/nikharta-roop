@@ -1,4 +1,13 @@
+import { canCreateSalon, isOnboardingComplete } from "@/features/onboarding/policy";
+import { Mail, Pencil, Phone, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
+
+import { UserTypeBadge } from "@/components/shared/user-type-badge";
+import { listUserSalonMemberships } from "@/server/modules/salon/salon.repository";
+import { UserBadge } from "@/components/shared/user-badge";
+import { CoverImage } from "@/components/shared/cover-image";
+import { Button } from "@/components/ui/button";
 
 import {
   Card,
@@ -7,104 +16,118 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ProfileForm } from "@/features/profile";
-import type { CurrentUserWire } from "@/features/profile";
+import { routes } from "@/config/routes";
 import { getSession } from "@/lib/auth/get-session";
 
 export const metadata: Metadata = {
   title: "Profile | Nikharta Roop",
   description:
-    "View and edit your Nikharta Roop profile — name, avatar, and bio.",
+    "View your Nikharta Roop profile and account details.",
 };
 
-/**
- * Customer profile page.
- *
- * Why the page is server-side:
- * The page reads the current user from `getSession()` (cookie-backed) so the
- * initial render shows the same authoritative record the API would return.
- * The edit form is a client component because RHF + state for the avatar
- * picker need browser APIs; the server hands it a plain wire-shape prop.
- *
- * Why the read-only summary is rendered server-side:
- * Email and phone are not editable through this surface — the schema rejects
- * them. Showing them inline (instead of in the form) makes the "what you can
- * edit here" boundary obvious without an extra rule explanation.
- */
+/** Displays the signed-in customer’s saved profile and contact details. */
 export default async function ProfilePage() {
   const user = await getSession();
   if (!user) return null; // layout already redirects to /login
-
-  const wire: CurrentUserWire = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    avatar: user.avatar,
-    bio: user.bio,
-    lat: user.lat,
-    lng: user.lng,
-    role: user.role,
-    isOnboarded: user.isOnboarded,
-    emailVerified: user.emailVerified,
-    phoneVerified: user.phoneVerified,
-    loyaltyPoints: user.loyaltyPoints,
-    createdAt: user.createdAt.toISOString(),
-    updatedAt: user.updatedAt.toISOString(),
-  };
+  const memberships = await listUserSalonMemberships(user.id);
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-      <header>
-        <p className="text-sm text-muted-foreground">Account</p>
-        <h1 className="mt-1 font-heading text-3xl font-semibold sm:text-4xl">
-          Profile
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Manage how salons and other customers see you on Nikharta Roop.
-        </p>
-      </header>
-
-      <div className="mt-8 space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Account details</CardTitle>
-            <CardDescription>
-              Email and phone are verified through separate flows. Contact
-              support to change them.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-muted-foreground">Email</span>
-              <span className="font-medium">
-                {user.email ?? "Not set"}
-                {user.emailVerified ? (
-                  <span className="ml-2 text-xs text-emerald-600">
-                    Verified
-                  </span>
-                ) : null}
-              </span>
+    <main className="w-full">
+      <Card className="gap-0 rounded-2xl py-0">
+        <CoverImage
+          src={user.coverImage} alt="Profile cover" aspect="auto" rounded="none"
+          priority unoptimized fallback={null}
+          className="h-48 bg-linear-to-br from-secondary/40 via-primary/20 to-accent/30 sm:h-64"
+          overlayClassName="bg-linear-to-t from-black/20 to-transparent"
+        />
+        <div className="px-5 py-5 sm:px-8 sm:py-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+            <UserBadge
+              name={user.name} email={user.email} avatar={user.avatar}
+              fallbackName="Your profile" nameAs="h1"
+              className="flex w-full items-center gap-3 sm:gap-4"
+              avatarClassName="size-28 bg-card ring-4 ring-card sm:size-36"
+              fallbackClassName="text-3xl leading-none sm:text-4xl"
+              description={<UserTypeBadge role={user.role} accountType={user.accountType} salonRoles={memberships.map(({ role }) => role)} />}
+              contentClassName="w-full"
+              nameClassName="font-heading text-xl leading-tight font-semibold sm:text-2xl"
+            />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-muted-foreground">Phone</span>
-              <span className="font-medium">
-                {user.phone ?? "Not set"}
-                {user.phoneVerified ? (
-                  <span className="ml-2 text-xs text-emerald-600">
-                    Verified
-                  </span>
-                ) : null}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-muted-foreground">Role</span>
-              <span className="font-medium">{user.role}</span>
-            </div>
+            <Button render={<Link href={routes.profileEdit} />} className="h-11 px-5">
+              <Pencil aria-hidden="true" /> Edit profile
+            </Button>
+          </div>
+        </div>
+      </Card>
+      <Card className="mt-6 rounded-2xl">
+        <CardHeader>
+          <CardTitle>Account setup</CardTitle>
+          <CardDescription>
+            {user.role === "SUPER_ADMIN" ? "Super admin · Account setup not required" : <>
+            {user.accountType === "SALON_PARTNER" ? "Salon partner" : user.accountType === "CUSTOMER" ? "Customer" : "Account type not selected"}
+            {isOnboardingComplete(user) ? " · 100% complete" : " · Setup incomplete"}
+            </>}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          {user.role !== "SUPER_ADMIN" && !isOnboardingComplete(user) && (
+            <Button variant="outline" render={<Link href={routes.onboarding} />}>
+              Complete setup
+            </Button>
+          )}
+          {user.accountType === "SALON_PARTNER" && (
+            <Button render={<Link href={canCreateSalon(user) ? routes.salonCreate : routes.partnerOnboarding} />}>
+              {canCreateSalon(user) ? "Add salon" : "Complete partner setup"}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <Card className="rounded-2xl">
+          <CardHeader className="px-5 sm:px-7"><CardTitle>About you</CardTitle></CardHeader>
+          <CardContent className="px-5 pb-3 sm:px-7">
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+              {user.bio?.trim() || "Add a short bio to share a little about yourself and your style preferences."}
+            </p>
           </CardContent>
         </Card>
-
-        <ProfileForm initial={wire} />
+        <Card className="rounded-2xl">
+          <CardHeader className="px-5 pt-2">
+            <ShieldCheck className="mb-2 size-5 text-primary" aria-hidden="true" />
+            <CardTitle>Contact details</CardTitle>
+            <CardDescription>The email and phone number linked to your account.</CardDescription>
+          </CardHeader>
+          <CardContent className="px-5 pb-2">
+            <dl className="divide-y">
+              <div className="pb-5">
+                <dt className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Mail className="size-4" aria-hidden="true" /> Email address
+                </dt>
+                <dd className="mt-2 break-words font-medium">{user.email ?? "Not added"}</dd>
+                {user.email ? (
+                  <dd className={`mt-2 text-xs ${user.emailVerified ? "text-success" : "text-muted-foreground"}`}>
+                    {user.emailVerified ? "Verified" : "Not verified"}
+                  </dd>
+                ) : null}
+              </div>
+              <div className="py-5">
+                <dt className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Phone className="size-4" aria-hidden="true" /> Phone number
+                </dt>
+                <dd className="mt-2 break-words font-medium">{user.phone ?? "Not added"}</dd>
+                {user.phone ? (
+                  <dd className={`mt-2 text-xs ${user.phoneVerified ? "text-success" : "text-muted-foreground"}`}>
+                    {user.phoneVerified ? "Verified" : "Not verified"}
+                  </dd>
+                ) : null}
+              </div>
+            </dl>
+            <p className="border-t pt-4 text-xs leading-relaxed text-muted-foreground">
+              Email and phone cannot be edited here. Contact support if you need to change them.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );
