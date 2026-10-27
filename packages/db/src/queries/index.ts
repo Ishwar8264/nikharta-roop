@@ -4,4 +4,4 @@ export { createAuthDatabase, findAuthAccount, activateVerifiedAccount } from "./
 
 export { checkDatabaseHealth } from "./health";
 
-export { createProfileRecord, deleteProfileRecord, findProfileRecord, updateProfileRecord } from "./profile/profile";
+export { createProfileRecord, deleteProfileRecord, listProfileRecords, updateProfileRecord } from "./profile/profile";

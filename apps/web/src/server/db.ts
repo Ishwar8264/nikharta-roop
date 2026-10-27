@@ -8,4 +8,4 @@ export {
 
 export { checkDatabaseHealth } from "@nikharta-roop/db/queries/health";
 
-export { createProfileRecord, deleteProfileRecord, findProfileRecord, updateProfileRecord } from "@nikharta-roop/db/queries/profile";
+export { createProfileRecord, deleteProfileRecord, listProfileRecords, updateProfileRecord } from "@nikharta-roop/db/queries/profile";

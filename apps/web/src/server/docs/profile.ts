@@ -20,11 +20,33 @@ const profileErrors = {
 export const profilePaths = {
   [`${API_BASE_PATH}/profiles`]: {
     get: {
-      operationId: "getProfile",
+      operationId: "listProfiles",
       tags: ["Profiles"],
-      summary: "Get your personal profile",
+      summary: "List profiles",
+      description: "Requires an active, verified session. ADMIN can list all profiles and filter any status. Other roles see only ACTIVE profiles belonging to active, verified accounts. Pages start at 0; size defaults to 20 and is limited to 100. Maximum page × size is 10000. Unknown and repeated filters are rejected. Empty results return 200 with an empty items array.",
+      parameters: [
+        { name: "page", in: "query", schema: { type: "integer", minimum: 0, default: 0 } },
+        { name: "size", in: "query", schema: { type: "integer", minimum: 1, maximum: 100, default: 20 } },
+        { name: "search", in: "query", description: "Case-insensitive literal search over display name and slug.", schema: { type: "string", maxLength: 100 } },
+        { name: "slug", in: "query", description: "Exact profile slug; trimmed and normalized to lowercase.", schema: { type: "string", minLength: 3, maxLength: 120 } },
+        { name: "status", in: "query", description: "Only ADMIN may request non-active profiles.", schema: { type: "string", enum: ["DRAFT", "ACTIVE", "SUSPENDED", "ARCHIVED"] } },
+        { name: "sortBy", in: "query", schema: { type: "string", enum: ["createdAt", "displayName", "slug"], default: "createdAt" } },
+        { name: "sortDir", in: "query", schema: { type: "string", enum: ["asc", "desc"], default: "desc" } },
+      ],
       security: [{ apiKeyCookie: [] }],
-      responses: { "200": profileResponse, ...profileErrors },
+      responses: {
+        "200": {
+          description: "Profiles retrieved successfully, or no profiles match the filters.",
+          headers: profileResponse.headers,
+          content: { "application/json": { schema: { $ref: "#/components/schemas/ListProfilesResponse" } } },
+        },
+        "400": errorResponse("Invalid, unknown, or repeated filters, or pagination depth exceeded."),
+        "401": profileErrors["401"],
+        "403": errorResponse("Only administrators can filter non-active profiles."),
+        "429": profileErrors["429"],
+        "503": profileErrors["503"],
+        "500": profileErrors["500"],
+      },
     },
     post: {
       operationId: "createProfile",
@@ -170,6 +192,25 @@ const baseProfileSchemas = {
 };
 
 export const profileSchemas = {
+  ListProfilesResponse: {
+    type: "object",
+    required: ["ok", "data", "message"],
+    properties: {
+      ok: { type: "boolean", enum: [true] },
+      message: { type: "string", example: "Profiles retrieved successfully." },
+      data: {
+        type: "object",
+        required: ["items", "page", "size", "totalElements", "totalPages"],
+        properties: {
+          items: { type: "array", items: baseProfileSchemas.CreateProfileResponse.properties.data.properties.profile },
+          page: { type: "integer", minimum: 0 },
+          size: { type: "integer", minimum: 1, maximum: 100 },
+          totalElements: { type: "integer", minimum: 0 },
+          totalPages: { type: "integer", minimum: 0 },
+        },
+      },
+    },
+  },
   ...baseProfileSchemas,
   UpdateProfileInput: {
     type: "object",

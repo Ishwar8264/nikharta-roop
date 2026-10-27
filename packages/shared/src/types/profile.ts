@@ -12,5 +12,11 @@ export type UserProfile = {
 
 export type CreateProfileResponse = { profile: UserProfile };
 
-export type GetProfileResponse = { profile: UserProfile };
+export type ListProfilesResponse = {
+  items: UserProfile[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
 export type UpdateProfileResponse = { profile: UserProfile };

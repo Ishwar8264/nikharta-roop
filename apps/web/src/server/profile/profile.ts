@@ -3,13 +3,14 @@ import "server-only";
 import {
   createProfileSchema,
   updateProfileSchema,
+  profileFilterSchema,
   type CreateProfileResponse,
-  type GetProfileResponse,
+  type ListProfilesResponse,
   type UpdateProfileResponse,
 } from "@nikharta-roop/shared";
 import { auth } from "@/server/auth";
 import { getActiveSession } from "@/server/auth-guard";
-import { createProfileRecord, deleteProfileRecord, findProfileRecord, updateProfileRecord } from "@/server/db";
+import { createProfileRecord, deleteProfileRecord, listProfileRecords, updateProfileRecord } from "@/server/db";
 import { AppError } from "@/server/errors";
 import { checkRateLimit } from "@/server/rate-limit";
 
@@ -63,12 +64,19 @@ export async function createProfile(request: Request): Promise<CreateProfileResp
   return { profile: await createProfileRecord(activeSession.user.id, profileInput) };
 }
 
-/** Return the signed-in account's profile, including its current lifecycle status. */
-export async function getProfile(request: Request): Promise<GetProfileResponse> {
+/** Filters narrow results; only a current database ADMIN role can see non-active profiles. */
+export async function listProfiles(request: Request): Promise<ListProfilesResponse> {
   const activeSession = await requireProfileSession(request);
-  const profile = await findProfileRecord(activeSession.user.id);
-  if (!profile) throw new AppError("Your profile was not found.", "NOT_FOUND", 404);
-  return { profile };
+  const parameters = new URL(request.url).searchParams;
+  if (Array.from(parameters.keys()).some((key) => parameters.getAll(key).length > 1)) {
+    throw new AppError("Supply each profile filter only once.", "INVALID_FILTER", 400);
+  }
+  const input = profileFilterSchema.parse(Object.fromEntries(parameters));
+  const isAdmin = activeSession.user.role === "ADMIN";
+  if (!isAdmin && input.status && input.status !== "ACTIVE") {
+    throw new AppError("Only administrators can filter non-active profiles.", "FORBIDDEN", 403);
+  }
+  return listProfileRecords(input, isAdmin);
 }
 
 /** Update display details without allowing changes to ownership or lifecycle status. */
