@@ -59,6 +59,10 @@ model User {
   phone String?      @unique
   role  PlatformRole @default(USER)
 
+  name String @default("")
+  image String?
+  sessions Session[]
+
   status UserStatus @default(PENDING_VERIFICATION)
 
   emailVerified Boolean @default(false)
@@ -156,8 +160,41 @@ model Account {
   issuer         String?
   providerUserId String
   passwordHash   String?
-  createdAt      DateTime @default(now())
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  updatedAt DateTime @default(now()) @updatedAt
+  createdAt DateTime @default(now())
 
   @@unique([provider, providerUserId])
   @@unique([userId, provider])
+}
+
+// Better Auth owns session and email verification persistence.
+model Session {
+  id String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token String @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Verification {
+  id String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  @@index([identifier])
+  @@index([expiresAt])
 }

@@ -1,4 +1,5 @@
 import "server-only";
 
-// Add database query modules here when the replacement API is implemented.
-export {};
+export { createAuthDatabase, findAuthAccount, activateVerifiedAccount } from "./auth";
+
+export { checkDatabaseHealth } from "./health";

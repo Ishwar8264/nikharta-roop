@@ -47,7 +47,9 @@
         "UPSTASH_REDIS_REST_TOKEN",
         "UPSTASH_REDIS_REST_URL",
         "WHATSAPP_ACCESS_TOKEN",
-        "WHATSAPP_PHONE_NUMBER_ID"
+        "WHATSAPP_PHONE_NUMBER_ID",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL"
       ],
       "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
     },
@@ -96,7 +98,9 @@
         "UPSTASH_REDIS_REST_TOKEN",
         "UPSTASH_REDIS_REST_URL",
         "WHATSAPP_ACCESS_TOKEN",
-        "WHATSAPP_PHONE_NUMBER_ID"
+        "WHATSAPP_PHONE_NUMBER_ID",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL"
       ]
     },
     "lint": {},
@@ -148,7 +152,9 @@
         "UPSTASH_REDIS_REST_TOKEN",
         "UPSTASH_REDIS_REST_URL",
         "WHATSAPP_ACCESS_TOKEN",
-        "WHATSAPP_PHONE_NUMBER_ID"
+        "WHATSAPP_PHONE_NUMBER_ID",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL"
       ]
     },
     "@nikharta-roop/db#typecheck": {

@@ -1,6 +1,6 @@
 # Nikharta Roop
 
-The web app is a clean UI foundation for the next implementation. Existing APIs, authentication, feature flows, and backend services have been removed. The root page renders a static placeholder; deleted routes return 404.
+The web app is a clean UI foundation for the next implementation. Legacy APIs and feature flows have been removed. The replacement Better Auth + Redis API is available under `/api/v1/auth`; see [auth setup](docs/auth-system.md) for configuration and rollout. The root page renders a static placeholder; deleted routes return 404.
 
 ## What remains
 
@@ -15,9 +15,9 @@ The web app is a clean UI foundation for the next implementation. Existing APIs,
 - `packages/api-client`, `packages/theme`, `packages/typescript-config`: workspace scaffolds.
 - `apps/mobile`: reserved workspace.
 
-The header accepts optional account controls. AI description generation and slug availability checks accept callbacks and make no requests by default. No API client, session provider, proxy, cron handler, or server action remains in the web app.
+The header accepts optional account controls. AI description generation and slug availability checks accept callbacks and make no requests by default. The auth client and versioned auth handler are implemented. There are no legacy API clients, session providers, proxies, cron handlers, or server actions.
 
-Older documents describing API and feature wiring are historical references, not current contracts. Database schema, migrations, and data were preserved during cleanup; no database migration was applied.
+Older documents describing API and feature wiring are historical references, not current contracts. Legacy database records are preserved. An additive auth migration is prepared; no migration has been applied to the application database.
 
 ## Development
 
@@ -28,7 +28,7 @@ pnpm install
 pnpm dev:web
 ```
 
-Web environment files live in `apps/web/.env*`. `NEXT_PUBLIC_APP_URL` controls the site's canonical URL and defaults to `http://localhost:3000`. The static web shell does not connect to a database. Prisma commands load `apps/web/.env` and require `DATABASE_URL`.
+Web environment files live in `apps/web/.env*`. `NEXT_PUBLIC_APP_URL` controls the site's canonical URL and defaults to `http://localhost:3000`. The static web shell does not connect to a database; auth requests require PostgreSQL, Upstash Redis, and email configuration. Prisma commands load `apps/web/.env` and require `DATABASE_URL`.
 
 ```bash
 pnpm --filter @nikharta-roop/web typecheck
