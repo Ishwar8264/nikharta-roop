@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { siteConfig } from "@/config/site";
@@ -7,15 +7,17 @@ import { siteConfig } from "@/config/site";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
+// Keep builds independent of Google Fonts network responses and URL parsing.
+const inter = localFont({
+  src: "./fonts/inter-variable.ttf",
+  weight: "100 900",
   variable: "--font-sans",
   display: "swap",
 });
 
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["600", "700"],
+const playfair = localFont({
+  src: "./fonts/playfair-display-variable.ttf",
+  weight: "600 700",
   variable: "--font-heading",
   display: "swap",
 });
