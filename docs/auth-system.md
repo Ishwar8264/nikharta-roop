@@ -66,3 +66,11 @@ Password-reset links need a consuming UI at the caller's allowed `redirectTo` UR
 `@nikharta-roop/api-client` follows Improve India's typed HTTP transport. Use `api` for same-origin browser requests or `createApiClient({ baseUrl })` for an explicit origin. Methods support caller headers, cancellation, cache and credentials options. They validate the envelope, return its `data`, and throw `ApiClientError` with code/status/details on API failures. `api.health()` consumes `/api/v1/health`; dependency failures return `DEPENDENCY_UNAVAILABLE` with the health summary in error details. Rate limiting preserves `Retry-After` and rate-limit response headers.
 
 Authentication always uses `authClient`, not the generic JSON client, because Better Auth responses are native. The optional generic client's `getToken` only adds an Authorization header; it does not enable a bearer authentication scheme on the server. Native/mobile auth is not implemented by this transport setup.
+
+## Scalar documentation
+
+Browse `/api/v1/docs` for the interactive reference, backed by `/api/v1/openapi`. The specification combines Better Auth's generated operations (respecting disabled paths) with health response/error schemas. Auth URLs use `/api/v1/auth`; health uses `/api/v1/health`. Relative server URLs keep requests on the current origin. Scalar's browser renderer is pinned to version 1.75.0, matching the Improve India reference.
+
+Specification generation calls Better Auth's server API directly, so browsing docs does not require a Redis rate-limit request or live DB query. Running the documented operations still requires the configured services and, for protected operations, a valid session.
+
+Reference: [Scalar Next.js integration](https://scalar.com/products/api-references/integrations/nextjs).

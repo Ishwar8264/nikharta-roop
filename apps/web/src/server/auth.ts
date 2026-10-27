@@ -5,7 +5,7 @@ import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { verifyPassword } from "better-auth/crypto";
 import { nextCookies } from "better-auth/next-js";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, openAPI } from "better-auth/plugins";
 
 import { activateVerifiedAccount, createAuthDatabase, findAuthAccount } from "@/server/db";
 import { sendAuthEmail } from "@/server/email";
@@ -118,6 +118,7 @@ export const auth = betterAuth({
     "/verify-email",
   ],
   plugins: [
+    openAPI({ disableDefaultReference: true }),
     emailOTP({
       overrideDefaultEmailVerification: true,
       disableSignUp: true,

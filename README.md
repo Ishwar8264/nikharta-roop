@@ -49,3 +49,8 @@ pnpm db:seed     # Write seed data only when explicitly intended
 ```
 
 Database imports remain server-only. Future API work should add query modules to `packages/db/src/queries` and keep `packages/shared` free of framework and platform imports.
+
+## API reference
+
+Run `pnpm dev:web`, then open [Scalar API docs](http://localhost:3000/api/v1/docs).
+The combined OpenAPI document is served at `/api/v1/openapi`. Authentication operations are generated from Better Auth configuration; health responses document the shared envelope and rate-limit errors. These documentation routes describe public APIs and do not require a database/Redis request just to browse. Executing auth/health requests still requires their configured services.
