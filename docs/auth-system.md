@@ -74,3 +74,15 @@ Browse `/api/v1/docs` for the interactive reference, backed by `/api/v1/openapi`
 Specification generation calls Better Auth's server API directly, so browsing docs does not require a Redis rate-limit request or live DB query. Running the documented operations still requires the configured services and, for protected operations, a valid session.
 
 Reference: [Scalar Next.js integration](https://scalar.com/products/api-references/integrations/nextjs).
+
+## Current account API
+
+`GET /api/v1/me` returns the active, verified signed-in account using the shared envelope:
+
+```json
+{"ok":true,"data":{"user":{"id":"...","name":"Example","email":"user@example.com","emailVerified":true,"image":null,"role":"USER"}}}
+```
+
+The route calls `server/me/me.ts`; the service applies the existing Redis API budget and auth guard. The existing DB account query selects current name/email/image/role to override any older values in the cached session. No new DB query module or request schema is needed: the endpoint has no input and reuses the auth query. It does not create or return public profiles/onboarding state.
+
+Invalid, revoked, suspended, deleted, or unverified sessions return 401. Rate exhaustion returns 429; unavailable Redis rate checks return 503. All responses, including failures, use `Cache-Control: private, no-store`. Credentials, session tokens, internal lifecycle fields, and unrelated account data are excluded. The endpoint is included in Scalar's Account section and requires the browser's auth session cookie.

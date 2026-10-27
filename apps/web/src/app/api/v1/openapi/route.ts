@@ -31,11 +31,36 @@ export async function GET(): Promise<Response> {
         title: "Nikharta Roop API",
         version: "1.0.0",
         description:
-          "Versioned auth and health APIs. Auth uses native Better Auth responses; health uses the shared JSON envelope.",
+          "Versioned auth, account and health APIs. Auth uses native Better Auth responses; account and health use the shared JSON envelope.",
       },
       servers: [{ url: "/" }],
       paths: {
         ...authPaths,
+        [`${API_BASE_PATH}/me`]: {
+          get: {
+            operationId: "getMe",
+            tags: ["Account"],
+            summary: "Get the signed-in account",
+            security: [{ apiKeyCookie: [] }],
+            description:
+              "Requires a valid session and a currently active, verified account. Returns current DB identity fields only. Limited to 10 requests per 10 seconds per client IP. Success and error responses are private and uncached.",
+            responses: {
+              "200": {
+                description: "The signed-in account.",
+                headers: {
+                  "Cache-Control": { schema: { type: "string", example: "private, no-store" } },
+                },
+                content: {
+                  "application/json": { schema: { $ref: "#/components/schemas/MeResponse" } },
+                },
+              },
+              "401": errorResponse("No valid active, verified session."),
+              "429": errorResponse("Rate limit exhausted."),
+              "503": errorResponse("Redis rate limiting is unavailable."),
+              "500": errorResponse("An unexpected infrastructure error occurred."),
+            },
+          },
+        },
         [`${API_BASE_PATH}/health`]: {
           get: {
             operationId: "getHealth",
@@ -72,6 +97,34 @@ export async function GET(): Promise<Response> {
         ...document.components,
         schemas: {
           ...document.components?.schemas,
+          MeResponse: {
+            type: "object",
+            required: ["ok", "data"],
+            properties: {
+              ok: { type: "boolean", enum: [true] },
+              data: {
+                type: "object",
+                required: ["user"],
+                properties: {
+                  user: {
+                    type: "object",
+                    required: ["id", "name", "email", "emailVerified", "image", "role"],
+                    properties: {
+                      id: { type: "string" },
+                      name: { type: "string" },
+                      email: { type: ["string", "null"], format: "email" },
+                      emailVerified: { type: "boolean" },
+                      image: { type: ["string", "null"] },
+                      role: {
+                        type: "string",
+                        description: "Current platform role, read from the database.",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           ApiError: {
             type: "object",
             required: ["ok", "error"],

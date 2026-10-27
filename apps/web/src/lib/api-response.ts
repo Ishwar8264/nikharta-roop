@@ -61,3 +61,10 @@ export function handleApiError(error: unknown, init?: ResponseInit): Response {
   }
   return jsonError(500, "INTERNAL_ERROR", "Something went wrong.", undefined, init);
 }
+
+/** Account responses, including failures, must never be stored in a shared cache. */
+export const jsonPrivateOk = <T>(data: T, message?: string) =>
+  jsonOk(data, { headers: { "Cache-Control": "private, no-store" } }, message);
+
+export const handlePrivateApiError = (error: unknown) =>
+  handleApiError(error, { headers: { "Cache-Control": "private, no-store" } });

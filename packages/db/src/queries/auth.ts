@@ -11,7 +11,16 @@ export function createAuthDatabase() {
 export function findAuthAccount(userId: string) {
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, status: true, deletedAt: true, emailVerified: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      emailVerified: true,
+      image: true,
+      role: true,
+      status: true,
+      deletedAt: true,
+    },
   });
 }
 
