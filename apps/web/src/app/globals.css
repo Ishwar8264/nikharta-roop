@@ -294,15 +294,3 @@
 ) {
   border-radius: var(--radius-md);
 }
-
-/* Leaflet — keep tiles/controls under our popovers and dropdowns. */
-.leaflet-container {
-  z-index: 0 !important;
-}
-.leaflet-pane {
-  z-index: 0 !important;
-}
-.leaflet-top,
-.leaflet-bottom {
-  z-index: 1 !important;
-}
