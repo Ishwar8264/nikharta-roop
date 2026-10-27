@@ -3,11 +3,8 @@ import { Inter, Playfair_Display } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { siteConfig } from "@/config/site";
-import { getSession } from "@/lib/auth/get-session";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/features/auth/components/authProvider";
-import { OnboardingReminder } from "@/features/onboarding/onboarding-reminder";
 import "./globals.css";
 
 const inter = Inter({
@@ -45,8 +42,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     siteName: siteConfig.name,
     title: `${siteConfig.name} | Salon Booking in India`,
-    description:
-      "Discover salons, compare services, and manage beauty appointments.",
+    description: "Discover salons, compare services, and manage beauty appointments.",
     url: "/",
     images: [
       {
@@ -58,8 +54,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: `${siteConfig.name} | Salon Booking in India`,
-    description:
-      "Discover salons, compare services, and manage beauty appointments.",
+    description: "Discover salons, compare services, and manage beauty appointments.",
     images: ["/brand/logo/nikharta-roop-light.jpg"],
   },
   robots: {
@@ -75,22 +70,8 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * Root layout.
- *
- * Why it resolves the session:
- * The user object must come from the server (HttpOnly cookie). Fetching it
- * once here and providing it via AuthProvider gives every client island the
- * same authoritative user — no client-side /auth/me round trip, no flicker.
- *
- * getSession() is cache()'d, so the Header's own call is a no-op on the same
- * request — the DB is only hit once.
- */
-export default async function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  const user = await getSession();
-
+/** Minimal UI shell; authentication and feature providers are intentionally absent. */
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en-IN" suppressHydrationWarning>
       <body
@@ -98,12 +79,7 @@ export default async function RootLayout({
         className={`${inter.variable} ${playfair.variable} antialiased`}
       >
         <ThemeProvider>
-          <AuthProvider user={user}>
-            <TooltipProvider>
-              <OnboardingReminder />
-              {children}
-            </TooltipProvider>
-          </AuthProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
