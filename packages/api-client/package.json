@@ -2,7 +2,7 @@
   "name": "@nikharta-roop/api-client",
   "version": "0.0.0",
   "private": true,
-  "description": "Reserved for shared API clients; browser and native authentication will be separate.",
+  "description": "Typed HTTP client for the versioned JSON API; Better Auth uses its own client.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
@@ -13,5 +13,8 @@
   "devDependencies": {
     "@nikharta-roop/typescript-config": "workspace:*",
     "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@nikharta-roop/shared": "workspace:*"
   }
 }

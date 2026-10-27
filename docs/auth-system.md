@@ -58,3 +58,11 @@ Password-reset links need a consuming UI at the caller's allowed `redirectTo` UR
 `GET /api/v1/health` is a public, uncached readiness check. It checks PostgreSQL with `SELECT 1` and Redis with `PING`, returns 200 when both respond, and 503 with generic dependency states on failure. Dependency checks have a two-second response budget.
 
 `apps/web/src/server/rate-limit.ts` follows Improve India's shared sliding-window policy: 10 requests per 10 seconds per route-scoped client identifier, using a separate Redis key prefix. Health applies this budget before any database work. Exhausted budgets return 429 with `Retry-After` and rate-limit headers; Redis failures or limiter timeouts return 503. Deploy behind a trusted proxy that replaces forwarding headers. Future non-auth API handlers must call `checkRateLimit`; Better Auth endpoints retain their own Redis-backed limits.
+
+## Shared JSON API client
+
+`API_BASE_PATH` (`/api/v1`) and `AUTH_BASE_PATH` (`/api/v1/auth`) live in shared constants. Non-auth routes use `ApiResponse<T>`: `{ ok: true, data, message? }` or `{ ok: false, error: { code, message, details? } }`. The web `jsonOk`, `jsonError`, and `handleApiError` helpers implement that contract without exposing infrastructure errors.
+
+`@nikharta-roop/api-client` follows Improve India's typed HTTP transport. Use `api` for same-origin browser requests or `createApiClient({ baseUrl })` for an explicit origin. Methods support caller headers, cancellation, cache and credentials options. They validate the envelope, return its `data`, and throw `ApiClientError` with code/status/details on API failures. `api.health()` consumes `/api/v1/health`; dependency failures return `DEPENDENCY_UNAVAILABLE` with the health summary in error details. Rate limiting preserves `Retry-After` and rate-limit response headers.
+
+Authentication always uses `authClient`, not the generic JSON client, because Better Auth responses are native. The optional generic client's `getToken` only adds an Authorization header; it does not enable a bearer authentication scheme on the server. Native/mobile auth is not implemented by this transport setup.

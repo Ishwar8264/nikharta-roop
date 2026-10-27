@@ -12,7 +12,7 @@ The web app is a clean UI foundation for the next implementation. Legacy APIs an
 - `apps/web/public`: brand assets.
 - `packages/db`: unchanged Prisma schema, migrations, seed, and client. `src/queries` is reserved for the replacement query layer.
 - `packages/shared`: platform-independent schemas, types, and constants retained for future implementation.
-- `packages/api-client`, `packages/theme`, `packages/typescript-config`: workspace scaffolds.
+- `packages/api-client`: typed JSON API transport aligned with Improve India; `packages/theme` and `packages/typescript-config`: workspace foundations.
 - `apps/mobile`: reserved workspace.
 
 The header accepts optional account controls. AI description generation and slug availability checks accept callbacks and make no requests by default. The auth client and versioned auth handler are implemented. There are no legacy API clients, session providers, proxies, cron handlers, or server actions.

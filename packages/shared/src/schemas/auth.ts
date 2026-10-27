@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-export const AUTH_BASE_PATH = "/api/v1/auth";
 export const passwordSchema = z
   .string()
   .min(8, "Use at least 8 characters.")

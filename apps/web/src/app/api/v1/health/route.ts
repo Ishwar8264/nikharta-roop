@@ -1,3 +1,4 @@
+import { handleApiError, jsonError, jsonOk } from "@/lib/api-response";
 import { getHealthStatus } from "@/server/health";
 import { checkRateLimit } from "@/server/rate-limit";
 
@@ -18,14 +19,26 @@ export async function GET(request: Request): Promise<Response> {
         "Retry-After",
         String(Math.max(1, Math.ceil((budget.reset - Date.now()) / 1000))),
       );
-      return Response.json(
-        { message: "Too many requests. Please try again shortly." },
-        { status: 429, headers },
+      return jsonError(
+        429,
+        "RATE_LIMITED",
+        "Too many requests. Please try again shortly.",
+        undefined,
+        { headers },
       );
     }
     const health = await getHealthStatus();
-    return Response.json(health, { status: health.status === "ok" ? 200 : 503, headers });
-  } catch {
-    return Response.json({ status: "unavailable" }, { status: 503, headers });
+    if (health.status !== "ok") {
+      return jsonError(
+        503,
+        "DEPENDENCY_UNAVAILABLE",
+        "A required service is unavailable.",
+        health,
+        { headers },
+      );
+    }
+    return jsonOk(health, { headers });
+  } catch (error) {
+    return handleApiError(error, { headers });
   }
 }

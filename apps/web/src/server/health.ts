@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { HealthStatus } from "@nikharta-roop/shared";
 import { checkDatabaseHealth } from "@/server/db";
 import { getRedis } from "@/server/redis";
 
@@ -21,7 +22,7 @@ async function checkWithinBudget(check: Promise<unknown>): Promise<boolean> {
   }
 }
 
-export async function getHealthStatus() {
+export async function getHealthStatus(): Promise<HealthStatus> {
   const [database, redis] = await Promise.all([
     checkWithinBudget(checkDatabaseHealth()),
     checkWithinBudget(getRedis().ping()),
