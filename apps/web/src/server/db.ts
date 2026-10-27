@@ -7,3 +7,5 @@ export {
 } from "@nikharta-roop/db/queries/auth";
 
 export { checkDatabaseHealth } from "@nikharta-roop/db/queries/health";
+
+export { createProfileRecord } from "@nikharta-roop/db/queries/profile";

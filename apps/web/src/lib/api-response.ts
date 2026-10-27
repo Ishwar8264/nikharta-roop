@@ -63,8 +63,11 @@ export function handleApiError(error: unknown, init?: ResponseInit): Response {
 }
 
 /** Account responses, including failures, must never be stored in a shared cache. */
-export const jsonPrivateOk = <T>(data: T, message?: string) =>
-  jsonOk(data, { headers: { "Cache-Control": "private, no-store" } }, message);
+export const jsonPrivateOk = <T>(data: T, message?: string, init?: ResponseInit) => {
+  const headers = new Headers(init?.headers);
+  headers.set("Cache-Control", "private, no-store");
+  return jsonOk(data, { ...init, headers }, message);
+};
 
 export const handlePrivateApiError = (error: unknown) =>
   handleApiError(error, { headers: { "Cache-Control": "private, no-store" } });

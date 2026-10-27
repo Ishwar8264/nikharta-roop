@@ -9,7 +9,8 @@
     "./client": "./src/generated/prisma/client.ts",
     "./enums": "./src/generated/prisma/enums.ts",
     "./queries/auth": "./src/queries/auth.ts",
-    "./queries/health": "./src/queries/health.ts"
+    "./queries/health": "./src/queries/health.ts",
+    "./queries/profile": "./src/queries/profile/profile.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

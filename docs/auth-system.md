@@ -86,3 +86,15 @@ Reference: [Scalar Next.js integration](https://scalar.com/products/api-referenc
 The route calls `server/me/me.ts`; the service applies the existing Redis API budget and auth guard. The existing DB account query selects current name/email/image/role to override any older values in the cached session. No new DB query module or request schema is needed: the endpoint has no input and reuses the auth query. It does not create or return public profiles/onboarding state.
 
 Invalid, revoked, suspended, deleted, or unverified sessions return 401. Rate exhaustion returns 429; unavailable Redis rate checks return 503. All responses, including failures, use `Cache-Control: private, no-store`. Credentials, session tokens, internal lifecycle fields, and unrelated account data are excluded. The endpoint is included in Scalar's Account section and requires the browser's auth session cookie.
+
+## Personal profile creation
+
+`POST /api/v1/profiles` accepts JSON fields `displayName` (2–100 characters), `slug` (3–120 characters), optional `bio` (up to 500 characters), and optional `avatar` (HTTP/HTTPS URL, up to 2048 characters). Names/bio/slugs are trimmed; slugs are lowercased and accept letters, numbers, and single separating hyphens. Other fields are rejected. Nullable bio/avatar values are supported.
+
+The service requires an active, verified session, a trusted `Origin` header, JSON content type, and the existing Redis API budget. It creates `type: PERSONAL` for the current user and uses the existing DB default `DRAFT` status. It does not change account onboarding or publish a profile. The schema and migration history are unchanged.
+
+The route returns 201 with `{ ok: true, data: { profile }, message: "Profile created." }`. Its profile projection contains only `id`, `type`, `status`, `slug`, `displayName`, `bio`, and `avatar`. Existing unique indexes enforce one personal profile per user and global slug uniqueness, including simultaneous requests. Duplicate conflicts use the common 409 response. Missing/untrusted origins return 403; invalid JSON/fields return 400; non-JSON bodies return 415. Auth/rate errors retain their existing 401/429/503 behavior. All responses are private and uncached.
+
+Layering follows the Improve India reference: shared schema/type, web server function, DB-package query, and thin route. Scalar's Profiles section documents the operation. A successful creation does not imply publication, completed onboarding, or salon ownership.
+
+Reference: [Prisma unique-constraint error handling](https://docs.prisma.io/docs/orm/prisma-client/debugging-and-troubleshooting/handling-exceptions-and-errors).
