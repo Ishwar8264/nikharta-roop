@@ -69,7 +69,7 @@ Authentication always uses `authClient`, not the generic JSON client, because Be
 
 ## Scalar documentation
 
-Browse `/api/v1/docs` for the interactive reference, backed by `/api/v1/openapi`. The specification combines Better Auth's generated operations (respecting disabled paths) with health response/error schemas. Auth URLs use `/api/v1/auth`; health uses `/api/v1/health`. Relative server URLs keep requests on the current origin. Scalar's browser renderer is pinned to version 1.75.0, matching the Improve India reference.
+Browse `/api/v1/docs` for the interactive reference. Its response embeds the combined API description directly, following Improve India’s inline-content approach; no separate application schema route is exposed. The specification combines Better Auth's generated operations (respecting disabled paths) with health response/error schemas. Auth URLs use `/api/v1/auth`; health uses `/api/v1/health`. Relative server URLs keep requests on the current origin. Scalar's browser renderer is pinned to version 1.75.0, matching the Improve India reference.
 
 Specification generation calls Better Auth's server API directly, so browsing docs does not require a Redis rate-limit request or live DB query. Running the documented operations still requires the configured services and, for protected operations, a valid session.
 

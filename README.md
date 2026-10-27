@@ -53,7 +53,7 @@ Database imports remain server-only. Future API work should add query modules to
 ## API reference
 
 Run `pnpm dev:web`, then open [Scalar API docs](http://localhost:3000/api/v1/docs).
-The combined OpenAPI document is served at `/api/v1/openapi`. Authentication operations are generated from Better Auth configuration; health responses document the shared envelope and rate-limit errors. These documentation routes describe public APIs and do not require a database/Redis request just to browse. Executing auth/health requests still requires their configured services.
+The combined API description is embedded directly in the Scalar docs response; there is no separate `/api/v1/openapi` route. Authentication operations are generated from Better Auth configuration; health responses document the shared envelope and rate-limit errors. These documentation routes describe public APIs and do not require a database/Redis request just to browse. Executing auth/health requests still requires their configured services.
 
 ## Marketplace ownership
 
