@@ -48,6 +48,7 @@ enum OtpPurpose {
   STAFF_ACTIVATION
 }
 
+// Optional signup preference, not a role or a restriction on owning salons.
 enum AccountType {
   CUSTOMER
   SALON_PARTNER
@@ -59,8 +60,8 @@ model User {
   phone String?      @unique
   role  PlatformRole @default(USER)
 
-  name String @default("")
-  image String?
+  name     String    @default("")
+  image    String?
   sessions Session[]
 
   status UserStatus @default(PENDING_VERIFICATION)
@@ -104,12 +105,15 @@ model User {
   onboarding    UserOnboarding?
   loyaltyWallet LoyaltyWallet?
 
-  personalProfile        Profile?
-  feedPostsWritten       FeedPost[]
-  feedCommentsWritten    FeedComment[]
-  feedLikesPerformed     FeedLike[]
-  chatMessagesSent       ChatMessage[]
-  conversationReadStates ConversationReadState[]
+  profile                  UserProfile?
+  feedPosts                FeedPost[]
+  feedComments             FeedComment[]
+  feedLikes                FeedLike[]
+  chatMessagesSent         ChatMessage[]
+  conversationReadStates   ConversationReadState[]
+  firstConversations       Conversation[]            @relation("FirstConversationUser")
+  secondConversations      Conversation[]            @relation("SecondConversationUser")
+  conversationParticipants ConversationParticipant[]
 
   @@index([role])
   @@index([deletedAt])
@@ -152,22 +156,22 @@ model RefreshToken {
 }
 
 model Account {
-  id             String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  provider       String
+  id                    String    @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id])
+  provider              String
   // Validated OIDC issuer; null for credentials and legacy/non-OIDC identities.
-  issuer         String?
-  providerUserId String
-  passwordHash   String?
-  accessToken String?
-  refreshToken String?
-  idToken String?
-  accessTokenExpiresAt DateTime?
+  issuer                String?
+  providerUserId        String
+  passwordHash          String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
-  scope String?
-  updatedAt DateTime @default(now()) @updatedAt
-  createdAt DateTime @default(now())
+  scope                 String?
+  updatedAt             DateTime  @default(now()) @updatedAt
+  createdAt             DateTime  @default(now())
 
   @@unique([provider, providerUserId])
   @@unique([userId, provider])
@@ -175,26 +179,28 @@ model Account {
 
 // Better Auth owns session and email verification persistence.
 model Session {
-  id String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
-  userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token String @unique
+  id        String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
   expiresAt DateTime
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
   @@index([userId])
   @@index([expiresAt])
 }
 
 model Verification {
-  id String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  id         String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   identifier String
-  value String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
   @@index([identifier])
   @@index([expiresAt])
 }

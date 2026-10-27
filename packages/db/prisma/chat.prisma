@@ -1,97 +1,86 @@
-// One-to-one conversations have two stable public identities, not employee IDs.
+// Direct conversations belong to two individual users, independently of salon membership.
 model Conversation {
-  slug            String   @unique @default(dbgenerated("('chat-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
-  id              String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
-  firstProfileId  String
-  secondProfileId String
-  createdAt       DateTime @default(now())
+  id           String                    @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  slug         String                    @unique @default(dbgenerated("('chat-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  firstUserId  String
+  secondUserId String
+  createdAt    DateTime                  @default(now())
+  firstUser    User                      @relation("FirstConversationUser", fields: [firstUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  secondUser   User                      @relation("SecondConversationUser", fields: [secondUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  participants ConversationParticipant[]
+  messages     ChatMessage[]
 
-  // The migration enforces canonical ordering, preventing reverse duplicates.
-  firstProfile  Profile                   @relation("FirstConversationProfile", fields: [firstProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  secondProfile Profile                   @relation("SecondConversationProfile", fields: [secondProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  participants  ConversationParticipant[]
-  messages      ChatMessage[]
-
-  @@unique([firstProfileId, secondProfileId])
-  @@index([secondProfileId])
+  @@unique([firstUserId, secondUserId])
+  @@index([secondUserId])
 }
 
-// Create both participants in the conversation creation transaction.
-// The migration rejects profiles that are not one of the conversation's parties.
+// Composite sender references keep users outside the conversation from sending messages.
 model ConversationParticipant {
   conversationId String
-  profileId      String
+  userId         String
+  conversation   Conversation            @relation(fields: [conversationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sentMessages   ChatMessage[]           @relation("ConversationSender")
+  readStates     ConversationReadState[]
 
-  conversation Conversation            @relation(fields: [conversationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  profile      Profile                 @relation(fields: [profileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sentMessages ChatMessage[]           @relation("ConversationSender")
-  readStates   ConversationReadState[]
-
-  @@id([conversationId, profileId])
-  @@index([profileId, conversationId])
+  @@id([conversationId, userId])
+  @@index([userId, conversationId])
 }
 
 model ChatMessage {
-  slug            String        @unique @default(dbgenerated("('message-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
-  id              String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  id              String                  @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  slug            String                  @unique @default(dbgenerated("('message-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
   conversationId  String
-  senderProfileId String
-  sentByUserId    String
-  clientMessageId String        @db.VarChar(128)
+  senderId        String
+  clientMessageId String                  @db.VarChar(128)
   body            String?
   bodyHtml        String?
   bodyJson        Json?
-  bodyFormat      ContentFormat @default(TEXT)
+  bodyFormat      ContentFormat           @default(TEXT)
   replyToId       String?
   editedAt        DateTime?
   deletedAt       DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  conversation Conversation            @relation(fields: [conversationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  // Composite FK prevents a profile outside this conversation from sending.
-  sender       ConversationParticipant @relation("ConversationSender", fields: [conversationId, senderProfileId], references: [conversationId, profileId], onDelete: Restrict, onUpdate: Restrict)
-  sentBy       User                    @relation(fields: [sentByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  replyTo      ChatMessage?            @relation("ChatMessageReplies", fields: [conversationId, replyToId], references: [conversationId, id], onDelete: Restrict, onUpdate: Restrict)
-  replies      ChatMessage[]           @relation("ChatMessageReplies")
-  media        ChatMessageMedia[]
-  readBy       ConversationReadState[] @relation("LastReadMessage")
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  conversation    Conversation            @relation(fields: [conversationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sender          User                    @relation(fields: [senderId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  participant     ConversationParticipant @relation("ConversationSender", fields: [conversationId, senderId], references: [conversationId, userId], onDelete: Restrict, onUpdate: Restrict)
+  replyTo         ChatMessage?            @relation("ChatMessageReplies", fields: [conversationId, replyToId], references: [conversationId, id], onDelete: Restrict, onUpdate: Restrict)
+  replies         ChatMessage[]           @relation("ChatMessageReplies")
+  media           ChatMessageMedia[]
+  readBy          ConversationReadState[] @relation("LastReadMessage")
 
   @@unique([conversationId, id])
-  @@unique([conversationId, sentByUserId, clientMessageId])
+  @@unique([conversationId, senderId, clientMessageId])
   @@index([conversationId, createdAt, id])
-  @@index([conversationId, senderProfileId])
-  @@index([sentByUserId])
+  @@index([conversationId, senderId])
+  @@index([senderId])
 }
 
 model ChatMessageMedia {
   messageId String
   mediaId   String
-  position  Int    @default(0)
-
-  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  media   MediaAsset  @relation(fields: [mediaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  position  Int         @default(0)
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  media     MediaAsset  @relation(fields: [mediaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@id([messageId, mediaId])
   @@unique([messageId, position])
   @@index([mediaId])
 }
 
-// Salon staff have independent read cursors; one employee cannot mark everyone read.
+// Every user has their own cursor; it must reference a message in the same conversation.
 model ConversationReadState {
   conversationId    String
-  profileId         String
   userId            String
   lastReadMessageId String?
   lastReadAt        DateTime?
-  updatedAt         DateTime  @updatedAt
+  updatedAt         DateTime                @updatedAt
+  participant       ConversationParticipant @relation(fields: [conversationId, userId], references: [conversationId, userId], onDelete: Restrict, onUpdate: Restrict)
+  user              User                    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  lastReadMessage   ChatMessage?            @relation("LastReadMessage", fields: [conversationId, lastReadMessageId], references: [conversationId, id], onDelete: Restrict, onUpdate: Restrict)
 
-  participant     ConversationParticipant @relation(fields: [conversationId, profileId], references: [conversationId, profileId], onDelete: Restrict, onUpdate: Restrict)
-  user            User                    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  // A cursor must reference a message in the same conversation.
-  lastReadMessage ChatMessage?            @relation("LastReadMessage", fields: [conversationId, lastReadMessageId], references: [conversationId, id], onDelete: Restrict, onUpdate: Restrict)
-
-  @@id([conversationId, profileId, userId])
-  @@index([userId, profileId])
+  @@id([conversationId, userId])
+  @@index([userId])
   @@index([conversationId, lastReadMessageId])
 }

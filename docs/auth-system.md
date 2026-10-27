@@ -91,10 +91,30 @@ Invalid, revoked, suspended, deleted, or unverified sessions return 401. Rate ex
 
 `POST /api/v1/profiles` accepts JSON fields `displayName` (2–100 characters), `slug` (3–120 characters), optional `bio` (up to 500 characters), and optional `avatar` (HTTP/HTTPS URL, up to 2048 characters). Names/bio/slugs are trimmed; slugs are lowercased and accept letters, numbers, and single separating hyphens. Other fields are rejected. Nullable bio/avatar values are supported.
 
-The service requires an active, verified session, a trusted `Origin` header, JSON content type, and the existing Redis API budget. It creates `type: PERSONAL` for the current user and uses the existing DB default `DRAFT` status. It does not change account onboarding or publish a profile. The schema and migration history are unchanged.
+The service requires an active, verified session, a trusted `Origin` header, JSON content type, and the existing Redis API budget. It creates a `UserProfile` owned by the current user with the DB default `DRAFT` status. It does not change account onboarding or publish a profile. The marketplace migration replaces the former shared person/salon identity model.
 
-The route returns 201 with `{ ok: true, data: { profile }, message: "Profile created." }`. Its profile projection contains only `id`, `type`, `status`, `slug`, `displayName`, `bio`, and `avatar`. Existing unique indexes enforce one personal profile per user and global slug uniqueness, including simultaneous requests. Duplicate conflicts use the common 409 response. Missing/untrusted origins return 403; invalid JSON/fields return 400; non-JSON bodies return 415. Auth/rate errors retain their existing 401/429/503 behavior. All responses are private and uncached.
+The route returns 201 with `{ ok: true, data: { profile }, message: "Profile created." }`. Its profile projection contains only `id`, `status`, `slug`, `displayName`, `bio`, and `avatar`. Existing unique indexes enforce one personal profile per user and global slug uniqueness, including simultaneous requests. Duplicate conflicts use the common 409 response. Missing/untrusted origins return 403; invalid JSON/fields return 400; non-JSON bodies return 415. Auth/rate errors retain their existing 401/429/503 behavior. All responses are private and uncached.
 
 Layering follows the Improve India reference: shared schema/type, web server function, DB-package query, and thin route. Scalar's Profiles section documents the operation. A successful creation does not imply publication, completed onboarding, or salon ownership.
 
 Reference: [Prisma unique-constraint error handling](https://docs.prisma.io/docs/orm/prisma-client/debugging-and-troubleshooting/handling-exceptions-and-errors).
+
+## Individual-user marketplace model
+
+The `20261027200000_user_actor_marketplace` migration replaces `Profile` with `UserProfile` (required unique `userId`) and removes profile types and profile onboarding. User onboarding remains in `UserOnboarding`. `accountType` is an optional signup preference only: `CUSTOMER` does not prohibit salon listing, and `SALON_PARTNER` does not grant access to any salon. Access belongs to `SalonMember`, which supports multiple salons per user and multiple owners/managers/staff per salon.
+
+Salon listing identity now lives directly on `Salon`: `name`, `slug`, `coverImage`, `bannerImage`, and `shortDescription`. Existing business description, location, services, publication and verification remain on the salon. Moving these fields does not publish or verify a listing.
+
+Feed authors, comments, likes, favorites, reviews and chat reference individual users. Recorded operators become the sole actor; the original public attribution is retained in a restricted migration archive. Conversations have two canonically ordered users, participants reference those users, and composite foreign keys preserve sender membership and same-conversation read/reply references.
+
+### Deployment precautions
+
+This migration is **prepared, not applied to the application database**. Pause application writes and back up before applying. It requires the exact previous Profile-aware schema, including pending design-plan changes and the auth migration. Do not apply it blindly to a database that has only the deployable migration history; older `migration-plans` remain historical candidates, not automatic deployment steps.
+
+Preflight checks abort on salon-addressed conversations (no recipient is guessed), mismatched personal attribution, duplicate user likes/favorites/reviews, unnamed/missing salon profiles, or unresolved personal/salon moderation. Resolve these explicitly before retrying. All changes are transactional.
+
+The migration archives original profile/onboarding, listing, action and conversation rows as JSON in `legacy_profile_identity_20261027.Snapshot`, outside Prisma's public schema, with public access revoked. Preserve/restrict that archive like production data; do not delete it during rollout. Personal profile IDs and display fields are preserved; salon display fields are copied before old salon profiles are removed. Obsolete profile onboarding is archived rather than merged into account onboarding. Existing account onboarding, memberships, wallets, listing status and verification are unchanged.
+
+New accounts receive account-onboarding and wallet rows independently of public-profile creation. User action guards reject inactive accounts and reassigned actors; salon management still requires membership checks in future APIs. No salon-listing endpoint has been added by this schema change.
+
+Verification used isolated PostgreSQL with representative legacy data and legacy identity triggers. It checked rollback on ambiguous history, visibility/moderation conflicts and duplicates; data preservation; actor/participant constraints; and concurrent profile creation on the migrated schema. Prisma introspection reports the same pre-existing generated-ID default normalization on both baselines, with no new structural drift.

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** Only personal-profile display fields are writable; ownership and lifecycle are server-owned. */
+/** Only user-profile display fields are writable; ownership and lifecycle are server-owned. */
 export const createProfileSchema = z.strictObject({
   displayName: z.string().trim().min(2).max(100),
   slug: z

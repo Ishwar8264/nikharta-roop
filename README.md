@@ -54,3 +54,9 @@ Database imports remain server-only. Future API work should add query modules to
 
 Run `pnpm dev:web`, then open [Scalar API docs](http://localhost:3000/api/v1/docs).
 The combined OpenAPI document is served at `/api/v1/openapi`. Authentication operations are generated from Better Auth configuration; health responses document the shared envelope and rate-limit errors. These documentation routes describe public APIs and do not require a database/Redis request just to browse. Executing auth/health requests still requires their configured services.
+
+## Marketplace ownership
+
+Every person has one account and may book services or list/manage multiple salons. `UserProfile` stores the person's public display details; `Salon` stores listing details; `SalonMember` grants access. Customer/partner is a preference, not a permission boundary. Onboarding belongs only to the user account. Feed, reviews, and chat actions belong to individual users, never a salon identity.
+
+The guarded marketplace schema migration is prepared but not applied to the application database. See the [migration precautions](docs/auth-system.md#deployment-precautions) before rollout; the previous design plans and ambiguous legacy histories require explicit deployment review.

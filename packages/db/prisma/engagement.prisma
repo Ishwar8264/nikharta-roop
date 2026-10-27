@@ -23,8 +23,6 @@ enum NotificationStatus {
 }
 
 model Favorite {
-  actorProfileId String
-  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   slug   String @unique @default(dbgenerated("('favorite-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
   id     String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   userId String
@@ -41,16 +39,13 @@ model Favorite {
 
   createdAt DateTime @default(now())
 
-  @@unique([actorProfileId, salonId])
-  @@unique([actorProfileId, serviceId])
-  @@unique([actorProfileId, productId])
+  @@unique([userId, salonId])
+  @@unique([userId, serviceId])
+  @@unique([userId, productId])
   @@index([userId])
-  @@index([actorProfileId])
 }
 
 model ServiceReview {
-  actorProfileId String
-  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   slug      String   @unique @default(dbgenerated("('service-review-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
   id        String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   serviceId String
@@ -62,14 +57,12 @@ model ServiceReview {
   images    String[] // Review photos
   createdAt DateTime @default(now())
 
-  @@unique([serviceId, actorProfileId])
+  @@unique([serviceId, userId])
   @@index([serviceId])
-  @@index([actorProfileId])
+  @@index([userId])
 }
 
 model ProductReview {
-  actorProfileId String
-  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   slug      String   @unique @default(dbgenerated("('product-review-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
   id        String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   productId String
@@ -81,9 +74,9 @@ model ProductReview {
   images    String[]
   createdAt DateTime @default(now())
 
-  @@unique([productId, actorProfileId])
+  @@unique([productId, userId])
   @@index([productId])
-  @@index([actorProfileId])
+  @@index([userId])
 }
 
 model CustomerNote {

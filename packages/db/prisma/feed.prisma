@@ -6,31 +6,29 @@ enum FeedPostStatus {
 }
 
 model FeedPost {
-  slug            String         @unique @default(dbgenerated("('post-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
-  id              String         @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
-  authorProfileId String
-  writtenByUserId String
-  body            String?
-  bodyHtml        String?
-  bodyJson        Json?
-  bodyFormat      ContentFormat  @default(TEXT)
-  status          FeedPostStatus @default(DRAFT)
-  publishedAt     DateTime?
-  editedAt        DateTime?
-  deletedAt       DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  slug        String         @unique @default(dbgenerated("('post-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id          String         @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  authorId    String
+  body        String?
+  bodyHtml    String?
+  bodyJson    Json?
+  bodyFormat  ContentFormat  @default(TEXT)
+  status      FeedPostStatus @default(DRAFT)
+  publishedAt DateTime?
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
-  // The public author and authenticated operator are both retained for audit.
-  author    Profile         @relation(fields: [authorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  writtenBy User            @relation(fields: [writtenByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  media     FeedPostMedia[]
-  comments  FeedComment[]
-  likes     FeedLike[]
+  // The individual user is the author; salons never act as identities.
+  author   User            @relation(fields: [authorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  media    FeedPostMedia[]
+  comments FeedComment[]
+  likes    FeedLike[]
 
   @@index([status, publishedAt(sort: Desc), id])
-  @@index([authorProfileId, status, createdAt(sort: Desc), id])
-  @@index([writtenByUserId])
+  @@index([authorId, status, createdAt(sort: Desc), id])
+  @@index([authorId])
 }
 
 model FeedPostMedia {
@@ -48,46 +46,41 @@ model FeedPostMedia {
 }
 
 model FeedComment {
-  slug            String        @unique @default(dbgenerated("('comment-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
-  id              String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
-  postId          String
-  authorProfileId String
-  writtenByUserId String
-  parentId        String?
-  body            String        @default("")
-  bodyHtml        String?
-  bodyJson        Json?
-  bodyFormat      ContentFormat @default(TEXT)
-  editedAt        DateTime?
-  deletedAt       DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  slug       String        @unique @default(dbgenerated("('comment-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  id         String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  postId     String
+  authorId   String
+  parentId   String?
+  body       String        @default("")
+  bodyHtml   String?
+  bodyJson   Json?
+  bodyFormat ContentFormat @default(TEXT)
+  editedAt   DateTime?
+  deletedAt  DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
-  post      FeedPost      @relation(fields: [postId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  author    Profile       @relation(fields: [authorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  writtenBy User          @relation(fields: [writtenByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  post    FeedPost      @relation(fields: [postId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  author  User          @relation(fields: [authorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   // A reply cannot reference a comment on another post.
-  parent    FeedComment?  @relation("FeedCommentReplies", fields: [postId, parentId], references: [postId, id], onDelete: Restrict, onUpdate: Restrict)
-  replies   FeedComment[] @relation("FeedCommentReplies")
+  parent  FeedComment?  @relation("FeedCommentReplies", fields: [postId, parentId], references: [postId, id], onDelete: Restrict, onUpdate: Restrict)
+  replies FeedComment[] @relation("FeedCommentReplies")
 
   @@unique([postId, id])
   @@index([postId, parentId, createdAt, id])
-  @@index([authorProfileId])
-  @@index([writtenByUserId])
+  @@index([authorId])
 }
 
-// One like per public identity, even when several staff operate the same salon.
+// One like per individual user.
 model FeedLike {
-  postId            String
-  profileId         String
-  performedByUserId String
-  createdAt         DateTime @default(now())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
 
-  post        FeedPost @relation(fields: [postId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  performedBy User     @relation(fields: [performedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  post FeedPost @relation(fields: [postId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
-  @@id([postId, profileId])
-  @@index([profileId, createdAt])
-  @@index([performedByUserId])
+  @@id([postId, userId])
+  @@index([userId, createdAt])
+  @@index([userId])
 }

@@ -1,8 +1,6 @@
 // Content models. Existing table names and stored values remain unchanged.
 
 model BlogPost {
-  actorProfileId String
-  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   id            String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   title         String
   slug          String        @unique
@@ -40,12 +38,10 @@ model BlogPost {
 
   @@index([published, publishedAt(sort: Desc)])
   @@index([slug])
-  @@index([actorProfileId])
+  @@index([authorId])
 }
 
 model BlogComment {
-  actorProfileId String
-  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   id         String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
   postId     String
   post       BlogPost @relation(fields: [postId], references: [id])
@@ -57,7 +53,7 @@ model BlogComment {
   createdAt  DateTime @default(now())
 
   @@index([postId])
-  @@index([actorProfileId])
+  @@index([userId])
 }
 
 model BlogCategory {

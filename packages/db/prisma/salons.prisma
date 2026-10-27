@@ -40,6 +40,13 @@ enum SalonVerificationStatus {
 model Salon {
   id String @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
 
+  // A salon is a business listing; every operator is an individual SalonMember user.
+  name             String
+  slug             String  @unique @default(dbgenerated("('salon-'::text || encode(gen_random_bytes(8), 'hex'::text))")) @db.VarChar(120)
+  coverImage       String?
+  bannerImage      String?
+  shortDescription String?
+
   category SalonCategory @default(UNISEX)
 
   description       String?
@@ -82,8 +89,6 @@ model Salon {
   coupons        Coupon[]
   payouts        Payout[]
   customerNotes  CustomerNote[]
-
-  profile Profile?
 
   @@index([city])
   @@index([isActive])

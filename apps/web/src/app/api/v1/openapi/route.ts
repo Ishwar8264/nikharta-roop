@@ -42,7 +42,7 @@ export async function GET(): Promise<Response> {
             tags: ["Profiles"],
             summary: "Create your personal profile",
             description:
-              "Requires an active, verified session and a trusted Origin header. Creates one PERSONAL profile per account with initial DRAFT status. Ownership and lifecycle fields cannot be supplied. Duplicate profiles or slugs return 409. Responses are private and uncached.",
+              "Requires an active, verified session and a trusted Origin header. Creates one user public profile per account with initial DRAFT status. Ownership and lifecycle fields cannot be supplied. Duplicate profiles or slugs return 409. Responses are private and uncached.",
             security: [{ apiKeyCookie: [] }],
             requestBody: {
               required: true,
@@ -170,10 +170,9 @@ export async function GET(): Promise<Response> {
                 properties: {
                   profile: {
                     type: "object",
-                    required: ["id", "type", "status", "slug", "displayName", "bio", "avatar"],
+                    required: ["id", "status", "slug", "displayName", "bio", "avatar"],
                     properties: {
                       id: { type: "string" },
-                      type: { type: "string", enum: ["PERSONAL"] },
                       status: { type: "string", enum: ["DRAFT"] },
                       slug: { type: "string" },
                       displayName: { type: "string" },
