@@ -1,0 +1,7 @@
+{
+  "extends": "@nikharta-roop/typescript-config/base.json",
+  "include": ["src", "prisma.config.ts", "prisma/seed.ts"],
+  "compilerOptions": {
+    "types": ["node"]
+  }
+}

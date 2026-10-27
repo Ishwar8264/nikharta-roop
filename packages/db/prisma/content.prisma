@@ -1,0 +1,80 @@
+// Content models. Existing table names and stored values remain unchanged.
+
+model BlogPost {
+  actorProfileId String
+  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id            String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  title         String
+  slug          String        @unique
+  excerpt       String?
+  content       String        @default("")
+  contentFormat ContentFormat @default(TEXT)
+  contentHtml   String?
+  contentJson   Json?
+
+  coverImage  String?
+  bannerImage String?
+  readingTime Int     @default(0)
+  views       Int     @default(0) // Analytics
+
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  deletedAt   DateTime?
+
+  metaKeywords String?
+  canonicalUrl String?
+  noIndex      Boolean @default(false)
+  tldr         String?
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  categoryId String?
+  category   BlogCategory? @relation(fields: [categoryId], references: [id])
+
+  tags     BlogTag[]
+  comments BlogComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, publishedAt(sort: Desc)])
+  @@index([slug])
+  @@index([actorProfileId])
+}
+
+model BlogComment {
+  actorProfileId String
+  actorProfile   Profile @relation(fields: [actorProfileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id         String   @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  postId     String
+  post       BlogPost @relation(fields: [postId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  content    String
+  parentId   String? // Nested replies
+  isApproved Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@index([postId])
+  @@index([actorProfileId])
+}
+
+model BlogCategory {
+  id                String        @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  name              String
+  slug              String        @unique
+  shortDescription  String?
+  description       String?
+  descriptionHtml   String?
+  descriptionJson   Json?
+  descriptionFormat ContentFormat @default(TEXT)
+  posts             BlogPost[]
+}
+
+model BlogTag {
+  id    String     @id @default(dbgenerated("(encode(gen_random_bytes(24), 'hex'::text))"))
+  name  String
+  slug  String     @unique
+  posts BlogPost[]
+}

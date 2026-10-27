@@ -1,0 +1,17 @@
+// Prisma configuration. Domain models live in the adjacent .prisma files.
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// The selected representation is canonical; other fields are derived render/search projections.
+enum ContentFormat {
+  TEXT
+  HTML
+  JSON
+}

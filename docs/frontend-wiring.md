@@ -1,5 +1,7 @@
 # Nikharta Roop — Frontend Wiring & UI/UX Implementation Spec (Phase A)
 
+> Historical reference: the HTTP APIs and authentication described here have been removed for a fresh implementation. Endpoint examples and integration instructions are not current contracts. See the root README for current status.
+
 > **Purpose:** This is the AI-implementable blueprint for wiring the Phase A marketplace UI. Follow it top-to-bottom: design system → conventions → page specs → acceptance checks. Implement nothing that contradicts this document.
 >
 > **Grounding:** Verified against [Booking App UX patterns (Appy Pie)](https://www.appypie.com/blog/booking-app-ux-patterns), [India D2C checkout conversion patterns (Shiprocket)](https://checkout.shiprocket.in/blog/ayurvedic-d2c-brand-achieved-47-percent-checkout-conversion-using-fastrr/), [Next.js SEO rendering strategies (Arc)](https://arc.dev/employer-blog/next-js-seo-rendering-strategies/), and the Next 16 docs shipped in `node_modules/next/dist/docs/01-app/` (server/client components, metadata, caching).

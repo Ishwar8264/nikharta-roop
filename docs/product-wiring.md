@@ -1,5 +1,7 @@
 # Product catalogue wiring
 
+> Historical reference: the HTTP APIs and authentication described here have been removed for a fresh implementation. Endpoint examples and integration instructions are not current contracts. See the root README for current status.
+
 Public product pages call the local service layer in Server Components. Browser mutations use the existing `/api/v1` client with its session refresh and CSRF handling.
 
 | Method | Endpoint | UI | Access |
