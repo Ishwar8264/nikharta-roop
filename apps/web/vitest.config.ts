@@ -31,15 +31,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     coverage: {
       provider: "v8",
-      include: ["src/server/modules/**/*.ts"],
-      exclude: [
-        // Repositories are thin Prisma wrappers — covered by integration tests.
-        "src/server/modules/**/*.repository.ts",
-        // Schemas are pure Zod; the business rules under test live elsewhere.
-        "src/server/modules/**/*.schema.ts",
-        // Type-only modules.
-        "src/server/modules/**/*.types.ts",
-      ],
+      include: ["src/components/**/*.{ts,tsx}", "src/hooks/**/*.ts"],
     },
   },
 });

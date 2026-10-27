@@ -1,5 +1,7 @@
 # Nikharta Roop — Analysis & Improvement Report
 
+> Historical reference: the HTTP APIs and authentication described here have been removed for a fresh implementation. Endpoint examples and integration instructions are not current contracts. See the root README for current status.
+
 Date: 2026-10-07 · Scope: full-stack review (security, performance, code quality) of the cloned repository.
 
 ## Verdict

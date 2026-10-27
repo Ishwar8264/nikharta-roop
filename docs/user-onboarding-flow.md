@@ -1,5 +1,7 @@
 # Customer and Salon Partner Onboarding
 
+> Historical reference: the HTTP APIs and authentication described here have been removed for a fresh implementation. Endpoint examples and integration instructions are not current contracts. See the root README for current status.
+
 Status: proposed implementation flow. This document does not change current application behavior.
 
 ## Purpose

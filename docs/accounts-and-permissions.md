@@ -1,5 +1,7 @@
 # Accounts and platform permissions
 
+> Historical reference: the HTTP APIs and authentication described here have been removed for a fresh implementation. Endpoint examples and integration instructions are not current contracts. See the root README for current status.
+
 `User` is the person. `Account` stores their login methods. A credentials account
 uses provider `credentials`, the stable user ID as `providerUserId`, and a scrypt
 `passwordHash`. OAuth accounts retain their existing provider subject and ID.

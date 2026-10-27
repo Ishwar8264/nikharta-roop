@@ -6,7 +6,6 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError } from "@/lib/api/backend.client";
 
 interface Props {
   createCategory: (input: {
@@ -48,7 +47,7 @@ export function GlobalCategoryManager({
       router.refresh();
     } catch (caught) {
       setError(
-        caught instanceof ApiError
+        caught instanceof Error
           ? caught.message
           : "Something went wrong. Please try again.",
       );

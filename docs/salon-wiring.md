@@ -1,5 +1,7 @@
 # Salon API wiring
 
+> Historical reference: the HTTP APIs and authentication described here have been removed for a fresh implementation. Endpoint examples and integration instructions are not current contracts. See the root README for current status.
+
 The public directory uses the salon service directly in Server Components. The create form and management page use the existing `/api/v1` browser client, including its session refresh and CSRF handling.
 
 | Method | Path | Client surface | Access |

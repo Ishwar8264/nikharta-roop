@@ -1,5 +1,7 @@
 # Salon verification
 
+> Historical reference: the HTTP APIs and authentication described here have been removed for a fresh implementation. Endpoint examples and integration instructions are not current contracts. See the root README for current status.
+
 The current policy uses manual official-source review. File uploads, valid PAN-like text, OCR and document labels do not establish authenticity. No automatic approval or external identity verification integration is enabled.
 
 ## Required proofs
