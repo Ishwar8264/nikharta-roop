@@ -18,3 +18,11 @@ export const createProfileSchema = z.strictObject({
 });
 
 export type CreateProfileInput = z.infer<typeof createProfileSchema>;
+
+/** PATCH changes only supplied display fields; null explicitly clears optional fields. */
+export const updateProfileSchema = createProfileSchema.partial().refine(
+  (input) => Object.values(input).some((value) => value !== undefined),
+  { message: "Supply at least one profile field." },
+);
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

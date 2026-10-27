@@ -11,3 +11,6 @@ export type UserProfile = {
 };
 
 export type CreateProfileResponse = { profile: UserProfile };
+
+export type GetProfileResponse = { profile: UserProfile };
+export type UpdateProfileResponse = { profile: UserProfile };
